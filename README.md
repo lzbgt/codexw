@@ -4,7 +4,7 @@
 
 It does not patch Codex. It uses the Homebrew-installed vanilla `codex` binary as the backend and uses the upstream source clone under `ref/` only as protocol reference material.
 
-The repo also includes a companion skill at `skills/session-autopilot/`. That skill does not try to monitor session lifecycle by itself; instead it defines the cooperative end-of-turn policy that `codexw` now explicitly invokes from its synthesized continuation prompt.
+The repo also includes a companion skill at `skills/session-autopilot/`. That skill does not try to monitor session lifecycle by itself; instead it defines the cooperative end-of-turn policy that `codexw` can invoke from its synthesized continuation prompt when the skill is installed. `codexw` still works on hosts without that skill because the generated continuation prompt also embeds the same core policy text directly.
 
 For a fuller design and internals walkthrough, see [docs/codexw-design.md](docs/codexw-design.md).
 
