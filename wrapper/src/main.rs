@@ -1,3 +1,4 @@
+mod app;
 mod catalog;
 mod commands;
 mod editor;
@@ -6,6 +7,7 @@ mod history;
 mod input;
 mod interaction;
 mod output;
+mod policy;
 mod prompt;
 mod render;
 mod requests;
@@ -15,39 +17,10 @@ mod session;
 mod state;
 mod views;
 
-use std::sync::mpsc;
-
-use anyhow::Context;
 use anyhow::Result;
 use clap::ArgAction;
 use clap::Parser;
-use editor::EditorEvent;
-use editor::LineEditor;
-use events::process_server_line;
-use interaction::handle_tab_completion;
-use interaction::handle_user_input;
-use interaction::join_prompt;
-use interaction::prompt_accepts_input;
-use interaction::update_prompt;
-use output::Output;
-use requests::send_command_exec_terminate;
-use requests::send_initialize;
-use requests::send_turn_interrupt;
-use runtime::AppEvent;
-use runtime::InputKey;
-use runtime::RawModeGuard;
-use runtime::StartMode;
-use runtime::effective_cwd;
 use runtime::normalize_cli;
-use runtime::shutdown_child;
-use runtime::spawn_server;
-use runtime::start_stdin_thread;
-use runtime::start_stdout_thread;
-use runtime::start_tick_thread;
-use serde_json::Value;
-use serde_json::json;
-use state::AppState;
-use state::thread_id;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -103,268 +76,12 @@ struct Cli {
 }
 
 fn main() -> Result<()> {
-    let cli = normalize_cli(Cli::parse());
-    let initial_prompt = join_prompt(&cli.prompt);
-    let resolved_cwd = effective_cwd(&cli)?;
-    let _raw_mode = RawModeGuard::new()?;
-
-    let mut child = spawn_server(&cli, &resolved_cwd)?;
-    let stdin = child
-        .stdin
-        .take()
-        .context("codex app-server stdin unavailable")?;
-    let stdout = child
-        .stdout
-        .take()
-        .context("codex app-server stdout unavailable")?;
-
-    let (tx, rx) = mpsc::channel::<AppEvent>();
-    start_stdout_thread(stdout, tx.clone());
-    start_stdin_thread(tx.clone());
-    start_tick_thread(tx.clone());
-
-    let mut output = Output::default();
-    let mut writer = stdin;
-    let mut state = AppState::new(cli.auto_continue, cli.raw_json);
-    let mut editor = LineEditor::default();
-
-    output.line_stderr("[session] connecting to codex app-server")?;
-    send_initialize(&mut writer, &mut state, &cli, !cli.no_experimental_api)?;
-
-    let mut start_after_initialize = Some(StartMode {
-        resume_thread_id: cli.resume.clone(),
-        initial_prompt,
-    });
-
-    loop {
-        update_prompt(&mut output, &state, &editor)?;
-        match rx.recv() {
-            Ok(AppEvent::ServerLine(line)) => {
-                process_server_line(
-                    line,
-                    &cli,
-                    &resolved_cwd,
-                    &mut state,
-                    &mut output,
-                    &mut writer,
-                    &mut start_after_initialize,
-                )?;
-            }
-            Ok(AppEvent::InputKey(key)) => match key {
-                InputKey::Char(ch) => {
-                    if prompt_accepts_input(&state) {
-                        editor.insert_char(ch);
-                    }
-                }
-                InputKey::Esc => {
-                    if state.turn_running {
-                        if let Some(turn_id) = state.active_turn_id.clone() {
-                            let current_thread_id = thread_id(&state)?.to_string();
-                            output.line_stderr("[interrupt] interrupting active turn")?;
-                            send_turn_interrupt(
-                                &mut writer,
-                                &mut state,
-                                current_thread_id,
-                                turn_id,
-                            )?;
-                        } else {
-                            output.line_stderr("[session] no active turn id; exiting")?;
-                            break;
-                        }
-                    } else if let Some(process_id) = state.active_exec_process_id.clone() {
-                        output.line_stderr("[interrupt] terminating active local command")?;
-                        send_command_exec_terminate(&mut writer, &mut state, process_id)?;
-                    } else if prompt_accepts_input(&state) {
-                        editor.clear();
-                    }
-                }
-                InputKey::Backspace => {
-                    if prompt_accepts_input(&state) {
-                        editor.backspace();
-                    }
-                }
-                InputKey::Delete => {
-                    if prompt_accepts_input(&state) {
-                        editor.delete();
-                    }
-                }
-                InputKey::Left => {
-                    if prompt_accepts_input(&state) {
-                        editor.move_left();
-                    }
-                }
-                InputKey::Right => {
-                    if prompt_accepts_input(&state) {
-                        editor.move_right();
-                    }
-                }
-                InputKey::Home => {
-                    if prompt_accepts_input(&state) {
-                        editor.move_home();
-                    }
-                }
-                InputKey::End => {
-                    if prompt_accepts_input(&state) {
-                        editor.move_end();
-                    }
-                }
-                InputKey::Up => {
-                    if prompt_accepts_input(&state) {
-                        editor.history_prev();
-                    }
-                }
-                InputKey::Down => {
-                    if prompt_accepts_input(&state) {
-                        editor.history_next();
-                    }
-                }
-                InputKey::Tab => {
-                    if prompt_accepts_input(&state) {
-                        handle_tab_completion(&mut editor, &state, &resolved_cwd, &mut output)?;
-                    }
-                }
-                InputKey::CtrlA => {
-                    if prompt_accepts_input(&state) {
-                        editor.move_home();
-                    }
-                }
-                InputKey::CtrlE => {
-                    if prompt_accepts_input(&state) {
-                        editor.move_end();
-                    }
-                }
-                InputKey::CtrlU => {
-                    if prompt_accepts_input(&state) {
-                        editor.clear_to_start();
-                    }
-                }
-                InputKey::CtrlW => {
-                    if prompt_accepts_input(&state) {
-                        editor.delete_prev_word();
-                    }
-                }
-                InputKey::CtrlC => {
-                    if state.turn_running {
-                        editor.clear();
-                        if let Some(turn_id) = state.active_turn_id.clone() {
-                            let current_thread_id = thread_id(&state)?.to_string();
-                            output.line_stderr("[interrupt] interrupting active turn")?;
-                            send_turn_interrupt(
-                                &mut writer,
-                                &mut state,
-                                current_thread_id,
-                                turn_id,
-                            )?;
-                        } else {
-                            output.line_stderr("[session] no active turn id; exiting")?;
-                            break;
-                        }
-                    } else if let Some(process_id) = state.active_exec_process_id.clone() {
-                        editor.clear();
-                        output.line_stderr("[interrupt] terminating active local command")?;
-                        send_command_exec_terminate(&mut writer, &mut state, process_id)?;
-                    } else if matches!(editor.ctrl_c(), EditorEvent::CtrlC) {
-                        output.line_stderr("[session] exiting on Ctrl-C")?;
-                        break;
-                    }
-                }
-                InputKey::Enter => match editor.submit() {
-                    EditorEvent::Submit(line) => {
-                        output.commit_prompt(&line)?;
-                        if !handle_user_input(
-                            line,
-                            &cli,
-                            &resolved_cwd,
-                            &mut state,
-                            &mut editor,
-                            &mut output,
-                            &mut writer,
-                        )? {
-                            break;
-                        }
-                    }
-                    EditorEvent::CtrlC | EditorEvent::Noop => {}
-                },
-                InputKey::CtrlJ => {
-                    if prompt_accepts_input(&state) {
-                        editor.insert_newline();
-                    }
-                }
-            },
-            Ok(AppEvent::Tick) => {}
-            Ok(AppEvent::StdinClosed) => {
-                output.line_stderr("[session] stdin closed; exiting")?;
-                break;
-            }
-            Ok(AppEvent::ServerClosed) => {
-                output.line_stderr("[session] codex app-server exited")?;
-                break;
-            }
-            Err(_) => break,
-        }
-    }
-
-    shutdown_child(writer, child)?;
-    Ok(())
-}
-
-fn approval_policy(cli: &Cli) -> &'static str {
-    let _ = cli;
-    "never"
-}
-
-fn thread_sandbox_mode(cli: &Cli) -> &'static str {
-    let _ = cli;
-    "danger-full-access"
-}
-
-fn turn_sandbox_policy(cli: &Cli) -> Value {
-    let _ = cli;
-    json!({"type": "dangerFullAccess"})
-}
-
-fn reasoning_summary(cli: &Cli) -> &'static str {
-    if cli.verbose_thinking {
-        "detailed"
-    } else {
-        "auto"
-    }
-}
-
-fn choose_command_approval_decision(params: &Value, yolo: bool) -> Value {
-    let _ = yolo;
-    if let Some(decisions) = params.get("availableDecisions").and_then(Value::as_array) {
-        return choose_first_allowed_decision(decisions).unwrap_or_else(|| decisions[0].clone());
-    }
-    json!("accept")
-}
-
-fn choose_first_allowed_decision(decisions: &[Value]) -> Option<Value> {
-    for preferred in [
-        "acceptForSession",
-        "acceptWithExecpolicyAmendment",
-        "applyNetworkPolicyAmendment",
-        "accept",
-    ] {
-        if let Some(found) = decisions
-            .iter()
-            .find(|decision| decision.as_str() == Some(preferred))
-        {
-            return Some(found.clone());
-        }
-    }
-    None
-}
-
-fn shell_program() -> String {
-    std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
+    app::run(normalize_cli(Cli::parse()))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::AppState;
     use super::Cli;
-    use super::choose_command_approval_decision;
     use super::normalize_cli;
     use crate::commands::builtin_command_names;
     use crate::commands::builtin_help_lines;
@@ -381,6 +98,7 @@ mod tests {
     use crate::interaction::prompt_accepts_input;
     use crate::interaction::prompt_is_visible;
     use crate::interaction::try_complete_file_token;
+    use crate::policy::choose_command_approval_decision;
     use crate::session::CollaborationModePreset;
     use crate::session::extract_collaboration_mode_presets;
     use crate::session::extract_models;
@@ -391,6 +109,7 @@ mod tests {
     use crate::session::render_status_snapshot;
     use crate::session::summarize_active_collaboration_mode;
     use crate::session::summarize_active_personality;
+    use crate::state::AppState;
     use crate::views::build_tool_user_input_response;
     use crate::views::extract_file_search_paths;
     use crate::views::extract_thread_ids;

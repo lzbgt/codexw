@@ -5,13 +5,13 @@ use serde_json::Value;
 use serde_json::json;
 
 use crate::Cli;
-use crate::approval_policy;
 use crate::output::Output;
+use crate::policy::approval_policy;
+use crate::policy::thread_sandbox_mode;
+use crate::policy::turn_sandbox_policy;
 use crate::state::AppState;
 use crate::state::get_string;
 use crate::state::summarize_text;
-use crate::thread_sandbox_mode;
-use crate::turn_sandbox_policy;
 use crate::views::render_account_summary;
 use crate::views::render_models_list;
 use crate::views::render_rate_limit_lines;

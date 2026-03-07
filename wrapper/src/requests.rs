@@ -8,18 +8,18 @@ use serde_json::Value;
 use serde_json::json;
 
 use super::Cli;
-use crate::approval_policy;
 use crate::input::ParsedInput;
-use crate::reasoning_summary;
+use crate::policy::approval_policy;
+use crate::policy::reasoning_summary;
+use crate::policy::shell_program;
+use crate::policy::thread_sandbox_mode;
+use crate::policy::turn_sandbox_policy;
 use crate::rpc::OutgoingNotification;
 use crate::rpc::OutgoingRequest;
 use crate::session::CollaborationModeAction;
 use crate::session::ModelsAction;
 use crate::session::current_collaboration_mode_value;
-use crate::shell_program;
 use crate::state::AppState;
-use crate::thread_sandbox_mode;
-use crate::turn_sandbox_policy;
 
 #[derive(Debug)]
 pub(crate) enum PendingRequest {

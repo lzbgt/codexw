@@ -27,7 +27,7 @@ The current design optimizes for:
 
 ## High-Level Architecture
 
-The runtime has eleven main layers.
+The runtime has thirteen main layers.
 
 1. Backend process management
    `runtime.rs` starts `codex app-server`, wires stdio, forwards key environment such as proxy variables, owns raw-mode lifecycle, and manages stdin/stdout/tick event sources.
@@ -47,22 +47,30 @@ The runtime has eleven main layers.
 6. Shared state and text/buffer helpers
    `state.rs` owns `AppState`, process-output buffering, attachment queues, request bookkeeping, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering.
 
-7. Session and turn orchestration
-   `main.rs` now focuses on top-level process startup, top-level event-loop coordination, and wiring the extracted modules together. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering lives in `session.rs`.
+7. Runtime policy
+   `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
 
-8. Resume and history rendering
+8. Session and turn orchestration
+   `session.rs` owns model metadata, personality selection, collaboration mode handling, realtime state rendering, and status snapshot generation.
+
+9. App runtime loop
+   `app.rs` owns process wiring, the main event loop, and keyboard-event dispatch for the live interactive session.
+
+10. Resume and history rendering
    `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
 
-9. View and transcript rendering helpers
+11. View and transcript rendering helpers
    `views.rs` owns app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
-10. Human input handling
+12. Human input handling
    `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
 
-11. Human output handling
+13. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
 
 Session feature helpers live in `session.rs`: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
+Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
+App loop helpers live in `app.rs`: backend/session startup, the top-level runtime loop, and input-key dispatch.
 Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
 Display helpers live in `views.rs`: formatted thread/model/app output, approval/request summaries, and item-completion rendering blocks.
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
@@ -82,7 +90,7 @@ At startup, `codexw`:
    - periodic tick timer
 5. runs one main event loop that consumes all app, backend, and user events
 
-The main event enum is `AppEvent` in `runtime.rs` and is consumed by the top-level loop in `main.rs`. It merges:
+The main event enum is `AppEvent` in `runtime.rs` and is consumed by the top-level loop in `app.rs`. It merges:
 
 - server JSON-RPC lines
 - normalized keyboard events
@@ -330,7 +338,11 @@ The biggest known limits are architectural, not accidental.
 ## File Map
 
 - `wrapper/src/main.rs`
-  Top-level event loop, shared session state, turn lifecycle coordination, and auto-continue.
+  Thin entrypoint plus tests.
+- `wrapper/src/app.rs`
+  Top-level runtime loop, backend wiring, and input-key dispatch.
+- `wrapper/src/policy.rs`
+  Approval/sandbox/reasoning policy helpers and approval decision preferences.
 - `wrapper/src/runtime.rs`
   Backend process startup, raw-mode lifecycle, keyboard mapping, and stdin/stdout/tick event threads.
 - `wrapper/src/events.rs`

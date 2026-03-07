@@ -5,11 +5,11 @@ use serde_json::Value;
 use serde_json::json;
 
 use super::Cli;
-use super::approval_policy;
-use super::thread_sandbox_mode;
-use super::turn_sandbox_policy;
 use crate::input::AppCatalogEntry;
 use crate::input::SkillCatalogEntry;
+use crate::policy::approval_policy;
+use crate::policy::thread_sandbox_mode;
+use crate::policy::turn_sandbox_policy;
 use crate::session::extract_models;
 use crate::state::get_string;
 use crate::state::summarize_text;
