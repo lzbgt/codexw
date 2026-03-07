@@ -144,7 +144,11 @@ fn fit_prompt_buffer(buffer: &str, cursor_chars: usize, available_chars: usize) 
     let end = (start + window_chars).min(chars.len());
     let mut visible = String::from("...");
     visible.push_str(&chars[start..end].iter().collect::<String>());
-    let cursor_in_visible = if start == 0 { cursor } else { 3 + cursor.saturating_sub(start) };
+    let cursor_in_visible = if start == 0 {
+        cursor
+    } else {
+        3 + cursor.saturating_sub(start)
+    };
     (visible, cursor_in_visible.min(available_chars))
 }
 

@@ -114,7 +114,7 @@ Useful interactive commands:
 - `:mcp` or `/mcp`
 - `:clean` or `/clean`
 - `:threads` or `/threads [query]`
-- `:mention <query>` or `/mention <query>`
+- `:mention [query|n]` or `/mention [query|n]`
 - `:diff` or `/diff`
 - `:attach-image <path>`
 - `:attach-url <url>`
@@ -123,6 +123,9 @@ Useful interactive commands:
 - `:auto on|off` or `/auto on|off`
 - `:interrupt` or `/interrupt`
 - `:status` or `/status`
+- `:statusline`
+- `:settings`
+- `:logout`
 - `:approvals` or `/permissions`
 - `:debug-config`
 - `:quit` or `/quit`
@@ -134,10 +137,12 @@ Submission features:
 - `!<shell command>` runs a local command via `command/exec` and prints the completed stdout/stderr block when it finishes.
 - Inline `@path/to/file` references are resolved against the current working directory before submit when they point to a real file or directory. This gives `codexw` a scroll-native equivalent of Codex’s file-path insertion flow even without the native popup picker.
 - Pressing `Tab` in the prompt completes unique slash commands like `/co -> /compact ` and unique `@file` prefixes like `@src/ma -> src/main.rs `. If multiple file matches exist, `codexw` extends the common prefix and prints a short candidate list into scrollback.
+- `:mention` with no args behaves like native Codex’s mention command and seeds `@` back into the prompt so you can keep typing a file reference immediately.
 - `:mention <query>` runs app-server fuzzy file search and prints numbered repo paths. `:mention <n>` inserts one of those cached matches back into the current prompt draft.
 - `:resume` with no id lists recent threads for the current cwd. `:resume <n>` resumes one of those cached numbered threads, which is a scroll-native equivalent of a resume picker.
 - `:diff` prints the latest aggregated turn diff snapshot emitted by app-server.
 - `:apps`, `:skills`, `:models`, `:mcp`, and `:threads` expose the most useful app-server discovery surfaces directly from the inline client.
+- `:settings` loads the effective backend config snapshot, `:statusline` aliases `:status`, and `:logout` signs out through app-server then refreshes account/rate-limit state.
 - `:review` with no args reviews uncommitted changes; with args it runs a custom inline review request through `review/start`.
 - `:compact`, `:fork`, `:rename`, and `:clean` are backed by the corresponding app-server thread APIs.
 - Raw tool mentions are resolved against the live app and skill catalogs loaded from app-server. Plugin mentions are only auto-resolved when the connected Codex build exposes plugin discovery.

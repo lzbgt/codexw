@@ -146,6 +146,7 @@ enum PendingRequest {
     LoadApps,
     LoadSkills,
     LoadAccount,
+    LogoutAccount,
     LoadRateLimits,
     LoadModels,
     LoadConfig,
@@ -375,12 +376,7 @@ fn main() -> Result<()> {
                 }
                 InputKey::Tab => {
                     if prompt_accepts_input(&state) {
-                        handle_tab_completion(
-                            &mut editor,
-                            &state,
-                            &resolved_cwd,
-                            &mut output,
-                        )?;
+                        handle_tab_completion(&mut editor, &state, &resolved_cwd, &mut output)?;
                     }
                 }
                 InputKey::CtrlA => {
@@ -729,6 +725,21 @@ fn send_load_account(writer: &mut ChildStdin, state: &mut AppState) -> Result<()
     )
 }
 
+fn send_logout_account(writer: &mut ChildStdin, state: &mut AppState) -> Result<()> {
+    let request_id = state.next_request_id();
+    state
+        .pending
+        .insert(request_id.clone(), PendingRequest::LogoutAccount);
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "account/logout",
+            params: json!({}),
+        },
+    )
+}
+
 fn send_load_rate_limits(writer: &mut ChildStdin, state: &mut AppState) -> Result<()> {
     let request_id = state.next_request_id();
     state
@@ -944,7 +955,11 @@ fn send_thread_fork(
     )
 }
 
-fn send_thread_compact(writer: &mut ChildStdin, state: &mut AppState, thread_id: String) -> Result<()> {
+fn send_thread_compact(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    thread_id: String,
+) -> Result<()> {
     let request_id = state.next_request_id();
     state
         .pending
@@ -991,10 +1006,9 @@ fn send_clean_background_terminals(
     thread_id: String,
 ) -> Result<()> {
     let request_id = state.next_request_id();
-    state.pending.insert(
-        request_id.clone(),
-        PendingRequest::CleanBackgroundTerminals,
-    );
+    state
+        .pending
+        .insert(request_id.clone(), PendingRequest::CleanBackgroundTerminals);
     send_json(
         writer,
         &OutgoingRequest {
@@ -1406,6 +1420,13 @@ fn handle_response(
         PendingRequest::LoadAccount => {
             state.account_info = response.result.get("account").cloned();
         }
+        PendingRequest::LogoutAccount => {
+            state.account_info = None;
+            state.rate_limits = None;
+            output.line_stderr("[session] logged out")?;
+            send_load_account(writer, state)?;
+            send_load_rate_limits(writer, state)?;
+        }
         PendingRequest::LoadRateLimits => {
             state.rate_limits = response.result.get("rateLimits").cloned();
         }
@@ -1475,10 +1496,7 @@ fn handle_response(
                 .cloned()
                 .unwrap_or_default();
             state.last_file_search_paths = extract_file_search_paths(&files);
-            let rendered = render_fuzzy_file_search_results(
-                &query,
-                files.as_slice(),
-            );
+            let rendered = render_fuzzy_file_search_results(&query, files.as_slice());
             output.block_stdout("File mentions", &rendered)?;
         }
     }
@@ -1498,6 +1516,13 @@ fn handle_response_error(
         }
         Some(PendingRequest::LoadAccount) => {
             output.line_stderr("[session] account details unavailable from app-server")?;
+        }
+        Some(PendingRequest::LogoutAccount) => {
+            output.line_stderr("[session] logout failed")?;
+            output.line_stderr(format!(
+                "[server-error] {}",
+                serde_json::to_string_pretty(&error)?
+            ))?;
         }
         Some(PendingRequest::StartThread { .. })
         | Some(PendingRequest::ResumeThread { .. })
@@ -1734,7 +1759,10 @@ fn handle_notification(
             state.active_turn_id = None;
             state.activity_started_at = None;
             state.last_status_line = None;
-            if matches!(status.as_str(), "completed" | "interrupted" | "failed" | "cancelled") {
+            if matches!(
+                status.as_str(),
+                "completed" | "interrupted" | "failed" | "cancelled"
+            ) {
                 state.completed_turn_count = state.completed_turn_count.saturating_add(1);
             }
             if status != "completed" {
@@ -2073,8 +2101,12 @@ fn handle_command(
             output.line_stderr(":resume or /resume <id>    resume a specific thread")?;
             output.line_stderr(":fork or /fork             fork the current thread")?;
             output.line_stderr(":compact or /compact       compact the current thread history")?;
-            output.line_stderr(":review or /review [text]  review current changes or custom target")?;
-            output.line_stderr(":clear or /clear           clear the terminal and start a new thread")?;
+            output.line_stderr(
+                ":review or /review [text]  review current changes or custom target",
+            )?;
+            output.line_stderr(
+                ":clear or /clear           clear the terminal and start a new thread",
+            )?;
             output.line_stderr(":copy or /copy             copy the latest assistant reply")?;
             output.line_stderr(":rename or /rename <name>  rename the current thread")?;
             output.line_stderr(":apps or /apps             list known app mentions")?;
@@ -2082,10 +2114,12 @@ fn handle_command(
             output.line_stderr(":models or /models         list available models")?;
             output.line_stderr(":model or /model           alias for /models")?;
             output.line_stderr(":mcp or /mcp               list MCP servers and tool counts")?;
-            output.line_stderr(":clean or /clean           clean background terminals for this thread")?;
+            output.line_stderr(
+                ":clean or /clean           clean background terminals for this thread",
+            )?;
             output.line_stderr(":threads or /threads [q]   list recent threads in this cwd")?;
             output.line_stderr(
-                ":mention or /mention <q>   search repo files for a mentionable path",
+                ":mention or /mention [q|n] seed @, search files, or insert a cached match",
             )?;
             output.line_stderr(":diff or /diff             show the latest turn diff snapshot")?;
             output.line_stderr(
@@ -2099,8 +2133,14 @@ fn handle_command(
             output.line_stderr(":auto or /auto on|off      toggle auto-continue")?;
             output.line_stderr(":interrupt or /interrupt   interrupt the active turn")?;
             output.line_stderr(":status or /status         show current client state")?;
-            output.line_stderr(":approvals or /permissions show current automation/permission posture")?;
-            output.line_stderr(":debug-config              read effective config from app-server")?;
+            output.line_stderr(":statusline                alias for /status")?;
+            output.line_stderr(":settings                  alias for /debug-config")?;
+            output.line_stderr(":logout                    sign out the current Codex account")?;
+            output.line_stderr(
+                ":approvals or /permissions show current automation/permission posture",
+            )?;
+            output
+                .line_stderr(":debug-config              read effective config from app-server")?;
             output.line_stderr(
                 "!<command>           run a local shell command via app-server command/exec",
             )?;
@@ -2127,7 +2167,9 @@ fn handle_command(
             }
             let maybe_arg = parts.next().map(ToOwned::to_owned);
             let Some(thread_id) = maybe_arg else {
-                output.line_stderr("[session] loading recent threads; use /resume <n> or /resume <thread-id>")?;
+                output.line_stderr(
+                    "[session] loading recent threads; use /resume <n> or /resume <thread-id>",
+                )?;
                 send_list_threads(writer, state, resolved_cwd, None)?;
                 return Ok(true);
             };
@@ -2206,7 +2248,10 @@ fn handle_command(
                     trimmed_args.to_string(),
                 )
             };
-            output.line_stderr(format!("[review] requesting {}", summarize_text(&description)))?;
+            output.line_stderr(format!(
+                "[review] requesting {}",
+                summarize_text(&description)
+            ))?;
             send_start_review(writer, state, current_thread_id, target, description)?;
             Ok(true)
         }
@@ -2250,12 +2295,18 @@ fn handle_command(
             let query = parts.collect::<Vec<_>>().join(" ");
             let query = query.trim();
             if query.is_empty() {
-                output.line_stderr("[session] usage: :mention <file-query> or :mention <n>")?;
+                editor.insert_str("@");
                 return Ok(true);
             }
             if let Ok(index) = query.parse::<usize>() {
-                let Some(path) = state.last_file_search_paths.get(index.saturating_sub(1)).cloned() else {
-                    output.line_stderr("[session] no cached file match at that index; run /mention <query> first")?;
+                let Some(path) = state
+                    .last_file_search_paths
+                    .get(index.saturating_sub(1))
+                    .cloned()
+                else {
+                    output.line_stderr(
+                        "[session] no cached file match at that index; run /mention <query> first",
+                    )?;
                     return Ok(true);
                 };
                 let inserted = quote_if_needed(&path);
@@ -2385,15 +2436,40 @@ fn handle_command(
             output.block_stdout("Status", &render_status_snapshot(cli, resolved_cwd, state))?;
             Ok(true)
         }
+        "statusline" => {
+            output.block_stdout("Status", &render_status_snapshot(cli, resolved_cwd, state))?;
+            Ok(true)
+        }
+        "settings" => {
+            output.line_stderr("[session] loading effective config")?;
+            send_load_config(writer, state)?;
+            Ok(true)
+        }
+        "logout" => {
+            output.line_stderr("[session] logging out")?;
+            send_logout_account(writer, state)?;
+            Ok(true)
+        }
         "debug-config" => {
             output.line_stderr("[session] loading effective config")?;
             send_load_config(writer, state)?;
             Ok(true)
         }
-        "fast" | "personality" | "collab" | "agent" | "multi-agents" | "theme"
-        | "statusline" | "realtime" | "settings" | "feedback" | "logout" | "rollout"
-        | "experimental" | "sandbox-add-read-dir" | "setup-default-sandbox" | "init"
-        | "ps" | "plan" => {
+        "fast"
+        | "personality"
+        | "collab"
+        | "agent"
+        | "multi-agents"
+        | "theme"
+        | "realtime"
+        | "feedback"
+        | "rollout"
+        | "experimental"
+        | "sandbox-add-read-dir"
+        | "setup-default-sandbox"
+        | "init"
+        | "ps"
+        | "plan" => {
             output.line_stderr(format!(
                 "[session] /{command} is recognized, but this inline client does not yet implement the native Codex popup/workflow for it"
             ))?;
@@ -2561,7 +2637,11 @@ fn try_complete_file_token(
     }
 
     let lcp = longest_common_prefix(&completions);
-    let inserted_prefix = if lcp.len() > token.len() { &lcp } else { &token };
+    let inserted_prefix = if lcp.len() > token.len() {
+        &lcp
+    } else {
+        &token
+    };
     editor.replace_range(start, end, &format!("@{inserted_prefix}"));
     let rendered_candidates = Some(
         completions
@@ -2572,7 +2652,9 @@ fn try_complete_file_token(
             .collect::<Vec<_>>()
             .join("\n"),
     );
-    Ok(Some(FileCompletionResult { rendered_candidates }))
+    Ok(Some(FileCompletionResult {
+        rendered_candidates,
+    }))
 }
 
 fn slash_command_at_cursor<'a>(
@@ -3161,7 +3243,9 @@ fn copy_to_clipboard(text: &str, output: &mut Output) -> Result<()> {
             return Ok(());
         };
         if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(text.as_bytes()).context("write pbcopy input")?;
+            stdin
+                .write_all(text.as_bytes())
+                .context("write pbcopy input")?;
         }
         let status = child.wait().context("wait for pbcopy")?;
         if status.success() {
@@ -3637,7 +3721,8 @@ fn extract_thread_ids(result: &Value) -> Vec<String> {
 }
 
 fn extract_file_search_paths(files: &[Value]) -> Vec<String> {
-    files.iter()
+    files
+        .iter()
         .filter_map(|file| get_string(file, &["path"]).map(ToOwned::to_owned))
         .collect()
 }
@@ -3904,7 +3989,10 @@ fn summarize_terminal_interaction(params: &Value) -> Option<String> {
     if stdin.is_empty() {
         return None;
     }
-    Some(format!("process={process_id} stdin={}", summarize_text(stdin)))
+    Some(format!(
+        "process={process_id} stdin={}",
+        summarize_text(stdin)
+    ))
 }
 
 fn summarize_server_request_resolved(params: &Value) -> String {
@@ -3988,24 +4076,24 @@ mod tests {
     use super::Cli;
     use super::build_tool_user_input_response;
     use super::choose_command_approval_decision;
+    use super::extract_file_search_paths;
+    use super::extract_thread_ids;
     use super::is_builtin_command;
     use super::normalize_cli;
     use super::params_auto_approval_result;
     use super::prompt_accepts_input;
     use super::prompt_is_visible;
+    use super::quote_if_needed;
     use super::render_apps_list;
     use super::render_fuzzy_file_search_results;
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
     use super::render_thread_list;
     use super::summarize_terminal_interaction;
-    use super::extract_thread_ids;
-    use super::extract_file_search_paths;
-    use super::quote_if_needed;
     use super::try_complete_file_token;
     use super::try_complete_slash_command;
-    use crate::input::AppCatalogEntry;
     use crate::editor::LineEditor;
+    use crate::input::AppCatalogEntry;
     use serde_json::json;
 
     #[test]
@@ -4063,13 +4151,16 @@ mod tests {
     #[test]
     fn slash_aliases_are_treated_as_builtin_commands() {
         assert!(is_builtin_command("status"));
+        assert!(is_builtin_command("statusline"));
         assert!(is_builtin_command("resume thread-1"));
         assert!(is_builtin_command("apps"));
         assert!(is_builtin_command("skills"));
         assert!(is_builtin_command("models"));
+        assert!(is_builtin_command("settings"));
         assert!(is_builtin_command("compact"));
         assert!(is_builtin_command("review current changes"));
         assert!(is_builtin_command("permissions"));
+        assert!(is_builtin_command("logout"));
         assert!(is_builtin_command("mcp"));
         assert!(is_builtin_command("threads"));
         assert!(is_builtin_command("mention foo"));
@@ -4139,11 +4230,7 @@ mod tests {
         }
         let buffer = editor.buffer().to_string();
         let cursor = editor.cursor_byte_index();
-        assert!(try_complete_slash_command(
-            &mut editor,
-            &buffer,
-            cursor
-        ));
+        assert!(try_complete_slash_command(&mut editor, &buffer, cursor));
         assert_eq!(editor.buffer(), "/diff ");
     }
 
@@ -4237,7 +4324,10 @@ mod tests {
             vec!["src/main.rs", "src/lib.rs"]
         );
         assert_eq!(quote_if_needed("src/main.rs"), "src/main.rs");
-        assert_eq!(quote_if_needed("path with spaces.rs"), "\"path with spaces.rs\"");
+        assert_eq!(
+            quote_if_needed("path with spaces.rs"),
+            "\"path with spaces.rs\""
+        );
     }
 
     #[test]

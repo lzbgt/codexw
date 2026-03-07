@@ -82,7 +82,9 @@ impl Output {
 
     fn redraw_prompt(&mut self, buffer: &str, cursor_chars: usize) -> io::Result<()> {
         let prompt = self.prompt.as_deref().unwrap_or("ready");
-        let terminal_width = terminal::size().map(|(width, _)| width as usize).unwrap_or(120);
+        let terminal_width = terminal::size()
+            .map(|(width, _)| width as usize)
+            .unwrap_or(120);
         let (line, cursor_col) = render_prompt_line(prompt, buffer, cursor_chars, terminal_width);
         let mut stderr = io::stderr();
         if self.prompt_visible {

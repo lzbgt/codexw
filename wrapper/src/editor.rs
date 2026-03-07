@@ -180,7 +180,9 @@ impl LineEditor {
 
     pub fn replace_range(&mut self, start_byte: usize, end_byte: usize, replacement: &str) {
         self.buffer.replace_range(start_byte..end_byte, replacement);
-        self.cursor_chars = self.buffer[..start_byte + replacement.len()].chars().count();
+        self.cursor_chars = self.buffer[..start_byte + replacement.len()]
+            .chars()
+            .count();
         self.history_index = None;
     }
 
