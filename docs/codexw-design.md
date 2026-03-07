@@ -36,13 +36,16 @@ The runtime has five main layers.
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
 3. Session and turn orchestration
-   `main.rs` owns initialization, thread start or resume, turn start, turn steer, interrupt handling, approval responses, catalog loading, and auto-continue.
+   `main.rs` owns initialization, thread start or resume, turn start, turn steer, interrupt handling, approval responses, catalog loading, and auto-continue. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering now lives in `session.rs`.
 
 4. Human input handling
    `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
 
 5. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
+
+6. Session feature helpers
+   `session.rs` groups the backend-backed session feature layer: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
 
 ## Process Model
 
