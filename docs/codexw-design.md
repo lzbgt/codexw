@@ -258,7 +258,7 @@ Current user-facing capabilities include:
 - rich `/status` output, including turn counts, active request time, token usage, account state, and rate limits
 - real collaboration-mode controls through `/plan` and `/collab`, backed by `collaborationMode/list` plus `turn/start.collaborationMode`
 - backend-backed `/experimental` listing through `experimentalFeature/list`
-- backend-backed personality selection through cached `model/list` metadata plus `turn/start.personality`
+- backend-backed personality selection through startup-warmed `model/list` metadata plus `turn/start.personality`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns

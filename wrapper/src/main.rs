@@ -243,6 +243,7 @@ struct ModelCatalogEntry {
 
 #[derive(Debug, Clone)]
 enum ModelsAction {
+    CacheOnly,
     ShowModels,
     ShowPersonality,
     SetPersonality(String),
@@ -1468,6 +1469,7 @@ fn handle_response(
             }
             send_load_apps(writer, state)?;
             send_load_skills(writer, state, resolved_cwd)?;
+            send_load_models(writer, state, ModelsAction::CacheOnly)?;
             send_load_collaboration_modes(writer, state, CollaborationModeAction::CacheOnly)?;
             send_load_account(writer, state)?;
             send_load_rate_limits(writer, state)?;
@@ -3715,6 +3717,7 @@ fn apply_models_action(
 ) -> Result<()> {
     state.models = extract_models(result);
     match action {
+        ModelsAction::CacheOnly => {}
         ModelsAction::ShowModels => {
             output.block_stdout("Models", &render_models_list(result))?;
         }
@@ -4246,6 +4249,13 @@ fn render_pending_attachments(local_images: &[String], remote_images: &[String])
 }
 
 fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> String {
+    let effective_model_summary = match effective_model_entry(state, cli) {
+        Some(model) if model.supports_personality => {
+            format!("{} [supports personality]", model.display_name)
+        }
+        Some(model) => format!("{} [personality unsupported]", model.display_name),
+        None => cli.model.as_deref().unwrap_or("default").to_string(),
+    };
     let mut lines = vec![
         format!("cwd             {resolved_cwd}"),
         format!(
@@ -4272,10 +4282,7 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
             "sandbox(turn)   {}",
             summarize_sandbox_policy(&turn_sandbox_policy(cli))
         ),
-        format!(
-            "model           {}",
-            cli.model.as_deref().unwrap_or("default")
-        ),
+        format!("model           {}", effective_model_summary),
         format!(
             "provider        {}",
             cli.model_provider.as_deref().unwrap_or("default")
@@ -4754,11 +4761,7 @@ fn render_skills_list(skills: &[SkillCatalogEntry]) -> String {
 }
 
 fn render_models_list(result: &Value) -> String {
-    let models = result
-        .get("data")
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default();
+    let models = extract_models(result);
     if models.is_empty() {
         return "No models returned by app-server.".to_string();
     }
@@ -4766,25 +4769,16 @@ fn render_models_list(result: &Value) -> String {
         .iter()
         .take(30)
         .map(|model| {
-            let id = get_string(model, &["id"])
-                .or_else(|| get_string(model, &["model"]))
-                .unwrap_or("?");
-            let provider = get_string(model, &["provider"])
-                .or_else(|| get_string(model, &["modelProvider"]))
-                .unwrap_or("default");
-            let effort = model
-                .get("reasoningEffortOptions")
-                .and_then(Value::as_array)
-                .map(|items| {
-                    items
-                        .iter()
-                        .filter_map(Value::as_str)
-                        .collect::<Vec<_>>()
-                        .join(",")
-                })
-                .filter(|value| !value.is_empty())
-                .unwrap_or_else(|| "-".to_string());
-            format!("{id}  [provider {provider}]  [effort {effort}]")
+            let default_marker = if model.is_default { " [default]" } else { "" };
+            let personality_marker = if model.supports_personality {
+                " [supports personality]"
+            } else {
+                " [personality unsupported]"
+            };
+            format!(
+                "{} ({}){}{}",
+                model.display_name, model.id, default_marker, personality_marker
+            )
         })
         .collect::<Vec<_>>()
         .join("\n")
@@ -5253,11 +5247,13 @@ mod tests {
     use super::render_collaboration_modes;
     use super::render_experimental_features_list;
     use super::render_fuzzy_file_search_results;
+    use super::render_models_list;
     use super::render_personality_options;
     use super::render_prompt_status;
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
     use super::render_slash_completion_candidates;
+    use super::render_status_snapshot;
     use super::render_thread_list;
     use super::seed_resumed_state_from_turns;
     use super::summarize_active_collaboration_mode;
@@ -5766,6 +5762,63 @@ mod tests {
         assert_eq!(summarize_active_personality(&state), "Pragmatic");
         assert!(rendered.contains("current          Pragmatic"));
         assert!(rendered.contains("current model     GPT-5 Codex [supports personality]"));
+    }
+
+    #[test]
+    fn models_render_default_and_personality_support_markers() {
+        let rendered = render_models_list(&json!({
+            "data": [
+                {
+                    "id": "gpt-5-codex",
+                    "displayName": "GPT-5 Codex",
+                    "supportsPersonality": true,
+                    "isDefault": true
+                },
+                {
+                    "id": "legacy-model",
+                    "displayName": "Legacy",
+                    "supportsPersonality": false,
+                    "isDefault": false
+                }
+            ]
+        }));
+        assert!(rendered.contains("GPT-5 Codex (gpt-5-codex) [default] [supports personality]"));
+        assert!(rendered.contains("Legacy (legacy-model) [personality unsupported]"));
+    }
+
+    #[test]
+    fn status_snapshot_surfaces_effective_model_personality_support() {
+        let mut state = AppState::new(true, false);
+        state.models = extract_models(&json!({
+            "data": [
+                {
+                    "id": "gpt-5-codex",
+                    "displayName": "GPT-5 Codex",
+                    "supportsPersonality": true,
+                    "isDefault": true
+                }
+            ]
+        }));
+        let cli = Cli {
+            codex_bin: "codex".to_string(),
+            config_overrides: Vec::new(),
+            enable_features: Vec::new(),
+            disable_features: Vec::new(),
+            resume: None,
+            cwd: None,
+            model: None,
+            model_provider: None,
+            auto_continue: true,
+            verbose_events: false,
+            verbose_thinking: true,
+            raw_json: false,
+            no_experimental_api: false,
+            yolo: false,
+            prompt: Vec::new(),
+        };
+        let rendered = render_status_snapshot(&cli, "/tmp/project", &state);
+        assert!(rendered.contains("model           GPT-5 Codex [supports personality]"));
+        assert!(rendered.contains("models cached   1"));
     }
 
     #[test]
