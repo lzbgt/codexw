@@ -1,8 +1,8 @@
 use serde_json::Value;
 
-use super::get_string;
 use crate::input::AppCatalogEntry;
 use crate::input::SkillCatalogEntry;
+use crate::state::get_string;
 
 pub(crate) fn parse_apps_list(result: &Value) -> Vec<AppCatalogEntry> {
     result

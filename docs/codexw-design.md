@@ -27,7 +27,7 @@ The current design optimizes for:
 
 ## High-Level Architecture
 
-The runtime has ten main layers.
+The runtime has eleven main layers.
 
 1. Backend process management
    `runtime.rs` starts `codex app-server`, wires stdio, forwards key environment such as proxy variables, owns raw-mode lifecycle, and manages stdin/stdout/tick event sources.
@@ -44,19 +44,22 @@ The runtime has ten main layers.
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
 
-6. Session and turn orchestration
-   `main.rs` now focuses on top-level process startup, the main event loop, shared state, and auto-continue coordination. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering lives in `session.rs`.
+6. Shared state and text/buffer helpers
+   `state.rs` owns `AppState`, process-output buffering, attachment queues, request bookkeeping, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering.
 
-7. Resume and history rendering
+7. Session and turn orchestration
+   `main.rs` now focuses on top-level process startup, top-level event-loop coordination, and wiring the extracted modules together. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering lives in `session.rs`.
+
+8. Resume and history rendering
    `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
 
-8. View and transcript rendering helpers
+9. View and transcript rendering helpers
    `views.rs` owns app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
-9. Human input handling
+10. Human input handling
    `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
 
-10. Human output handling
+11. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
 
 Session feature helpers live in `session.rs`: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
@@ -64,6 +67,7 @@ Resume-preview helpers live in `history.rs`: recent conversation extraction, res
 Display helpers live in `views.rs`: formatted thread/model/app output, approval/request summaries, and item-completion rendering blocks.
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
+Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
 
 ## Process Model
 
@@ -78,7 +82,7 @@ At startup, `codexw`:
    - periodic tick timer
 5. runs one main event loop that consumes all app, backend, and user events
 
-The main event enum is `AppEvent` in `main.rs`. It merges:
+The main event enum is `AppEvent` in `runtime.rs` and is consumed by the top-level loop in `main.rs`. It merges:
 
 - server JSON-RPC lines
 - normalized keyboard events
@@ -89,7 +93,7 @@ This keeps all user-visible state transitions serialized through one place.
 
 ## Core State
 
-`AppState` in `main.rs` is the central state store. It tracks:
+`AppState` in `state.rs` is the central state store. It tracks:
 
 - active thread id
 - active turn id
@@ -110,6 +114,7 @@ This keeps all user-visible state transitions serialized through one place.
 - recent thread-list and file-search caches
 - the last status line
 - pending JSON-RPC requests keyed by request id
+- streamed command/file/process output buffers used to coalesce incremental backend events into completed render blocks
 
 Two design choices matter here:
 

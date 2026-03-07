@@ -12,64 +12,27 @@ mod requests;
 mod rpc;
 mod runtime;
 mod session;
+mod state;
 mod views;
 
-use std::collections::HashMap;
 use std::sync::mpsc;
-use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
-use base64::Engine;
 use clap::ArgAction;
 use clap::Parser;
-use commands::builtin_command_names;
-use commands::builtin_help_lines;
-use commands::longest_common_prefix;
-use commands::quote_if_needed;
-use commands::try_complete_slash_command;
 use editor::EditorEvent;
 use editor::LineEditor;
 use events::process_server_line;
-use input::AppCatalogEntry;
-use input::PluginCatalogEntry;
-use input::SkillCatalogEntry;
-use input::build_turn_input;
 use interaction::handle_tab_completion;
 use interaction::handle_user_input;
 use interaction::join_prompt;
 use interaction::prompt_accepts_input;
 use interaction::update_prompt;
 use output::Output;
-use prompt::build_continue_prompt;
-use prompt::parse_auto_mode_stop;
-use requests::PendingRequest;
-use requests::send_clean_background_terminals;
-use requests::send_command_exec;
 use requests::send_command_exec_terminate;
-use requests::send_feedback_upload;
-use requests::send_fuzzy_file_search;
 use requests::send_initialize;
-use requests::send_list_threads;
-use requests::send_load_collaboration_modes;
-use requests::send_load_config;
-use requests::send_load_experimental_features;
-use requests::send_load_mcp_servers;
-use requests::send_load_models;
-use requests::send_logout_account;
-use requests::send_start_review;
-use requests::send_thread_compact;
-use requests::send_thread_fork;
-use requests::send_thread_realtime_append_text;
-use requests::send_thread_realtime_start;
-use requests::send_thread_realtime_stop;
-use requests::send_thread_rename;
-use requests::send_thread_resume;
-use requests::send_thread_start;
 use requests::send_turn_interrupt;
-use requests::send_turn_start;
-use requests::send_turn_steer;
-use rpc::RequestId;
 use runtime::AppEvent;
 use runtime::InputKey;
 use runtime::RawModeGuard;
@@ -83,19 +46,8 @@ use runtime::start_stdout_thread;
 use runtime::start_tick_thread;
 use serde_json::Value;
 use serde_json::json;
-use session::CollaborationModeAction;
-use session::CollaborationModePreset;
-use session::ModelCatalogEntry;
-use session::ModelsAction;
-use session::apply_collaboration_mode_action;
-use session::apply_models_action;
-use session::apply_personality_selection;
-use session::extract_collaboration_mode_presets;
-use session::render_personality_options;
-use session::render_prompt_status;
-use session::render_realtime_item;
-use session::render_realtime_status;
-use session::render_status_snapshot;
+use state::AppState;
+use state::thread_id;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -148,139 +100,6 @@ struct Cli {
 
     #[arg(trailing_var_arg = true)]
     prompt: Vec<String>,
-}
-
-#[derive(Default)]
-struct ProcessOutputBuffer {
-    stdout: String,
-    stderr: String,
-}
-
-struct AppState {
-    thread_id: Option<String>,
-    active_turn_id: Option<String>,
-    active_exec_process_id: Option<String>,
-    realtime_active: bool,
-    realtime_session_id: Option<String>,
-    realtime_last_error: Option<String>,
-    realtime_started_at: Option<Instant>,
-    realtime_prompt: Option<String>,
-    pending_thread_switch: bool,
-    turn_running: bool,
-    activity_started_at: Option<Instant>,
-    started_turn_count: u64,
-    completed_turn_count: u64,
-    auto_continue: bool,
-    objective: Option<String>,
-    last_agent_message: Option<String>,
-    last_turn_diff: Option<String>,
-    last_token_usage: Option<Value>,
-    account_info: Option<Value>,
-    rate_limits: Option<Value>,
-    command_output_buffers: HashMap<String, String>,
-    file_output_buffers: HashMap<String, String>,
-    process_output_buffers: HashMap<String, ProcessOutputBuffer>,
-    pending_local_images: Vec<String>,
-    pending_remote_images: Vec<String>,
-    active_personality: Option<String>,
-    apps: Vec<AppCatalogEntry>,
-    plugins: Vec<PluginCatalogEntry>,
-    skills: Vec<SkillCatalogEntry>,
-    models: Vec<ModelCatalogEntry>,
-    collaboration_modes: Vec<CollaborationModePreset>,
-    active_collaboration_mode: Option<CollaborationModePreset>,
-    last_listed_thread_ids: Vec<String>,
-    last_file_search_paths: Vec<String>,
-    last_status_line: Option<String>,
-    raw_json: bool,
-    pending: HashMap<RequestId, PendingRequest>,
-    next_request_id: i64,
-}
-
-impl AppState {
-    fn new(auto_continue: bool, raw_json: bool) -> Self {
-        Self {
-            thread_id: None,
-            active_turn_id: None,
-            active_exec_process_id: None,
-            realtime_active: false,
-            realtime_session_id: None,
-            realtime_last_error: None,
-            realtime_started_at: None,
-            realtime_prompt: None,
-            pending_thread_switch: false,
-            turn_running: false,
-            activity_started_at: None,
-            started_turn_count: 0,
-            completed_turn_count: 0,
-            auto_continue,
-            objective: None,
-            last_agent_message: None,
-            last_turn_diff: None,
-            last_token_usage: None,
-            account_info: None,
-            rate_limits: None,
-            command_output_buffers: HashMap::new(),
-            file_output_buffers: HashMap::new(),
-            process_output_buffers: HashMap::new(),
-            pending_local_images: Vec::new(),
-            pending_remote_images: Vec::new(),
-            active_personality: None,
-            apps: Vec::new(),
-            plugins: Vec::new(),
-            skills: Vec::new(),
-            models: Vec::new(),
-            collaboration_modes: Vec::new(),
-            active_collaboration_mode: None,
-            last_listed_thread_ids: Vec::new(),
-            last_file_search_paths: Vec::new(),
-            last_status_line: None,
-            raw_json,
-            pending: HashMap::new(),
-            next_request_id: 1,
-        }
-    }
-
-    fn next_request_id(&mut self) -> RequestId {
-        let id = self.next_request_id;
-        self.next_request_id += 1;
-        RequestId::Integer(id)
-    }
-
-    fn reset_turn_stream_state(&mut self) {
-        self.command_output_buffers.clear();
-        self.file_output_buffers.clear();
-        self.last_agent_message = None;
-        self.last_turn_diff = None;
-        self.last_status_line = None;
-    }
-
-    fn reset_thread_context(&mut self) {
-        self.active_turn_id = None;
-        self.active_exec_process_id = None;
-        self.realtime_active = false;
-        self.realtime_session_id = None;
-        self.realtime_last_error = None;
-        self.realtime_started_at = None;
-        self.realtime_prompt = None;
-        self.turn_running = false;
-        self.activity_started_at = None;
-        self.started_turn_count = 0;
-        self.completed_turn_count = 0;
-        self.objective = None;
-        self.last_agent_message = None;
-        self.last_turn_diff = None;
-        self.last_token_usage = None;
-        self.last_status_line = None;
-        self.active_personality = None;
-        self.active_collaboration_mode = None;
-    }
-
-    fn take_pending_attachments(&mut self) -> (Vec<String>, Vec<String>) {
-        let local = std::mem::take(&mut self.pending_local_images);
-        let remote = std::mem::take(&mut self.pending_remote_images);
-        (local, remote)
-    }
 }
 
 fn main() -> Result<()> {
@@ -537,82 +356,6 @@ fn choose_first_allowed_decision(decisions: &[Value]) -> Option<Value> {
     None
 }
 
-fn thread_id(state: &AppState) -> Result<&str> {
-    state
-        .thread_id
-        .as_deref()
-        .context("no active thread; wait for initialization or use :new")
-}
-
-fn get_string<'a>(value: &'a Value, path: &[&str]) -> Option<&'a str> {
-    let mut current = value;
-    for segment in path {
-        current = current.get(*segment)?;
-    }
-    current.as_str()
-}
-
-fn summarize_text(text: &str) -> String {
-    const LIMIT: usize = 120;
-    let single_line = text.split_whitespace().collect::<Vec<_>>().join(" ");
-    if single_line.chars().count() <= LIMIT {
-        single_line
-    } else {
-        let truncated = single_line
-            .chars()
-            .take(LIMIT.saturating_sub(1))
-            .collect::<String>();
-        format!("{truncated}…")
-    }
-}
-
-fn emit_status_line(_output: &mut Output, state: &mut AppState, line: String) -> Result<()> {
-    if state.last_status_line.as_deref() == Some(line.as_str()) {
-        return Ok(());
-    }
-    state.last_status_line = Some(line);
-    Ok(())
-}
-
-fn buffer_item_delta(buffers: &mut HashMap<String, String>, params: &Value) {
-    let Some(item_id) = get_string(params, &["itemId"]) else {
-        return;
-    };
-    let Some(delta) = get_string(params, &["delta"]) else {
-        return;
-    };
-    buffers
-        .entry(item_id.to_string())
-        .and_modify(|existing| existing.push_str(delta))
-        .or_insert_with(|| delta.to_string());
-}
-
-fn buffer_process_delta(buffers: &mut HashMap<String, ProcessOutputBuffer>, params: &Value) {
-    let Some(process_id) = get_string(params, &["processId"]) else {
-        return;
-    };
-    let Some(encoded) = get_string(params, &["deltaBase64"]) else {
-        return;
-    };
-    let Ok(decoded) = base64::engine::general_purpose::STANDARD.decode(encoded) else {
-        return;
-    };
-    let text = String::from_utf8_lossy(&decoded);
-    let stream = get_string(params, &["stream"]).unwrap_or("stdout");
-    let buffer = buffers.entry(process_id.to_string()).or_default();
-    match stream {
-        "stderr" => buffer.stderr.push_str(&text),
-        _ => buffer.stdout.push_str(&text),
-    }
-}
-
-fn canonicalize_or_keep(path: &str) -> String {
-    std::fs::canonicalize(path)
-        .ok()
-        .and_then(|value| value.to_str().map(ToOwned::to_owned))
-        .unwrap_or_else(|| path.to_string())
-}
-
 fn shell_program() -> String {
     std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
 }
@@ -621,19 +364,13 @@ fn shell_program() -> String {
 mod tests {
     use super::AppState;
     use super::Cli;
-    use super::CollaborationModePreset;
-    use super::builtin_command_names;
-    use super::builtin_help_lines;
     use super::choose_command_approval_decision;
-    use super::extract_collaboration_mode_presets;
     use super::normalize_cli;
-    use super::quote_if_needed;
-    use super::render_personality_options;
-    use super::render_prompt_status;
-    use super::render_realtime_item;
-    use super::render_status_snapshot;
-    use super::try_complete_slash_command;
+    use crate::commands::builtin_command_names;
+    use crate::commands::builtin_help_lines;
+    use crate::commands::quote_if_needed;
     use crate::commands::render_slash_completion_candidates;
+    use crate::commands::try_complete_slash_command;
     use crate::editor::LineEditor;
     use crate::events::params_auto_approval_result;
     use crate::history::latest_conversation_history_items;
@@ -644,8 +381,14 @@ mod tests {
     use crate::interaction::prompt_accepts_input;
     use crate::interaction::prompt_is_visible;
     use crate::interaction::try_complete_file_token;
+    use crate::session::CollaborationModePreset;
+    use crate::session::extract_collaboration_mode_presets;
     use crate::session::extract_models;
     use crate::session::render_collaboration_modes;
+    use crate::session::render_personality_options;
+    use crate::session::render_prompt_status;
+    use crate::session::render_realtime_item;
+    use crate::session::render_status_snapshot;
     use crate::session::summarize_active_collaboration_mode;
     use crate::session::summarize_active_personality;
     use crate::views::build_tool_user_input_response;

@@ -1,0 +1,232 @@
+use std::collections::HashMap;
+use std::time::Instant;
+
+use anyhow::Context;
+use anyhow::Result;
+use base64::Engine;
+use serde_json::Value;
+
+use crate::input::AppCatalogEntry;
+use crate::input::PluginCatalogEntry;
+use crate::input::SkillCatalogEntry;
+use crate::output::Output;
+use crate::requests::PendingRequest;
+use crate::rpc::RequestId;
+use crate::session::CollaborationModePreset;
+use crate::session::ModelCatalogEntry;
+
+#[derive(Default)]
+pub(crate) struct ProcessOutputBuffer {
+    pub(crate) stdout: String,
+    pub(crate) stderr: String,
+}
+
+pub(crate) struct AppState {
+    pub(crate) thread_id: Option<String>,
+    pub(crate) active_turn_id: Option<String>,
+    pub(crate) active_exec_process_id: Option<String>,
+    pub(crate) realtime_active: bool,
+    pub(crate) realtime_session_id: Option<String>,
+    pub(crate) realtime_last_error: Option<String>,
+    pub(crate) realtime_started_at: Option<Instant>,
+    pub(crate) realtime_prompt: Option<String>,
+    pub(crate) pending_thread_switch: bool,
+    pub(crate) turn_running: bool,
+    pub(crate) activity_started_at: Option<Instant>,
+    pub(crate) started_turn_count: u64,
+    pub(crate) completed_turn_count: u64,
+    pub(crate) auto_continue: bool,
+    pub(crate) objective: Option<String>,
+    pub(crate) last_agent_message: Option<String>,
+    pub(crate) last_turn_diff: Option<String>,
+    pub(crate) last_token_usage: Option<Value>,
+    pub(crate) account_info: Option<Value>,
+    pub(crate) rate_limits: Option<Value>,
+    pub(crate) command_output_buffers: HashMap<String, String>,
+    pub(crate) file_output_buffers: HashMap<String, String>,
+    pub(crate) process_output_buffers: HashMap<String, ProcessOutputBuffer>,
+    pub(crate) pending_local_images: Vec<String>,
+    pub(crate) pending_remote_images: Vec<String>,
+    pub(crate) active_personality: Option<String>,
+    pub(crate) apps: Vec<AppCatalogEntry>,
+    pub(crate) plugins: Vec<PluginCatalogEntry>,
+    pub(crate) skills: Vec<SkillCatalogEntry>,
+    pub(crate) models: Vec<ModelCatalogEntry>,
+    pub(crate) collaboration_modes: Vec<CollaborationModePreset>,
+    pub(crate) active_collaboration_mode: Option<CollaborationModePreset>,
+    pub(crate) last_listed_thread_ids: Vec<String>,
+    pub(crate) last_file_search_paths: Vec<String>,
+    pub(crate) last_status_line: Option<String>,
+    pub(crate) raw_json: bool,
+    pub(crate) pending: HashMap<RequestId, PendingRequest>,
+    pub(crate) next_request_id: i64,
+}
+
+impl AppState {
+    pub(crate) fn new(auto_continue: bool, raw_json: bool) -> Self {
+        Self {
+            thread_id: None,
+            active_turn_id: None,
+            active_exec_process_id: None,
+            realtime_active: false,
+            realtime_session_id: None,
+            realtime_last_error: None,
+            realtime_started_at: None,
+            realtime_prompt: None,
+            pending_thread_switch: false,
+            turn_running: false,
+            activity_started_at: None,
+            started_turn_count: 0,
+            completed_turn_count: 0,
+            auto_continue,
+            objective: None,
+            last_agent_message: None,
+            last_turn_diff: None,
+            last_token_usage: None,
+            account_info: None,
+            rate_limits: None,
+            command_output_buffers: HashMap::new(),
+            file_output_buffers: HashMap::new(),
+            process_output_buffers: HashMap::new(),
+            pending_local_images: Vec::new(),
+            pending_remote_images: Vec::new(),
+            active_personality: None,
+            apps: Vec::new(),
+            plugins: Vec::new(),
+            skills: Vec::new(),
+            models: Vec::new(),
+            collaboration_modes: Vec::new(),
+            active_collaboration_mode: None,
+            last_listed_thread_ids: Vec::new(),
+            last_file_search_paths: Vec::new(),
+            last_status_line: None,
+            raw_json,
+            pending: HashMap::new(),
+            next_request_id: 1,
+        }
+    }
+
+    pub(crate) fn next_request_id(&mut self) -> RequestId {
+        let id = self.next_request_id;
+        self.next_request_id += 1;
+        RequestId::Integer(id)
+    }
+
+    pub(crate) fn reset_turn_stream_state(&mut self) {
+        self.command_output_buffers.clear();
+        self.file_output_buffers.clear();
+        self.last_agent_message = None;
+        self.last_turn_diff = None;
+        self.last_status_line = None;
+    }
+
+    pub(crate) fn reset_thread_context(&mut self) {
+        self.active_turn_id = None;
+        self.active_exec_process_id = None;
+        self.realtime_active = false;
+        self.realtime_session_id = None;
+        self.realtime_last_error = None;
+        self.realtime_started_at = None;
+        self.realtime_prompt = None;
+        self.turn_running = false;
+        self.activity_started_at = None;
+        self.started_turn_count = 0;
+        self.completed_turn_count = 0;
+        self.objective = None;
+        self.last_agent_message = None;
+        self.last_turn_diff = None;
+        self.last_token_usage = None;
+        self.last_status_line = None;
+        self.active_personality = None;
+        self.active_collaboration_mode = None;
+    }
+
+    pub(crate) fn take_pending_attachments(&mut self) -> (Vec<String>, Vec<String>) {
+        let local = std::mem::take(&mut self.pending_local_images);
+        let remote = std::mem::take(&mut self.pending_remote_images);
+        (local, remote)
+    }
+}
+
+pub(crate) fn thread_id(state: &AppState) -> Result<&str> {
+    state
+        .thread_id
+        .as_deref()
+        .context("no active thread; wait for initialization or use :new")
+}
+
+pub(crate) fn get_string<'a>(value: &'a Value, path: &[&str]) -> Option<&'a str> {
+    let mut current = value;
+    for segment in path {
+        current = current.get(*segment)?;
+    }
+    current.as_str()
+}
+
+pub(crate) fn summarize_text(text: &str) -> String {
+    const LIMIT: usize = 120;
+    let single_line = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if single_line.chars().count() <= LIMIT {
+        single_line
+    } else {
+        let truncated = single_line
+            .chars()
+            .take(LIMIT.saturating_sub(1))
+            .collect::<String>();
+        format!("{truncated}…")
+    }
+}
+
+pub(crate) fn emit_status_line(
+    _output: &mut Output,
+    state: &mut AppState,
+    line: String,
+) -> Result<()> {
+    if state.last_status_line.as_deref() == Some(line.as_str()) {
+        return Ok(());
+    }
+    state.last_status_line = Some(line);
+    Ok(())
+}
+
+pub(crate) fn buffer_item_delta(buffers: &mut HashMap<String, String>, params: &Value) {
+    let Some(item_id) = get_string(params, &["itemId"]) else {
+        return;
+    };
+    let Some(delta) = get_string(params, &["delta"]) else {
+        return;
+    };
+    buffers
+        .entry(item_id.to_string())
+        .and_modify(|existing| existing.push_str(delta))
+        .or_insert_with(|| delta.to_string());
+}
+
+pub(crate) fn buffer_process_delta(
+    buffers: &mut HashMap<String, ProcessOutputBuffer>,
+    params: &Value,
+) {
+    let Some(process_id) = get_string(params, &["processId"]) else {
+        return;
+    };
+    let Some(encoded) = get_string(params, &["deltaBase64"]) else {
+        return;
+    };
+    let Ok(decoded) = base64::engine::general_purpose::STANDARD.decode(encoded) else {
+        return;
+    };
+    let text = String::from_utf8_lossy(&decoded);
+    let stream = get_string(params, &["stream"]).unwrap_or("stdout");
+    let buffer = buffers.entry(process_id.to_string()).or_default();
+    match stream {
+        "stderr" => buffer.stderr.push_str(&text),
+        _ => buffer.stdout.push_str(&text),
+    }
+}
+
+pub(crate) fn canonicalize_or_keep(path: &str) -> String {
+    std::fs::canonicalize(path)
+        .ok()
+        .and_then(|value| value.to_str().map(ToOwned::to_owned))
+        .unwrap_or_else(|| path.to_string())
+}

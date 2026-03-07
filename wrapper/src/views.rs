@@ -6,13 +6,13 @@ use serde_json::json;
 
 use super::Cli;
 use super::approval_policy;
-use super::get_string;
-use super::summarize_text;
 use super::thread_sandbox_mode;
 use super::turn_sandbox_policy;
 use crate::input::AppCatalogEntry;
 use crate::input::SkillCatalogEntry;
 use crate::session::extract_models;
+use crate::state::get_string;
+use crate::state::summarize_text;
 
 pub(crate) fn render_command_completion(
     command: &str,

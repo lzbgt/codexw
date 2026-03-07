@@ -7,7 +7,6 @@ use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
 
-use super::AppState;
 use super::Cli;
 use crate::approval_policy;
 use crate::input::ParsedInput;
@@ -18,6 +17,7 @@ use crate::session::CollaborationModeAction;
 use crate::session::ModelsAction;
 use crate::session::current_collaboration_mode_value;
 use crate::shell_program;
+use crate::state::AppState;
 use crate::thread_sandbox_mode;
 use crate::turn_sandbox_policy;
 
