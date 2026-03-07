@@ -2144,53 +2144,9 @@ fn handle_command(
 
     match command {
         "help" | "h" => {
-            output.line_stderr(":help or /help             show commands")?;
-            output.line_stderr(":quit or /quit             exit codexw")?;
-            output.line_stderr(":new or /new               start a new thread")?;
-            output.line_stderr(":resume or /resume <id>    resume a specific thread")?;
-            output.line_stderr(":fork or /fork             fork the current thread")?;
-            output.line_stderr(":compact or /compact       compact the current thread history")?;
-            output.line_stderr(
-                ":review or /review [text]  review current changes or custom target",
-            )?;
-            output.line_stderr(
-                ":clear or /clear           clear the terminal and start a new thread",
-            )?;
-            output.line_stderr(":copy or /copy             copy the latest assistant reply")?;
-            output.line_stderr(":rename or /rename <name>  rename the current thread")?;
-            output.line_stderr(":apps or /apps             list known app mentions")?;
-            output.line_stderr(":skills or /skills         list known skills")?;
-            output.line_stderr(":models or /models         list available models")?;
-            output.line_stderr(":model or /model           alias for /models")?;
-            output.line_stderr(":mcp or /mcp               list MCP servers and tool counts")?;
-            output.line_stderr(
-                ":clean or /clean           clean background terminals for this thread",
-            )?;
-            output.line_stderr(":threads or /threads [q]   list recent threads in this cwd")?;
-            output.line_stderr(
-                ":mention or /mention [q|n] seed @, search files, or insert a cached match",
-            )?;
-            output.line_stderr(":diff or /diff             show the latest turn diff snapshot")?;
-            output.line_stderr(
-                ":attach-image <path>       queue a local image for the next submit",
-            )?;
-            output.line_stderr(
-                ":attach-url <url>          queue a remote image URL for the next submit",
-            )?;
-            output.line_stderr(":attachments or /attachments show queued attachments")?;
-            output.line_stderr(":clear-attachments         clear queued attachments")?;
-            output.line_stderr(":auto or /auto on|off      toggle auto-continue")?;
-            output.line_stderr(":interrupt or /interrupt   interrupt the active turn")?;
-            output.line_stderr(":status or /status         show current client state")?;
-            output.line_stderr(":statusline                alias for /status")?;
-            output.line_stderr(":settings                  alias for /debug-config")?;
-            output.line_stderr(":feedback <category> [reason] [--logs] submit feedback")?;
-            output.line_stderr(":logout                    sign out the current Codex account")?;
-            output.line_stderr(
-                ":approvals or /permissions show current automation/permission posture",
-            )?;
-            output
-                .line_stderr(":debug-config              read effective config from app-server")?;
+            for line in builtin_help_lines() {
+                output.line_stderr(line)?;
+            }
             output.line_stderr(
                 "!<command>           run a local shell command via app-server command/exec",
             )?;
@@ -2723,9 +2679,8 @@ fn handle_tab_completion(
 }
 
 fn builtin_command_description(command: &str) -> &'static str {
-    builtin_command_entries()
-        .iter()
-        .find_map(|(name, description)| (*name == command).then_some(*description))
+    builtin_command_entry(command)
+        .map(|entry| entry.description)
         .unwrap_or("command")
 }
 
@@ -3063,6 +3018,19 @@ fn longest_common_prefix<S: AsRef<str>>(values: &[S]) -> String {
     prefix
 }
 
+#[derive(Clone, Copy)]
+struct BuiltinCommandEntry {
+    name: &'static str,
+    help_syntax: &'static str,
+    description: &'static str,
+}
+
+fn builtin_command_entry(command: &str) -> Option<&'static BuiltinCommandEntry> {
+    builtin_command_entries()
+        .iter()
+        .find(|entry| entry.name == command)
+}
+
 fn builtin_command_names() -> &'static [&'static str] {
     const NAMES: &[&str] = &[
         "model",
@@ -3118,81 +3086,260 @@ fn builtin_command_names() -> &'static [&'static str] {
     NAMES
 }
 
-fn builtin_command_entries() -> &'static [(&'static str, &'static str)] {
-    const ENTRIES: &[(&str, &str)] = &[
-        ("model", "choose what model and reasoning effort to use"),
-        ("models", "list available models"),
-        (
-            "fast",
-            "toggle Fast mode to enable fastest inference at 2X plan usage",
-        ),
-        ("approvals", "show automation and permission posture"),
-        ("permissions", "show automation and permission posture"),
-        (
-            "setup-default-sandbox",
-            "native sandbox setup workflow not yet ported",
-        ),
-        (
-            "sandbox-add-read-dir",
-            "native sandbox read-dir workflow not yet ported",
-        ),
-        ("experimental", "toggle experimental features"),
-        (
-            "skills",
-            "use skills to improve how Codex performs specific tasks",
-        ),
-        ("review", "review current changes and find issues"),
-        ("rename", "rename the current thread"),
-        ("new", "start a new thread"),
-        ("resume", "resume a saved thread"),
-        ("fork", "fork the current thread"),
-        (
-            "init",
-            "create an AGENTS.md file with instructions for Codex",
-        ),
-        (
-            "compact",
-            "summarize conversation to prevent hitting the context limit",
-        ),
-        ("plan", "switch to plan mode"),
-        ("collab", "change collaboration mode"),
-        ("agent", "switch the active agent thread"),
-        ("multi-agents", "switch the active agent thread"),
-        ("diff", "show the latest turn diff snapshot"),
-        ("copy", "copy the latest assistant reply"),
-        ("mention", "insert or search mentionable files"),
-        (
-            "status",
-            "show current session configuration and token usage",
-        ),
-        (
-            "debug-config",
-            "show config layers and requirement sources for debugging",
-        ),
-        ("statusline", "show current session status"),
-        ("theme", "choose a syntax highlighting theme"),
-        ("mcp", "list MCP servers and tools"),
-        ("apps", "list known app mentions"),
-        ("logout", "log out of Codex"),
-        ("quit", "exit CodexW"),
-        ("exit", "exit CodexW"),
-        ("feedback", "submit feedback through app-server"),
-        ("rollout", "native rollout-path display not yet ported"),
-        ("ps", "list background terminals"),
-        ("clean", "stop background terminals for the thread"),
-        ("clear", "clear terminal and start a new thread"),
-        ("personality", "choose a communication style for Codex"),
-        ("realtime", "experimental realtime workflow"),
-        ("settings", "show effective backend config"),
-        ("threads", "list recent threads"),
-        ("auto", "toggle auto-continue"),
-        ("attach-image", "queue a local image for next submit"),
-        ("attach", "queue a local image for next submit"),
-        ("attach-url", "queue a remote image for next submit"),
-        ("attachments", "show queued attachments"),
-        ("clear-attachments", "clear queued attachments"),
-        ("interrupt", "interrupt the active turn or command"),
-        ("help", "show commands"),
+fn builtin_help_lines() -> Vec<String> {
+    builtin_command_entries()
+        .iter()
+        .map(|entry| format!(":{:<26} {}", entry.help_syntax, entry.description))
+        .collect()
+}
+
+fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
+    const ENTRIES: &[BuiltinCommandEntry] = &[
+        BuiltinCommandEntry {
+            name: "model",
+            help_syntax: "model",
+            description: "choose what model and reasoning effort to use",
+        },
+        BuiltinCommandEntry {
+            name: "models",
+            help_syntax: "models",
+            description: "list available models",
+        },
+        BuiltinCommandEntry {
+            name: "fast",
+            help_syntax: "fast",
+            description: "toggle Fast mode to enable fastest inference at 2X plan usage",
+        },
+        BuiltinCommandEntry {
+            name: "approvals",
+            help_syntax: "approvals or /permissions",
+            description: "show automation and permission posture",
+        },
+        BuiltinCommandEntry {
+            name: "permissions",
+            help_syntax: "permissions or /approvals",
+            description: "show automation and permission posture",
+        },
+        BuiltinCommandEntry {
+            name: "setup-default-sandbox",
+            help_syntax: "setup-default-sandbox",
+            description: "native sandbox setup workflow not yet ported",
+        },
+        BuiltinCommandEntry {
+            name: "sandbox-add-read-dir",
+            help_syntax: "sandbox-add-read-dir",
+            description: "native sandbox read-dir workflow not yet ported",
+        },
+        BuiltinCommandEntry {
+            name: "experimental",
+            help_syntax: "experimental",
+            description: "toggle experimental features",
+        },
+        BuiltinCommandEntry {
+            name: "skills",
+            help_syntax: "skills",
+            description: "use skills to improve how Codex performs specific tasks",
+        },
+        BuiltinCommandEntry {
+            name: "review",
+            help_syntax: "review [instructions]",
+            description: "review current changes and find issues",
+        },
+        BuiltinCommandEntry {
+            name: "rename",
+            help_syntax: "rename <name>",
+            description: "rename the current thread",
+        },
+        BuiltinCommandEntry {
+            name: "new",
+            help_syntax: "new",
+            description: "start a new thread",
+        },
+        BuiltinCommandEntry {
+            name: "resume",
+            help_syntax: "resume [thread-id|n]",
+            description: "resume a saved thread",
+        },
+        BuiltinCommandEntry {
+            name: "fork",
+            help_syntax: "fork",
+            description: "fork the current thread",
+        },
+        BuiltinCommandEntry {
+            name: "init",
+            help_syntax: "init",
+            description: "create an AGENTS.md file with instructions for Codex",
+        },
+        BuiltinCommandEntry {
+            name: "compact",
+            help_syntax: "compact",
+            description: "summarize conversation to prevent hitting the context limit",
+        },
+        BuiltinCommandEntry {
+            name: "plan",
+            help_syntax: "plan",
+            description: "switch to plan mode",
+        },
+        BuiltinCommandEntry {
+            name: "collab",
+            help_syntax: "collab",
+            description: "change collaboration mode",
+        },
+        BuiltinCommandEntry {
+            name: "agent",
+            help_syntax: "agent",
+            description: "switch the active agent thread",
+        },
+        BuiltinCommandEntry {
+            name: "multi-agents",
+            help_syntax: "multi-agents",
+            description: "switch the active agent thread",
+        },
+        BuiltinCommandEntry {
+            name: "diff",
+            help_syntax: "diff",
+            description: "show the latest turn diff snapshot",
+        },
+        BuiltinCommandEntry {
+            name: "copy",
+            help_syntax: "copy",
+            description: "copy the latest assistant reply",
+        },
+        BuiltinCommandEntry {
+            name: "mention",
+            help_syntax: "mention [query|n]",
+            description: "insert or search mentionable files",
+        },
+        BuiltinCommandEntry {
+            name: "status",
+            help_syntax: "status",
+            description: "show current session configuration and token usage",
+        },
+        BuiltinCommandEntry {
+            name: "debug-config",
+            help_syntax: "debug-config",
+            description: "show config layers and requirement sources for debugging",
+        },
+        BuiltinCommandEntry {
+            name: "statusline",
+            help_syntax: "statusline",
+            description: "show current session status",
+        },
+        BuiltinCommandEntry {
+            name: "theme",
+            help_syntax: "theme",
+            description: "choose a syntax highlighting theme",
+        },
+        BuiltinCommandEntry {
+            name: "mcp",
+            help_syntax: "mcp",
+            description: "list MCP servers and tools",
+        },
+        BuiltinCommandEntry {
+            name: "apps",
+            help_syntax: "apps",
+            description: "list known app mentions",
+        },
+        BuiltinCommandEntry {
+            name: "logout",
+            help_syntax: "logout",
+            description: "log out of Codex",
+        },
+        BuiltinCommandEntry {
+            name: "quit",
+            help_syntax: "quit",
+            description: "exit CodexW",
+        },
+        BuiltinCommandEntry {
+            name: "exit",
+            help_syntax: "exit",
+            description: "exit CodexW",
+        },
+        BuiltinCommandEntry {
+            name: "feedback",
+            help_syntax: "feedback <category> [reason] [--logs|--no-logs]",
+            description: "submit feedback through app-server",
+        },
+        BuiltinCommandEntry {
+            name: "rollout",
+            help_syntax: "rollout",
+            description: "native rollout-path display not yet ported",
+        },
+        BuiltinCommandEntry {
+            name: "ps",
+            help_syntax: "ps",
+            description: "list background terminals",
+        },
+        BuiltinCommandEntry {
+            name: "clean",
+            help_syntax: "clean",
+            description: "stop background terminals for the thread",
+        },
+        BuiltinCommandEntry {
+            name: "clear",
+            help_syntax: "clear",
+            description: "clear terminal and start a new thread",
+        },
+        BuiltinCommandEntry {
+            name: "personality",
+            help_syntax: "personality",
+            description: "choose a communication style for Codex",
+        },
+        BuiltinCommandEntry {
+            name: "realtime",
+            help_syntax: "realtime",
+            description: "experimental realtime workflow",
+        },
+        BuiltinCommandEntry {
+            name: "settings",
+            help_syntax: "settings",
+            description: "show effective backend config",
+        },
+        BuiltinCommandEntry {
+            name: "threads",
+            help_syntax: "threads [query]",
+            description: "list recent threads",
+        },
+        BuiltinCommandEntry {
+            name: "auto",
+            help_syntax: "auto on|off",
+            description: "toggle auto-continue",
+        },
+        BuiltinCommandEntry {
+            name: "attach-image",
+            help_syntax: "attach-image <path>",
+            description: "queue a local image for next submit",
+        },
+        BuiltinCommandEntry {
+            name: "attach",
+            help_syntax: "attach <path>",
+            description: "queue a local image for next submit",
+        },
+        BuiltinCommandEntry {
+            name: "attach-url",
+            help_syntax: "attach-url <url>",
+            description: "queue a remote image for next submit",
+        },
+        BuiltinCommandEntry {
+            name: "attachments",
+            help_syntax: "attachments",
+            description: "show queued attachments",
+        },
+        BuiltinCommandEntry {
+            name: "clear-attachments",
+            help_syntax: "clear-attachments",
+            description: "clear queued attachments",
+        },
+        BuiltinCommandEntry {
+            name: "interrupt",
+            help_syntax: "interrupt",
+            description: "interrupt the active turn or command",
+        },
+        BuiltinCommandEntry {
+            name: "help",
+            help_syntax: "help",
+            description: "show commands",
+        },
     ];
     ENTRIES
 }
@@ -4427,6 +4574,7 @@ mod tests {
     use super::Cli;
     use super::build_tool_user_input_response;
     use super::builtin_command_names;
+    use super::builtin_help_lines;
     use super::choose_command_approval_decision;
     use super::extract_file_search_paths;
     use super::extract_thread_ids;
@@ -4747,6 +4895,16 @@ mod tests {
         let new_pos = rendered.find("/new").expect("new should be listed");
         assert!(model_pos < review_pos);
         assert!(review_pos < new_pos);
+    }
+
+    #[test]
+    fn help_lines_are_derived_from_command_metadata() {
+        let rendered = builtin_help_lines().join("\n");
+        assert!(rendered.contains(":resume [thread-id|n]"));
+        assert!(rendered.contains("resume a saved thread"));
+        assert!(rendered.contains(":plan"));
+        assert!(rendered.contains("switch to plan mode"));
+        assert!(rendered.contains(":approvals or /permissions"));
     }
 
     #[test]

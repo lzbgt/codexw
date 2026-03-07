@@ -131,6 +131,8 @@ Useful interactive commands:
 - `:debug-config`
 - `:quit` or `/quit`
 
+`/help` now renders the full built-in command catalog from the same metadata used by slash completion, so recognized native-style commands such as `/fast`, `/plan`, `/ps`, `/realtime`, `/theme`, `/experimental`, and related workflows appear there even when `codexw` can currently only explain their limitation rather than reproduce the native popup UI.
+
 Submission features:
 
 - Plain input while idle starts a new turn.
