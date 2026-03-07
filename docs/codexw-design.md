@@ -168,6 +168,7 @@ Auto-continue is explicit and cooperative.
 - The assistant is expected to end with `AUTO_MODE_NEXT=continue` or `AUTO_MODE_NEXT=stop`.
 - `prompt.rs` parses only the final non-empty line to detect an explicit stop marker.
 - Missing marker defaults to continue.
+- The synthesized continuation prompt explicitly invokes `$session-autopilot` so the model-side continuation policy lives in the skill as well as in the runtime contract.
 - The next prompt is synthesized from:
   - the stored session objective
   - the latest assistant response

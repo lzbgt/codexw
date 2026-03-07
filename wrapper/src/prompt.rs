@@ -8,8 +8,10 @@ pub fn parse_auto_mode_stop(message: &str) -> bool {
 }
 
 pub fn build_continue_prompt(objective: Option<&str>, last_response: &str) -> String {
-    let mut prompt =
-        String::from("Use the most recent context and proceed without waiting for user input.\n\n");
+    let mut prompt = String::from(
+        "Use the most recent context and proceed without waiting for user input.\n\n\
+Use $session-autopilot for the end-of-turn continuation policy.\n\n",
+    );
 
     if let Some(objective) = objective.filter(|value| !value.trim().is_empty()) {
         prompt.push_str("Session objective:\n");
@@ -55,6 +57,7 @@ mod tests {
         let prompt = build_continue_prompt(Some("Ship the feature"), "Implemented part A.");
         assert!(prompt.contains("Ship the feature"));
         assert!(prompt.contains("Implemented part A."));
+        assert!(prompt.contains("$session-autopilot"));
         assert!(prompt.contains("AUTO_MODE_NEXT=continue"));
         assert!(prompt.contains("AUTO_MODE_NEXT=stop"));
     }
