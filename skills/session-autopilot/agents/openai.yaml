@@ -1,0 +1,4 @@
+interface:
+  display_name: "Session Autopilot"
+  short_description: "Continue repo work until tasks are done"
+  default_prompt: "Use $session-autopilot to continue the current repo session until no concrete task remains."

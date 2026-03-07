@@ -4,6 +4,8 @@
 
 It does not patch Codex. It uses the Homebrew-installed vanilla `codex` binary as the backend and uses the upstream source clone under `ref/` only as protocol reference material.
 
+The repo also includes a companion skill at `skills/session-autopilot/`. That skill does not try to monitor session lifecycle by itself; instead it defines the cooperative end-of-turn policy that `codexw` can honor with its auto-continue loop.
+
 ## Architecture
 
 - `codex` runs `app-server` over `stdio`
