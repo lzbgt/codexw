@@ -147,6 +147,7 @@ enum PendingRequest {
     LoadSkills,
     LoadAccount,
     LogoutAccount,
+    UploadFeedback { classification: String },
     LoadRateLimits,
     LoadModels,
     LoadConfig,
@@ -736,6 +737,36 @@ fn send_logout_account(writer: &mut ChildStdin, state: &mut AppState) -> Result<
             id: request_id,
             method: "account/logout",
             params: json!({}),
+        },
+    )
+}
+
+fn send_feedback_upload(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    classification: String,
+    reason: Option<String>,
+    thread_id: Option<String>,
+    include_logs: bool,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::UploadFeedback {
+            classification: classification.clone(),
+        },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "feedback/upload",
+            params: json!({
+                "classification": classification,
+                "reason": reason,
+                "threadId": thread_id,
+                "includeLogs": include_logs,
+            }),
         },
     )
 }
@@ -1427,6 +1458,14 @@ fn handle_response(
             send_load_account(writer, state)?;
             send_load_rate_limits(writer, state)?;
         }
+        PendingRequest::UploadFeedback { classification } => {
+            let tracking_thread = get_string(&response.result, &["threadId"]).unwrap_or("-");
+            output.line_stderr(format!(
+                "[feedback] submitted {} feedback; tracking thread {}",
+                summarize_text(&classification),
+                tracking_thread
+            ))?;
+        }
         PendingRequest::LoadRateLimits => {
             state.rate_limits = response.result.get("rateLimits").cloned();
         }
@@ -1519,6 +1558,16 @@ fn handle_response_error(
         }
         Some(PendingRequest::LogoutAccount) => {
             output.line_stderr("[session] logout failed")?;
+            output.line_stderr(format!(
+                "[server-error] {}",
+                serde_json::to_string_pretty(&error)?
+            ))?;
+        }
+        Some(PendingRequest::UploadFeedback { classification }) => {
+            output.line_stderr(format!(
+                "[feedback] failed to submit {} feedback",
+                summarize_text(&classification)
+            ))?;
             output.line_stderr(format!(
                 "[server-error] {}",
                 serde_json::to_string_pretty(&error)?
@@ -2135,6 +2184,7 @@ fn handle_command(
             output.line_stderr(":status or /status         show current client state")?;
             output.line_stderr(":statusline                alias for /status")?;
             output.line_stderr(":settings                  alias for /debug-config")?;
+            output.line_stderr(":feedback <category> [reason] [--logs] submit feedback")?;
             output.line_stderr(":logout                    sign out the current Codex account")?;
             output.line_stderr(
                 ":approvals or /permissions show current automation/permission posture",
@@ -2445,6 +2495,29 @@ fn handle_command(
             send_load_config(writer, state)?;
             Ok(true)
         }
+        "feedback" => {
+            let args = parts.map(str::to_string).collect::<Vec<_>>();
+            let Some(parsed) = parse_feedback_args(&args) else {
+                output.line_stderr(
+                    "[session] usage: :feedback <bug|bad_result|good_result|safety_check|other> [reason] [--logs|--no-logs]",
+                )?;
+                return Ok(true);
+            };
+            let current_thread = state.thread_id.clone();
+            output.line_stderr(format!(
+                "[feedback] submitting {} feedback",
+                summarize_text(&parsed.classification)
+            ))?;
+            send_feedback_upload(
+                writer,
+                state,
+                parsed.classification,
+                parsed.reason,
+                current_thread,
+                parsed.include_logs,
+            )?;
+            Ok(true)
+        }
         "logout" => {
             output.line_stderr("[session] logging out")?;
             send_logout_account(writer, state)?;
@@ -2461,24 +2534,85 @@ fn handle_command(
         | "agent"
         | "multi-agents"
         | "theme"
-        | "realtime"
-        | "feedback"
         | "rollout"
         | "experimental"
         | "sandbox-add-read-dir"
         | "setup-default-sandbox"
-        | "init"
-        | "ps"
-        | "plan" => {
+        | "init" => {
             output.line_stderr(format!(
                 "[session] /{command} is recognized, but this inline client does not yet implement the native Codex popup/workflow for it"
             ))?;
+            Ok(true)
+        }
+        "realtime" => {
+            output.line_stderr(
+                "[session] /realtime is not implemented in codexw yet; app-server exposes realtime methods, but this client does not yet provide the audio/session UI needed to use them cleanly",
+            )?;
+            Ok(true)
+        }
+        "ps" => {
+            output.line_stderr(
+                "[session] /ps is not implemented in codexw because app-server exposes background terminal cleanup but not a background-terminal listing surface like the native TUI has internally; /clean is available",
+            )?;
+            Ok(true)
+        }
+        "plan" => {
+            output.line_stderr(
+                "[session] /plan is not implemented in codexw yet; native Codex switches collaboration mode internally, and app-server does not expose that mode control directly to this client",
+            )?;
             Ok(true)
         }
         _ => {
             output.line_stderr(format!("[session] unknown command: {command}"))?;
             Ok(true)
         }
+    }
+}
+
+struct FeedbackCommand {
+    classification: String,
+    reason: Option<String>,
+    include_logs: bool,
+}
+
+fn parse_feedback_args(args: &[String]) -> Option<FeedbackCommand> {
+    if args.is_empty() {
+        return None;
+    }
+    let mut include_logs = false;
+    let mut filtered = Vec::new();
+    for arg in args {
+        match arg.as_str() {
+            "--logs" => include_logs = true,
+            "--no-logs" => include_logs = false,
+            _ => filtered.push(arg.as_str()),
+        }
+    }
+    let Some(first) = filtered.first() else {
+        return None;
+    };
+    let classification = normalize_feedback_classification(first)?;
+    let reason = join_prompt(
+        &filtered[1..]
+            .iter()
+            .map(|part| (*part).to_string())
+            .collect::<Vec<_>>(),
+    );
+    Some(FeedbackCommand {
+        classification,
+        reason,
+        include_logs,
+    })
+}
+
+fn normalize_feedback_classification(raw: &str) -> Option<String> {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "bug" => Some("bug".to_string()),
+        "bad" | "bad-result" | "bad_result" => Some("bad_result".to_string()),
+        "good" | "good-result" | "good_result" => Some("good_result".to_string()),
+        "safety" | "safety-check" | "safety_check" => Some("safety_check".to_string()),
+        "other" => Some("other".to_string()),
+        _ => None,
     }
 }
 
@@ -4081,6 +4215,7 @@ mod tests {
     use super::is_builtin_command;
     use super::normalize_cli;
     use super::params_auto_approval_result;
+    use super::parse_feedback_args;
     use super::prompt_accepts_input;
     use super::prompt_is_visible;
     use super::quote_if_needed;
@@ -4160,6 +4295,7 @@ mod tests {
         assert!(is_builtin_command("compact"));
         assert!(is_builtin_command("review current changes"));
         assert!(is_builtin_command("permissions"));
+        assert!(is_builtin_command("feedback bug something broke"));
         assert!(is_builtin_command("logout"));
         assert!(is_builtin_command("mcp"));
         assert!(is_builtin_command("threads"));
@@ -4417,5 +4553,30 @@ mod tests {
         });
         assert_eq!(cli.resume.as_deref(), Some("thread-123"));
         assert_eq!(cli.prompt, vec!["continue".to_string(), "work".to_string()]);
+    }
+
+    #[test]
+    fn feedback_args_parse_category_reason_and_logs() {
+        let parsed = parse_feedback_args(&[
+            "bug".to_string(),
+            "command".to_string(),
+            "output".to_string(),
+            "was".to_string(),
+            "wrong".to_string(),
+            "--logs".to_string(),
+        ])
+        .expect("expected feedback args to parse");
+        assert_eq!(parsed.classification, "bug");
+        assert_eq!(parsed.reason.as_deref(), Some("command output was wrong"));
+        assert!(parsed.include_logs);
+    }
+
+    #[test]
+    fn feedback_args_accept_aliases() {
+        let parsed =
+            parse_feedback_args(&["good".to_string()]).expect("expected feedback args to parse");
+        assert_eq!(parsed.classification, "good_result");
+        assert_eq!(parsed.reason, None);
+        assert!(!parsed.include_logs);
     }
 }

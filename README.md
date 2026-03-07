@@ -125,6 +125,7 @@ Useful interactive commands:
 - `:status` or `/status`
 - `:statusline`
 - `:settings`
+- `:feedback <category> [reason] [--logs]`
 - `:logout`
 - `:approvals` or `/permissions`
 - `:debug-config`
@@ -143,6 +144,7 @@ Submission features:
 - `:diff` prints the latest aggregated turn diff snapshot emitted by app-server.
 - `:apps`, `:skills`, `:models`, `:mcp`, and `:threads` expose the most useful app-server discovery surfaces directly from the inline client.
 - `:settings` loads the effective backend config snapshot, `:statusline` aliases `:status`, and `:logout` signs out through app-server then refreshes account/rate-limit state.
+- `:feedback <category> [reason] [--logs]` submits feedback through app-server. Supported categories match upstream Codex classifications: `bug`, `bad_result`, `good_result`, `safety_check`, and `other`. Short aliases like `good`, `bad`, and `safety` are accepted.
 - `:review` with no args reviews uncommitted changes; with args it runs a custom inline review request through `review/start`.
 - `:compact`, `:fork`, `:rename`, and `:clean` are backed by the corresponding app-server thread APIs.
 - Raw tool mentions are resolved against the live app and skill catalogs loaded from app-server. Plugin mentions are only auto-resolved when the connected Codex build exposes plugin discovery.
@@ -163,5 +165,5 @@ Submission features:
 - Unknown app-server requests now receive an explicit JSON-RPC "method not implemented" error instead of being ignored, which avoids hangs from unanswered server requests.
 - Full file contents are not always available from the app-server protocol. The client shows full command lines, command output, diffs, and file-change payloads that Codex emits.
 - `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn, terminates an active `!command`, and only exits when the client is idle with no active draft or background work.
-- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs. The client now recognizes those commands explicitly rather than treating them as unknown, but popup-heavy workflows are still not fully ported.
+- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs. The client now recognizes those commands explicitly rather than treating them as unknown, and where app-server does not expose the necessary backend state cleanly, the message explains that limitation directly.
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.
