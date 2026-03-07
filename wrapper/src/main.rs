@@ -153,6 +153,7 @@ enum PendingRequest {
     LoadModels,
     LoadConfig,
     LoadMcpServers,
+    LoadCollaborationModes { action: CollaborationModeAction },
     ListThreads { search_term: Option<String> },
     StartThread { initial_prompt: Option<String> },
     ResumeThread { initial_prompt: Option<String> },
@@ -173,6 +174,62 @@ enum PendingRequest {
 struct ProcessOutputBuffer {
     stdout: String,
     stderr: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CollaborationModePreset {
+    name: String,
+    mode_kind: Option<String>,
+    model: Option<String>,
+    reasoning_effort: Option<Option<String>>,
+}
+
+impl CollaborationModePreset {
+    fn is_plan(&self) -> bool {
+        self.mode_kind.as_deref() == Some("plan")
+    }
+
+    fn summary(&self) -> String {
+        let mut parts = Vec::new();
+        if let Some(mode_kind) = self.mode_kind.as_deref() {
+            parts.push(format!("mode={mode_kind}"));
+        }
+        if let Some(model) = self.model.as_deref() {
+            parts.push(format!("model={model}"));
+        }
+        match self.reasoning_effort.as_ref() {
+            Some(Some(effort)) => parts.push(format!("effort={effort}")),
+            Some(None) => parts.push("effort=default".to_string()),
+            None => {}
+        }
+
+        if parts.is_empty() {
+            self.name.clone()
+        } else {
+            format!("{} ({})", self.name, parts.join(", "))
+        }
+    }
+
+    fn turn_start_value(&self) -> Option<Value> {
+        let mode = self.mode_kind.as_deref()?;
+        let model = self.model.as_deref()?;
+        Some(json!({
+            "mode": mode,
+            "settings": {
+                "model": model,
+                "reasoning_effort": self.reasoning_effort.clone().flatten(),
+                "developer_instructions": Value::Null,
+            }
+        }))
+    }
+}
+
+#[derive(Debug, Clone)]
+enum CollaborationModeAction {
+    CacheOnly,
+    ShowList,
+    TogglePlan,
+    SetMode(String),
 }
 
 struct AppState {
@@ -199,6 +256,8 @@ struct AppState {
     apps: Vec<AppCatalogEntry>,
     plugins: Vec<PluginCatalogEntry>,
     skills: Vec<SkillCatalogEntry>,
+    collaboration_modes: Vec<CollaborationModePreset>,
+    active_collaboration_mode: Option<CollaborationModePreset>,
     last_listed_thread_ids: Vec<String>,
     last_file_search_paths: Vec<String>,
     last_status_line: Option<String>,
@@ -233,6 +292,8 @@ impl AppState {
             apps: Vec::new(),
             plugins: Vec::new(),
             skills: Vec::new(),
+            collaboration_modes: Vec::new(),
+            active_collaboration_mode: None,
             last_listed_thread_ids: Vec::new(),
             last_file_search_paths: Vec::new(),
             last_status_line: None,
@@ -268,6 +329,7 @@ impl AppState {
         self.last_turn_diff = None;
         self.last_token_usage = None;
         self.last_status_line = None;
+        self.active_collaboration_mode = None;
     }
 
     fn take_pending_attachments(&mut self) -> (Vec<String>, Vec<String>) {
@@ -861,6 +923,26 @@ fn send_load_mcp_servers(writer: &mut ChildStdin, state: &mut AppState) -> Resul
     )
 }
 
+fn send_load_collaboration_modes(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    action: CollaborationModeAction,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::LoadCollaborationModes { action },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "collaborationMode/list",
+            params: json!({}),
+        },
+    )
+}
+
 fn send_list_threads(
     writer: &mut ChildStdin,
     state: &mut AppState,
@@ -1122,20 +1204,25 @@ fn send_turn_start(
         state.objective = Some(submission.display_text.clone());
     }
 
+    let mut params = json!({
+        "threadId": thread_id,
+        "input": submission.items,
+        "cwd": resolved_cwd,
+        "approvalPolicy": approval_policy(cli),
+        "sandboxPolicy": turn_sandbox_policy(cli),
+        "model": cli.model,
+        "summary": reasoning_summary(cli),
+    });
+    if let Some(collaboration_mode) = current_collaboration_mode_value(state) {
+        params["collaborationMode"] = collaboration_mode;
+    }
+
     send_json(
         writer,
         &OutgoingRequest {
             id: request_id,
             method: "turn/start",
-            params: json!({
-                "threadId": thread_id,
-                "input": submission.items,
-                "cwd": resolved_cwd,
-                "approvalPolicy": approval_policy(cli),
-                "sandboxPolicy": turn_sandbox_policy(cli),
-                "model": cli.model,
-                "summary": reasoning_summary(cli),
-            }),
+            params,
         },
     )
 }
@@ -1336,6 +1423,7 @@ fn handle_response(
             }
             send_load_apps(writer, state)?;
             send_load_skills(writer, state, resolved_cwd)?;
+            send_load_collaboration_modes(writer, state, CollaborationModeAction::CacheOnly)?;
             send_load_account(writer, state)?;
             send_load_rate_limits(writer, state)?;
         }
@@ -1498,6 +1586,10 @@ fn handle_response(
         PendingRequest::LoadModels => {
             output.block_stdout("Models", &render_models_list(&response.result))?;
         }
+        PendingRequest::LoadCollaborationModes { action } => {
+            state.collaboration_modes = extract_collaboration_mode_presets(&response.result);
+            apply_collaboration_mode_action(state, action, output)?;
+        }
         PendingRequest::LoadConfig => {
             output.block_stdout("Config", &render_config_snapshot(&response.result))?;
         }
@@ -1581,6 +1673,17 @@ fn handle_response_error(
         }
         Some(PendingRequest::LoadAccount) => {
             output.line_stderr("[session] account details unavailable from app-server")?;
+        }
+        Some(PendingRequest::LoadCollaborationModes { action }) => {
+            if !matches!(action, CollaborationModeAction::CacheOnly) {
+                output.line_stderr(
+                    "[session] collaboration modes are unavailable from this app-server build",
+                )?;
+                output.line_stderr(format!(
+                    "[server-error] {}",
+                    serde_json::to_string_pretty(&error)?
+                ))?;
+            }
         }
         Some(PendingRequest::LogoutAccount) => {
             output.line_stderr("[session] logout failed")?;
@@ -2509,9 +2612,38 @@ fn handle_command(
             send_load_config(writer, state)?;
             Ok(true)
         }
+        "collab" => {
+            let args = parts.collect::<Vec<_>>();
+            if args.is_empty() {
+                send_load_collaboration_modes(writer, state, CollaborationModeAction::ShowList)?;
+                return Ok(true);
+            }
+            if state.turn_running {
+                output.line_stderr(
+                    "[session] cannot switch collaboration mode while a turn is running",
+                )?;
+                return Ok(true);
+            }
+            let selector = args.join(" ");
+            send_load_collaboration_modes(
+                writer,
+                state,
+                CollaborationModeAction::SetMode(selector),
+            )?;
+            Ok(true)
+        }
+        "plan" => {
+            if state.turn_running {
+                output.line_stderr(
+                    "[session] cannot switch collaboration mode while a turn is running",
+                )?;
+                return Ok(true);
+            }
+            send_load_collaboration_modes(writer, state, CollaborationModeAction::TogglePlan)?;
+            Ok(true)
+        }
         "fast"
         | "personality"
-        | "collab"
         | "agent"
         | "multi-agents"
         | "theme"
@@ -2534,12 +2666,6 @@ fn handle_command(
         "ps" => {
             output.line_stderr(
                 "[session] /ps is not implemented in codexw because app-server exposes background terminal cleanup but not a background-terminal listing surface like the native TUI has internally; /clean is available",
-            )?;
-            Ok(true)
-        }
-        "plan" => {
-            output.line_stderr(
-                "[session] /plan is not implemented in codexw yet; native Codex switches collaboration mode internally, and app-server does not expose that mode control directly to this client",
             )?;
             Ok(true)
         }
@@ -3201,12 +3327,12 @@ fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
         BuiltinCommandEntry {
             name: "plan",
             help_syntax: "plan",
-            description: "switch to plan mode",
+            description: "toggle plan collaboration mode",
         },
         BuiltinCommandEntry {
             name: "collab",
-            help_syntax: "collab",
-            description: "change collaboration mode",
+            help_syntax: "collab [name|mode|default]",
+            description: "list or change collaboration mode",
         },
         BuiltinCommandEntry {
             name: "agent",
@@ -3367,6 +3493,152 @@ fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
     ENTRIES
 }
 
+fn current_collaboration_mode_value(state: &AppState) -> Option<Value> {
+    state
+        .active_collaboration_mode
+        .as_ref()
+        .and_then(CollaborationModePreset::turn_start_value)
+}
+
+fn current_collaboration_mode_label(state: &AppState) -> Option<String> {
+    let preset = state.active_collaboration_mode.as_ref()?;
+    if preset.is_plan() {
+        Some("plan mode".to_string())
+    } else {
+        Some(format!("collab {}", preset.name))
+    }
+}
+
+fn summarize_active_collaboration_mode(state: &AppState) -> String {
+    state
+        .active_collaboration_mode
+        .as_ref()
+        .map(CollaborationModePreset::summary)
+        .unwrap_or_else(|| "default".to_string())
+}
+
+fn extract_collaboration_mode_presets(result: &Value) -> Vec<CollaborationModePreset> {
+    result
+        .get("data")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|item| {
+            let name = item.get("name")?.as_str()?.to_string();
+            let mode_kind = item.get("mode").and_then(Value::as_str).map(str::to_string);
+            let model = item
+                .get("model")
+                .and_then(Value::as_str)
+                .map(str::to_string);
+            let reasoning_effort = match item.get("reasoning_effort") {
+                Some(Value::String(value)) => Some(Some(value.to_string())),
+                Some(Value::Null) => Some(None),
+                _ => None,
+            };
+            Some(CollaborationModePreset {
+                name,
+                mode_kind,
+                model,
+                reasoning_effort,
+            })
+        })
+        .collect()
+}
+
+fn find_collaboration_mode_by_selector(
+    modes: &[CollaborationModePreset],
+    selector: &str,
+) -> Option<CollaborationModePreset> {
+    let normalized = selector.trim().to_ascii_lowercase();
+    modes
+        .iter()
+        .find(|preset| {
+            preset
+                .mode_kind
+                .as_deref()
+                .is_some_and(|mode| mode.eq_ignore_ascii_case(&normalized))
+                || preset.name.eq_ignore_ascii_case(&normalized)
+        })
+        .cloned()
+}
+
+fn render_collaboration_modes(state: &AppState) -> String {
+    let current = summarize_active_collaboration_mode(state);
+    if state.collaboration_modes.is_empty() {
+        return format!(
+            "current         {current}\nno collaboration mode presets available from app-server"
+        );
+    }
+
+    let mut lines = vec![
+        format!("current         {current}"),
+        "available presets".to_string(),
+    ];
+    for (index, preset) in state.collaboration_modes.iter().enumerate() {
+        lines.push(format!(" {:>2}. {}", index + 1, preset.summary()));
+    }
+    lines.push("Use /collab <name|mode> or /plan to switch.".to_string());
+    lines.join("\n")
+}
+
+fn apply_collaboration_mode_action(
+    state: &mut AppState,
+    action: CollaborationModeAction,
+    output: &mut Output,
+) -> Result<()> {
+    match action {
+        CollaborationModeAction::CacheOnly => {}
+        CollaborationModeAction::ShowList => {
+            output.block_stdout("Collaboration modes", &render_collaboration_modes(state))?;
+        }
+        CollaborationModeAction::TogglePlan => {
+            if state
+                .active_collaboration_mode
+                .as_ref()
+                .is_some_and(CollaborationModePreset::is_plan)
+            {
+                state.active_collaboration_mode = None;
+                output.line_stderr("[session] collaboration mode cleared; using default mode")?;
+            } else if let Some(plan) = state
+                .collaboration_modes
+                .iter()
+                .find(|preset| preset.is_plan())
+                .cloned()
+            {
+                let summary = plan.summary();
+                state.active_collaboration_mode = Some(plan);
+                output.line_stderr(format!("[session] switched to {summary}"))?;
+            } else {
+                output.line_stderr(
+                    "[session] no plan collaboration preset is available from app-server",
+                )?;
+            }
+        }
+        CollaborationModeAction::SetMode(selector) => {
+            let normalized = selector.trim().to_ascii_lowercase();
+            if matches!(normalized.as_str(), "default" | "off" | "none" | "clear") {
+                state.active_collaboration_mode = None;
+                output.line_stderr("[session] collaboration mode cleared; using default mode")?;
+            } else if let Some(preset) =
+                find_collaboration_mode_by_selector(&state.collaboration_modes, &normalized)
+            {
+                let summary = preset.summary();
+                state.active_collaboration_mode = Some(preset);
+                output.line_stderr(format!("[session] switched to {summary}"))?;
+            } else if state.collaboration_modes.is_empty() {
+                output.line_stderr(
+                    "[session] no collaboration mode presets are available from app-server",
+                )?;
+            } else {
+                output.line_stderr(format!("[session] unknown collaboration mode: {selector}"))?;
+                output.block_stdout("Collaboration modes", &render_collaboration_modes(state))?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn render_prompt_status(state: &AppState) -> String {
     let detail = state
         .last_status_line
@@ -3404,7 +3676,10 @@ fn render_prompt_status(state: &AppState) -> String {
             )
         }
     } else {
-        format!("ready · {} turns", state.completed_turn_count)
+        match current_collaboration_mode_label(state) {
+            Some(label) => format!("ready · {label} · {} turns", state.completed_turn_count),
+            None => format!("ready · {} turns", state.completed_turn_count),
+        }
     }
 }
 
@@ -3699,6 +3974,10 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
             cli.model_provider.as_deref().unwrap_or("default")
         ),
         format!(
+            "collaboration   {}",
+            summarize_active_collaboration_mode(state)
+        ),
+        format!(
             "objective       {}",
             summarize_text(state.objective.as_deref().unwrap_or("-"))
         ),
@@ -3714,6 +3993,12 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
             state.skills.iter().filter(|entry| entry.enabled).count(),
         ),
     ];
+    if !state.collaboration_modes.is_empty() {
+        lines.push(format!(
+            "collab presets  {}",
+            state.collaboration_modes.len()
+        ));
+    }
 
     if let Some(account) = render_account_summary(state.account_info.as_ref()) {
         lines.push(format!("account         {account}"));
@@ -4636,10 +4921,12 @@ fn summarize_value(value: &Value) -> String {
 mod tests {
     use super::AppState;
     use super::Cli;
+    use super::CollaborationModePreset;
     use super::build_tool_user_input_response;
     use super::builtin_command_names;
     use super::builtin_help_lines;
     use super::choose_command_approval_decision;
+    use super::extract_collaboration_mode_presets;
     use super::extract_file_search_paths;
     use super::extract_thread_ids;
     use super::is_builtin_command;
@@ -4651,6 +4938,7 @@ mod tests {
     use super::prompt_is_visible;
     use super::quote_if_needed;
     use super::render_apps_list;
+    use super::render_collaboration_modes;
     use super::render_fuzzy_file_search_results;
     use super::render_prompt_status;
     use super::render_rate_limit_lines;
@@ -4658,6 +4946,7 @@ mod tests {
     use super::render_slash_completion_candidates;
     use super::render_thread_list;
     use super::seed_resumed_state_from_turns;
+    use super::summarize_active_collaboration_mode;
     use super::summarize_terminal_interaction;
     use super::summarize_thread_status_for_display;
     use super::try_complete_file_token;
@@ -5007,7 +5296,7 @@ mod tests {
         assert!(rendered.contains(":resume [thread-id|n]"));
         assert!(rendered.contains("resume a saved thread"));
         assert!(rendered.contains(":plan"));
-        assert!(rendered.contains("switch to plan mode"));
+        assert!(rendered.contains("toggle plan collaboration mode"));
         assert!(rendered.contains(":approvals or /permissions"));
     }
 
@@ -5036,6 +5325,50 @@ mod tests {
         })));
         assert!(lines[0].contains("5h limit 75% left"));
         assert!(lines[0].contains("resets"));
+    }
+
+    #[test]
+    fn collaboration_modes_are_extractable_from_response() {
+        let presets = extract_collaboration_mode_presets(&json!({
+            "data": [
+                {
+                    "name": "Plan",
+                    "mode": "plan",
+                    "model": "gpt-5-codex",
+                    "reasoning_effort": "high"
+                },
+                {
+                    "name": "Default",
+                    "mode": "default",
+                    "model": "gpt-5-codex",
+                    "reasoning_effort": null
+                }
+            ]
+        }));
+        assert_eq!(presets.len(), 2);
+        assert!(presets[0].is_plan());
+        assert_eq!(presets[1].mode_kind.as_deref(), Some("default"));
+    }
+
+    #[test]
+    fn collaboration_mode_rendering_shows_current_and_available_presets() {
+        let mut state = AppState::new(true, false);
+        let presets = extract_collaboration_mode_presets(&json!({
+            "data": [
+                {
+                    "name": "Plan",
+                    "mode": "plan",
+                    "model": "gpt-5-codex",
+                    "reasoning_effort": "high"
+                }
+            ]
+        }));
+        state.collaboration_modes = presets.clone();
+        state.active_collaboration_mode = Some(presets[0].clone());
+        let rendered = render_collaboration_modes(&state);
+        assert!(rendered.contains("current         Plan"));
+        assert!(rendered.contains("mode=plan"));
+        assert!(rendered.contains("Use /collab <name|mode> or /plan to switch."));
     }
 
     #[test]
@@ -5082,6 +5415,23 @@ mod tests {
         state.last_status_line = Some("waiting on approval".to_string());
         let rendered = render_prompt_status(&state);
         assert!(rendered.contains("waiting on approval"));
+    }
+
+    #[test]
+    fn prompt_status_mentions_plan_mode_when_selected() {
+        let mut state = AppState::new(true, false);
+        state.active_collaboration_mode = Some(CollaborationModePreset {
+            name: "Plan".to_string(),
+            mode_kind: Some("plan".to_string()),
+            model: Some("gpt-5-codex".to_string()),
+            reasoning_effort: Some(Some("high".to_string())),
+        });
+        assert_eq!(
+            summarize_active_collaboration_mode(&state),
+            "Plan (mode=plan, model=gpt-5-codex, effort=high)"
+        );
+        let rendered = render_prompt_status(&state);
+        assert!(rendered.contains("plan mode"));
     }
 
     #[test]

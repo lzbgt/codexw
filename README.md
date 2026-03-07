@@ -157,7 +157,7 @@ Useful interactive commands:
 - `:debug-config`
 - `:quit` or `/quit`
 
-`/help` now renders the full built-in command catalog from the same metadata used by slash completion, so recognized native-style commands such as `/fast`, `/plan`, `/ps`, `/realtime`, `/theme`, `/experimental`, and related workflows appear there even when `codexw` can currently only explain their limitation rather than reproduce the native popup UI.
+`/help` now renders the full built-in command catalog from the same metadata used by slash completion, so recognized native-style commands such as `/fast`, `/plan`, `/ps`, `/realtime`, `/theme`, `/experimental`, and related workflows appear consistently even when `codexw` still has to explain a remaining limitation instead of reproducing the native popup UI.
 
 Submission features:
 
@@ -169,6 +169,7 @@ Submission features:
 - `:mention` with no args behaves like native Codex’s mention command and seeds `@` back into the prompt so you can keep typing a file reference immediately.
 - `:mention <query>` runs app-server fuzzy file search and prints numbered repo paths. `:mention <n>` inserts one of those cached matches back into the current prompt draft.
 - `:resume` with no id lists recent threads for the current cwd. `:resume <n>` resumes one of those cached numbered threads, which is a scroll-native equivalent of a resume picker.
+- `:plan` now toggles a real collaboration-mode override through app-server. `:collab` lists available collaboration mode presets from `collaborationMode/list`, and `:collab <name|mode|default>` switches the active mode for future turns.
 - `:diff` prints the latest aggregated turn diff snapshot emitted by app-server.
 - `:apps`, `:skills`, `:models`, `:mcp`, and `:threads` expose the most useful app-server discovery surfaces directly from the inline client.
 - `:settings` loads the effective backend config snapshot, `:statusline` aliases `:status`, and `:logout` signs out through app-server then refreshes account/rate-limit state.
@@ -189,9 +190,9 @@ Submission features:
 
 - The official `codex app-server` websocket transport exists, but upstream marks it experimental. `codexw` uses the default `stdio` transport.
 - The client defaults to detailed reasoning summaries when available, but presents them as completed blocks instead of token-by-token output.
-- `:status` now renders a richer session snapshot including cwd, thread/turn ids, started/completed turn counts, active request time, automation mode, sandbox/approval posture, attachment counts, catalog counts, account/auth state, per-window remaining rate-limit capacity with reset times, token usage totals, and the last ready/working status line when available.
+- `:status` now renders a richer session snapshot including cwd, thread/turn ids, started/completed turn counts, active request time, collaboration mode, automation mode, sandbox/approval posture, attachment counts, catalog counts, account/auth state, per-window remaining rate-limit capacity with reset times, token usage totals, and the last ready/working status line when available.
 - Unknown app-server requests now receive an explicit JSON-RPC "method not implemented" error instead of being ignored, which avoids hangs from unanswered server requests.
 - Full file contents are not always available from the app-server protocol. The client shows full command lines, command output, diffs, and file-change payloads that Codex emits.
 - `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn, terminates an active `!command`, and only exits when the client is idle with no active draft or background work.
-- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs. The client now recognizes those commands explicitly rather than treating them as unknown, and where app-server does not expose the necessary backend state cleanly, the message explains that limitation directly.
+- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs, but collaboration-mode switching is now backend-backed through `collaborationMode/list` and `turn/start.collaborationMode` rather than being treated as impossible.
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.
