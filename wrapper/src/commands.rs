@@ -18,7 +18,7 @@ fn builtin_command_entry(command: &str) -> Option<&'static BuiltinCommandEntry> 
         .find(|entry| entry.name == command)
 }
 
-fn builtin_command_names() -> &'static [&'static str] {
+pub(crate) fn builtin_command_names() -> &'static [&'static str] {
     const NAMES: &[&str] = &[
         "model",
         "models",
@@ -77,6 +77,13 @@ fn builtin_command_description(command: &str) -> &'static str {
     builtin_command_entry(command)
         .map(|entry| entry.description)
         .unwrap_or("command")
+}
+
+pub(crate) fn builtin_help_lines() -> Vec<String> {
+    builtin_command_entries()
+        .iter()
+        .map(|entry| format!(":{:<26} {}", entry.help_syntax, entry.description))
+        .collect()
 }
 
 pub(crate) fn try_complete_slash_command(
@@ -479,8 +486,8 @@ fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
         },
         BuiltinCommandEntry {
             name: "realtime",
-            help_syntax: "realtime",
-            description: "experimental realtime workflow",
+            help_syntax: "realtime [start [prompt...]|send <text>|stop|status]",
+            description: "experimental text realtime workflow",
         },
         BuiltinCommandEntry {
             name: "settings",

@@ -85,6 +85,7 @@ This keeps all user-visible state transitions serialized through one place.
 - account and rate-limit state
 - attachment queues
 - app, plugin, and skill catalogs
+- experimental realtime session state
 - recent thread-list and file-search caches
 - the last status line
 - pending JSON-RPC requests keyed by request id
@@ -258,13 +259,14 @@ Current user-facing capabilities include:
 - rich `/status` output, including turn counts, active request time, token usage, account state, and rate limits
 - real collaboration-mode controls through `/plan` and `/collab`, backed by `collaborationMode/list` plus `turn/start.collaborationMode`
 - backend-backed `/experimental` listing through `experimentalFeature/list`
+- backend-backed text realtime controls through `/realtime start|send|stop`, backed by `thread/realtime/*`
 - backend-backed personality selection through startup-warmed `model/list` metadata plus `turn/start.personality`
 - backend-backed background-terminal cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns
 
-Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but collaboration-mode switching, experimental-feature discovery, personality selection, and background-terminal cleanup are no longer in that category.
+Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but collaboration-mode switching, experimental-feature discovery, personality selection, background-terminal cleanup, and a text-only realtime flow are no longer in that category. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
 
 ## Approval and Automation Posture
 

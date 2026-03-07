@@ -30,6 +30,8 @@ use chrono::Local;
 use chrono::Utc;
 use clap::ArgAction;
 use clap::Parser;
+use commands::builtin_command_names;
+use commands::builtin_help_lines;
 use commands::longest_common_prefix;
 use commands::quote_if_needed;
 use commands::try_complete_slash_command;
@@ -166,6 +168,9 @@ enum PendingRequest {
     CompactThread,
     RenameThread { name: String },
     CleanBackgroundTerminals,
+    StartRealtime { prompt: String },
+    AppendRealtimeText { text: String },
+    StopRealtime,
     StartReview { target_description: String },
     StartTurn { auto_generated: bool },
     SteerTurn { display_text: String },
@@ -257,6 +262,11 @@ struct AppState {
     thread_id: Option<String>,
     active_turn_id: Option<String>,
     active_exec_process_id: Option<String>,
+    realtime_active: bool,
+    realtime_session_id: Option<String>,
+    realtime_last_error: Option<String>,
+    realtime_started_at: Option<Instant>,
+    realtime_prompt: Option<String>,
     pending_thread_switch: bool,
     turn_running: bool,
     activity_started_at: Option<Instant>,
@@ -295,6 +305,11 @@ impl AppState {
             thread_id: None,
             active_turn_id: None,
             active_exec_process_id: None,
+            realtime_active: false,
+            realtime_session_id: None,
+            realtime_last_error: None,
+            realtime_started_at: None,
+            realtime_prompt: None,
             pending_thread_switch: false,
             turn_running: false,
             activity_started_at: None,
@@ -345,6 +360,11 @@ impl AppState {
     fn reset_thread_context(&mut self) {
         self.active_turn_id = None;
         self.active_exec_process_id = None;
+        self.realtime_active = false;
+        self.realtime_session_id = None;
+        self.realtime_last_error = None;
+        self.realtime_started_at = None;
+        self.realtime_prompt = None;
         self.turn_running = false;
         self.activity_started_at = None;
         self.started_turn_count = 0;
@@ -1207,6 +1227,78 @@ fn send_clean_background_terminals(
     )
 }
 
+fn send_thread_realtime_start(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    thread_id: String,
+    prompt: String,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::StartRealtime {
+            prompt: prompt.clone(),
+        },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "thread/realtime/start",
+            params: json!({
+                "threadId": thread_id,
+                "prompt": prompt,
+                "sessionId": state.realtime_session_id.clone(),
+            }),
+        },
+    )
+}
+
+fn send_thread_realtime_append_text(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    thread_id: String,
+    text: String,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::AppendRealtimeText { text: text.clone() },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "thread/realtime/appendText",
+            params: json!({
+                "threadId": thread_id,
+                "text": text,
+            }),
+        },
+    )
+}
+
+fn send_thread_realtime_stop(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    thread_id: String,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state
+        .pending
+        .insert(request_id.clone(), PendingRequest::StopRealtime);
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "thread/realtime/stop",
+            params: json!({
+                "threadId": thread_id,
+            }),
+        },
+    )
+}
+
 fn send_start_review(
     writer: &mut ChildStdin,
     state: &mut AppState,
@@ -1576,6 +1668,16 @@ fn handle_response(
         PendingRequest::CleanBackgroundTerminals => {
             output.line_stderr("[thread] background terminal cleanup requested")?;
         }
+        PendingRequest::StartRealtime { prompt } => {
+            state.realtime_prompt = Some(prompt);
+            output.line_stderr("[realtime] start requested")?;
+        }
+        PendingRequest::AppendRealtimeText { text } => {
+            output.line_stderr(format!("[realtime] sent {}", summarize_text(&text)))?;
+        }
+        PendingRequest::StopRealtime => {
+            output.line_stderr("[realtime] stop requested")?;
+        }
         PendingRequest::StartReview { target_description } => {
             state.turn_running = true;
             state.activity_started_at = Some(Instant::now());
@@ -1751,6 +1853,15 @@ fn handle_response_error(
         }
         Some(PendingRequest::LogoutAccount) => {
             output.line_stderr("[session] logout failed")?;
+            output.line_stderr(format!(
+                "[server-error] {}",
+                serde_json::to_string_pretty(&error)?
+            ))?;
+        }
+        Some(PendingRequest::StartRealtime { .. })
+        | Some(PendingRequest::AppendRealtimeText { .. })
+        | Some(PendingRequest::StopRealtime) => {
+            output.line_stderr("[realtime] request failed")?;
             output.line_stderr(format!(
                 "[server-error] {}",
                 serde_json::to_string_pretty(&error)?
@@ -1974,6 +2085,43 @@ fn handle_notification(
         }
         "thread/tokenUsage/updated" => {
             state.last_token_usage = notification.params.get("tokenUsage").cloned();
+        }
+        "thread/realtime/started" => {
+            state.realtime_active = true;
+            state.realtime_started_at = Some(Instant::now());
+            state.realtime_session_id =
+                get_string(&notification.params, &["sessionId"]).map(ToOwned::to_owned);
+            state.realtime_last_error = None;
+            let session = state.realtime_session_id.as_deref().unwrap_or("ephemeral");
+            output.line_stderr(format!("[realtime] active session={session}"))?;
+        }
+        "thread/realtime/itemAdded" => {
+            if let Some(item) = notification.params.get("item") {
+                output.block_stdout("Realtime", &render_realtime_item(item))?;
+            }
+        }
+        "thread/realtime/outputAudio/delta" => {
+            if cli.verbose_events {
+                output.line_stderr("[realtime] received output audio chunk (not rendered)")?;
+            }
+        }
+        "thread/realtime/error" => {
+            let message = get_string(&notification.params, &["message"])
+                .unwrap_or("unknown realtime error")
+                .to_string();
+            state.realtime_last_error = Some(message.clone());
+            output.line_stderr(format!("[realtime-error] {message}"))?;
+        }
+        "thread/realtime/closed" => {
+            let reason = get_string(&notification.params, &["reason"]).map(ToOwned::to_owned);
+            state.realtime_active = false;
+            state.realtime_session_id = None;
+            state.realtime_started_at = None;
+            if let Some(reason) = reason {
+                output.line_stderr(format!("[realtime] closed: {reason}"))?;
+            } else {
+                output.line_stderr("[realtime] closed")?;
+            }
         }
         "turn/started" => {
             state.turn_running = true;
@@ -2756,9 +2904,73 @@ fn handle_command(
             Ok(true)
         }
         "realtime" => {
-            output.line_stderr(
-                "[session] /realtime is not implemented in codexw yet; app-server exposes realtime methods, but this client does not yet provide the audio/session UI needed to use them cleanly",
-            )?;
+            if cli.no_experimental_api {
+                output.line_stderr(
+                    "[session] /realtime requires experimental API support; restart without --no-experimental-api",
+                )?;
+                return Ok(true);
+            }
+            let args = parts.collect::<Vec<_>>();
+            let Some(thread_id) = state.thread_id.clone() else {
+                output.line_stderr("[session] start or resume a thread before using /realtime")?;
+                return Ok(true);
+            };
+            if args.is_empty() || matches!(args[0], "status" | "show") {
+                output.block_stdout("Realtime", &render_realtime_status(state))?;
+                return Ok(true);
+            }
+            match args[0] {
+                "start" => {
+                    if state.turn_running {
+                        output.line_stderr(
+                            "[session] cannot start realtime while a turn is running",
+                        )?;
+                        return Ok(true);
+                    }
+                    if state.realtime_active {
+                        output.line_stderr(
+                            "[session] realtime is already active; use /realtime stop first",
+                        )?;
+                        output.block_stdout("Realtime", &render_realtime_status(state))?;
+                        return Ok(true);
+                    }
+                    let prompt = if args.len() > 1 {
+                        args[1..].join(" ")
+                    } else {
+                        "Text-only experimental realtime session for this thread.".to_string()
+                    };
+                    send_thread_realtime_start(writer, state, thread_id, prompt)?;
+                }
+                "send" | "append" => {
+                    if !state.realtime_active {
+                        output.line_stderr(
+                            "[session] realtime is not active; use /realtime start first",
+                        )?;
+                        return Ok(true);
+                    }
+                    if args.len() < 2 {
+                        output.line_stderr("[session] usage: /realtime send <text>")?;
+                        return Ok(true);
+                    }
+                    send_thread_realtime_append_text(
+                        writer,
+                        state,
+                        thread_id,
+                        args[1..].join(" "),
+                    )?;
+                }
+                "stop" => {
+                    if !state.realtime_active {
+                        output.line_stderr("[session] realtime is not active")?;
+                        return Ok(true);
+                    }
+                    send_thread_realtime_stop(writer, state, thread_id)?;
+                }
+                other => {
+                    output.line_stderr(format!("[session] unknown realtime action: {other}"))?;
+                    output.block_stdout("Realtime", &render_realtime_status(state))?;
+                }
+            }
             Ok(true)
         }
         "ps" => {
@@ -3064,334 +3276,6 @@ fn file_completions(token: &str, resolved_cwd: &str) -> Result<Vec<String>> {
 
 fn os_str_to_string(value: &OsStr) -> Option<String> {
     value.to_str().map(ToOwned::to_owned)
-}
-
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-struct BuiltinCommandEntry {
-    name: &'static str,
-    help_syntax: &'static str,
-    description: &'static str,
-}
-
-#[allow(dead_code)]
-fn builtin_command_entry(command: &str) -> Option<&'static BuiltinCommandEntry> {
-    builtin_command_entries()
-        .iter()
-        .find(|entry| entry.name == command)
-}
-
-fn builtin_command_names() -> &'static [&'static str] {
-    const NAMES: &[&str] = &[
-        "model",
-        "models",
-        "fast",
-        "approvals",
-        "permissions",
-        "setup-default-sandbox",
-        "sandbox-add-read-dir",
-        "experimental",
-        "skills",
-        "review",
-        "rename",
-        "new",
-        "resume",
-        "fork",
-        "init",
-        "compact",
-        "plan",
-        "collab",
-        "agent",
-        "multi-agents",
-        "diff",
-        "copy",
-        "mention",
-        "status",
-        "debug-config",
-        "statusline",
-        "theme",
-        "mcp",
-        "apps",
-        "logout",
-        "quit",
-        "exit",
-        "feedback",
-        "rollout",
-        "ps",
-        "clean",
-        "clear",
-        "personality",
-        "realtime",
-        "settings",
-        "threads",
-        "auto",
-        "attach-image",
-        "attach",
-        "attach-url",
-        "attachments",
-        "clear-attachments",
-        "interrupt",
-        "help",
-    ];
-    NAMES
-}
-
-fn builtin_help_lines() -> Vec<String> {
-    builtin_command_entries()
-        .iter()
-        .map(|entry| format!(":{:<26} {}", entry.help_syntax, entry.description))
-        .collect()
-}
-
-fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
-    const ENTRIES: &[BuiltinCommandEntry] = &[
-        BuiltinCommandEntry {
-            name: "model",
-            help_syntax: "model",
-            description: "choose what model and reasoning effort to use",
-        },
-        BuiltinCommandEntry {
-            name: "models",
-            help_syntax: "models",
-            description: "list available models",
-        },
-        BuiltinCommandEntry {
-            name: "fast",
-            help_syntax: "fast",
-            description: "toggle Fast mode to enable fastest inference at 2X plan usage",
-        },
-        BuiltinCommandEntry {
-            name: "approvals",
-            help_syntax: "approvals or /permissions",
-            description: "show automation and permission posture",
-        },
-        BuiltinCommandEntry {
-            name: "permissions",
-            help_syntax: "permissions or /approvals",
-            description: "show automation and permission posture",
-        },
-        BuiltinCommandEntry {
-            name: "setup-default-sandbox",
-            help_syntax: "setup-default-sandbox",
-            description: "native sandbox setup workflow not yet ported",
-        },
-        BuiltinCommandEntry {
-            name: "sandbox-add-read-dir",
-            help_syntax: "sandbox-add-read-dir",
-            description: "native sandbox read-dir workflow not yet ported",
-        },
-        BuiltinCommandEntry {
-            name: "experimental",
-            help_syntax: "experimental",
-            description: "list experimental feature flags from app-server",
-        },
-        BuiltinCommandEntry {
-            name: "skills",
-            help_syntax: "skills",
-            description: "use skills to improve how Codex performs specific tasks",
-        },
-        BuiltinCommandEntry {
-            name: "review",
-            help_syntax: "review [instructions]",
-            description: "review current changes and find issues",
-        },
-        BuiltinCommandEntry {
-            name: "rename",
-            help_syntax: "rename <name>",
-            description: "rename the current thread",
-        },
-        BuiltinCommandEntry {
-            name: "new",
-            help_syntax: "new",
-            description: "start a new thread",
-        },
-        BuiltinCommandEntry {
-            name: "resume",
-            help_syntax: "resume [thread-id|n]",
-            description: "resume a saved thread",
-        },
-        BuiltinCommandEntry {
-            name: "fork",
-            help_syntax: "fork",
-            description: "fork the current thread",
-        },
-        BuiltinCommandEntry {
-            name: "init",
-            help_syntax: "init",
-            description: "create an AGENTS.md file with instructions for Codex",
-        },
-        BuiltinCommandEntry {
-            name: "compact",
-            help_syntax: "compact",
-            description: "summarize conversation to prevent hitting the context limit",
-        },
-        BuiltinCommandEntry {
-            name: "plan",
-            help_syntax: "plan",
-            description: "toggle plan collaboration mode",
-        },
-        BuiltinCommandEntry {
-            name: "collab",
-            help_syntax: "collab [name|mode|default]",
-            description: "list or change collaboration mode",
-        },
-        BuiltinCommandEntry {
-            name: "agent",
-            help_syntax: "agent",
-            description: "switch the active agent thread",
-        },
-        BuiltinCommandEntry {
-            name: "multi-agents",
-            help_syntax: "multi-agents",
-            description: "switch the active agent thread",
-        },
-        BuiltinCommandEntry {
-            name: "diff",
-            help_syntax: "diff",
-            description: "show the latest turn diff snapshot",
-        },
-        BuiltinCommandEntry {
-            name: "copy",
-            help_syntax: "copy",
-            description: "copy the latest assistant reply",
-        },
-        BuiltinCommandEntry {
-            name: "mention",
-            help_syntax: "mention [query|n]",
-            description: "insert or search mentionable files",
-        },
-        BuiltinCommandEntry {
-            name: "status",
-            help_syntax: "status",
-            description: "show current session configuration and token usage",
-        },
-        BuiltinCommandEntry {
-            name: "debug-config",
-            help_syntax: "debug-config",
-            description: "show config layers and requirement sources for debugging",
-        },
-        BuiltinCommandEntry {
-            name: "statusline",
-            help_syntax: "statusline",
-            description: "show current session status",
-        },
-        BuiltinCommandEntry {
-            name: "theme",
-            help_syntax: "theme",
-            description: "choose a syntax highlighting theme",
-        },
-        BuiltinCommandEntry {
-            name: "mcp",
-            help_syntax: "mcp",
-            description: "list MCP servers and tools",
-        },
-        BuiltinCommandEntry {
-            name: "apps",
-            help_syntax: "apps",
-            description: "list known app mentions",
-        },
-        BuiltinCommandEntry {
-            name: "logout",
-            help_syntax: "logout",
-            description: "log out of Codex",
-        },
-        BuiltinCommandEntry {
-            name: "quit",
-            help_syntax: "quit",
-            description: "exit CodexW",
-        },
-        BuiltinCommandEntry {
-            name: "exit",
-            help_syntax: "exit",
-            description: "exit CodexW",
-        },
-        BuiltinCommandEntry {
-            name: "feedback",
-            help_syntax: "feedback <category> [reason] [--logs|--no-logs]",
-            description: "submit feedback through app-server",
-        },
-        BuiltinCommandEntry {
-            name: "rollout",
-            help_syntax: "rollout",
-            description: "native rollout-path display not yet ported",
-        },
-        BuiltinCommandEntry {
-            name: "ps",
-            help_syntax: "ps [clean]",
-            description: "explain background-terminal limits or stop all background terminals",
-        },
-        BuiltinCommandEntry {
-            name: "clean",
-            help_syntax: "clean",
-            description: "stop background terminals for the thread",
-        },
-        BuiltinCommandEntry {
-            name: "clear",
-            help_syntax: "clear",
-            description: "clear terminal and start a new thread",
-        },
-        BuiltinCommandEntry {
-            name: "personality",
-            help_syntax: "personality [friendly|pragmatic|none|default]",
-            description: "show or change the active response style",
-        },
-        BuiltinCommandEntry {
-            name: "realtime",
-            help_syntax: "realtime",
-            description: "experimental realtime workflow",
-        },
-        BuiltinCommandEntry {
-            name: "settings",
-            help_syntax: "settings",
-            description: "show effective backend config",
-        },
-        BuiltinCommandEntry {
-            name: "threads",
-            help_syntax: "threads [query]",
-            description: "list recent threads",
-        },
-        BuiltinCommandEntry {
-            name: "auto",
-            help_syntax: "auto on|off",
-            description: "toggle auto-continue",
-        },
-        BuiltinCommandEntry {
-            name: "attach-image",
-            help_syntax: "attach-image <path>",
-            description: "queue a local image for next submit",
-        },
-        BuiltinCommandEntry {
-            name: "attach",
-            help_syntax: "attach <path>",
-            description: "queue a local image for next submit",
-        },
-        BuiltinCommandEntry {
-            name: "attach-url",
-            help_syntax: "attach-url <url>",
-            description: "queue a remote image for next submit",
-        },
-        BuiltinCommandEntry {
-            name: "attachments",
-            help_syntax: "attachments",
-            description: "show queued attachments",
-        },
-        BuiltinCommandEntry {
-            name: "clear-attachments",
-            help_syntax: "clear-attachments",
-            description: "clear queued attachments",
-        },
-        BuiltinCommandEntry {
-            name: "interrupt",
-            help_syntax: "interrupt",
-            description: "interrupt the active turn or command",
-        },
-        BuiltinCommandEntry {
-            name: "help",
-            help_syntax: "help",
-            description: "show commands",
-        },
-    ];
-    ENTRIES
 }
 
 fn current_collaboration_mode_value(state: &AppState) -> Option<Value> {
@@ -3719,6 +3603,12 @@ fn render_prompt_status(state: &AppState) -> String {
                 format_elapsed(state.activity_started_at)
             )
         }
+    } else if state.realtime_active {
+        format!(
+            "{} realtime · {}",
+            spinner_frame(state.realtime_started_at),
+            format_elapsed(state.realtime_started_at)
+        )
     } else {
         match current_collaboration_mode_label(state) {
             Some(label) => match state.active_personality.as_deref() {
@@ -4061,6 +3951,44 @@ fn render_pending_attachments(local_images: &[String], remote_images: &[String])
     lines.join("\n")
 }
 
+fn render_realtime_status(state: &AppState) -> String {
+    let mut lines = vec![format!("active          {}", state.realtime_active)];
+    lines.push(format!(
+        "session         {}",
+        state.realtime_session_id.as_deref().unwrap_or("-")
+    ));
+    lines.push(format!(
+        "prompt          {}",
+        summarize_text(state.realtime_prompt.as_deref().unwrap_or("-"))
+    ));
+    if state.realtime_active {
+        lines.push(format!(
+            "active time     {}",
+            format_elapsed(state.realtime_started_at)
+        ));
+    }
+    if let Some(error) = state.realtime_last_error.as_deref() {
+        lines.push(format!("last error      {}", summarize_text(error)));
+    }
+    lines.push(
+        "commands        /realtime start [prompt...] | /realtime send <text> | /realtime stop"
+            .to_string(),
+    );
+    lines.push("audio           output audio deltas are not rendered in codexw".to_string());
+    lines.join("\n")
+}
+
+fn render_realtime_item(item: &Value) -> String {
+    let item_type = get_string(item, &["type"]).unwrap_or("item");
+    let item_id = get_string(item, &["id"]).unwrap_or("-");
+    let role = get_string(item, &["role"]).unwrap_or("-");
+    let body = extract_realtime_text(item).unwrap_or_else(|| summarize_value(item));
+    format!(
+        "type            {item_type}\nid              {item_id}\nrole            {role}\n\n{}",
+        body.trim()
+    )
+}
+
 fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> String {
     let effective_model_summary = match effective_model_entry(state, cli) {
         Some(model) if model.supports_personality => {
@@ -4105,6 +4033,7 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
             "collaboration   {}",
             summarize_active_collaboration_mode(state)
         ),
+        format!("realtime        {}", state.realtime_active),
         format!(
             "objective       {}",
             summarize_text(state.objective.as_deref().unwrap_or("-"))
@@ -4129,6 +4058,24 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
     }
     if !state.models.is_empty() {
         lines.push(format!("models cached   {}", state.models.len()));
+    }
+    if state.realtime_active || state.realtime_session_id.is_some() {
+        lines.push(format!(
+            "realtime id     {}",
+            state.realtime_session_id.as_deref().unwrap_or("-")
+        ));
+    }
+    if state.realtime_active {
+        lines.push(format!(
+            "realtime time   {}",
+            format_elapsed(state.realtime_started_at)
+        ));
+    }
+    if let Some(prompt) = state.realtime_prompt.as_deref() {
+        lines.push(format!("realtime prompt {}", summarize_text(prompt)));
+    }
+    if let Some(error) = state.realtime_last_error.as_deref() {
+        lines.push(format!("realtime error  {}", summarize_text(error)));
     }
 
     if let Some(account) = render_account_summary(state.account_info.as_ref()) {
@@ -5035,6 +4982,34 @@ fn summarize_value(value: &Value) -> String {
     }
 }
 
+fn extract_realtime_text(item: &Value) -> Option<String> {
+    if let Some(text) = get_string(item, &["text"]).filter(|text| !text.trim().is_empty()) {
+        return Some(text.to_string());
+    }
+    if let Some(text) = get_string(item, &["transcript"]).filter(|text| !text.trim().is_empty()) {
+        return Some(text.to_string());
+    }
+    item.get("content")
+        .and_then(Value::as_array)
+        .and_then(|content| {
+            let pieces = content
+                .iter()
+                .filter_map(|part| {
+                    get_string(part, &["text"])
+                        .or_else(|| get_string(part, &["transcript"]))
+                        .map(str::trim)
+                        .filter(|text| !text.is_empty())
+                        .map(ToOwned::to_owned)
+                })
+                .collect::<Vec<_>>();
+            if pieces.is_empty() {
+                None
+            } else {
+                Some(pieces.join("\n\n"))
+            }
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::AppState;
@@ -5064,6 +5039,7 @@ mod tests {
     use super::render_personality_options;
     use super::render_prompt_status;
     use super::render_rate_limit_lines;
+    use super::render_realtime_item;
     use super::render_reasoning_item;
     use super::render_status_snapshot;
     use super::render_thread_list;
@@ -5424,6 +5400,7 @@ mod tests {
         assert!(rendered.contains(":approvals or /permissions"));
         assert!(rendered.contains(":ps [clean]"));
         assert!(rendered.contains("stop all background terminals"));
+        assert!(rendered.contains(":realtime [start [prompt...]|send <text>|stop|status]"));
     }
 
     #[test]
@@ -5705,6 +5682,64 @@ mod tests {
         state.active_personality = Some("friendly".to_string());
         let rendered = render_prompt_status(&state);
         assert!(rendered.contains("Friendly"));
+    }
+
+    #[test]
+    fn prompt_status_mentions_realtime_when_active() {
+        let mut state = AppState::new(true, false);
+        state.realtime_active = true;
+        let rendered = render_prompt_status(&state);
+        assert!(rendered.contains("realtime"));
+    }
+
+    #[test]
+    fn status_snapshot_includes_realtime_fields() {
+        let mut state = AppState::new(true, false);
+        state.thread_id = Some("thread-1".to_string());
+        state.realtime_active = true;
+        state.realtime_session_id = Some("rt-1".to_string());
+        state.realtime_prompt = Some("hello world".to_string());
+        state.realtime_last_error = Some("bad gateway".to_string());
+        let cli = normalize_cli(Cli {
+            codex_bin: "codex".to_string(),
+            config_overrides: Vec::new(),
+            enable_features: Vec::new(),
+            disable_features: Vec::new(),
+            resume: None,
+            cwd: None,
+            model: None,
+            model_provider: None,
+            auto_continue: true,
+            verbose_events: false,
+            verbose_thinking: true,
+            raw_json: false,
+            no_experimental_api: false,
+            yolo: false,
+            prompt: Vec::new(),
+        });
+        let rendered = render_status_snapshot(&cli, "/tmp/project", &state);
+        assert!(rendered.contains("realtime        true"));
+        assert!(rendered.contains("realtime id     rt-1"));
+        assert!(rendered.contains("realtime prompt hello world"));
+        assert!(rendered.contains("realtime error  bad gateway"));
+    }
+
+    #[test]
+    fn realtime_item_prefers_text_content() {
+        let rendered = render_realtime_item(&json!({
+            "type": "message",
+            "id": "msg-1",
+            "role": "assistant",
+            "content": [
+                {"text": "first line"},
+                {"transcript": "second line"}
+            ]
+        }));
+        assert!(rendered.contains("type            message"));
+        assert!(rendered.contains("id              msg-1"));
+        assert!(rendered.contains("role            assistant"));
+        assert!(rendered.contains("first line"));
+        assert!(rendered.contains("second line"));
     }
 
     #[test]
