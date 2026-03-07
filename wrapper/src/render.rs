@@ -56,27 +56,26 @@ pub fn render_line_to_ansi(line: &str) -> String {
 }
 
 pub fn render_prompt_line(
-    status: &str,
+    prompt_label: &str,
     buffer: &str,
     cursor_chars: usize,
     terminal_width: usize,
 ) -> (String, usize) {
-    let prefix = format!("codexw [{status}]> ");
+    let prefix = if prompt_label.trim().is_empty() {
+        "> ".to_string()
+    } else {
+        format!("{prompt_label}> ")
+    };
     let prefix_chars = prefix.chars().count();
     let available_chars = terminal_width.saturating_sub(prefix_chars).max(1);
+    let display_buffer = preview_prompt_buffer(buffer);
     let (visible_buffer, visible_cursor_chars) =
-        fit_prompt_buffer(buffer, cursor_chars, available_chars);
+        fit_prompt_buffer(&display_buffer, cursor_chars, available_chars);
     let line = text_to_ansi(&Text::from(Line::from(vec![
         Span::styled(
-            "codexw",
+            prefix,
             Style::default()
                 .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(
-            format!(" [{status}]> "),
-            Style::default()
-                .fg(Color::DarkGray)
                 .add_modifier(Modifier::BOLD),
         ),
         Span::raw(visible_buffer),
@@ -86,15 +85,27 @@ pub fn render_prompt_line(
 }
 
 pub fn render_committed_prompt(buffer: &str) -> String {
-    line_to_ansi(&Line::from(vec![
-        Span::styled(
-            "> ",
-            Style::default()
-                .fg(Color::Blue)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::raw(buffer.to_string()),
-    ]))
+    let mut rendered_lines = Vec::new();
+    for (idx, line) in buffer.split('\n').enumerate() {
+        let prefix = if idx == 0 { "> " } else { "  " };
+        rendered_lines.push(line_to_ansi(&Line::from(vec![
+            Span::styled(
+                prefix,
+                Style::default()
+                    .fg(Color::Blue)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(line.to_string()),
+        ])));
+    }
+    rendered_lines.join("\n")
+}
+
+fn preview_prompt_buffer(buffer: &str) -> String {
+    buffer
+        .chars()
+        .map(|ch| if ch == '\n' { '↩' } else { ch })
+        .collect()
 }
 
 fn classify_block(title: &str, body: &str) -> BlockKind {
@@ -767,13 +778,20 @@ mod tests {
     #[test]
     fn prompt_line_is_elided_to_stay_single_row() {
         let (rendered, cursor_col) = render_prompt_line(
-            "ready · 12 turns",
+            "",
             "continue working on the highest leverage task in this repository",
             62,
             40,
         );
-        assert!(rendered.contains("codexw"));
+        assert!(rendered.contains(">"));
         assert!(rendered.contains("..."));
+        assert!(cursor_col <= 40);
+    }
+
+    #[test]
+    fn prompt_line_previews_multiline_buffer_in_single_row() {
+        let (rendered, cursor_col) = render_prompt_line("", "first\nsecond", 12, 40);
+        assert!(rendered.contains("↩"));
         assert!(cursor_col <= 40);
     }
 }

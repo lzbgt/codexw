@@ -39,8 +39,8 @@ This is protocol-level observability from Codex itself, not `RUST_LOG` tracing. 
 By default the client does not dump raw JSON payloads into the terminal. Raw JSON is reserved for `--raw-json`, and lower-level protocol events are hidden unless you opt into `--verbose-events`.
 
 The client follows the normal terminal scrollback model instead of a fixed alternate-screen viewport, so you can use the terminal’s native scroll behavior rather than in-app paging.
-It now renders an inline prompt/composer in the normal terminal flow rather than a plain raw prefix, and keeps that prompt visible while a turn is running so you can see live activity state. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft, `Tab` for inline slash-command and `@file` completion, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
-The prompt status line also shows live request progress, including a spinner, elapsed request time, and turn count, so quiet backend work does not look like a dead terminal.
+It renders a plain inline prompt/composer in the normal terminal flow and keeps a separate transient status line above the prompt while a turn or local command is active. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft, `Tab` for inline slash-command and `@file` completion, `Ctrl-J` to insert a newline into a multiline draft, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
+The separate status line shows live request progress, including a spinner, elapsed request time, and turn count, so quiet backend work does not look like a dead terminal without bloating the prompt widget itself.
 
 ## Automation Defaults
 

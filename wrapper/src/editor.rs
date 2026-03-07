@@ -41,6 +41,10 @@ impl LineEditor {
         self.history_index = None;
     }
 
+    pub fn insert_newline(&mut self) {
+        self.insert_char('\n');
+    }
+
     pub fn backspace(&mut self) {
         if self.cursor_chars == 0 {
             return;
@@ -276,5 +280,18 @@ mod tests {
         editor.delete_prev_word();
         assert_eq!(editor.buffer(), "hello brave ");
         assert_eq!(editor.cursor_chars(), "hello brave ".chars().count());
+    }
+
+    #[test]
+    fn insert_newline_preserves_multiline_submit() {
+        let mut editor = LineEditor::default();
+        editor.insert_str("first");
+        editor.insert_newline();
+        editor.insert_str("second");
+        assert_eq!(editor.buffer(), "first\nsecond");
+        assert_eq!(
+            editor.submit(),
+            EditorEvent::Submit("first\nsecond".to_string())
+        );
     }
 }

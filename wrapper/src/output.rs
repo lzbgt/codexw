@@ -13,7 +13,9 @@ const CLEAR_LINE: &str = "\r\x1b[2K";
 #[derive(Default)]
 pub struct Output {
     prompt: Option<String>,
+    status: Option<String>,
     prompt_visible: bool,
+    status_visible: bool,
 }
 
 impl Output {
@@ -21,9 +23,13 @@ impl Output {
         self.prompt = prompt;
     }
 
+    pub fn set_status(&mut self, status: Option<String>) {
+        self.status = status;
+    }
+
     pub fn show_prompt(&mut self, buffer: &str, cursor_chars: usize) -> io::Result<()> {
         if self.prompt.is_none() {
-            self.hide_prompt()?;
+            self.hide_ui()?;
             return Ok(());
         }
         self.redraw_prompt(buffer, cursor_chars)
@@ -31,12 +37,13 @@ impl Output {
 
     pub fn commit_prompt(&mut self, buffer: &str) -> io::Result<()> {
         if self.prompt.is_some() {
-            self.hide_prompt()?;
+            self.hide_ui()?;
             let mut stderr = io::stderr();
             write_crlf(&mut stderr, &render_committed_prompt(buffer))?;
             stderr.flush()?;
         }
         self.prompt_visible = false;
+        self.status_visible = false;
         Ok(())
     }
 
@@ -73,7 +80,7 @@ impl Output {
     }
 
     pub fn clear_screen(&mut self) -> io::Result<()> {
-        self.hide_prompt()?;
+        self.hide_ui()?;
         let mut stderr = io::stderr();
         write!(stderr, "\x1b[2J\x1b[H")?;
         stderr.flush()?;
@@ -81,14 +88,20 @@ impl Output {
     }
 
     fn redraw_prompt(&mut self, buffer: &str, cursor_chars: usize) -> io::Result<()> {
-        let prompt = self.prompt.as_deref().unwrap_or("ready");
+        let prompt = self.prompt.as_deref().unwrap_or("");
         let terminal_width = terminal::size()
             .map(|(width, _)| width as usize)
             .unwrap_or(120);
         let (line, cursor_col) = render_prompt_line(prompt, buffer, cursor_chars, terminal_width);
         let mut stderr = io::stderr();
-        if self.prompt_visible {
-            write!(stderr, "{CLEAR_LINE}")?;
+        if self.prompt_visible || self.status_visible {
+            self.hide_ui()?;
+        }
+        if let Some(status) = self.status.as_deref() {
+            write!(stderr, "\r{}\x1b[K\r\n", render_line_to_ansi(status))?;
+            self.status_visible = true;
+        } else {
+            self.status_visible = false;
         }
         write!(stderr, "\r{line}\x1b[K")?;
         write!(stderr, "\r\x1b[{cursor_col}C")?;
@@ -98,17 +111,24 @@ impl Output {
     }
 
     fn prepare_for_output(&mut self) -> io::Result<()> {
-        self.hide_prompt()?;
+        self.hide_ui()?;
         Ok(())
     }
 
-    fn hide_prompt(&mut self) -> io::Result<()> {
-        if self.prompt_visible {
-            let mut stderr = io::stderr();
-            write!(stderr, "{CLEAR_LINE}")?;
-            stderr.flush()?;
-            self.prompt_visible = false;
+    fn hide_ui(&mut self) -> io::Result<()> {
+        if !self.prompt_visible && !self.status_visible {
+            return Ok(());
         }
+        let mut stderr = io::stderr();
+        if self.prompt_visible {
+            write!(stderr, "{CLEAR_LINE}")?;
+        }
+        if self.status_visible {
+            write!(stderr, "\x1b[1A{CLEAR_LINE}\r")?;
+        }
+        stderr.flush()?;
+        self.prompt_visible = false;
+        self.status_visible = false;
         Ok(())
     }
 }

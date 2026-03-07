@@ -133,6 +133,7 @@ enum InputKey {
     Down,
     Tab,
     Enter,
+    CtrlJ,
     CtrlC,
     CtrlA,
     CtrlE,
@@ -442,6 +443,11 @@ fn main() -> Result<()> {
                     }
                     EditorEvent::CtrlC | EditorEvent::Noop => {}
                 },
+                InputKey::CtrlJ => {
+                    if prompt_accepts_input(&state) {
+                        editor.insert_newline();
+                    }
+                }
             },
             Ok(AppEvent::Tick) => {}
             Ok(AppEvent::StdinClosed) => {
@@ -577,6 +583,9 @@ fn map_key_event(key_event: KeyEvent) -> Option<InputKey> {
         (KeyCode::Esc, _) => Some(InputKey::Esc),
         (KeyCode::Char('c'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
             Some(InputKey::CtrlC)
+        }
+        (KeyCode::Char('j'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
+            Some(InputKey::CtrlJ)
         }
         (KeyCode::Char('a'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
             Some(InputKey::CtrlA)
@@ -2630,12 +2639,10 @@ fn send_json<T: serde::Serialize>(writer: &mut ChildStdin, value: &T) -> Result<
 }
 
 fn update_prompt(output: &mut Output, state: &AppState, editor: &LineEditor) -> Result<()> {
-    let prompt = if prompt_is_visible(state) {
-        Some(render_prompt_status(state))
-    } else {
-        None
-    };
+    let prompt = prompt_is_visible(state).then(String::new);
+    let status = prompt_is_visible(state).then(|| render_prompt_status(state));
     output.set_prompt(prompt);
+    output.set_status(status);
     output
         .show_prompt(editor.buffer(), editor.cursor_chars())
         .context("show prompt")
@@ -3345,26 +3352,17 @@ fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
 }
 
 fn render_prompt_status(state: &AppState) -> String {
-    if let Some(process_id) = state.active_exec_process_id.as_deref() {
+    if state.active_exec_process_id.is_some() {
         format!(
-            "{} cmd {} [{}] · {} turns",
+            "{} cmd · {}",
             spinner_frame(state.activity_started_at),
             format_elapsed(state.activity_started_at),
-            process_id,
-            state.completed_turn_count
         )
     } else if state.turn_running {
-        let label = state
-            .last_status_line
-            .as_deref()
-            .unwrap_or("working")
-            .trim()
-            .to_string();
         format!(
-            "{} turn {} · {} · {}",
+            "{} turn {} · {}",
             spinner_frame(state.activity_started_at),
             state.started_turn_count.max(1),
-            label,
             format_elapsed(state.activity_started_at)
         )
     } else {
