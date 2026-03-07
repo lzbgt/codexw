@@ -2723,51 +2723,10 @@ fn handle_tab_completion(
 }
 
 fn builtin_command_description(command: &str) -> &'static str {
-    match command {
-        "help" => "show commands",
-        "quit" | "exit" => "exit CodexW",
-        "new" => "start a new thread",
-        "resume" => "resume a saved thread",
-        "fork" => "fork the current thread",
-        "compact" => "compact thread history",
-        "review" => "review current changes",
-        "clear" => "clear terminal and start a new thread",
-        "copy" => "copy the latest assistant reply",
-        "rename" => "rename the current thread",
-        "apps" => "list known app mentions",
-        "skills" => "list available skills",
-        "models" | "model" => "list available models",
-        "mcp" => "list MCP servers and tools",
-        "clean" => "stop background terminals for the thread",
-        "threads" => "list recent threads",
-        "mention" => "insert or search mentionable files",
-        "diff" => "show the latest turn diff snapshot",
-        "auto" => "toggle auto-continue",
-        "attach-image" | "attach" => "queue a local image for next submit",
-        "attach-url" => "queue a remote image for next submit",
-        "attachments" => "show queued attachments",
-        "clear-attachments" => "clear queued attachments",
-        "interrupt" => "interrupt the active turn or command",
-        "status" | "statusline" => "show current session status",
-        "approvals" | "permissions" => "show automation and permission posture",
-        "settings" | "debug-config" => "show effective backend config",
-        "feedback" => "submit feedback through app-server",
-        "logout" => "log out of Codex",
-        "fast" => "native fast-mode workflow not yet ported",
-        "personality" => "native personality workflow not yet ported",
-        "collab" => "native collaboration workflow not yet ported",
-        "agent" | "multi-agents" => "native agent picker not yet ported",
-        "theme" => "native theme picker not yet ported",
-        "realtime" => "experimental realtime workflow",
-        "rollout" => "native rollout-path display not yet ported",
-        "experimental" => "native experimental-features workflow not yet ported",
-        "sandbox-add-read-dir" => "native sandbox read-dir workflow not yet ported",
-        "setup-default-sandbox" => "native sandbox setup workflow not yet ported",
-        "init" => "create AGENTS.md instructions",
-        "ps" => "list background terminals",
-        "plan" => "switch to plan mode",
-        _ => "command",
-    }
+    builtin_command_entries()
+        .iter()
+        .find_map(|(name, description)| (*name == command).then_some(*description))
+        .unwrap_or("command")
 }
 
 struct FileCompletionResult {
@@ -3105,27 +3064,48 @@ fn longest_common_prefix<S: AsRef<str>>(values: &[S]) -> String {
 }
 
 fn builtin_command_names() -> &'static [&'static str] {
-    &[
-        "help",
-        "quit",
-        "exit",
+    const NAMES: &[&str] = &[
+        "model",
+        "models",
+        "fast",
+        "approvals",
+        "permissions",
+        "setup-default-sandbox",
+        "sandbox-add-read-dir",
+        "experimental",
+        "skills",
+        "review",
+        "rename",
         "new",
         "resume",
         "fork",
+        "init",
         "compact",
-        "review",
-        "clear",
-        "copy",
-        "rename",
-        "apps",
-        "skills",
-        "models",
-        "model",
-        "mcp",
-        "clean",
-        "threads",
-        "mention",
+        "plan",
+        "collab",
+        "agent",
+        "multi-agents",
         "diff",
+        "copy",
+        "mention",
+        "status",
+        "debug-config",
+        "statusline",
+        "theme",
+        "mcp",
+        "apps",
+        "logout",
+        "quit",
+        "exit",
+        "feedback",
+        "rollout",
+        "ps",
+        "clean",
+        "clear",
+        "personality",
+        "realtime",
+        "settings",
+        "threads",
         "auto",
         "attach-image",
         "attach",
@@ -3133,29 +3113,88 @@ fn builtin_command_names() -> &'static [&'static str] {
         "attachments",
         "clear-attachments",
         "interrupt",
-        "status",
-        "approvals",
-        "permissions",
-        "debug-config",
-        "fast",
-        "personality",
-        "collab",
-        "agent",
-        "multi-agents",
-        "theme",
-        "statusline",
-        "realtime",
-        "settings",
-        "feedback",
-        "logout",
-        "rollout",
-        "experimental",
-        "sandbox-add-read-dir",
-        "setup-default-sandbox",
-        "init",
-        "ps",
-        "plan",
-    ]
+        "help",
+    ];
+    NAMES
+}
+
+fn builtin_command_entries() -> &'static [(&'static str, &'static str)] {
+    const ENTRIES: &[(&str, &str)] = &[
+        ("model", "choose what model and reasoning effort to use"),
+        ("models", "list available models"),
+        (
+            "fast",
+            "toggle Fast mode to enable fastest inference at 2X plan usage",
+        ),
+        ("approvals", "show automation and permission posture"),
+        ("permissions", "show automation and permission posture"),
+        (
+            "setup-default-sandbox",
+            "native sandbox setup workflow not yet ported",
+        ),
+        (
+            "sandbox-add-read-dir",
+            "native sandbox read-dir workflow not yet ported",
+        ),
+        ("experimental", "toggle experimental features"),
+        (
+            "skills",
+            "use skills to improve how Codex performs specific tasks",
+        ),
+        ("review", "review current changes and find issues"),
+        ("rename", "rename the current thread"),
+        ("new", "start a new thread"),
+        ("resume", "resume a saved thread"),
+        ("fork", "fork the current thread"),
+        (
+            "init",
+            "create an AGENTS.md file with instructions for Codex",
+        ),
+        (
+            "compact",
+            "summarize conversation to prevent hitting the context limit",
+        ),
+        ("plan", "switch to plan mode"),
+        ("collab", "change collaboration mode"),
+        ("agent", "switch the active agent thread"),
+        ("multi-agents", "switch the active agent thread"),
+        ("diff", "show the latest turn diff snapshot"),
+        ("copy", "copy the latest assistant reply"),
+        ("mention", "insert or search mentionable files"),
+        (
+            "status",
+            "show current session configuration and token usage",
+        ),
+        (
+            "debug-config",
+            "show config layers and requirement sources for debugging",
+        ),
+        ("statusline", "show current session status"),
+        ("theme", "choose a syntax highlighting theme"),
+        ("mcp", "list MCP servers and tools"),
+        ("apps", "list known app mentions"),
+        ("logout", "log out of Codex"),
+        ("quit", "exit CodexW"),
+        ("exit", "exit CodexW"),
+        ("feedback", "submit feedback through app-server"),
+        ("rollout", "native rollout-path display not yet ported"),
+        ("ps", "list background terminals"),
+        ("clean", "stop background terminals for the thread"),
+        ("clear", "clear terminal and start a new thread"),
+        ("personality", "choose a communication style for Codex"),
+        ("realtime", "experimental realtime workflow"),
+        ("settings", "show effective backend config"),
+        ("threads", "list recent threads"),
+        ("auto", "toggle auto-continue"),
+        ("attach-image", "queue a local image for next submit"),
+        ("attach", "queue a local image for next submit"),
+        ("attach-url", "queue a remote image for next submit"),
+        ("attachments", "show queued attachments"),
+        ("clear-attachments", "clear queued attachments"),
+        ("interrupt", "interrupt the active turn or command"),
+        ("help", "show commands"),
+    ];
+    ENTRIES
 }
 
 fn render_prompt_status(state: &AppState) -> String {
@@ -4387,6 +4426,7 @@ mod tests {
     use super::AppState;
     use super::Cli;
     use super::build_tool_user_input_response;
+    use super::builtin_command_names;
     use super::choose_command_approval_decision;
     use super::extract_file_search_paths;
     use super::extract_thread_ids;
@@ -4697,6 +4737,16 @@ mod tests {
         assert!(rendered.contains("/resume"));
         assert!(rendered.contains("resume a saved thread"));
         assert!(rendered.contains("/review"));
+    }
+
+    #[test]
+    fn bare_slash_completion_uses_native_like_order() {
+        let rendered = render_slash_completion_candidates("", builtin_command_names(), false);
+        let model_pos = rendered.find("/model").expect("model should be listed");
+        let review_pos = rendered.find("/review").expect("review should be listed");
+        let new_pos = rendered.find("/new").expect("new should be listed");
+        assert!(model_pos < review_pos);
+        assert!(review_pos < new_pos);
     }
 
     #[test]
