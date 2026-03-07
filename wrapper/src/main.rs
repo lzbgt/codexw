@@ -1,3 +1,4 @@
+mod catalog;
 mod commands;
 mod editor;
 mod events;
@@ -9,20 +10,12 @@ mod prompt;
 mod render;
 mod requests;
 mod rpc;
+mod runtime;
 mod session;
 mod views;
 
 use std::collections::HashMap;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::process::Child;
-use std::process::ChildStdin;
-use std::process::ChildStdout;
-use std::process::Command;
-use std::process::Stdio;
 use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Context;
@@ -35,12 +28,6 @@ use commands::builtin_help_lines;
 use commands::longest_common_prefix;
 use commands::quote_if_needed;
 use commands::try_complete_slash_command;
-use crossterm::event::Event;
-use crossterm::event::KeyCode;
-use crossterm::event::KeyEvent;
-use crossterm::event::KeyEventKind;
-use crossterm::event::KeyModifiers;
-use crossterm::terminal;
 use editor::EditorEvent;
 use editor::LineEditor;
 use events::process_server_line;
@@ -83,6 +70,17 @@ use requests::send_turn_interrupt;
 use requests::send_turn_start;
 use requests::send_turn_steer;
 use rpc::RequestId;
+use runtime::AppEvent;
+use runtime::InputKey;
+use runtime::RawModeGuard;
+use runtime::StartMode;
+use runtime::effective_cwd;
+use runtime::normalize_cli;
+use runtime::shutdown_child;
+use runtime::spawn_server;
+use runtime::start_stdin_thread;
+use runtime::start_stdout_thread;
+use runtime::start_tick_thread;
 use serde_json::Value;
 use serde_json::json;
 use session::CollaborationModeAction;
@@ -150,36 +148,6 @@ struct Cli {
 
     #[arg(trailing_var_arg = true)]
     prompt: Vec<String>,
-}
-
-enum AppEvent {
-    ServerLine(String),
-    InputKey(InputKey),
-    Tick,
-    StdinClosed,
-    ServerClosed,
-}
-
-#[derive(Debug, Clone, Copy)]
-enum InputKey {
-    Char(char),
-    Esc,
-    Backspace,
-    Delete,
-    Left,
-    Right,
-    Home,
-    End,
-    Up,
-    Down,
-    Tab,
-    Enter,
-    CtrlJ,
-    CtrlC,
-    CtrlA,
-    CtrlE,
-    CtrlU,
-    CtrlW,
 }
 
 #[derive(Default)]
@@ -521,173 +489,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn normalize_cli(mut cli: Cli) -> Cli {
-    if cli.resume.is_none() && matches!(cli.prompt.first().map(String::as_str), Some("resume")) {
-        if let Some(thread_id) = cli.prompt.get(1).cloned() {
-            cli.resume = Some(thread_id);
-            cli.prompt.drain(0..2);
-        }
-    }
-    cli
-}
-
-struct StartMode {
-    resume_thread_id: Option<String>,
-    initial_prompt: Option<String>,
-}
-
-fn spawn_server(cli: &Cli, resolved_cwd: &str) -> Result<Child> {
-    let mut cmd = Command::new(&cli.codex_bin);
-    for kv in &cli.config_overrides {
-        cmd.arg("--config").arg(kv);
-    }
-    for feature in &cli.enable_features {
-        cmd.arg("--enable").arg(feature);
-    }
-    for feature in &cli.disable_features {
-        cmd.arg("--disable").arg(feature);
-    }
-    cmd.arg("app-server")
-        .arg("--listen")
-        .arg("stdio://")
-        .current_dir(resolved_cwd)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit());
-    inherit_proxy_env(&mut cmd);
-    cmd.spawn()
-        .with_context(|| format!("failed to start `{}` app-server", cli.codex_bin))
-}
-
-fn inherit_proxy_env(cmd: &mut Command) {
-    for key in [
-        "HTTPS_PROXY",
-        "https_proxy",
-        "HTTP_PROXY",
-        "http_proxy",
-        "ALL_PROXY",
-        "all_proxy",
-        "NO_PROXY",
-        "no_proxy",
-    ] {
-        if let Some(value) = std::env::var_os(key) {
-            cmd.env(key, value);
-        }
-    }
-}
-
-fn start_stdout_thread(stdout: ChildStdout, tx: mpsc::Sender<AppEvent>) {
-    thread::spawn(move || {
-        let mut reader = BufReader::new(stdout);
-        let mut line = String::new();
-        loop {
-            line.clear();
-            match reader.read_line(&mut line) {
-                Ok(0) => {
-                    let _ = tx.send(AppEvent::ServerClosed);
-                    break;
-                }
-                Ok(_) => {
-                    let trimmed = line.trim_end_matches(['\n', '\r']).to_string();
-                    let _ = tx.send(AppEvent::ServerLine(trimmed));
-                }
-                Err(_) => {
-                    let _ = tx.send(AppEvent::ServerClosed);
-                    break;
-                }
-            }
-        }
-    });
-}
-
-fn start_stdin_thread(tx: mpsc::Sender<AppEvent>) {
-    thread::spawn(move || {
-        loop {
-            match crossterm::event::read() {
-                Ok(Event::Key(key_event)) => {
-                    if !matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-                        continue;
-                    }
-                    if let Some(key) = map_key_event(key_event) {
-                        let _ = tx.send(AppEvent::InputKey(key));
-                    }
-                }
-                Ok(_) => {}
-                Err(_) => {
-                    let _ = tx.send(AppEvent::StdinClosed);
-                    break;
-                }
-            }
-        }
-    });
-}
-
-fn start_tick_thread(tx: mpsc::Sender<AppEvent>) {
-    thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_millis(200));
-            if tx.send(AppEvent::Tick).is_err() {
-                break;
-            }
-        }
-    });
-}
-
-fn map_key_event(key_event: KeyEvent) -> Option<InputKey> {
-    match (key_event.code, key_event.modifiers) {
-        (KeyCode::Esc, _) => Some(InputKey::Esc),
-        (KeyCode::Char('c'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
-            Some(InputKey::CtrlC)
-        }
-        (KeyCode::Char('j'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
-            Some(InputKey::CtrlJ)
-        }
-        (KeyCode::Char('a'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
-            Some(InputKey::CtrlA)
-        }
-        (KeyCode::Char('e'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
-            Some(InputKey::CtrlE)
-        }
-        (KeyCode::Char('u'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
-            Some(InputKey::CtrlU)
-        }
-        (KeyCode::Char('w'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
-            Some(InputKey::CtrlW)
-        }
-        (KeyCode::Enter, _) => Some(InputKey::Enter),
-        (KeyCode::Backspace, _) => Some(InputKey::Backspace),
-        (KeyCode::Delete, _) => Some(InputKey::Delete),
-        (KeyCode::Left, _) => Some(InputKey::Left),
-        (KeyCode::Right, _) => Some(InputKey::Right),
-        (KeyCode::Home, _) => Some(InputKey::Home),
-        (KeyCode::End, _) => Some(InputKey::End),
-        (KeyCode::Up, _) => Some(InputKey::Up),
-        (KeyCode::Down, _) => Some(InputKey::Down),
-        (KeyCode::Tab, _) => Some(InputKey::Tab),
-        (KeyCode::Char(ch), modifiers)
-            if modifiers.is_empty() || modifiers == KeyModifiers::SHIFT =>
-        {
-            Some(InputKey::Char(ch))
-        }
-        _ => None,
-    }
-}
-
-struct RawModeGuard;
-
-impl RawModeGuard {
-    fn new() -> Result<Self> {
-        terminal::enable_raw_mode().context("enable raw terminal mode")?;
-        Ok(Self)
-    }
-}
-
-impl Drop for RawModeGuard {
-    fn drop(&mut self) {
-        let _ = terminal::disable_raw_mode();
-    }
-}
-
 fn approval_policy(cli: &Cli) -> &'static str {
     let _ = cli;
     "never"
@@ -736,31 +537,11 @@ fn choose_first_allowed_decision(decisions: &[Value]) -> Option<Value> {
     None
 }
 
-fn shutdown_child(writer: ChildStdin, mut child: Child) -> Result<()> {
-    drop(writer);
-    if child.try_wait()?.is_none() {
-        child.kill().context("kill codex app-server child")?;
-        let _ = child.wait();
-    }
-    Ok(())
-}
-
 fn thread_id(state: &AppState) -> Result<&str> {
     state
         .thread_id
         .as_deref()
         .context("no active thread; wait for initialization or use :new")
-}
-
-fn effective_cwd(cli: &Cli) -> Result<String> {
-    match cli.cwd.as_ref() {
-        Some(cwd) => Ok(cwd.clone()),
-        None => std::env::current_dir()
-            .context("resolve current working directory")?
-            .to_str()
-            .map(ToOwned::to_owned)
-            .context("current working directory is not valid UTF-8"),
-    }
 }
 
 fn get_string<'a>(value: &'a Value, path: &[&str]) -> Option<&'a str> {
@@ -783,74 +564,6 @@ fn summarize_text(text: &str) -> String {
             .collect::<String>();
         format!("{truncated}…")
     }
-}
-
-fn parse_apps_list(result: &Value) -> Vec<AppCatalogEntry> {
-    result
-        .get("data")
-        .and_then(Value::as_array)
-        .map(|entries| {
-            entries
-                .iter()
-                .filter_map(|entry| {
-                    Some(AppCatalogEntry {
-                        id: get_string(entry, &["id"])?.to_string(),
-                        name: get_string(entry, &["name"])?.to_string(),
-                        slug: app_slug(get_string(entry, &["name"])?),
-                        enabled: entry
-                            .get("isEnabled")
-                            .and_then(Value::as_bool)
-                            .unwrap_or(true),
-                    })
-                })
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn parse_skills_list(result: &Value, resolved_cwd: &str) -> Vec<SkillCatalogEntry> {
-    result
-        .get("data")
-        .and_then(Value::as_array)
-        .map(|entries| {
-            entries
-                .iter()
-                .find(|entry| get_string(entry, &["cwd"]) == Some(resolved_cwd))
-                .and_then(|entry| entry.get("skills"))
-                .and_then(Value::as_array)
-                .map(|skills| {
-                    skills
-                        .iter()
-                        .filter_map(|skill| {
-                            Some(SkillCatalogEntry {
-                                name: get_string(skill, &["name"])?.to_ascii_lowercase(),
-                                path: get_string(skill, &["path"])?.to_string(),
-                                enabled: skill
-                                    .get("enabled")
-                                    .and_then(Value::as_bool)
-                                    .unwrap_or(true),
-                            })
-                        })
-                        .collect()
-                })
-                .unwrap_or_default()
-        })
-        .unwrap_or_default()
-}
-
-fn app_slug(name: &str) -> String {
-    let mut slug = String::new();
-    let mut last_was_dash = false;
-    for ch in name.chars() {
-        if ch.is_ascii_alphanumeric() {
-            slug.push(ch.to_ascii_lowercase());
-            last_was_dash = false;
-        } else if !last_was_dash {
-            slug.push('-');
-            last_was_dash = true;
-        }
-    }
-    slug.trim_matches('-').to_string()
 }
 
 fn emit_status_line(_output: &mut Output, state: &mut AppState, line: String) -> Result<()> {

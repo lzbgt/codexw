@@ -7,6 +7,8 @@ use serde_json::Value;
 use serde_json::json;
 
 use super::*;
+use crate::catalog::parse_apps_list;
+use crate::catalog::parse_skills_list;
 use crate::history::render_resumed_history;
 use crate::requests::*;
 use crate::rpc;
@@ -17,6 +19,7 @@ use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcNotification;
 use crate::rpc::RpcRequest;
 use crate::rpc::RpcResponse;
+use crate::runtime::StartMode;
 use crate::views::build_tool_user_input_response;
 use crate::views::extract_file_search_paths;
 use crate::views::extract_thread_ids;

@@ -27,10 +27,10 @@ The current design optimizes for:
 
 ## High-Level Architecture
 
-The runtime has eight main layers.
+The runtime has ten main layers.
 
 1. Backend process management
-   `main.rs` starts `codex app-server`, wires stdio, forwards key environment such as proxy variables, and owns process lifetime.
+   `runtime.rs` starts `codex app-server`, wires stdio, forwards key environment such as proxy variables, owns raw-mode lifecycle, and manages stdin/stdout/tick event sources.
 
 2. JSON-RPC transport
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
@@ -41,24 +41,29 @@ The runtime has eight main layers.
 4. Inbound event handling
    `events.rs` owns inbound JSON-RPC line routing plus response, notification, approval-request, and item-completion handling.
 
-5. Session and turn orchestration
-   `main.rs` owns process startup, event-loop control, resume logic, command dispatch, and auto-continue coordination. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering now lives in `session.rs`.
+5. Catalog parsing
+   `catalog.rs` owns app and skill catalog parsing from app-server payloads.
 
-6. Resume and history rendering
+6. Session and turn orchestration
+   `main.rs` now focuses on top-level process startup, the main event loop, shared state, and auto-continue coordination. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering lives in `session.rs`.
+
+7. Resume and history rendering
    `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
 
-7. View and transcript rendering helpers
+8. View and transcript rendering helpers
    `views.rs` owns app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
-8. Human input handling
+9. Human input handling
    `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
 
-9. Human output handling
+10. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
 
 Session feature helpers live in `session.rs`: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
 Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
 Display helpers live in `views.rs`: formatted thread/model/app output, approval/request summaries, and item-completion rendering blocks.
+Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
+Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 
 ## Process Model
 
@@ -320,9 +325,13 @@ The biggest known limits are architectural, not accidental.
 ## File Map
 
 - `wrapper/src/main.rs`
-  Orchestration, session state, command handling, resume logic, turn lifecycle, auto-continue.
+  Top-level event loop, shared session state, turn lifecycle coordination, and auto-continue.
+- `wrapper/src/runtime.rs`
+  Backend process startup, raw-mode lifecycle, keyboard mapping, and stdin/stdout/tick event threads.
 - `wrapper/src/events.rs`
   Inbound JSON-RPC line routing, response handling, notification handling, approval-request handling, and item completion rendering.
+- `wrapper/src/catalog.rs`
+  App and skill catalog parsing for app-server payloads.
 - `wrapper/src/history.rs`
   Resume-preview extraction, resumed objective/reply seeding, and resumed conversation rendering.
 - `wrapper/src/views.rs`
