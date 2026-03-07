@@ -332,7 +332,24 @@ fn main() -> Result<()> {
                     }
                 }
                 InputKey::Esc => {
-                    if prompt_accepts_input(&state) {
+                    if state.turn_running {
+                        if let Some(turn_id) = state.active_turn_id.clone() {
+                            let current_thread_id = thread_id(&state)?.to_string();
+                            output.line_stderr("[interrupt] interrupting active turn")?;
+                            send_turn_interrupt(
+                                &mut writer,
+                                &mut state,
+                                current_thread_id,
+                                turn_id,
+                            )?;
+                        } else {
+                            output.line_stderr("[session] no active turn id; exiting")?;
+                            break;
+                        }
+                    } else if let Some(process_id) = state.active_exec_process_id.clone() {
+                        output.line_stderr("[interrupt] terminating active local command")?;
+                        send_command_exec_terminate(&mut writer, &mut state, process_id)?;
+                    } else if prompt_accepts_input(&state) {
                         editor.clear();
                     }
                 }

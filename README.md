@@ -22,7 +22,7 @@ For a fuller design and internals walkthrough, see [docs/codexw-design.md](docs/
 
 ## Observability
 
-By default `codexw` renders the structured app-server event stream into normal terminal scrollback in a richer human-oriented form, including:
+By default `codexw` renders the structured app-server event stream into normal terminal scrollback in a richer human-oriented form, using a palette intentionally closer to the upstream Codex TUI markdown and diff styling, including:
 
 - the final assistant reply as a styled markdown-like block
 - completed reasoning summaries in dimmed secondary text
@@ -39,7 +39,7 @@ This is protocol-level observability from Codex itself, not `RUST_LOG` tracing. 
 By default the client does not dump raw JSON payloads into the terminal. Raw JSON is reserved for `--raw-json`, and lower-level protocol events are hidden unless you opt into `--verbose-events`.
 
 The client follows the normal terminal scrollback model instead of a fixed alternate-screen viewport, so you can use the terminal’s native scroll behavior rather than in-app paging.
-It renders a plain inline prompt/composer in the normal terminal flow and keeps a separate transient status line above the prompt while a turn or local command is active. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft, `Tab` for inline slash-command and `@file` completion, `Ctrl-J` to insert a newline into a multiline draft, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
+It renders a plain inline prompt/composer in the normal terminal flow and keeps a separate transient status line above the prompt while a turn or local command is active. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft when idle and interrupt an active turn or local command when running, `Tab` for inline slash-command and `@file` completion, `Ctrl-J` to insert a newline into a multiline draft, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
 The separate status line shows live request progress, including a spinner, elapsed request time, and turn count, so quiet backend work does not look like a dead terminal without bloating the prompt widget itself.
 
 ## Automation Defaults

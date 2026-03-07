@@ -165,15 +165,15 @@ fn fit_prompt_buffer(buffer: &str, cursor_chars: usize, available_chars: usize) 
 
 fn render_title_line(title: &str) -> Line<'static> {
     let accent = if title.eq_ignore_ascii_case("Assistant") {
-        Color::Cyan
+        Color::Blue
     } else if title.eq_ignore_ascii_case("Thinking") {
         Color::DarkGray
     } else if title.to_ascii_lowercase().contains("diff") {
-        Color::Magenta
+        Color::Blue
     } else if title.to_ascii_lowercase().contains("command") {
         Color::Green
     } else {
-        Color::Blue
+        Color::DarkGray
     };
     Line::from(vec![
         Span::styled("▌ ", Style::default().fg(accent)),
@@ -225,19 +225,16 @@ fn render_markdown_text(body: &str) -> Text<'static> {
                         3 => "### ",
                         _ => "#### ",
                     },
-                    Style::default()
-                        .fg(Color::Blue)
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(
                     content.to_string(),
-                    Style::default()
-                        .fg(match level {
-                            1 => Color::Cyan,
-                            2 => Color::Blue,
-                            _ => Color::White,
-                        })
-                        .add_modifier(Modifier::BOLD),
+                    match level {
+                        1 => Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+                        2 => Style::default().add_modifier(Modifier::BOLD),
+                        3 => Style::default().add_modifier(Modifier::BOLD | Modifier::ITALIC),
+                        _ => Style::default().add_modifier(Modifier::ITALIC),
+                    },
                 ),
             ]));
             continue;
@@ -245,8 +242,8 @@ fn render_markdown_text(body: &str) -> Text<'static> {
 
         if trimmed.starts_with('>') {
             let quote = trimmed.trim_start_matches('>').trim_start();
-            let mut spans = vec![Span::styled("▏ ", Style::default().fg(Color::DarkGray))];
-            spans.extend(tint_spans(render_inline_markdown(quote), Color::DarkGray));
+            let mut spans = vec![Span::styled("▏ ", Style::default().fg(Color::Green))];
+            spans.extend(tint_spans(render_inline_markdown(quote), Color::Green));
             lines.push(Line::from(spans));
             continue;
         }
@@ -255,7 +252,7 @@ fn render_markdown_text(body: &str) -> Text<'static> {
             .strip_prefix("- ")
             .or_else(|| trimmed.strip_prefix("* "))
         {
-            let mut spans = vec![Span::styled("• ", Style::default().fg(Color::Yellow))];
+            let mut spans = vec![Span::raw("• ")];
             spans.extend(render_inline_markdown(content));
             lines.push(Line::from(spans));
             continue;
@@ -265,7 +262,7 @@ fn render_markdown_text(body: &str) -> Text<'static> {
             let mut spans = vec![Span::styled(
                 format!("{marker} "),
                 Style::default()
-                    .fg(Color::Yellow)
+                    .fg(Color::LightBlue)
                     .add_modifier(Modifier::BOLD),
             )];
             spans.extend(render_inline_markdown(content));
@@ -300,11 +297,11 @@ fn render_diff_text(body: &str) -> Text<'static> {
                 || line.starts_with("--- ")
             {
                 Style::default()
-                    .fg(Color::Cyan)
+                    .fg(Color::Blue)
                     .add_modifier(Modifier::BOLD)
             } else if line.starts_with("@@") {
                 Style::default()
-                    .fg(Color::Magenta)
+                    .fg(Color::LightBlue)
                     .add_modifier(Modifier::BOLD)
             } else if line.starts_with('+') {
                 Style::default().fg(Color::Green)
@@ -501,13 +498,7 @@ fn render_inline_markdown(text: &str) -> Vec<Span<'static>> {
             }
             if end < chars.len() {
                 let code = chars[index + 1..end].iter().collect::<String>();
-                spans.push(Span::styled(
-                    code,
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .bg(Color::Rgb(34, 34, 34))
-                        .add_modifier(Modifier::BOLD),
-                ));
+                spans.push(Span::styled(code, Style::default().fg(Color::Cyan)));
                 index = end + 1;
                 continue;
             }
