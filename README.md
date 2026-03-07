@@ -6,6 +6,8 @@ It does not patch Codex. It uses the Homebrew-installed vanilla `codex` binary a
 
 The repo also includes a companion skill at `skills/session-autopilot/`. That skill does not try to monitor session lifecycle by itself; instead it defines the cooperative end-of-turn policy that `codexw` can honor with its auto-continue loop.
 
+For a fuller design and internals walkthrough, see [docs/codexw-design.md](docs/codexw-design.md).
+
 ## Architecture
 
 - `codex` runs `app-server` over `stdio`
