@@ -34,6 +34,13 @@ impl LineEditor {
         self.history_index = None;
     }
 
+    pub fn insert_str(&mut self, text: &str) {
+        let byte_index = char_to_byte_index(&self.buffer, self.cursor_chars);
+        self.buffer.insert_str(byte_index, text);
+        self.cursor_chars += text.chars().count();
+        self.history_index = None;
+    }
+
     pub fn backspace(&mut self) {
         if self.cursor_chars == 0 {
             return;

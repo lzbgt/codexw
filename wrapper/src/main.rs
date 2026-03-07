@@ -196,6 +196,8 @@ struct AppState {
     apps: Vec<AppCatalogEntry>,
     plugins: Vec<PluginCatalogEntry>,
     skills: Vec<SkillCatalogEntry>,
+    last_listed_thread_ids: Vec<String>,
+    last_file_search_paths: Vec<String>,
     last_status_line: Option<String>,
     raw_json: bool,
     pending: HashMap<RequestId, PendingRequest>,
@@ -228,6 +230,8 @@ impl AppState {
             apps: Vec::new(),
             plugins: Vec::new(),
             skills: Vec::new(),
+            last_listed_thread_ids: Vec::new(),
+            last_file_search_paths: Vec::new(),
             last_status_line: None,
             raw_json,
             pending: HashMap::new(),
@@ -432,6 +436,7 @@ fn main() -> Result<()> {
                             &cli,
                             &resolved_cwd,
                             &mut state,
+                            &mut editor,
                             &mut output,
                             &mut writer,
                         )? {
@@ -1414,6 +1419,7 @@ fn handle_response(
             output.block_stdout("MCP servers", &render_mcp_server_list(&response.result))?;
         }
         PendingRequest::ListThreads { search_term } => {
+            state.last_listed_thread_ids = extract_thread_ids(&response.result);
             output.block_stdout(
                 "Threads",
                 &render_thread_list(&response.result, search_term.as_deref()),
@@ -1462,15 +1468,16 @@ fn handle_response(
             }
         }
         PendingRequest::FuzzyFileSearch { query } => {
+            let files = response
+                .result
+                .get("files")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            state.last_file_search_paths = extract_file_search_paths(&files);
             let rendered = render_fuzzy_file_search_results(
                 &query,
-                response
-                    .result
-                    .get("files")
-                    .and_then(Value::as_array)
-                    .cloned()
-                    .unwrap_or_default()
-                    .as_slice(),
+                files.as_slice(),
             );
             output.block_stdout("File mentions", &rendered)?;
         }
@@ -1964,6 +1971,7 @@ fn handle_user_input(
     cli: &Cli,
     resolved_cwd: &str,
     state: &mut AppState,
+    editor: &mut LineEditor,
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<bool> {
@@ -1973,11 +1981,11 @@ fn handle_user_input(
     }
 
     if let Some(command) = trimmed.strip_prefix(':') {
-        return handle_command(command, cli, resolved_cwd, state, output, writer);
+        return handle_command(command, cli, resolved_cwd, state, editor, output, writer);
     }
     if let Some(command) = trimmed.strip_prefix('/') {
         if is_builtin_command(command) {
-            return handle_command(command, cli, resolved_cwd, state, output, writer);
+            return handle_command(command, cli, resolved_cwd, state, editor, output, writer);
         }
     }
 
@@ -2047,6 +2055,7 @@ fn handle_command(
     cli: &Cli,
     resolved_cwd: &str,
     state: &mut AppState,
+    editor: &mut LineEditor,
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<bool> {
@@ -2116,9 +2125,22 @@ fn handle_command(
                 )?;
                 return Ok(true);
             }
-            let Some(thread_id) = parts.next() else {
-                output.line_stderr("[session] usage: :resume <thread-id>")?;
+            let maybe_arg = parts.next().map(ToOwned::to_owned);
+            let Some(thread_id) = maybe_arg else {
+                output.line_stderr("[session] loading recent threads; use /resume <n> or /resume <thread-id>")?;
+                send_list_threads(writer, state, resolved_cwd, None)?;
                 return Ok(true);
+            };
+            let thread_id = if let Ok(index) = thread_id.parse::<usize>() {
+                match state.last_listed_thread_ids.get(index.saturating_sub(1)) {
+                    Some(thread_id) => thread_id.clone(),
+                    None => {
+                        output.line_stderr("[session] no cached thread at that index; run /threads or /resume first")?;
+                        return Ok(true);
+                    }
+                }
+            } else {
+                thread_id
             };
             output.line_stderr(format!("[session] resuming thread {thread_id}"))?;
             send_thread_resume(
@@ -2228,7 +2250,17 @@ fn handle_command(
             let query = parts.collect::<Vec<_>>().join(" ");
             let query = query.trim();
             if query.is_empty() {
-                output.line_stderr("[session] usage: :mention <file-query>")?;
+                output.line_stderr("[session] usage: :mention <file-query> or :mention <n>")?;
+                return Ok(true);
+            }
+            if let Ok(index) = query.parse::<usize>() {
+                let Some(path) = state.last_file_search_paths.get(index.saturating_sub(1)).cloned() else {
+                    output.line_stderr("[session] no cached file match at that index; run /mention <query> first")?;
+                    return Ok(true);
+                };
+                let inserted = quote_if_needed(&path);
+                editor.insert_str(&format!("{inserted} "));
+                output.line_stderr(format!("[mention] inserted {}", summarize_text(&path)))?;
                 return Ok(true);
             }
             output.line_stderr(format!("[search] files matching {}", summarize_text(query)))?;
@@ -2647,6 +2679,14 @@ fn file_completions(token: &str, resolved_cwd: &str) -> Result<Vec<String>> {
 
 fn os_str_to_string(value: &OsStr) -> Option<String> {
     value.to_str().map(ToOwned::to_owned)
+}
+
+fn quote_if_needed(value: &str) -> String {
+    if value.chars().any(char::is_whitespace) && !value.contains('"') {
+        format!("\"{value}\"")
+    } else {
+        value.to_string()
+    }
 }
 
 fn longest_common_prefix<S: AsRef<str>>(values: &[S]) -> String {
@@ -3440,6 +3480,7 @@ fn render_fuzzy_file_search_results(query: &str, files: &[Value]) -> String {
     if files.len() > 20 {
         lines.push(format!("…and {} more", files.len() - 20));
     }
+    lines.push("Use /mention <n> to insert a match into the prompt.".to_string());
     lines.join("\n")
 }
 
@@ -3563,7 +3604,7 @@ fn render_thread_list(result: &Value, search_term: Option<&str>) -> String {
     if let Some(search_term) = search_term {
         lines.push(format!("Search: {search_term}"));
     }
-    lines.extend(threads.iter().map(|thread| {
+    lines.extend(threads.iter().enumerate().map(|(index, thread)| {
         let id = get_string(thread, &["id"]).unwrap_or("?");
         let preview = get_string(thread, &["preview"]).unwrap_or("-");
         let status = get_string(thread, &["status", "type"]).unwrap_or("unknown");
@@ -3573,11 +3614,32 @@ fn render_thread_list(result: &Value, search_term: Option<&str>) -> String {
             .map(|value| value.to_string())
             .unwrap_or_else(|| "-".to_string());
         format!(
-            "{id}  [{status}]  [updated {updated_at}]  {}",
+            "{:>2}. {id}  [{status}]  [updated {updated_at}]  {}",
+            index + 1,
             summarize_text(preview)
         )
     }));
+    lines.push("Use /resume <n> to resume one of these threads.".to_string());
     lines.join("\n")
+}
+
+fn extract_thread_ids(result: &Value) -> Vec<String> {
+    result
+        .get("data")
+        .and_then(Value::as_array)
+        .map(|threads| {
+            threads
+                .iter()
+                .filter_map(|thread| get_string(thread, &["id"]).map(ToOwned::to_owned))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn extract_file_search_paths(files: &[Value]) -> Vec<String> {
+    files.iter()
+        .filter_map(|file| get_string(file, &["path"]).map(ToOwned::to_owned))
+        .collect()
 }
 
 fn render_token_usage_summary(token_usage: Option<&Value>) -> Option<String> {
@@ -3935,7 +3997,11 @@ mod tests {
     use super::render_fuzzy_file_search_results;
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
+    use super::render_thread_list;
     use super::summarize_terminal_interaction;
+    use super::extract_thread_ids;
+    use super::extract_file_search_paths;
+    use super::quote_if_needed;
     use super::try_complete_file_token;
     use super::try_complete_slash_command;
     use crate::input::AppCatalogEntry;
@@ -4134,6 +4200,44 @@ mod tests {
         assert!(rendered.contains("alpha.txt"));
         assert!(rendered.contains("alpine.txt"));
         assert_eq!(editor.buffer(), "@alp");
+    }
+
+    #[test]
+    fn thread_list_is_numbered_and_extractable() {
+        let result = json!({
+            "data": [
+                {
+                    "id": "thr_1",
+                    "preview": "first thread",
+                    "status": {"type": "idle"},
+                    "updatedAt": 1
+                },
+                {
+                    "id": "thr_2",
+                    "preview": "second thread",
+                    "status": {"type": "active"},
+                    "updatedAt": 2
+                }
+            ]
+        });
+        let rendered = render_thread_list(&result, None);
+        assert!(rendered.contains(" 1. thr_1"));
+        assert!(rendered.contains("Use /resume <n>"));
+        assert_eq!(extract_thread_ids(&result), vec!["thr_1", "thr_2"]);
+    }
+
+    #[test]
+    fn file_search_paths_are_extractable_for_numeric_insert() {
+        let files = vec![
+            json!({"path": "src/main.rs", "score": 1}),
+            json!({"path": "src/lib.rs", "score": 2}),
+        ];
+        assert_eq!(
+            extract_file_search_paths(&files),
+            vec!["src/main.rs", "src/lib.rs"]
+        );
+        assert_eq!(quote_if_needed("src/main.rs"), "src/main.rs");
+        assert_eq!(quote_if_needed("path with spaces.rs"), "\"path with spaces.rs\"");
     }
 
     #[test]
