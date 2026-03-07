@@ -178,16 +178,19 @@ The companion skill in `skills/session-autopilot/` provides the model-side polic
 
 ## Inline Editor and Prompt Model
 
-`editor.rs` implements a single-line inline editor with:
+`editor.rs` implements an inline editor with:
 
 - insertion
 - left and right navigation
 - Home and End
 - Backspace and Delete
 - history navigation
+- multiline drafting via `Ctrl-J`
 - `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, `Ctrl-W`
 - `Esc` to clear draft
 - `Ctrl-C` to clear draft or propagate interrupt when empty
+
+The editor and prompt renderer now operate on grapheme boundaries and display width rather than raw Unicode scalar counts. That makes cursor movement, backspace, delete, and prompt cursor placement behave correctly for CJK text, emoji, and combining characters.
 
 The prompt stays scroll-native. Instead of owning a fixed alternate screen, `output.rs` redraws a single prompt line in place and commits submitted prompts into normal terminal history.
 
@@ -233,10 +236,12 @@ It renders:
 - command blocks
 - shell output
 - colored diffs
-- status lines
+- a transient status line above the prompt
 - the inline prompt label
 
 The design goal is richer terminal output without switching to an alternate-screen viewport.
+
+To reduce transcript duplication, the client now prefers the transient status line over committed `[status] ...` chatter in scrollback, and it avoids emitting redundant "started" transcript blocks for commands and file changes that already produce a completed result block.
 
 ## Human-Facing Features
 
