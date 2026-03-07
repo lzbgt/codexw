@@ -27,7 +27,7 @@ The current design optimizes for:
 
 ## High-Level Architecture
 
-The runtime has five main layers.
+The runtime has six main layers.
 
 1. Backend process management
    `main.rs` starts `codex app-server`, wires stdio, forwards key environment such as proxy variables, and owns process lifetime.
@@ -35,17 +35,19 @@ The runtime has five main layers.
 2. JSON-RPC transport
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
-3. Session and turn orchestration
-   `main.rs` owns initialization, thread start or resume, turn start, turn steer, interrupt handling, approval responses, catalog loading, and auto-continue. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering now lives in `session.rs`.
+3. Outbound request construction
+   `requests.rs` owns JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions.
 
-4. Human input handling
+4. Session and turn orchestration
+   `main.rs` owns process startup, event-loop control, inbound response and notification handling, approval responses, resume logic, and auto-continue. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering now lives in `session.rs`.
+
+5. Human input handling
    `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
 
-5. Human output handling
+6. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
 
-6. Session feature helpers
-   `session.rs` groups the backend-backed session feature layer: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
+Session feature helpers live in `session.rs`: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
 
 ## Process Model
 
@@ -307,7 +309,9 @@ The biggest known limits are architectural, not accidental.
 ## File Map
 
 - `wrapper/src/main.rs`
-  Orchestration, session state, command handling, JSON-RPC flow, resume logic, turn lifecycle, auto-continue.
+  Orchestration, session state, command handling, inbound JSON-RPC flow, resume logic, turn lifecycle, auto-continue.
+- `wrapper/src/requests.rs`
+  Outbound JSON-RPC request builders plus pending-request types for initialize, thread, turn, command, review, catalog, and realtime actions.
 - `wrapper/src/rpc.rs`
   JSON-RPC wire types and line parsing.
 - `wrapper/src/input.rs`
