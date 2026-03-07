@@ -153,6 +153,7 @@ enum PendingRequest {
     LoadModels,
     LoadConfig,
     LoadMcpServers,
+    LoadExperimentalFeatures,
     LoadCollaborationModes { action: CollaborationModeAction },
     ListThreads { search_term: Option<String> },
     StartThread { initial_prompt: Option<String> },
@@ -891,6 +892,23 @@ fn send_load_models(writer: &mut ChildStdin, state: &mut AppState) -> Result<()>
     )
 }
 
+fn send_load_experimental_features(writer: &mut ChildStdin, state: &mut AppState) -> Result<()> {
+    let request_id = state.next_request_id();
+    state
+        .pending
+        .insert(request_id.clone(), PendingRequest::LoadExperimentalFeatures);
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "experimentalFeature/list",
+            params: json!({
+                "limit": 200,
+            }),
+        },
+    )
+}
+
 fn send_load_config(writer: &mut ChildStdin, state: &mut AppState) -> Result<()> {
     let request_id = state.next_request_id();
     state
@@ -1585,6 +1603,12 @@ fn handle_response(
         }
         PendingRequest::LoadModels => {
             output.block_stdout("Models", &render_models_list(&response.result))?;
+        }
+        PendingRequest::LoadExperimentalFeatures => {
+            output.block_stdout(
+                "Experimental features",
+                &render_experimental_features_list(&response.result),
+            )?;
         }
         PendingRequest::LoadCollaborationModes { action } => {
             state.collaboration_modes = extract_collaboration_mode_presets(&response.result);
@@ -2612,6 +2636,11 @@ fn handle_command(
             send_load_config(writer, state)?;
             Ok(true)
         }
+        "experimental" => {
+            output.line_stderr("[session] loading experimental feature flags")?;
+            send_load_experimental_features(writer, state)?;
+            Ok(true)
+        }
         "collab" => {
             let args = parts.collect::<Vec<_>>();
             if args.is_empty() {
@@ -2648,7 +2677,6 @@ fn handle_command(
         | "multi-agents"
         | "theme"
         | "rollout"
-        | "experimental"
         | "sandbox-add-read-dir"
         | "setup-default-sandbox"
         | "init" => {
@@ -3282,7 +3310,7 @@ fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
         BuiltinCommandEntry {
             name: "experimental",
             help_syntax: "experimental",
-            description: "toggle experimental features",
+            description: "list experimental feature flags from app-server",
         },
         BuiltinCommandEntry {
             name: "skills",
@@ -3925,6 +3953,71 @@ fn render_file_change_completion(item: &Value, status: &str, output: Option<&str
         }
     }
     rendered
+}
+
+fn render_experimental_features_list(result: &Value) -> String {
+    let mut lines = Vec::new();
+    let features = result
+        .get("data")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+
+    for feature in features {
+        let name = feature.get("name").and_then(Value::as_str).unwrap_or("?");
+        let stage = feature
+            .get("stage")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown");
+        let enabled = feature
+            .get("enabled")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let default_enabled = feature
+            .get("defaultEnabled")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let display_name = feature
+            .get("displayName")
+            .and_then(Value::as_str)
+            .unwrap_or(name);
+        let description = feature
+            .get("description")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let status = if enabled {
+            "enabled"
+        } else if default_enabled {
+            "default-on"
+        } else {
+            "disabled"
+        };
+
+        lines.push(format!("{display_name}  [{stage}] [{status}]"));
+        lines.push(format!("  key: {name}"));
+        if !description.is_empty() {
+            lines.push(format!("  {description}"));
+        }
+        if let Some(announcement) = feature.get("announcement").and_then(Value::as_str) {
+            if !announcement.trim().is_empty() {
+                lines.push(format!("  note: {}", summarize_text(announcement)));
+            }
+        }
+        lines.push(String::new());
+    }
+
+    if lines.is_empty() {
+        lines.push("No experimental features were returned by app-server.".to_string());
+    } else {
+        lines.pop();
+    }
+
+    if result.get("nextCursor").and_then(Value::as_str).is_some() {
+        lines.push(String::new());
+        lines.push("More feature entries are available from app-server.".to_string());
+    }
+
+    lines.join("\n")
 }
 
 fn render_pending_attachments(local_images: &[String], remote_images: &[String]) -> String {
@@ -4939,6 +5032,7 @@ mod tests {
     use super::quote_if_needed;
     use super::render_apps_list;
     use super::render_collaboration_modes;
+    use super::render_experimental_features_list;
     use super::render_fuzzy_file_search_results;
     use super::render_prompt_status;
     use super::render_rate_limit_lines;
@@ -5369,6 +5463,27 @@ mod tests {
         assert!(rendered.contains("current         Plan"));
         assert!(rendered.contains("mode=plan"));
         assert!(rendered.contains("Use /collab <name|mode> or /plan to switch."));
+    }
+
+    #[test]
+    fn experimental_feature_rendering_shows_stage_status_and_key() {
+        let rendered = render_experimental_features_list(&json!({
+            "data": [
+                {
+                    "name": "realtime_conversation",
+                    "stage": "beta",
+                    "displayName": "Realtime conversation",
+                    "description": "Enable the experimental realtime voice workflow.",
+                    "announcement": "Try voice mode in supported clients.",
+                    "enabled": true,
+                    "defaultEnabled": false
+                }
+            ],
+            "nextCursor": null
+        }));
+        assert!(rendered.contains("Realtime conversation  [beta] [enabled]"));
+        assert!(rendered.contains("key: realtime_conversation"));
+        assert!(rendered.contains("Enable the experimental realtime voice workflow."));
     }
 
     #[test]
