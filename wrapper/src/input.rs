@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::path::Path;
+use std::path::PathBuf;
 
 use serde_json::Value;
 use serde_json::json;
@@ -41,13 +43,15 @@ pub struct SkillCatalogEntry {
 
 pub fn build_turn_input(
     text: &str,
+    resolved_cwd: &str,
     pending_local_images: &[String],
     pending_remote_images: &[String],
     apps: &[AppCatalogEntry],
     plugins: &[PluginCatalogEntry],
     skills: &[SkillCatalogEntry],
 ) -> ParsedInput {
-    let decoded = decode_linked_mentions(text);
+    let preprocessed = expand_inline_file_mentions(text, resolved_cwd, plugins);
+    let decoded = decode_linked_mentions(&preprocessed);
     let mut items = Vec::new();
 
     for url in pending_remote_images {
@@ -122,6 +126,111 @@ pub fn build_turn_input(
     ParsedInput {
         display_text: decoded.text,
         items,
+    }
+}
+
+fn expand_inline_file_mentions(
+    text: &str,
+    resolved_cwd: &str,
+    plugins: &[PluginCatalogEntry],
+) -> String {
+    let plugin_names = plugins
+        .iter()
+        .filter(|plugin| plugin.enabled)
+        .map(|plugin| plugin.name.to_ascii_lowercase())
+        .collect::<HashSet<_>>();
+    let bytes = text.as_bytes();
+    let mut out = String::with_capacity(text.len());
+    let mut index = 0usize;
+
+    while index < bytes.len() {
+        if bytes[index] != b'@' {
+            let Some(ch) = text[index..].chars().next() else {
+                break;
+            };
+            out.push(ch);
+            index += ch.len_utf8();
+            continue;
+        }
+
+        if index > 0
+            && let Some(previous) = bytes.get(index - 1)
+            && !previous.is_ascii_whitespace()
+        {
+            out.push('@');
+            index += 1;
+            continue;
+        }
+
+        let start = index + 1;
+        let Some(first) = bytes.get(start) else {
+            out.push('@');
+            index += 1;
+            continue;
+        };
+        if !is_file_token_char(*first) {
+            out.push('@');
+            index += 1;
+            continue;
+        }
+
+        let mut end = start + 1;
+        while let Some(next) = bytes.get(end)
+            && is_file_token_char(*next)
+        {
+            end += 1;
+        }
+
+        let token = &text[start..end];
+        let lowered = token.to_ascii_lowercase();
+        if !token.contains('/')
+            && !token.contains('\\')
+            && !token.contains('.')
+            && plugin_names.contains(&lowered)
+        {
+            out.push('@');
+            out.push_str(token);
+            index = end;
+            continue;
+        }
+
+        if let Some(path) = resolve_file_mention_path(token, resolved_cwd) {
+            out.push_str(&path);
+        } else {
+            out.push('@');
+            out.push_str(token);
+        }
+        index = end;
+    }
+
+    out
+}
+
+fn resolve_file_mention_path(token: &str, resolved_cwd: &str) -> Option<String> {
+    let token = token.trim();
+    if token.is_empty() {
+        return None;
+    }
+
+    let path = Path::new(token);
+    let candidate = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        PathBuf::from(resolved_cwd).join(path)
+    };
+    if !candidate.exists() {
+        return None;
+    }
+
+    let rendered = if path.is_absolute() {
+        token.to_string()
+    } else {
+        token.trim_start_matches("./").to_string()
+    };
+    if rendered.chars().any(char::is_whitespace) && !rendered.contains('"') {
+        Some(format!("\"{rendered}\""))
+    } else {
+        Some(rendered)
     }
 }
 
@@ -461,6 +570,20 @@ fn is_token_char(byte: u8) -> bool {
     matches!(byte, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-' | b'.' | b'/')
 }
 
+fn is_file_token_char(byte: u8) -> bool {
+    matches!(
+        byte,
+        b'a'..=b'z'
+            | b'A'..=b'Z'
+            | b'0'..=b'9'
+            | b'_'
+            | b'-'
+            | b'.'
+            | b'/'
+            | b'\\'
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::Value;
@@ -484,6 +607,7 @@ mod tests {
     fn build_turn_input_includes_images_text_and_mentions() {
         let parsed = build_turn_input(
             "Open [$figma](app://connector_1)",
+            "/tmp",
             &["/tmp/image.png".to_string()],
             &["https://example.com/one.png".to_string()],
             &[],
@@ -502,6 +626,7 @@ mod tests {
     fn build_turn_input_resolves_raw_catalog_mentions() {
         let parsed = build_turn_input(
             "$demo-app check this with @sample and $deploy",
+            "/tmp",
             &[],
             &[],
             &[AppCatalogEntry {
@@ -533,5 +658,26 @@ mod tests {
         assert!(paths.contains(&"app://connector_1"));
         assert!(paths.contains(&"/tmp/deploy/SKILL.md"));
         assert!(paths.contains(&"plugin://sample@test"));
+    }
+
+    #[test]
+    fn build_turn_input_expands_inline_relative_file_mentions() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let file_path = temp.path().join("src").join("main.rs");
+        std::fs::create_dir_all(file_path.parent().expect("parent")).expect("mkdir");
+        std::fs::write(&file_path, "fn main() {}\n").expect("write file");
+
+        let parsed = build_turn_input(
+            "inspect @src/main.rs please",
+            temp.path().to_str().expect("utf8 cwd"),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        );
+
+        assert_eq!(parsed.items[0]["type"], "text");
+        assert_eq!(parsed.items[0]["text"], "inspect src/main.rs please");
     }
 }

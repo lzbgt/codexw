@@ -18,24 +18,25 @@ It does not patch Codex. It uses the Homebrew-installed vanilla `codex` binary a
 
 ## Observability
 
-By default `codexw` renders the structured app-server event stream into normal terminal scrollback in a human-oriented form, including:
+By default `codexw` renders the structured app-server event stream into normal terminal scrollback in a richer human-oriented form, including:
 
-- the final assistant reply as one complete message
-- completed reasoning summaries when the model/server emits them
-- full shell command lines
-- completed shell command output blocks
-- file-change diffs and completed file-change output blocks
+- the final assistant reply as a styled markdown-like block
+- completed reasoning summaries in dimmed secondary text
+- full shell command lines with command/status/output sections styled separately
+- completed shell command output blocks with shell-oriented highlighting
+- colored file-change diffs and completed file-change output blocks
 - turn diff snapshots
 - token usage updates
 - approval requests
 - local `!cmd` execution results via `command/exec`
 
-This is protocol-level observability from Codex itself, not `RUST_LOG` tracing.
+This is protocol-level observability from Codex itself, not `RUST_LOG` tracing. The renderer now uses the same `ratatui` text primitives (`Text`, `Line`, `Span`) that the upstream Codex TUI is built around, but emits them into normal terminal scrollback instead of taking over the terminal with an alternate screen.
 
 By default the client does not dump raw JSON payloads into the terminal. Raw JSON is reserved for `--raw-json`, and lower-level protocol events are hidden unless you opt into `--verbose-events`.
 
 The client follows the normal terminal scrollback model instead of a fixed alternate-screen viewport, so you can use the terminal’s native scroll behavior rather than in-app paging.
-It keeps the prompt intentionally minimal: `> ` when ready and also while a turn is running so you can steer inline. The input line now supports normal inline editing keys such as left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
+It now renders an inline prompt/composer in the normal terminal flow rather than a plain raw prefix, and keeps that prompt visible while a turn is running so you can see live activity state. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
+The prompt status line also shows live request progress, including a spinner, elapsed request time, and turn count, so quiet backend work does not look like a dead terminal.
 
 ## Automation Defaults
 
@@ -87,15 +88,31 @@ Resume a thread:
 /Users/zongbaolu/work/codexw/bin/codexw --resume <thread-id>
 ```
 
+Codex-style startup resume is also accepted:
+
+```bash
+/Users/zongbaolu/work/codexw/bin/codexw resume <thread-id>
+```
+
+On resume, `codexw` now renders the latest 10 conversation messages from the stored thread so you get immediate context before entering a new prompt, without replaying the full internal reasoning/tool trace.
+
 Useful interactive commands:
 
 - `:help` or `/help`
 - `:new` or `/new`
 - `:resume <thread-id>` or `/resume <thread-id>`
+- `:fork` or `/fork`
+- `:compact` or `/compact`
+- `:review [instructions]` or `/review [instructions]`
+- `:clear` or `/clear`
+- `:copy` or `/copy`
+- `:rename <name>` or `/rename <name>`
 - `:apps` or `/apps`
 - `:skills` or `/skills`
 - `:models` or `/models`
+- `:model` or `/model`
 - `:mcp` or `/mcp`
+- `:clean` or `/clean`
 - `:threads` or `/threads [query]`
 - `:mention <query>` or `/mention <query>`
 - `:diff` or `/diff`
@@ -106,6 +123,8 @@ Useful interactive commands:
 - `:auto on|off` or `/auto on|off`
 - `:interrupt` or `/interrupt`
 - `:status` or `/status`
+- `:approvals` or `/permissions`
+- `:debug-config`
 - `:quit` or `/quit`
 
 Submission features:
@@ -113,9 +132,12 @@ Submission features:
 - Plain input while idle starts a new turn.
 - Plain input while a turn is running is sent as steer input.
 - `!<shell command>` runs a local command via `command/exec` and prints the completed stdout/stderr block when it finishes.
+- Inline `@path/to/file` references are resolved against the current working directory before submit when they point to a real file or directory. This gives `codexw` a scroll-native equivalent of Codex’s file-path insertion flow even without the native popup picker.
 - `:mention <query>` runs app-server fuzzy file search and prints the best matching repo paths you can paste back into a prompt.
 - `:diff` prints the latest aggregated turn diff snapshot emitted by app-server.
 - `:apps`, `:skills`, `:models`, `:mcp`, and `:threads` expose the most useful app-server discovery surfaces directly from the inline client.
+- `:review` with no args reviews uncommitted changes; with args it runs a custom inline review request through `review/start`.
+- `:compact`, `:fork`, `:rename`, and `:clean` are backed by the corresponding app-server thread APIs.
 - Raw tool mentions are resolved against the live app and skill catalogs loaded from app-server. Plugin mentions are only auto-resolved when the connected Codex build exposes plugin discovery.
 - Raw app mentions work with `$<app-slug>`, for example `$demo-app`.
 - Raw plugin mentions work when the connected Codex app-server exposes plugin discovery. On older builds, use explicit linked mentions such as `[$sample](plugin://sample@test)`.
@@ -130,8 +152,9 @@ Submission features:
 
 - The official `codex app-server` websocket transport exists, but upstream marks it experimental. `codexw` uses the default `stdio` transport.
 - The client defaults to detailed reasoning summaries when available, but presents them as completed blocks instead of token-by-token output.
-- `:status` now renders a richer session snapshot including cwd, thread/turn ids, automation mode, sandbox/approval posture, attachment counts, catalog counts, account/auth state, per-window remaining rate-limit capacity with reset times, token usage totals, and the last ready/working status line when available.
+- `:status` now renders a richer session snapshot including cwd, thread/turn ids, started/completed turn counts, active request time, automation mode, sandbox/approval posture, attachment counts, catalog counts, account/auth state, per-window remaining rate-limit capacity with reset times, token usage totals, and the last ready/working status line when available.
 - Unknown app-server requests now receive an explicit JSON-RPC "method not implemented" error instead of being ignored, which avoids hangs from unanswered server requests.
 - Full file contents are not always available from the app-server protocol. The client shows full command lines, command output, diffs, and file-change payloads that Codex emits.
 - `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn, terminates an active `!command`, and only exits when the client is idle with no active draft or background work.
+- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs. The client now recognizes those commands explicitly rather than treating them as unknown, but popup-heavy workflows are still not fully ported.
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.

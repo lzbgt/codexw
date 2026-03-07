@@ -1,6 +1,13 @@
 use std::io;
 use std::io::Write;
 
+use crossterm::terminal;
+
+use crate::render::render_block_lines_to_ansi;
+use crate::render::render_committed_prompt;
+use crate::render::render_line_to_ansi;
+use crate::render::render_prompt_line;
+
 const CLEAR_LINE: &str = "\r\x1b[2K";
 
 #[derive(Default)]
@@ -23,9 +30,10 @@ impl Output {
     }
 
     pub fn commit_prompt(&mut self, buffer: &str) -> io::Result<()> {
-        if let Some(prompt) = self.prompt.as_deref() {
+        if self.prompt.is_some() {
+            self.hide_prompt()?;
             let mut stderr = io::stderr();
-            write!(stderr, "{CLEAR_LINE}{prompt}{buffer}\n")?;
+            write_crlf(&mut stderr, &render_committed_prompt(buffer))?;
             stderr.flush()?;
         }
         self.prompt_visible = false;
@@ -34,30 +42,29 @@ impl Output {
 
     pub fn line_stdout(&mut self, line: impl AsRef<str>) -> io::Result<()> {
         self.prepare_for_output()?;
-        let mut stdout = io::stdout();
-        writeln!(stdout, "{}", line.as_ref())?;
-        stdout.flush()?;
+        let mut stderr = io::stderr();
+        write_crlf(&mut stderr, &render_line_to_ansi(line.as_ref()))?;
+        stderr.flush()?;
         Ok(())
     }
 
     pub fn line_stderr(&mut self, line: impl AsRef<str>) -> io::Result<()> {
         self.prepare_for_output()?;
         let mut stderr = io::stderr();
-        writeln!(stderr, "{}", line.as_ref())?;
+        write_crlf(&mut stderr, &render_line_to_ansi(line.as_ref()))?;
         stderr.flush()?;
         Ok(())
     }
 
     pub fn block_stdout(&mut self, title: &str, body: &str) -> io::Result<()> {
         self.prepare_for_output()?;
-        let mut stdout = io::stdout();
-        writeln!(stdout)?;
-        writeln!(stdout, "{title}")?;
-        if !body.trim().is_empty() {
-            let body = body.trim_end_matches('\n');
-            writeln!(stdout, "{body}")?;
+        let mut stderr = io::stderr();
+        let lines = render_block_lines_to_ansi(title, body.trim_end_matches('\n'));
+        write!(stderr, "\r\n")?;
+        for line in lines {
+            write_crlf(&mut stderr, &line)?;
         }
-        stdout.flush()?;
+        stderr.flush()?;
         Ok(())
     }
 
@@ -65,13 +72,24 @@ impl Output {
         Ok(())
     }
 
-    fn redraw_prompt(&mut self, buffer: &str, cursor_chars: usize) -> io::Result<()> {
-        let prompt = self.prompt.as_deref().unwrap_or("");
-        let cursor_byte = char_to_byte_index(buffer, cursor_chars);
-        let prefix = &buffer[..cursor_byte];
+    pub fn clear_screen(&mut self) -> io::Result<()> {
+        self.hide_prompt()?;
         let mut stderr = io::stderr();
-        write!(stderr, "{CLEAR_LINE}{prompt}{buffer}\x1b[K")?;
-        write!(stderr, "\r{prompt}{prefix}")?;
+        write!(stderr, "\x1b[2J\x1b[H")?;
+        stderr.flush()?;
+        Ok(())
+    }
+
+    fn redraw_prompt(&mut self, buffer: &str, cursor_chars: usize) -> io::Result<()> {
+        let prompt = self.prompt.as_deref().unwrap_or("ready");
+        let terminal_width = terminal::size().map(|(width, _)| width as usize).unwrap_or(120);
+        let (line, cursor_col) = render_prompt_line(prompt, buffer, cursor_chars, terminal_width);
+        let mut stderr = io::stderr();
+        if self.prompt_visible {
+            write!(stderr, "{CLEAR_LINE}")?;
+        }
+        write!(stderr, "\r{line}\x1b[K")?;
+        write!(stderr, "\r\x1b[{cursor_col}C")?;
         stderr.flush()?;
         self.prompt_visible = true;
         Ok(())
@@ -93,12 +111,12 @@ impl Output {
     }
 }
 
-fn char_to_byte_index(text: &str, char_index: usize) -> usize {
-    if char_index == 0 {
-        return 0;
-    }
-    text.char_indices()
-        .nth(char_index)
-        .map(|(idx, _)| idx)
-        .unwrap_or(text.len())
+fn write_crlf(writer: &mut impl Write, text: &str) -> io::Result<()> {
+    let normalized = normalize_line_endings(text);
+    write!(writer, "{normalized}\r\n")
+}
+
+fn normalize_line_endings(text: &str) -> String {
+    let text = text.replace("\r\n", "\n");
+    text.replace('\r', "\n").replace('\n', "\r\n")
 }

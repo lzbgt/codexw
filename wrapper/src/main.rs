@@ -2,6 +2,7 @@ mod editor;
 mod input;
 mod output;
 mod prompt;
+mod render;
 mod rpc;
 
 use std::collections::HashMap;
@@ -15,6 +16,8 @@ use std::process::Command;
 use std::process::Stdio;
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -109,6 +112,7 @@ struct Cli {
 enum AppEvent {
     ServerLine(String),
     InputKey(InputKey),
+    Tick,
     StdinClosed,
     ServerClosed,
 }
@@ -141,10 +145,16 @@ enum PendingRequest {
     LoadAccount,
     LoadRateLimits,
     LoadModels,
+    LoadConfig,
     LoadMcpServers,
     ListThreads { search_term: Option<String> },
     StartThread { initial_prompt: Option<String> },
     ResumeThread { initial_prompt: Option<String> },
+    ForkThread { initial_prompt: Option<String> },
+    CompactThread,
+    RenameThread { name: String },
+    CleanBackgroundTerminals,
+    StartReview { target_description: String },
     StartTurn { auto_generated: bool },
     SteerTurn { display_text: String },
     InterruptTurn,
@@ -165,6 +175,9 @@ struct AppState {
     active_exec_process_id: Option<String>,
     pending_thread_switch: bool,
     turn_running: bool,
+    activity_started_at: Option<Instant>,
+    started_turn_count: u64,
+    completed_turn_count: u64,
     auto_continue: bool,
     objective: Option<String>,
     last_agent_message: Option<String>,
@@ -194,6 +207,9 @@ impl AppState {
             active_exec_process_id: None,
             pending_thread_switch: false,
             turn_running: false,
+            activity_started_at: None,
+            started_turn_count: 0,
+            completed_turn_count: 0,
             auto_continue,
             objective: None,
             last_agent_message: None,
@@ -234,6 +250,9 @@ impl AppState {
         self.active_turn_id = None;
         self.active_exec_process_id = None;
         self.turn_running = false;
+        self.activity_started_at = None;
+        self.started_turn_count = 0;
+        self.completed_turn_count = 0;
         self.objective = None;
         self.last_agent_message = None;
         self.last_turn_diff = None;
@@ -249,7 +268,7 @@ impl AppState {
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
+    let cli = normalize_cli(Cli::parse());
     let initial_prompt = join_prompt(&cli.prompt);
     let resolved_cwd = effective_cwd(&cli)?;
     let _raw_mode = RawModeGuard::new()?;
@@ -267,6 +286,7 @@ fn main() -> Result<()> {
     let (tx, rx) = mpsc::channel::<AppEvent>();
     start_stdout_thread(stdout, tx.clone());
     start_stdin_thread(tx.clone());
+    start_tick_thread(tx.clone());
 
     let mut output = Output::default();
     let mut writer = stdin;
@@ -297,72 +317,72 @@ fn main() -> Result<()> {
             }
             Ok(AppEvent::InputKey(key)) => match key {
                 InputKey::Char(ch) => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.insert_char(ch);
                     }
                 }
                 InputKey::Esc => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.clear();
                     }
                 }
                 InputKey::Backspace => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.backspace();
                     }
                 }
                 InputKey::Delete => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.delete();
                     }
                 }
                 InputKey::Left => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.move_left();
                     }
                 }
                 InputKey::Right => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.move_right();
                     }
                 }
                 InputKey::Home => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.move_home();
                     }
                 }
                 InputKey::End => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.move_end();
                     }
                 }
                 InputKey::Up => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.history_prev();
                     }
                 }
                 InputKey::Down => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.history_next();
                     }
                 }
                 InputKey::CtrlA => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.move_home();
                     }
                 }
                 InputKey::CtrlE => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.move_end();
                     }
                 }
                 InputKey::CtrlU => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.clear_to_start();
                     }
                 }
                 InputKey::CtrlW => {
-                    if prompt_is_interactive(&state) {
+                    if prompt_accepts_input(&state) {
                         editor.delete_prev_word();
                     }
                 }
@@ -408,6 +428,7 @@ fn main() -> Result<()> {
                     EditorEvent::CtrlC | EditorEvent::Noop => {}
                 },
             },
+            Ok(AppEvent::Tick) => {}
             Ok(AppEvent::StdinClosed) => {
                 output.line_stderr("[session] stdin closed; exiting")?;
                 break;
@@ -422,6 +443,16 @@ fn main() -> Result<()> {
 
     shutdown_child(writer, child)?;
     Ok(())
+}
+
+fn normalize_cli(mut cli: Cli) -> Cli {
+    if cli.resume.is_none() && matches!(cli.prompt.first().map(String::as_str), Some("resume")) {
+        if let Some(thread_id) = cli.prompt.get(1).cloned() {
+            cli.resume = Some(thread_id);
+            cli.prompt.drain(0..2);
+        }
+    }
+    cli
 }
 
 struct StartMode {
@@ -510,6 +541,17 @@ fn start_stdin_thread(tx: mpsc::Sender<AppEvent>) {
                     let _ = tx.send(AppEvent::StdinClosed);
                     break;
                 }
+            }
+        }
+    });
+}
+
+fn start_tick_thread(tx: mpsc::Sender<AppEvent>) {
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(200));
+            if tx.send(AppEvent::Tick).is_err() {
+                break;
             }
         }
     });
@@ -700,6 +742,21 @@ fn send_load_models(writer: &mut ChildStdin, state: &mut AppState) -> Result<()>
     )
 }
 
+fn send_load_config(writer: &mut ChildStdin, state: &mut AppState) -> Result<()> {
+    let request_id = state.next_request_id();
+    state
+        .pending
+        .insert(request_id.clone(), PendingRequest::LoadConfig);
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "config/read",
+            params: json!({}),
+        },
+    )
+}
+
 fn send_load_mcp_servers(writer: &mut ChildStdin, state: &mut AppState) -> Result<()> {
     let request_id = state.next_request_id();
     state
@@ -837,6 +894,126 @@ fn send_thread_resume(
     )
 }
 
+fn send_thread_fork(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    cli: &Cli,
+    resolved_cwd: &str,
+    thread_id: String,
+    initial_prompt: Option<String>,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending_thread_switch = true;
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::ForkThread { initial_prompt },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "thread/fork",
+            params: json!({
+                "threadId": thread_id,
+                "cwd": resolved_cwd,
+                "model": cli.model,
+                "modelProvider": cli.model_provider,
+                "approvalPolicy": approval_policy(cli),
+                "sandbox": thread_sandbox_mode(cli),
+            }),
+        },
+    )
+}
+
+fn send_thread_compact(writer: &mut ChildStdin, state: &mut AppState, thread_id: String) -> Result<()> {
+    let request_id = state.next_request_id();
+    state
+        .pending
+        .insert(request_id.clone(), PendingRequest::CompactThread);
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "thread/compact/start",
+            params: json!({
+                "threadId": thread_id,
+            }),
+        },
+    )
+}
+
+fn send_thread_rename(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    thread_id: String,
+    name: String,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::RenameThread { name: name.clone() },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "thread/name/set",
+            params: json!({
+                "threadId": thread_id,
+                "name": name,
+            }),
+        },
+    )
+}
+
+fn send_clean_background_terminals(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    thread_id: String,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::CleanBackgroundTerminals,
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "thread/backgroundTerminals/clean",
+            params: json!({
+                "threadId": thread_id,
+            }),
+        },
+    )
+}
+
+fn send_start_review(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    thread_id: String,
+    review_target: Value,
+    target_description: String,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::StartReview { target_description },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "review/start",
+            params: json!({
+                "threadId": thread_id,
+                "delivery": "inline",
+                "target": review_target,
+            }),
+        },
+    )
+}
+
 fn send_turn_start(
     writer: &mut ChildStdin,
     state: &mut AppState,
@@ -942,6 +1119,7 @@ fn send_command_exec(
     );
     state.process_output_buffers.remove(&process_id);
     state.active_exec_process_id = Some(process_id.clone());
+    state.activity_started_at = Some(Instant::now());
     send_json(
         writer,
         &OutgoingRequest {
@@ -1080,8 +1258,15 @@ fn handle_response(
             state.thread_id = Some(thread_id.clone());
             output.line_stderr(format!("[thread] started {thread_id}"))?;
             if let Some(text) = initial_prompt {
-                let submission =
-                    build_turn_input(&text, &[], &[], &state.apps, &state.plugins, &state.skills);
+                let submission = build_turn_input(
+                    &text,
+                    resolved_cwd,
+                    &[],
+                    &[],
+                    &state.apps,
+                    &state.plugins,
+                    &state.skills,
+                );
                 send_turn_start(
                     writer,
                     state,
@@ -1101,9 +1286,17 @@ fn handle_response(
                 .to_string();
             state.thread_id = Some(thread_id.clone());
             output.line_stderr(format!("[thread] resumed {thread_id}"))?;
+            render_resumed_history(&response.result, state, output)?;
             if let Some(text) = initial_prompt {
-                let submission =
-                    build_turn_input(&text, &[], &[], &state.apps, &state.plugins, &state.skills);
+                let submission = build_turn_input(
+                    &text,
+                    resolved_cwd,
+                    &[],
+                    &[],
+                    &state.apps,
+                    &state.plugins,
+                    &state.skills,
+                );
                 send_turn_start(
                     writer,
                     state,
@@ -1115,12 +1308,61 @@ fn handle_response(
                 )?;
             }
         }
+        PendingRequest::ForkThread { initial_prompt } => {
+            state.pending_thread_switch = false;
+            state.reset_thread_context();
+            let thread_id = get_string(&response.result, &["thread", "id"])
+                .context("thread/fork missing thread.id")?
+                .to_string();
+            state.thread_id = Some(thread_id.clone());
+            output.line_stderr(format!("[thread] forked to {thread_id}"))?;
+            render_resumed_history(&response.result, state, output)?;
+            if let Some(text) = initial_prompt {
+                let submission = build_turn_input(
+                    &text,
+                    resolved_cwd,
+                    &[],
+                    &[],
+                    &state.apps,
+                    &state.plugins,
+                    &state.skills,
+                );
+                send_turn_start(
+                    writer,
+                    state,
+                    cli,
+                    resolved_cwd,
+                    thread_id,
+                    submission,
+                    false,
+                )?;
+            }
+        }
+        PendingRequest::CompactThread => {
+            output.line_stderr("[thread] compaction requested")?;
+        }
+        PendingRequest::RenameThread { name } => {
+            output.line_stderr(format!("[thread] renamed to {}", summarize_text(&name)))?;
+        }
+        PendingRequest::CleanBackgroundTerminals => {
+            output.line_stderr("[thread] background terminal cleanup requested")?;
+        }
+        PendingRequest::StartReview { target_description } => {
+            state.turn_running = true;
+            state.activity_started_at = Some(Instant::now());
+            state.reset_turn_stream_state();
+            output.line_stderr(format!(
+                "[review] started {}",
+                summarize_text(&target_description)
+            ))?;
+        }
         PendingRequest::StartTurn { auto_generated } => {
             let turn_id = get_string(&response.result, &["turn", "id"])
                 .context("turn/start missing turn.id")?
                 .to_string();
             state.active_turn_id = Some(turn_id.clone());
             state.turn_running = true;
+            state.activity_started_at = Some(Instant::now());
             state.reset_turn_stream_state();
             if auto_generated {
                 output.line_stderr("[auto] starting follow-up turn")?;
@@ -1150,6 +1392,9 @@ fn handle_response(
         }
         PendingRequest::LoadModels => {
             output.block_stdout("Models", &render_models_list(&response.result))?;
+        }
+        PendingRequest::LoadConfig => {
+            output.block_stdout("Config", &render_config_snapshot(&response.result))?;
         }
         PendingRequest::LoadMcpServers => {
             output.block_stdout("MCP servers", &render_mcp_server_list(&response.result))?;
@@ -1189,6 +1434,7 @@ fn handle_response(
                 buffer.stderr
             };
             state.active_exec_process_id = None;
+            state.activity_started_at = None;
             state.last_status_line = None;
             output.block_stdout(
                 "Local command",
@@ -1197,6 +1443,7 @@ fn handle_response(
         }
         PendingRequest::TerminateExecCommand { process_id } => {
             if state.active_exec_process_id.as_deref() == Some(process_id.as_str()) {
+                state.activity_started_at = None;
                 output.line_stderr("[interrupt] local command termination requested")?;
             }
         }
@@ -1231,7 +1478,9 @@ fn handle_response_error(
         Some(PendingRequest::LoadAccount) => {
             output.line_stderr("[session] account details unavailable from app-server")?;
         }
-        Some(PendingRequest::StartThread { .. }) | Some(PendingRequest::ResumeThread { .. }) => {
+        Some(PendingRequest::StartThread { .. })
+        | Some(PendingRequest::ResumeThread { .. })
+        | Some(PendingRequest::ForkThread { .. }) => {
             state.pending_thread_switch = false;
             output.line_stderr("[thread] failed to switch threads")?;
             output.line_stderr(format!(
@@ -1243,6 +1492,7 @@ fn handle_response_error(
             if state.active_exec_process_id.as_deref() == Some(process_id.as_str()) {
                 state.active_exec_process_id = None;
             }
+            state.activity_started_at = None;
             state.process_output_buffers.remove(&process_id);
             state.last_status_line = None;
             output.line_stderr("[command] failed to start local command")?;
@@ -1255,6 +1505,7 @@ fn handle_response_error(
             if state.active_exec_process_id.as_deref() == Some(process_id.as_str()) {
                 state.active_exec_process_id = None;
             }
+            state.activity_started_at = None;
             output.line_stderr("[command] failed to terminate local command cleanly")?;
             output.line_stderr(format!(
                 "[server-error] {}",
@@ -1438,6 +1689,8 @@ fn handle_notification(
         }
         "turn/started" => {
             state.turn_running = true;
+            state.activity_started_at = Some(Instant::now());
+            state.started_turn_count = state.started_turn_count.saturating_add(1);
             if let Some(turn_id) = get_string(&notification.params, &["turn", "id"]) {
                 state.active_turn_id = Some(turn_id.to_string());
             }
@@ -1458,7 +1711,11 @@ fn handle_notification(
                 .to_string();
             state.turn_running = false;
             state.active_turn_id = None;
+            state.activity_started_at = None;
             state.last_status_line = None;
+            if matches!(status.as_str(), "completed" | "interrupted" | "failed" | "cancelled") {
+                state.completed_turn_count = state.completed_turn_count.saturating_add(1);
+            }
             if status != "completed" {
                 output.line_stderr(format!("[turn] completed {turn_id} status={status}"))?;
             }
@@ -1472,6 +1729,7 @@ fn handle_notification(
                             build_continue_prompt(state.objective.as_deref(), &message);
                         let submission = build_turn_input(
                             &continue_prompt,
+                            resolved_cwd,
                             &[],
                             &[],
                             &state.apps,
@@ -1540,10 +1798,11 @@ fn handle_notification(
             buffer_item_delta(&mut state.file_output_buffers, &notification.params)
         }
         "item/commandExecution/terminalInteraction" => {
-            output.line_stderr(format!(
-                "[command-input] {}",
-                summarize_terminal_interaction(&notification.params)
-            ))?;
+            if cli.verbose_events
+                && let Some(summary) = summarize_terminal_interaction(&notification.params)
+            {
+                output.line_stderr(format!("[command-input] {summary}"))?;
+            }
         }
         "serverRequest/resolved" => {
             if cli.verbose_events {
@@ -1736,6 +1995,7 @@ fn handle_user_input(
     let (local_images, remote_images) = state.take_pending_attachments();
     let submission = build_turn_input(
         trimmed,
+        resolved_cwd,
         &local_images,
         &remote_images,
         &state.apps,
@@ -1788,10 +2048,18 @@ fn handle_command(
             output.line_stderr(":quit or /quit             exit codexw")?;
             output.line_stderr(":new or /new               start a new thread")?;
             output.line_stderr(":resume or /resume <id>    resume a specific thread")?;
+            output.line_stderr(":fork or /fork             fork the current thread")?;
+            output.line_stderr(":compact or /compact       compact the current thread history")?;
+            output.line_stderr(":review or /review [text]  review current changes or custom target")?;
+            output.line_stderr(":clear or /clear           clear the terminal and start a new thread")?;
+            output.line_stderr(":copy or /copy             copy the latest assistant reply")?;
+            output.line_stderr(":rename or /rename <name>  rename the current thread")?;
             output.line_stderr(":apps or /apps             list known app mentions")?;
             output.line_stderr(":skills or /skills         list known skills")?;
             output.line_stderr(":models or /models         list available models")?;
+            output.line_stderr(":model or /model           alias for /models")?;
             output.line_stderr(":mcp or /mcp               list MCP servers and tool counts")?;
+            output.line_stderr(":clean or /clean           clean background terminals for this thread")?;
             output.line_stderr(":threads or /threads [q]   list recent threads in this cwd")?;
             output.line_stderr(
                 ":mention or /mention <q>   search repo files for a mentionable path",
@@ -1808,6 +2076,8 @@ fn handle_command(
             output.line_stderr(":auto or /auto on|off      toggle auto-continue")?;
             output.line_stderr(":interrupt or /interrupt   interrupt the active turn")?;
             output.line_stderr(":status or /status         show current client state")?;
+            output.line_stderr(":approvals or /permissions show current automation/permission posture")?;
+            output.line_stderr(":debug-config              read effective config from app-server")?;
             output.line_stderr(
                 "!<command>           run a local shell command via app-server command/exec",
             )?;
@@ -1847,6 +2117,63 @@ fn handle_command(
             )?;
             Ok(true)
         }
+        "fork" => {
+            if state.turn_running {
+                output.line_stderr(
+                    "[session] wait for the current turn to finish or interrupt it first",
+                )?;
+                return Ok(true);
+            }
+            let current_thread_id = thread_id(state)?.to_string();
+            let initial_prompt = join_prompt(&parts.map(str::to_string).collect::<Vec<_>>());
+            output.line_stderr(format!("[thread] forking {current_thread_id}"))?;
+            send_thread_fork(
+                writer,
+                state,
+                cli,
+                resolved_cwd,
+                current_thread_id,
+                initial_prompt,
+            )?;
+            Ok(true)
+        }
+        "compact" => {
+            if state.turn_running {
+                output.line_stderr(
+                    "[session] wait for the current turn to finish or interrupt it first",
+                )?;
+                return Ok(true);
+            }
+            let current_thread_id = thread_id(state)?.to_string();
+            output.line_stderr("[thread] requesting compaction")?;
+            send_thread_compact(writer, state, current_thread_id)?;
+            Ok(true)
+        }
+        "review" => {
+            if state.turn_running {
+                output.line_stderr(
+                    "[session] wait for the current turn to finish or interrupt it first",
+                )?;
+                return Ok(true);
+            }
+            let current_thread_id = thread_id(state)?.to_string();
+            let args = parts.collect::<Vec<_>>().join(" ");
+            let trimmed_args = args.trim();
+            let (target, description) = if trimmed_args.is_empty() {
+                (
+                    json!({"type": "uncommittedChanges"}),
+                    "current uncommitted changes".to_string(),
+                )
+            } else {
+                (
+                    json!({"type": "custom", "instructions": trimmed_args}),
+                    trimmed_args.to_string(),
+                )
+            };
+            output.line_stderr(format!("[review] requesting {}", summarize_text(&description)))?;
+            send_start_review(writer, state, current_thread_id, target, description)?;
+            Ok(true)
+        }
         "apps" => {
             output.block_stdout("Apps", &render_apps_list(&state.apps))?;
             Ok(true)
@@ -1855,7 +2182,7 @@ fn handle_command(
             output.block_stdout("Skills", &render_skills_list(&state.skills))?;
             Ok(true)
         }
-        "models" => {
+        "models" | "model" => {
             output.line_stderr("[session] loading models")?;
             send_load_models(writer, state)?;
             Ok(true)
@@ -1863,6 +2190,12 @@ fn handle_command(
         "mcp" => {
             output.line_stderr("[session] loading MCP server status")?;
             send_load_mcp_servers(writer, state)?;
+            Ok(true)
+        }
+        "clean" => {
+            let current_thread_id = thread_id(state)?.to_string();
+            output.line_stderr("[thread] cleaning background terminals")?;
+            send_clean_background_terminals(writer, state, current_thread_id)?;
             Ok(true)
         }
         "threads" => {
@@ -1893,6 +2226,26 @@ fn handle_command(
                 output.block_stdout("Latest diff", diff)?;
             } else {
                 output.line_stderr("[diff] no turn diff has been emitted yet")?;
+            }
+            Ok(true)
+        }
+        "clear" => {
+            if state.turn_running {
+                output.line_stderr(
+                    "[session] wait for the current turn to finish or interrupt it first",
+                )?;
+                return Ok(true);
+            }
+            output.clear_screen()?;
+            output.line_stderr("[thread] creating new thread after clear")?;
+            send_thread_start(writer, state, cli, resolved_cwd, None)?;
+            Ok(true)
+        }
+        "copy" => {
+            if let Some(message) = state.last_agent_message.as_deref() {
+                copy_to_clipboard(message, output)?;
+            } else {
+                output.line_stderr("[copy] no assistant reply is available yet")?;
             }
             Ok(true)
         }
@@ -1968,8 +2321,36 @@ fn handle_command(
             }
             Ok(true)
         }
+        "rename" => {
+            let name = parts.collect::<Vec<_>>().join(" ").trim().to_string();
+            if name.is_empty() {
+                output.line_stderr("[session] usage: :rename <name>")?;
+                return Ok(true);
+            }
+            let current_thread_id = thread_id(state)?.to_string();
+            send_thread_rename(writer, state, current_thread_id, name)?;
+            Ok(true)
+        }
+        "approvals" | "permissions" => {
+            output.block_stdout("Permissions", &render_permissions_snapshot(cli))?;
+            Ok(true)
+        }
         "status" => {
             output.block_stdout("Status", &render_status_snapshot(cli, resolved_cwd, state))?;
+            Ok(true)
+        }
+        "debug-config" => {
+            output.line_stderr("[session] loading effective config")?;
+            send_load_config(writer, state)?;
+            Ok(true)
+        }
+        "fast" | "personality" | "collab" | "agent" | "multi-agents" | "theme"
+        | "statusline" | "realtime" | "settings" | "feedback" | "logout" | "rollout"
+        | "experimental" | "sandbox-add-read-dir" | "setup-default-sandbox" | "init"
+        | "ps" | "plan" => {
+            output.line_stderr(format!(
+                "[session] /{command} is recognized, but this inline client does not yet implement the native Codex popup/workflow for it"
+            ))?;
             Ok(true)
         }
         _ => {
@@ -2037,8 +2418,8 @@ fn send_json<T: serde::Serialize>(writer: &mut ChildStdin, value: &T) -> Result<
 }
 
 fn update_prompt(output: &mut Output, state: &AppState, editor: &LineEditor) -> Result<()> {
-    let prompt = if prompt_is_interactive(state) {
-        Some("> ".to_string())
+    let prompt = if prompt_is_visible(state) {
+        Some(render_prompt_status(state))
     } else {
         None
     };
@@ -2048,10 +2429,62 @@ fn update_prompt(output: &mut Output, state: &AppState, editor: &LineEditor) -> 
         .context("show prompt")
 }
 
-fn prompt_is_interactive(state: &AppState) -> bool {
-    state.thread_id.is_some()
-        && state.active_exec_process_id.is_none()
-        && !state.pending_thread_switch
+fn prompt_is_visible(state: &AppState) -> bool {
+    state.thread_id.is_some() && !state.pending_thread_switch
+}
+
+fn prompt_accepts_input(state: &AppState) -> bool {
+    prompt_is_visible(state) && state.active_exec_process_id.is_none()
+}
+
+fn render_prompt_status(state: &AppState) -> String {
+    if let Some(process_id) = state.active_exec_process_id.as_deref() {
+        format!(
+            "{} cmd {} [{}] · {} turns",
+            spinner_frame(state.activity_started_at),
+            format_elapsed(state.activity_started_at),
+            process_id,
+            state.completed_turn_count
+        )
+    } else if state.turn_running {
+        let label = state
+            .last_status_line
+            .as_deref()
+            .unwrap_or("working")
+            .trim()
+            .to_string();
+        format!(
+            "{} turn {} · {} · {}",
+            spinner_frame(state.activity_started_at),
+            state.started_turn_count.max(1),
+            label,
+            format_elapsed(state.activity_started_at)
+        )
+    } else {
+        format!("ready · {} turns", state.completed_turn_count)
+    }
+}
+
+fn spinner_frame(started_at: Option<Instant>) -> &'static str {
+    const FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    let idx = started_at
+        .map(|start| {
+            ((Instant::now().saturating_duration_since(start).as_millis() / 100) as usize)
+                % FRAMES.len()
+        })
+        .unwrap_or(0);
+    FRAMES[idx]
+}
+
+fn format_elapsed(started_at: Option<Instant>) -> String {
+    let elapsed = started_at
+        .map(|start| Instant::now().saturating_duration_since(start).as_secs())
+        .unwrap_or(0);
+    if elapsed < 60 {
+        format!("{elapsed}s")
+    } else {
+        format!("{}m{:02}s", elapsed / 60, elapsed % 60)
+    }
 }
 
 fn shutdown_child(writer: ChildStdin, mut child: Child) -> Result<()> {
@@ -2109,10 +2542,18 @@ fn is_builtin_command(command_line: &str) -> bool {
             | "exit"
             | "new"
             | "resume"
+            | "fork"
+            | "compact"
+            | "review"
+            | "clear"
+            | "copy"
+            | "rename"
             | "apps"
             | "skills"
             | "models"
+            | "model"
             | "mcp"
+            | "clean"
             | "threads"
             | "mention"
             | "diff"
@@ -2124,6 +2565,27 @@ fn is_builtin_command(command_line: &str) -> bool {
             | "clear-attachments"
             | "interrupt"
             | "status"
+            | "approvals"
+            | "permissions"
+            | "debug-config"
+            | "fast"
+            | "personality"
+            | "collab"
+            | "agent"
+            | "multi-agents"
+            | "theme"
+            | "statusline"
+            | "realtime"
+            | "settings"
+            | "feedback"
+            | "logout"
+            | "rollout"
+            | "experimental"
+            | "sandbox-add-read-dir"
+            | "setup-default-sandbox"
+            | "init"
+            | "ps"
+            | "plan"
     )
 }
 
@@ -2323,6 +2785,10 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
             "turn            {}",
             state.active_turn_id.as_deref().unwrap_or("-")
         ),
+        format!(
+            "turn count      started={} completed={}",
+            state.started_turn_count, state.completed_turn_count
+        ),
         format!("running         {}", state.turn_running),
         format!(
             "local command   {}",
@@ -2363,6 +2829,12 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
     if let Some(account) = render_account_summary(state.account_info.as_ref()) {
         lines.push(format!("account         {account}"));
     }
+    if state.turn_running || state.active_exec_process_id.is_some() {
+        lines.push(format!(
+            "active time     {}",
+            format_elapsed(state.activity_started_at)
+        ));
+    }
     lines.extend(render_rate_limit_lines(state.rate_limits.as_ref()));
     if let Some(token_usage) = render_token_usage_summary(state.last_token_usage.as_ref()) {
         lines.push(format!("tokens          {token_usage}"));
@@ -2378,6 +2850,232 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
     }
 
     lines.join("\n")
+}
+
+fn render_permissions_snapshot(cli: &Cli) -> String {
+    [
+        format!("approval policy  {}", approval_policy(cli)),
+        format!("thread sandbox   {}", thread_sandbox_mode(cli)),
+        format!(
+            "turn sandbox     {}",
+            summarize_sandbox_policy(&turn_sandbox_policy(cli))
+        ),
+        "network access    enabled".to_string(),
+        "tool use          automatic".to_string(),
+        "shell exec        automatic".to_string(),
+        "host access       full".to_string(),
+    ]
+    .join("\n")
+}
+
+fn render_config_snapshot(result: &Value) -> String {
+    if result.is_null() {
+        return "config unavailable".to_string();
+    }
+    serde_json::to_string_pretty(result).unwrap_or_else(|_| summarize_value(result))
+}
+
+fn copy_to_clipboard(text: &str, output: &mut Output) -> Result<()> {
+    if cfg!(target_os = "macos") {
+        let Ok(mut child) = Command::new("pbcopy")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+        else {
+            output.block_stdout("Copied text", text)?;
+            return Ok(());
+        };
+        if let Some(mut stdin) = child.stdin.take() {
+            stdin.write_all(text.as_bytes()).context("write pbcopy input")?;
+        }
+        let status = child.wait().context("wait for pbcopy")?;
+        if status.success() {
+            output.line_stderr("[copy] latest assistant reply copied to clipboard")?;
+            return Ok(());
+        }
+    }
+    output.block_stdout("Copied text", text)?;
+    Ok(())
+}
+
+fn render_resumed_history(result: &Value, state: &mut AppState, output: &mut Output) -> Result<()> {
+    let turns = result
+        .get("thread")
+        .and_then(|thread| thread.get("turns"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    if turns.is_empty() {
+        return Ok(());
+    }
+
+    let mut history_items = Vec::new();
+    for turn in turns {
+        if let Some(items) = turn.get("items").and_then(Value::as_array) {
+            for item in items {
+                history_items.push(item.clone());
+            }
+        }
+    }
+
+    seed_resumed_state_from_history(&history_items, state);
+
+    let conversation_items = history_items
+        .into_iter()
+        .filter(is_conversation_history_item)
+        .collect::<Vec<_>>();
+    if conversation_items.is_empty() {
+        return Ok(());
+    }
+
+    output.line_stderr("[history] showing latest 10 conversation messages from resumed thread")?;
+    let start = conversation_items.len().saturating_sub(10);
+    for item in &conversation_items[start..] {
+        render_history_item(item, state, output)?;
+    }
+    Ok(())
+}
+
+fn is_conversation_history_item(item: &Value) -> bool {
+    match get_string(item, &["type"]).unwrap_or("") {
+        "userMessage" => item
+            .get("content")
+            .and_then(Value::as_array)
+            .is_some_and(|content| !content.is_empty()),
+        "agentMessage" => item
+            .get("text")
+            .and_then(Value::as_str)
+            .is_some_and(|text| !text.trim().is_empty()),
+        _ => false,
+    }
+}
+
+fn seed_resumed_state_from_history(history_items: &[Value], state: &mut AppState) {
+    for item in history_items {
+        match get_string(item, &["type"]).unwrap_or("") {
+            "userMessage" => {
+                let content = item
+                    .get("content")
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default();
+                let rendered = render_user_message_history(&content);
+                if state.objective.is_none() && !rendered.trim().is_empty() {
+                    state.objective = Some(rendered);
+                }
+            }
+            "agentMessage" => {
+                let text = get_string(item, &["text"]).unwrap_or("").to_string();
+                if !text.trim().is_empty() {
+                    state.last_agent_message = Some(sanitize_history_text(&text));
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn render_history_item(item: &Value, state: &mut AppState, output: &mut Output) -> Result<()> {
+    match get_string(item, &["type"]).unwrap_or("") {
+        "userMessage" => {
+            let content = item
+                .get("content")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            let rendered = render_user_message_history(&content);
+            if !rendered.trim().is_empty() {
+                output.block_stdout("User", &rendered)?;
+            }
+        }
+        "agentMessage" => {
+            let text = sanitize_history_text(get_string(item, &["text"]).unwrap_or(""));
+            if !text.trim().is_empty() {
+                state.last_agent_message = Some(text.clone());
+                output.block_stdout("Assistant", &text)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+fn render_user_message_history(content: &[Value]) -> String {
+    let mut parts = Vec::new();
+    for item in content {
+        match get_string(item, &["type"]).unwrap_or("") {
+            "text" => {
+                if let Some(text) = get_string(item, &["text"]) {
+                    parts.push(text.to_string());
+                }
+            }
+            "image" => {
+                if let Some(url) = get_string(item, &["imageUrl"]) {
+                    parts.push(format!("[image] {url}"));
+                }
+            }
+            "localImage" => {
+                if let Some(path) = get_string(item, &["path"]) {
+                    parts.push(format!("[local-image] {path}"));
+                }
+            }
+            "mention" => {
+                let label = get_string(item, &["label"]).unwrap_or("$mention");
+                let uri = get_string(item, &["uri"]).unwrap_or("");
+                if uri.is_empty() {
+                    parts.push(label.to_string());
+                } else {
+                    parts.push(format!("{label} ({uri})"));
+                }
+            }
+            "skill" => {
+                if let Some(path) = get_string(item, &["path"]) {
+                    parts.push(format!("[skill] {path}"));
+                }
+            }
+            _ => {}
+        }
+    }
+    sanitize_history_text(&parts.join("\n"))
+}
+
+fn sanitize_history_text(text: &str) -> String {
+    let normalized = text.replace("\r\n", "\n").replace('\r', "\n");
+    let lines = normalized.lines().collect::<Vec<_>>();
+    let min_indent = lines
+        .iter()
+        .filter_map(|line| {
+            if line.trim().is_empty() {
+                None
+            } else {
+                Some(
+                    line.chars()
+                        .take_while(|ch| *ch == ' ' || *ch == '\t')
+                        .count(),
+                )
+            }
+        })
+        .min()
+        .unwrap_or(0);
+    let cleaned = lines
+        .iter()
+        .map(|line| {
+            if line.trim().is_empty() {
+                String::new()
+            } else {
+                line.chars().skip(min_indent).collect::<String>()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    cleaned
+        .lines()
+        .map(str::trim_end)
+        .collect::<Vec<_>>()
+        .join("\n")
+        .trim()
+        .to_string()
 }
 
 fn summarize_sandbox_policy(policy: &Value) -> String {
@@ -2904,10 +3602,13 @@ fn summarize_model_reroute(params: &Value) -> String {
     format!("{from_model} -> {to_model} reason={reason}")
 }
 
-fn summarize_terminal_interaction(params: &Value) -> String {
+fn summarize_terminal_interaction(params: &Value) -> Option<String> {
     let process_id = get_string(params, &["processId"]).unwrap_or("?");
-    let stdin = get_string(params, &["stdin"]).unwrap_or("");
-    format!("process={process_id} stdin={}", summarize_text(stdin))
+    let stdin = get_string(params, &["stdin"]).unwrap_or("").trim();
+    if stdin.is_empty() {
+        return None;
+    }
+    Some(format!("process={process_id} stdin={}", summarize_text(stdin)))
 }
 
 fn summarize_server_request_resolved(params: &Value) -> String {
@@ -2988,15 +3689,19 @@ fn summarize_value(value: &Value) -> String {
 #[cfg(test)]
 mod tests {
     use super::AppState;
+    use super::Cli;
     use super::build_tool_user_input_response;
     use super::choose_command_approval_decision;
     use super::is_builtin_command;
+    use super::normalize_cli;
     use super::params_auto_approval_result;
-    use super::prompt_is_interactive;
+    use super::prompt_accepts_input;
+    use super::prompt_is_visible;
     use super::render_apps_list;
     use super::render_fuzzy_file_search_results;
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
+    use super::summarize_terminal_interaction;
     use crate::input::AppCatalogEntry;
     use serde_json::json;
 
@@ -3059,6 +3764,9 @@ mod tests {
         assert!(is_builtin_command("apps"));
         assert!(is_builtin_command("skills"));
         assert!(is_builtin_command("models"));
+        assert!(is_builtin_command("compact"));
+        assert!(is_builtin_command("review current changes"));
+        assert!(is_builtin_command("permissions"));
         assert!(is_builtin_command("mcp"));
         assert!(is_builtin_command("threads"));
         assert!(is_builtin_command("mention foo"));
@@ -3096,6 +3804,28 @@ mod tests {
             "content": ["raw detail"]
         }));
         assert_eq!(rendered, "First block\n\nSecond block");
+    }
+
+    #[test]
+    fn empty_terminal_interaction_is_suppressed() {
+        assert_eq!(
+            summarize_terminal_interaction(&json!({
+                "processId": "123",
+                "stdin": ""
+            })),
+            None
+        );
+    }
+
+    #[test]
+    fn terminal_interaction_only_surfaces_meaningful_stdin() {
+        assert_eq!(
+            summarize_terminal_interaction(&json!({
+                "processId": "123",
+                "stdin": "yes\n"
+            })),
+            Some("process=123 stdin=yes".to_string())
+        );
     }
 
     #[test]
@@ -3140,18 +3870,50 @@ mod tests {
     }
 
     #[test]
-    fn prompt_is_hidden_while_command_or_thread_switch_is_active() {
+    fn prompt_visibility_and_input_follow_runtime_state() {
         let mut state = AppState::new(true, false);
-        assert!(!prompt_is_interactive(&state));
+        assert!(!prompt_is_visible(&state));
+        assert!(!prompt_accepts_input(&state));
 
         state.thread_id = Some("thread-1".to_string());
-        assert!(prompt_is_interactive(&state));
+        assert!(prompt_is_visible(&state));
+        assert!(prompt_accepts_input(&state));
 
         state.pending_thread_switch = true;
-        assert!(!prompt_is_interactive(&state));
+        assert!(!prompt_is_visible(&state));
+        assert!(!prompt_accepts_input(&state));
 
         state.pending_thread_switch = false;
         state.active_exec_process_id = Some("proc-1".to_string());
-        assert!(!prompt_is_interactive(&state));
+        assert!(prompt_is_visible(&state));
+        assert!(!prompt_accepts_input(&state));
+    }
+
+    #[test]
+    fn normalize_cli_supports_codex_style_resume_startup() {
+        let cli = normalize_cli(Cli {
+            codex_bin: "codex".to_string(),
+            config_overrides: Vec::new(),
+            enable_features: Vec::new(),
+            disable_features: Vec::new(),
+            resume: None,
+            cwd: None,
+            model: None,
+            model_provider: None,
+            auto_continue: true,
+            verbose_events: false,
+            verbose_thinking: true,
+            raw_json: false,
+            no_experimental_api: false,
+            yolo: false,
+            prompt: vec![
+                "resume".to_string(),
+                "thread-123".to_string(),
+                "continue".to_string(),
+                "work".to_string(),
+            ],
+        });
+        assert_eq!(cli.resume.as_deref(), Some("thread-123"));
+        assert_eq!(cli.prompt, vec!["continue".to_string(), "work".to_string()]);
     }
 }
