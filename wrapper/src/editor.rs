@@ -1,3 +1,5 @@
+use unicode_segmentation::UnicodeSegmentation;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EditorEvent {
     Submit(String),
@@ -24,20 +26,20 @@ impl LineEditor {
     }
 
     pub fn cursor_byte_index(&self) -> usize {
-        char_to_byte_index(&self.buffer, self.cursor_chars)
+        grapheme_to_byte_index(&self.buffer, self.cursor_chars)
     }
 
     pub fn insert_char(&mut self, ch: char) {
-        let byte_index = char_to_byte_index(&self.buffer, self.cursor_chars);
+        let byte_index = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
         self.buffer.insert(byte_index, ch);
         self.cursor_chars += 1;
         self.history_index = None;
     }
 
     pub fn insert_str(&mut self, text: &str) {
-        let byte_index = char_to_byte_index(&self.buffer, self.cursor_chars);
+        let byte_index = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
         self.buffer.insert_str(byte_index, text);
-        self.cursor_chars += text.chars().count();
+        self.cursor_chars += grapheme_count(text);
         self.history_index = None;
     }
 
@@ -49,19 +51,19 @@ impl LineEditor {
         if self.cursor_chars == 0 {
             return;
         }
-        let start = char_to_byte_index(&self.buffer, self.cursor_chars - 1);
-        let end = char_to_byte_index(&self.buffer, self.cursor_chars);
+        let start = grapheme_to_byte_index(&self.buffer, self.cursor_chars - 1);
+        let end = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
         self.buffer.replace_range(start..end, "");
         self.cursor_chars -= 1;
         self.history_index = None;
     }
 
     pub fn delete(&mut self) {
-        if self.cursor_chars >= self.char_len() {
+        if self.cursor_chars >= self.grapheme_len() {
             return;
         }
-        let start = char_to_byte_index(&self.buffer, self.cursor_chars);
-        let end = char_to_byte_index(&self.buffer, self.cursor_chars + 1);
+        let start = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
+        let end = grapheme_to_byte_index(&self.buffer, self.cursor_chars + 1);
         self.buffer.replace_range(start..end, "");
         self.history_index = None;
     }
@@ -71,7 +73,7 @@ impl LineEditor {
     }
 
     pub fn move_right(&mut self) {
-        self.cursor_chars = usize::min(self.cursor_chars + 1, self.char_len());
+        self.cursor_chars = usize::min(self.cursor_chars + 1, self.grapheme_len());
     }
 
     pub fn move_home(&mut self) {
@@ -79,14 +81,14 @@ impl LineEditor {
     }
 
     pub fn move_end(&mut self) {
-        self.cursor_chars = self.char_len();
+        self.cursor_chars = self.grapheme_len();
     }
 
     pub fn clear_to_start(&mut self) {
         if self.cursor_chars == 0 {
             return;
         }
-        let end = char_to_byte_index(&self.buffer, self.cursor_chars);
+        let end = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
         self.buffer.replace_range(0..end, "");
         self.cursor_chars = 0;
         self.history_index = None;
@@ -96,16 +98,16 @@ impl LineEditor {
         if self.cursor_chars == 0 {
             return;
         }
-        let chars = self.buffer.chars().collect::<Vec<_>>();
+        let graphemes = self.buffer.graphemes(true).collect::<Vec<_>>();
         let mut start = self.cursor_chars;
-        while start > 0 && chars[start - 1].is_whitespace() {
+        while start > 0 && grapheme_is_whitespace(graphemes[start - 1]) {
             start -= 1;
         }
-        while start > 0 && !chars[start - 1].is_whitespace() {
+        while start > 0 && !grapheme_is_whitespace(graphemes[start - 1]) {
             start -= 1;
         }
-        let start_byte = char_to_byte_index(&self.buffer, start);
-        let end_byte = char_to_byte_index(&self.buffer, self.cursor_chars);
+        let start_byte = grapheme_to_byte_index(&self.buffer, start);
+        let end_byte = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
         self.buffer.replace_range(start_byte..end_byte, "");
         self.cursor_chars = start;
         self.history_index = None;
@@ -125,7 +127,7 @@ impl LineEditor {
         }
         if let Some(index) = self.history_index {
             self.buffer = self.history[index].clone();
-            self.cursor_chars = self.char_len();
+            self.cursor_chars = self.grapheme_len();
         }
     }
 
@@ -136,12 +138,12 @@ impl LineEditor {
         if index + 1 >= self.history.len() {
             self.history_index = None;
             self.buffer = self.draft_before_history.clone();
-            self.cursor_chars = self.char_len();
+            self.cursor_chars = self.grapheme_len();
             return;
         }
         self.history_index = Some(index + 1);
         self.buffer = self.history[index + 1].clone();
-        self.cursor_chars = self.char_len();
+        self.cursor_chars = self.grapheme_len();
     }
 
     pub fn submit(&mut self) -> EditorEvent {
@@ -184,25 +186,31 @@ impl LineEditor {
 
     pub fn replace_range(&mut self, start_byte: usize, end_byte: usize, replacement: &str) {
         self.buffer.replace_range(start_byte..end_byte, replacement);
-        self.cursor_chars = self.buffer[..start_byte + replacement.len()]
-            .chars()
-            .count();
+        self.cursor_chars = grapheme_count(&self.buffer[..start_byte + replacement.len()]);
         self.history_index = None;
     }
 
-    fn char_len(&self) -> usize {
-        self.buffer.chars().count()
+    fn grapheme_len(&self) -> usize {
+        grapheme_count(&self.buffer)
     }
 }
 
-fn char_to_byte_index(text: &str, char_index: usize) -> usize {
-    if char_index == 0 {
+fn grapheme_to_byte_index(text: &str, grapheme_index: usize) -> usize {
+    if grapheme_index == 0 {
         return 0;
     }
-    text.char_indices()
-        .nth(char_index)
+    UnicodeSegmentation::grapheme_indices(text, true)
+        .nth(grapheme_index)
         .map(|(idx, _)| idx)
         .unwrap_or(text.len())
+}
+
+fn grapheme_count(text: &str) -> usize {
+    UnicodeSegmentation::graphemes(text, true).count()
+}
+
+fn grapheme_is_whitespace(grapheme: &str) -> bool {
+    grapheme.chars().all(char::is_whitespace)
 }
 
 #[cfg(test)]
@@ -255,6 +263,26 @@ mod tests {
         editor.delete();
         assert_eq!(editor.buffer(), "abcd");
         assert_eq!(editor.cursor_chars(), 2);
+    }
+
+    #[test]
+    fn backspace_removes_previous_emoji_grapheme() {
+        let mut editor = LineEditor::default();
+        editor.insert_str("a🙂b");
+        editor.move_left();
+        editor.backspace();
+        assert_eq!(editor.buffer(), "ab");
+        assert_eq!(editor.cursor_chars(), 1);
+    }
+
+    #[test]
+    fn backspace_removes_previous_combining_grapheme() {
+        let mut editor = LineEditor::default();
+        editor.insert_str("e\u{301}x");
+        editor.move_left();
+        editor.backspace();
+        assert_eq!(editor.buffer(), "x");
+        assert_eq!(editor.cursor_chars(), 0);
     }
 
     #[test]

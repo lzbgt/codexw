@@ -12,6 +12,8 @@ use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxReference;
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
 static SYNTAX_THEME: LazyLock<Theme> = LazyLock::new(|| {
@@ -66,8 +68,8 @@ pub fn render_prompt_line(
     } else {
         format!("{prompt_label}> ")
     };
-    let prefix_chars = prefix.chars().count();
-    let available_chars = terminal_width.saturating_sub(prefix_chars).max(1);
+    let prefix_width = UnicodeWidthStr::width(prefix.as_str());
+    let available_chars = terminal_width.saturating_sub(prefix_width).max(1);
     let display_buffer = preview_prompt_buffer(buffer);
     let (visible_buffer, visible_cursor_chars) =
         fit_prompt_buffer(&display_buffer, cursor_chars, available_chars);
@@ -80,7 +82,7 @@ pub fn render_prompt_line(
         ),
         Span::raw(visible_buffer),
     ])));
-    let cursor_col = prefix_chars + visible_cursor_chars;
+    let cursor_col = prefix_width + visible_cursor_chars;
     (line, cursor_col)
 }
 
@@ -132,35 +134,62 @@ fn classify_block(title: &str, body: &str) -> BlockKind {
 }
 
 fn fit_prompt_buffer(buffer: &str, cursor_chars: usize, available_chars: usize) -> (String, usize) {
-    let chars = buffer.chars().collect::<Vec<_>>();
-    if chars.len() <= available_chars {
-        return (buffer.to_string(), cursor_chars.min(chars.len()));
+    let graphemes = UnicodeSegmentation::graphemes(buffer, true).collect::<Vec<_>>();
+    let total_width = grapheme_slice_width(&graphemes);
+    let cursor = cursor_chars.min(graphemes.len());
+    if total_width <= available_chars {
+        return (
+            buffer.to_string(),
+            grapheme_slice_width(&graphemes[..cursor]).min(available_chars),
+        );
     }
 
     if available_chars <= 3 {
-        let visible = chars
-            .iter()
-            .rev()
-            .take(available_chars)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect::<String>();
-        return (visible, available_chars.min(cursor_chars));
+        return (".".repeat(available_chars), available_chars);
     }
 
-    let window_chars = available_chars - 3;
-    let cursor = cursor_chars.min(chars.len());
-    let start = cursor.saturating_sub(window_chars);
-    let end = (start + window_chars).min(chars.len());
+    let window_width = available_chars - 3;
+    let mut start = cursor;
+    let mut width_before_cursor = 0;
+    while start > 0 {
+        let next_width = UnicodeWidthStr::width(graphemes[start - 1]);
+        if width_before_cursor + next_width > window_width {
+            break;
+        }
+        start -= 1;
+        width_before_cursor += next_width;
+    }
+
+    let mut end = start;
+    let mut visible_width = 0;
+    while end < graphemes.len() {
+        let next_width = UnicodeWidthStr::width(graphemes[end]);
+        if visible_width + next_width > window_width {
+            break;
+        }
+        visible_width += next_width;
+        end += 1;
+    }
+    if end == start && end < graphemes.len() {
+        end += 1;
+    }
+
+    let body = graphemes[start..end].concat();
     let mut visible = String::from("...");
-    visible.push_str(&chars[start..end].iter().collect::<String>());
+    visible.push_str(&body);
     let cursor_in_visible = if start == 0 {
-        cursor
+        grapheme_slice_width(&graphemes[..cursor])
     } else {
-        3 + cursor.saturating_sub(start)
+        3 + grapheme_slice_width(&graphemes[start..cursor])
     };
     (visible, cursor_in_visible.min(available_chars))
+}
+
+fn grapheme_slice_width(graphemes: &[&str]) -> usize {
+    graphemes
+        .iter()
+        .map(|grapheme| UnicodeWidthStr::width(*grapheme))
+        .sum()
 }
 
 fn render_title_line(title: &str) -> Line<'static> {
@@ -784,5 +813,17 @@ mod tests {
         let (rendered, cursor_col) = render_prompt_line("", "first\nsecond", 12, 40);
         assert!(rendered.contains("↩"));
         assert!(cursor_col <= 40);
+    }
+
+    #[test]
+    fn prompt_line_accounts_for_wide_graphemes_in_cursor_position() {
+        let (_rendered, cursor_col) = render_prompt_line("", "a🙂中", 3, 20);
+        assert_eq!(cursor_col, 7);
+    }
+
+    #[test]
+    fn prompt_line_handles_combining_graphemes_without_overadvancing_cursor() {
+        let (_rendered, cursor_col) = render_prompt_line("", "e\u{301}x", 1, 20);
+        assert_eq!(cursor_col, 3);
     }
 }
