@@ -6,9 +6,11 @@ mod render;
 mod rpc;
 
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::Child;
 use std::process::ChildStdin;
 use std::process::ChildStdout;
@@ -129,6 +131,7 @@ enum InputKey {
     End,
     Up,
     Down,
+    Tab,
     Enter,
     CtrlC,
     CtrlA,
@@ -366,6 +369,16 @@ fn main() -> Result<()> {
                         editor.history_next();
                     }
                 }
+                InputKey::Tab => {
+                    if prompt_accepts_input(&state) {
+                        handle_tab_completion(
+                            &mut editor,
+                            &state,
+                            &resolved_cwd,
+                            &mut output,
+                        )?;
+                    }
+                }
                 InputKey::CtrlA => {
                     if prompt_accepts_input(&state) {
                         editor.move_home();
@@ -584,6 +597,7 @@ fn map_key_event(key_event: KeyEvent) -> Option<InputKey> {
         (KeyCode::End, _) => Some(InputKey::End),
         (KeyCode::Up, _) => Some(InputKey::Up),
         (KeyCode::Down, _) => Some(InputKey::Down),
+        (KeyCode::Tab, _) => Some(InputKey::Tab),
         (KeyCode::Char(ch), modifiers)
             if modifiers.is_empty() || modifiers == KeyModifiers::SHIFT =>
         {
@@ -2437,6 +2451,279 @@ fn prompt_accepts_input(state: &AppState) -> bool {
     prompt_is_visible(state) && state.active_exec_process_id.is_none()
 }
 
+fn handle_tab_completion(
+    editor: &mut LineEditor,
+    state: &AppState,
+    resolved_cwd: &str,
+    output: &mut Output,
+) -> Result<()> {
+    let buffer = editor.buffer().to_string();
+    let cursor_byte = editor.cursor_byte_index();
+
+    if try_complete_slash_command(editor, &buffer, cursor_byte) {
+        return Ok(());
+    }
+
+    if let Some(result) = try_complete_file_token(editor, &buffer, cursor_byte, resolved_cwd)? {
+        if let Some(rendered) = result.rendered_candidates {
+            output.block_stdout("File completions", &rendered)?;
+        }
+        return Ok(());
+    }
+
+    if !state.turn_running && !buffer.trim_start().starts_with('!') {
+        output.line_stderr("[tab] no completion available")?;
+    }
+    Ok(())
+}
+
+struct FileCompletionResult {
+    rendered_candidates: Option<String>,
+}
+
+fn try_complete_slash_command(editor: &mut LineEditor, buffer: &str, cursor_byte: usize) -> bool {
+    let Some((command_start, command_end, prefix)) = slash_command_at_cursor(buffer, cursor_byte)
+    else {
+        return false;
+    };
+    let matches = builtin_command_names()
+        .into_iter()
+        .filter(|name| name.starts_with(prefix))
+        .collect::<Vec<_>>();
+    if matches.is_empty() {
+        return false;
+    }
+
+    let replacement = if matches.len() == 1 {
+        format!("/{} ", matches[0])
+    } else {
+        let lcp = longest_common_prefix(&matches);
+        if lcp.len() <= prefix.len() {
+            return false;
+        }
+        format!("/{lcp}")
+    };
+    editor.replace_range(command_start, command_end, &replacement);
+    true
+}
+
+fn try_complete_file_token(
+    editor: &mut LineEditor,
+    buffer: &str,
+    cursor_byte: usize,
+    resolved_cwd: &str,
+) -> Result<Option<FileCompletionResult>> {
+    let Some((start, end, token)) = current_at_token(buffer, cursor_byte) else {
+        return Ok(None);
+    };
+    let completions = file_completions(&token, resolved_cwd)?;
+    if completions.is_empty() {
+        return Ok(None);
+    }
+
+    if completions.len() == 1 {
+        editor.replace_range(start, end, &format!("{} ", completions[0]));
+        return Ok(Some(FileCompletionResult {
+            rendered_candidates: None,
+        }));
+    }
+
+    let lcp = longest_common_prefix(&completions);
+    let inserted_prefix = if lcp.len() > token.len() { &lcp } else { &token };
+    editor.replace_range(start, end, &format!("@{inserted_prefix}"));
+    let rendered_candidates = Some(
+        completions
+            .iter()
+            .take(12)
+            .enumerate()
+            .map(|(idx, candidate)| format!("{:>2}. {}", idx + 1, candidate))
+            .collect::<Vec<_>>()
+            .join("\n"),
+    );
+    Ok(Some(FileCompletionResult { rendered_candidates }))
+}
+
+fn slash_command_at_cursor<'a>(
+    buffer: &'a str,
+    cursor_byte: usize,
+) -> Option<(usize, usize, &'a str)> {
+    let first_line_end = buffer.find('\n').unwrap_or(buffer.len());
+    if cursor_byte > first_line_end {
+        return None;
+    }
+    let first_line = &buffer[..first_line_end];
+    let Some(stripped) = first_line.strip_prefix('/') else {
+        return None;
+    };
+    let name_end = stripped
+        .char_indices()
+        .find(|(_, ch)| ch.is_whitespace())
+        .map(|(idx, _)| idx)
+        .unwrap_or(stripped.len());
+    let command_end = 1 + name_end;
+    if cursor_byte > command_end {
+        return None;
+    }
+    Some((0, command_end, &stripped[..name_end]))
+}
+
+fn current_at_token<'a>(buffer: &'a str, cursor_byte: usize) -> Option<(usize, usize, String)> {
+    let safe_cursor = clamp_to_char_boundary(buffer, cursor_byte);
+    let before_cursor = &buffer[..safe_cursor];
+    let after_cursor = &buffer[safe_cursor..];
+    let start = before_cursor
+        .char_indices()
+        .rfind(|(_, ch)| ch.is_whitespace())
+        .map(|(idx, ch)| idx + ch.len_utf8())
+        .unwrap_or(0);
+    let end_rel = after_cursor
+        .char_indices()
+        .find(|(_, ch)| ch.is_whitespace())
+        .map(|(idx, _)| idx)
+        .unwrap_or(after_cursor.len());
+    let end = safe_cursor + end_rel;
+    let token = &buffer[start..end];
+    let mention = token.strip_prefix('@')?;
+    if mention.is_empty() {
+        return Some((start, end, String::new()));
+    }
+    if mention.starts_with('@') {
+        return None;
+    }
+    if mention
+        .chars()
+        .any(|ch| ch.is_whitespace() || matches!(ch, '"' | '\'' | '(' | ')' | '[' | ']'))
+    {
+        return None;
+    }
+    Some((start, end, mention.to_string()))
+}
+
+fn clamp_to_char_boundary(text: &str, cursor_byte: usize) -> usize {
+    if cursor_byte >= text.len() {
+        return text.len();
+    }
+    let mut safe = cursor_byte;
+    while safe > 0 && !text.is_char_boundary(safe) {
+        safe -= 1;
+    }
+    safe
+}
+
+fn file_completions(token: &str, resolved_cwd: &str) -> Result<Vec<String>> {
+    let token = token.trim();
+    let (dir_part, name_prefix) = match token.rfind(['/', '\\']) {
+        Some(idx) => (&token[..=idx], &token[idx + 1..]),
+        None => ("", token),
+    };
+    let base_dir = if dir_part.is_empty() {
+        PathBuf::from(resolved_cwd)
+    } else {
+        PathBuf::from(resolved_cwd).join(dir_part)
+    };
+    if !base_dir.is_dir() {
+        return Ok(Vec::new());
+    }
+
+    let mut matches = std::fs::read_dir(&base_dir)
+        .with_context(|| format!("read directory {}", base_dir.display()))?
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let name = entry.file_name();
+            let name = os_str_to_string(&name)?;
+            if !name.starts_with(name_prefix) {
+                return None;
+            }
+            let mut rendered = format!("{dir_part}{name}");
+            if entry.path().is_dir() {
+                rendered.push('/');
+            }
+            Some(rendered)
+        })
+        .collect::<Vec<_>>();
+    matches.sort();
+    Ok(matches)
+}
+
+fn os_str_to_string(value: &OsStr) -> Option<String> {
+    value.to_str().map(ToOwned::to_owned)
+}
+
+fn longest_common_prefix<S: AsRef<str>>(values: &[S]) -> String {
+    if values.is_empty() {
+        return String::new();
+    }
+    let mut prefix = values[0].as_ref().to_string();
+    for value in &values[1..] {
+        let mut next = String::new();
+        for (a, b) in prefix.chars().zip(value.as_ref().chars()) {
+            if a != b {
+                break;
+            }
+            next.push(a);
+        }
+        prefix = next;
+        if prefix.is_empty() {
+            break;
+        }
+    }
+    prefix
+}
+
+fn builtin_command_names() -> &'static [&'static str] {
+    &[
+        "help",
+        "quit",
+        "exit",
+        "new",
+        "resume",
+        "fork",
+        "compact",
+        "review",
+        "clear",
+        "copy",
+        "rename",
+        "apps",
+        "skills",
+        "models",
+        "model",
+        "mcp",
+        "clean",
+        "threads",
+        "mention",
+        "diff",
+        "auto",
+        "attach-image",
+        "attach",
+        "attach-url",
+        "attachments",
+        "clear-attachments",
+        "interrupt",
+        "status",
+        "approvals",
+        "permissions",
+        "debug-config",
+        "fast",
+        "personality",
+        "collab",
+        "agent",
+        "multi-agents",
+        "theme",
+        "statusline",
+        "realtime",
+        "settings",
+        "feedback",
+        "logout",
+        "rollout",
+        "experimental",
+        "sandbox-add-read-dir",
+        "setup-default-sandbox",
+        "init",
+        "ps",
+        "plan",
+    ]
+}
+
 fn render_prompt_status(state: &AppState) -> String {
     if let Some(process_id) = state.active_exec_process_id.as_deref() {
         format!(
@@ -2533,60 +2820,7 @@ fn join_prompt(parts: &[String]) -> Option<String> {
 
 fn is_builtin_command(command_line: &str) -> bool {
     let command = command_line.split_whitespace().next().unwrap_or_default();
-    matches!(
-        command,
-        "help"
-            | "h"
-            | "quit"
-            | "q"
-            | "exit"
-            | "new"
-            | "resume"
-            | "fork"
-            | "compact"
-            | "review"
-            | "clear"
-            | "copy"
-            | "rename"
-            | "apps"
-            | "skills"
-            | "models"
-            | "model"
-            | "mcp"
-            | "clean"
-            | "threads"
-            | "mention"
-            | "diff"
-            | "auto"
-            | "attach-image"
-            | "attach"
-            | "attach-url"
-            | "attachments"
-            | "clear-attachments"
-            | "interrupt"
-            | "status"
-            | "approvals"
-            | "permissions"
-            | "debug-config"
-            | "fast"
-            | "personality"
-            | "collab"
-            | "agent"
-            | "multi-agents"
-            | "theme"
-            | "statusline"
-            | "realtime"
-            | "settings"
-            | "feedback"
-            | "logout"
-            | "rollout"
-            | "experimental"
-            | "sandbox-add-read-dir"
-            | "setup-default-sandbox"
-            | "init"
-            | "ps"
-            | "plan"
-    )
+    matches!(command, "h" | "q") || builtin_command_names().contains(&command)
 }
 
 fn summarize_text(text: &str) -> String {
@@ -3702,7 +3936,10 @@ mod tests {
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
     use super::summarize_terminal_interaction;
+    use super::try_complete_file_token;
+    use super::try_complete_slash_command;
     use crate::input::AppCatalogEntry;
+    use crate::editor::LineEditor;
     use serde_json::json;
 
     #[test]
@@ -3826,6 +4063,77 @@ mod tests {
             })),
             Some("process=123 stdin=yes".to_string())
         );
+    }
+
+    #[test]
+    fn tab_completes_unique_slash_command() {
+        let mut editor = LineEditor::default();
+        for ch in "/di".chars() {
+            editor.insert_char(ch);
+        }
+        let buffer = editor.buffer().to_string();
+        let cursor = editor.cursor_byte_index();
+        assert!(try_complete_slash_command(
+            &mut editor,
+            &buffer,
+            cursor
+        ));
+        assert_eq!(editor.buffer(), "/diff ");
+    }
+
+    #[test]
+    fn tab_completes_unique_file_token() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let file_path = temp.path().join("src").join("main.rs");
+        std::fs::create_dir_all(file_path.parent().expect("parent")).expect("mkdir");
+        std::fs::write(&file_path, "fn main() {}\n").expect("write");
+
+        let mut editor = LineEditor::default();
+        for ch in "@src/ma".chars() {
+            editor.insert_char(ch);
+        }
+        let buffer = editor.buffer().to_string();
+        let cursor = editor.cursor_byte_index();
+
+        let result = try_complete_file_token(
+            &mut editor,
+            &buffer,
+            cursor,
+            temp.path().to_str().expect("utf8"),
+        )
+        .expect("complete")
+        .expect("some result");
+
+        assert!(result.rendered_candidates.is_none());
+        assert_eq!(editor.buffer(), "src/main.rs ");
+    }
+
+    #[test]
+    fn tab_lists_ambiguous_file_completions() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        std::fs::write(temp.path().join("alpha.txt"), "a").expect("write alpha");
+        std::fs::write(temp.path().join("alpine.txt"), "b").expect("write alpine");
+
+        let mut editor = LineEditor::default();
+        for ch in "@al".chars() {
+            editor.insert_char(ch);
+        }
+        let buffer = editor.buffer().to_string();
+        let cursor = editor.cursor_byte_index();
+
+        let result = try_complete_file_token(
+            &mut editor,
+            &buffer,
+            cursor,
+            temp.path().to_str().expect("utf8"),
+        )
+        .expect("complete")
+        .expect("some result");
+
+        let rendered = result.rendered_candidates.expect("candidate list");
+        assert!(rendered.contains("alpha.txt"));
+        assert!(rendered.contains("alpine.txt"));
+        assert_eq!(editor.buffer(), "@alp");
     }
 
     #[test]

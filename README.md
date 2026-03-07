@@ -35,7 +35,7 @@ This is protocol-level observability from Codex itself, not `RUST_LOG` tracing. 
 By default the client does not dump raw JSON payloads into the terminal. Raw JSON is reserved for `--raw-json`, and lower-level protocol events are hidden unless you opt into `--verbose-events`.
 
 The client follows the normal terminal scrollback model instead of a fixed alternate-screen viewport, so you can use the terminal’s native scroll behavior rather than in-app paging.
-It now renders an inline prompt/composer in the normal terminal flow rather than a plain raw prefix, and keeps that prompt visible while a turn is running so you can see live activity state. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
+It now renders an inline prompt/composer in the normal terminal flow rather than a plain raw prefix, and keeps that prompt visible while a turn is running so you can see live activity state. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft, `Tab` for inline slash-command and `@file` completion, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
 The prompt status line also shows live request progress, including a spinner, elapsed request time, and turn count, so quiet backend work does not look like a dead terminal.
 
 ## Automation Defaults
@@ -133,6 +133,7 @@ Submission features:
 - Plain input while a turn is running is sent as steer input.
 - `!<shell command>` runs a local command via `command/exec` and prints the completed stdout/stderr block when it finishes.
 - Inline `@path/to/file` references are resolved against the current working directory before submit when they point to a real file or directory. This gives `codexw` a scroll-native equivalent of Codex’s file-path insertion flow even without the native popup picker.
+- Pressing `Tab` in the prompt completes unique slash commands like `/co -> /compact ` and unique `@file` prefixes like `@src/ma -> src/main.rs `. If multiple file matches exist, `codexw` extends the common prefix and prints a short candidate list into scrollback.
 - `:mention <query>` runs app-server fuzzy file search and prints the best matching repo paths you can paste back into a prompt.
 - `:diff` prints the latest aggregated turn diff snapshot emitted by app-server.
 - `:apps`, `:skills`, `:models`, `:mcp`, and `:threads` expose the most useful app-server discovery surfaces directly from the inline client.

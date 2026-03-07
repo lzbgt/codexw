@@ -23,6 +23,10 @@ impl LineEditor {
         self.cursor_chars
     }
 
+    pub fn cursor_byte_index(&self) -> usize {
+        char_to_byte_index(&self.buffer, self.cursor_chars)
+    }
+
     pub fn insert_char(&mut self, ch: char) {
         let byte_index = char_to_byte_index(&self.buffer, self.cursor_chars);
         self.buffer.insert(byte_index, ch);
@@ -165,6 +169,12 @@ impl LineEditor {
         self.cursor_chars = 0;
         self.history_index = None;
         self.draft_before_history.clear();
+    }
+
+    pub fn replace_range(&mut self, start_byte: usize, end_byte: usize, replacement: &str) {
+        self.buffer.replace_range(start_byte..end_byte, replacement);
+        self.cursor_chars = self.buffer[..start_byte + replacement.len()].chars().count();
+        self.history_index = None;
     }
 
     fn char_len(&self) -> usize {
