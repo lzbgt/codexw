@@ -7,6 +7,7 @@ use serde_json::Value;
 use serde_json::json;
 
 use super::*;
+use crate::history::render_resumed_history;
 use crate::requests::*;
 use crate::rpc;
 use crate::rpc::IncomingMessage;
@@ -16,6 +17,30 @@ use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcNotification;
 use crate::rpc::RpcRequest;
 use crate::rpc::RpcResponse;
+use crate::views::build_tool_user_input_response;
+use crate::views::extract_file_search_paths;
+use crate::views::extract_thread_ids;
+use crate::views::format_plan;
+use crate::views::humanize_item_type;
+use crate::views::render_command_completion;
+use crate::views::render_config_snapshot;
+use crate::views::render_experimental_features_list;
+use crate::views::render_file_change_completion;
+use crate::views::render_fuzzy_file_search_results;
+use crate::views::render_local_command_completion;
+use crate::views::render_mcp_server_list;
+use crate::views::render_reasoning_item;
+use crate::views::render_thread_list;
+use crate::views::summarize_command_approval_request;
+use crate::views::summarize_file_change_paths;
+use crate::views::summarize_generic_approval_request;
+use crate::views::summarize_model_reroute;
+use crate::views::summarize_server_request_resolved;
+use crate::views::summarize_terminal_interaction;
+use crate::views::summarize_thread_status_for_display;
+use crate::views::summarize_tool_item;
+use crate::views::summarize_tool_request;
+use crate::views::summarize_value;
 
 pub(crate) fn process_server_line(
     line: String,

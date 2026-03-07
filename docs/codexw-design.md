@@ -27,7 +27,7 @@ The current design optimizes for:
 
 ## High-Level Architecture
 
-The runtime has six main layers.
+The runtime has eight main layers.
 
 1. Backend process management
    `main.rs` starts `codex app-server`, wires stdio, forwards key environment such as proxy variables, and owns process lifetime.
@@ -44,13 +44,21 @@ The runtime has six main layers.
 5. Session and turn orchestration
    `main.rs` owns process startup, event-loop control, resume logic, command dispatch, and auto-continue coordination. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering now lives in `session.rs`.
 
-6. Human input handling
+6. Resume and history rendering
+   `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
+
+7. View and transcript rendering helpers
+   `views.rs` owns app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
+
+8. Human input handling
    `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
 
-7. Human output handling
+9. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
 
 Session feature helpers live in `session.rs`: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
+Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
+Display helpers live in `views.rs`: formatted thread/model/app output, approval/request summaries, and item-completion rendering blocks.
 
 ## Process Model
 
@@ -315,6 +323,10 @@ The biggest known limits are architectural, not accidental.
   Orchestration, session state, command handling, resume logic, turn lifecycle, auto-continue.
 - `wrapper/src/events.rs`
   Inbound JSON-RPC line routing, response handling, notification handling, approval-request handling, and item completion rendering.
+- `wrapper/src/history.rs`
+  Resume-preview extraction, resumed objective/reply seeding, and resumed conversation rendering.
+- `wrapper/src/views.rs`
+  Catalog/status/thread rendering helpers plus approval, request, and item-completion summaries.
 - `wrapper/src/requests.rs`
   Outbound JSON-RPC request builders plus pending-request types for initialize, thread, turn, command, review, catalog, and realtime actions.
 - `wrapper/src/rpc.rs`

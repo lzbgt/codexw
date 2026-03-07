@@ -9,15 +9,15 @@ use super::Cli;
 use super::Output;
 use crate::approval_policy;
 use crate::get_string;
-use crate::render_account_summary;
-use crate::render_models_list;
-use crate::render_rate_limit_lines;
-use crate::render_token_usage_summary;
-use crate::summarize_sandbox_policy;
 use crate::summarize_text;
-use crate::summarize_value;
 use crate::thread_sandbox_mode;
 use crate::turn_sandbox_policy;
+use crate::views::render_account_summary;
+use crate::views::render_models_list;
+use crate::views::render_rate_limit_lines;
+use crate::views::render_token_usage_summary;
+use crate::views::summarize_sandbox_policy;
+use crate::views::summarize_value;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CollaborationModePreset {
