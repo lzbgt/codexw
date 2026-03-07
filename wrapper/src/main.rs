@@ -150,7 +150,7 @@ enum PendingRequest {
     LogoutAccount,
     UploadFeedback { classification: String },
     LoadRateLimits,
-    LoadModels,
+    LoadModels { action: ModelsAction },
     LoadConfig,
     LoadMcpServers,
     LoadExperimentalFeatures,
@@ -233,6 +233,21 @@ enum CollaborationModeAction {
     SetMode(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ModelCatalogEntry {
+    id: String,
+    display_name: String,
+    supports_personality: bool,
+    is_default: bool,
+}
+
+#[derive(Debug, Clone)]
+enum ModelsAction {
+    ShowModels,
+    ShowPersonality,
+    SetPersonality(String),
+}
+
 struct AppState {
     thread_id: Option<String>,
     active_turn_id: Option<String>,
@@ -254,9 +269,11 @@ struct AppState {
     process_output_buffers: HashMap<String, ProcessOutputBuffer>,
     pending_local_images: Vec<String>,
     pending_remote_images: Vec<String>,
+    active_personality: Option<String>,
     apps: Vec<AppCatalogEntry>,
     plugins: Vec<PluginCatalogEntry>,
     skills: Vec<SkillCatalogEntry>,
+    models: Vec<ModelCatalogEntry>,
     collaboration_modes: Vec<CollaborationModePreset>,
     active_collaboration_mode: Option<CollaborationModePreset>,
     last_listed_thread_ids: Vec<String>,
@@ -290,9 +307,11 @@ impl AppState {
             process_output_buffers: HashMap::new(),
             pending_local_images: Vec::new(),
             pending_remote_images: Vec::new(),
+            active_personality: None,
             apps: Vec::new(),
             plugins: Vec::new(),
             skills: Vec::new(),
+            models: Vec::new(),
             collaboration_modes: Vec::new(),
             active_collaboration_mode: None,
             last_listed_thread_ids: Vec::new(),
@@ -330,6 +349,7 @@ impl AppState {
         self.last_turn_diff = None;
         self.last_token_usage = None;
         self.last_status_line = None;
+        self.active_personality = None;
         self.active_collaboration_mode = None;
     }
 
@@ -875,11 +895,15 @@ fn send_load_rate_limits(writer: &mut ChildStdin, state: &mut AppState) -> Resul
     )
 }
 
-fn send_load_models(writer: &mut ChildStdin, state: &mut AppState) -> Result<()> {
+fn send_load_models(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    action: ModelsAction,
+) -> Result<()> {
     let request_id = state.next_request_id();
     state
         .pending
-        .insert(request_id.clone(), PendingRequest::LoadModels);
+        .insert(request_id.clone(), PendingRequest::LoadModels { action });
     send_json(
         writer,
         &OutgoingRequest {
@@ -1231,6 +1255,9 @@ fn send_turn_start(
         "model": cli.model,
         "summary": reasoning_summary(cli),
     });
+    if let Some(personality) = state.active_personality.as_deref() {
+        params["personality"] = Value::String(personality.to_string());
+    }
     if let Some(collaboration_mode) = current_collaboration_mode_value(state) {
         params["collaborationMode"] = collaboration_mode;
     }
@@ -1601,8 +1628,8 @@ fn handle_response(
         PendingRequest::LoadRateLimits => {
             state.rate_limits = response.result.get("rateLimits").cloned();
         }
-        PendingRequest::LoadModels => {
-            output.block_stdout("Models", &render_models_list(&response.result))?;
+        PendingRequest::LoadModels { action } => {
+            apply_models_action(cli, state, action, &response.result, output)?;
         }
         PendingRequest::LoadExperimentalFeatures => {
             output.block_stdout(
@@ -1697,6 +1724,13 @@ fn handle_response_error(
         }
         Some(PendingRequest::LoadAccount) => {
             output.line_stderr("[session] account details unavailable from app-server")?;
+        }
+        Some(PendingRequest::LoadModels { .. }) => {
+            output.line_stderr("[session] model metadata unavailable from app-server")?;
+            output.line_stderr(format!(
+                "[server-error] {}",
+                serde_json::to_string_pretty(&error)?
+            ))?;
         }
         Some(PendingRequest::LoadCollaborationModes { action }) => {
             if !matches!(action, CollaborationModeAction::CacheOnly) {
@@ -2423,7 +2457,7 @@ fn handle_command(
         }
         "models" | "model" => {
             output.line_stderr("[session] loading models")?;
-            send_load_models(writer, state)?;
+            send_load_models(writer, state, ModelsAction::ShowModels)?;
             Ok(true)
         }
         "mcp" => {
@@ -2641,6 +2675,31 @@ fn handle_command(
             send_load_experimental_features(writer, state)?;
             Ok(true)
         }
+        "personality" => {
+            if state.turn_running {
+                output
+                    .line_stderr("[session] cannot change personality while a turn is running")?;
+                return Ok(true);
+            }
+            let args = parts.collect::<Vec<_>>();
+            if args.is_empty() {
+                if state.models.is_empty() {
+                    output.line_stderr("[session] loading models for personality options")?;
+                    send_load_models(writer, state, ModelsAction::ShowPersonality)?;
+                } else {
+                    output.block_stdout("Personality", &render_personality_options(cli, state))?;
+                }
+                return Ok(true);
+            }
+            let selector = args.join(" ");
+            if state.models.is_empty() {
+                output.line_stderr("[session] loading models for personality selection")?;
+                send_load_models(writer, state, ModelsAction::SetPersonality(selector))?;
+            } else {
+                apply_personality_selection(cli, state, &selector, output)?;
+            }
+            Ok(true)
+        }
         "collab" => {
             let args = parts.collect::<Vec<_>>();
             if args.is_empty() {
@@ -2672,7 +2731,6 @@ fn handle_command(
             Ok(true)
         }
         "fast"
-        | "personality"
         | "agent"
         | "multi-agents"
         | "theme"
@@ -3459,8 +3517,8 @@ fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
         },
         BuiltinCommandEntry {
             name: "personality",
-            help_syntax: "personality",
-            description: "choose a communication style for Codex",
+            help_syntax: "personality [friendly|pragmatic|none|default]",
+            description: "show or change the active response style",
         },
         BuiltinCommandEntry {
             name: "realtime",
@@ -3526,6 +3584,148 @@ fn current_collaboration_mode_value(state: &AppState) -> Option<Value> {
         .active_collaboration_mode
         .as_ref()
         .and_then(CollaborationModePreset::turn_start_value)
+}
+
+fn personality_label(personality: &str) -> &str {
+    match personality {
+        "none" => "None",
+        "friendly" => "Friendly",
+        "pragmatic" => "Pragmatic",
+        _ => personality,
+    }
+}
+
+fn summarize_active_personality(state: &AppState) -> String {
+    state
+        .active_personality
+        .as_deref()
+        .map(|value| personality_label(value).to_string())
+        .unwrap_or_else(|| "default".to_string())
+}
+
+fn extract_models(result: &Value) -> Vec<ModelCatalogEntry> {
+    result
+        .get("data")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|model| {
+            let id = get_string(model, &["id"])
+                .or_else(|| get_string(model, &["model"]))?
+                .to_string();
+            let display_name = get_string(model, &["displayName"])
+                .unwrap_or(id.as_str())
+                .to_string();
+            let supports_personality = model
+                .get("supportsPersonality")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            let is_default = model
+                .get("isDefault")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            Some(ModelCatalogEntry {
+                id,
+                display_name,
+                supports_personality,
+                is_default,
+            })
+        })
+        .collect()
+}
+
+fn effective_model_entry<'a>(state: &'a AppState, cli: &Cli) -> Option<&'a ModelCatalogEntry> {
+    if let Some(model) = state
+        .active_collaboration_mode
+        .as_ref()
+        .and_then(|preset| preset.model.as_deref())
+    {
+        return state.models.iter().find(|entry| entry.id == model);
+    }
+    if let Some(model) = cli.model.as_deref() {
+        return state.models.iter().find(|entry| entry.id == model);
+    }
+    state.models.iter().find(|entry| entry.is_default)
+}
+
+fn render_personality_options(cli: &Cli, state: &AppState) -> String {
+    let support_line = match effective_model_entry(state, cli) {
+        Some(model) if model.supports_personality => format!(
+            "current model     {} [supports personality]",
+            model.display_name
+        ),
+        Some(model) => format!(
+            "current model     {} [personality unsupported]",
+            model.display_name
+        ),
+        None => "current model     unknown".to_string(),
+    };
+    [
+        format!("current          {}", summarize_active_personality(state)),
+        support_line,
+        "available choices".to_string(),
+        "  - friendly  Warm, collaborative, and helpful.".to_string(),
+        "  - pragmatic Concise, task-focused, and direct.".to_string(),
+        "  - none      No extra personality instructions.".to_string(),
+        "Use /personality <friendly|pragmatic|none|default> to change it.".to_string(),
+    ]
+    .join("\n")
+}
+
+fn apply_personality_selection(
+    cli: &Cli,
+    state: &mut AppState,
+    selector: &str,
+    output: &mut Output,
+) -> Result<()> {
+    let normalized = selector.trim().to_ascii_lowercase();
+    if matches!(normalized.as_str(), "default" | "clear") {
+        state.active_personality = None;
+        output.line_stderr("[session] personality cleared; using backend default")?;
+        return Ok(());
+    }
+    if !matches!(normalized.as_str(), "none" | "friendly" | "pragmatic") {
+        output.line_stderr(format!("[session] unknown personality: {selector}"))?;
+        output.block_stdout("Personality", &render_personality_options(cli, state))?;
+        return Ok(());
+    }
+    if let Some(model) = effective_model_entry(state, cli)
+        && !model.supports_personality
+    {
+        output.line_stderr(format!(
+            "[session] model {} does not support personality overrides",
+            model.display_name
+        ))?;
+        return Ok(());
+    }
+    state.active_personality = Some(normalized.clone());
+    output.line_stderr(format!(
+        "[session] personality set to {}",
+        personality_label(&normalized)
+    ))?;
+    Ok(())
+}
+
+fn apply_models_action(
+    cli: &Cli,
+    state: &mut AppState,
+    action: ModelsAction,
+    result: &Value,
+    output: &mut Output,
+) -> Result<()> {
+    state.models = extract_models(result);
+    match action {
+        ModelsAction::ShowModels => {
+            output.block_stdout("Models", &render_models_list(result))?;
+        }
+        ModelsAction::ShowPersonality => {
+            output.block_stdout("Personality", &render_personality_options(cli, state))?;
+        }
+        ModelsAction::SetPersonality(selector) => {
+            apply_personality_selection(cli, state, &selector, output)?;
+        }
+    }
+    Ok(())
 }
 
 fn current_collaboration_mode_label(state: &AppState) -> Option<String> {
@@ -3705,8 +3905,22 @@ fn render_prompt_status(state: &AppState) -> String {
         }
     } else {
         match current_collaboration_mode_label(state) {
-            Some(label) => format!("ready · {label} · {} turns", state.completed_turn_count),
-            None => format!("ready · {} turns", state.completed_turn_count),
+            Some(label) => match state.active_personality.as_deref() {
+                Some(personality) => format!(
+                    "ready · {label} · {} · {} turns",
+                    personality_label(personality),
+                    state.completed_turn_count
+                ),
+                None => format!("ready · {label} · {} turns", state.completed_turn_count),
+            },
+            None => match state.active_personality.as_deref() {
+                Some(personality) => format!(
+                    "ready · {} · {} turns",
+                    personality_label(personality),
+                    state.completed_turn_count
+                ),
+                None => format!("ready · {} turns", state.completed_turn_count),
+            },
         }
     }
 }
@@ -4066,6 +4280,7 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
             "provider        {}",
             cli.model_provider.as_deref().unwrap_or("default")
         ),
+        format!("personality     {}", summarize_active_personality(state)),
         format!(
             "collaboration   {}",
             summarize_active_collaboration_mode(state)
@@ -4091,6 +4306,9 @@ fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> St
             "collab presets  {}",
             state.collaboration_modes.len()
         ));
+    }
+    if !state.models.is_empty() {
+        lines.push(format!("models cached   {}", state.models.len()));
     }
 
     if let Some(account) = render_account_summary(state.account_info.as_ref()) {
@@ -5021,6 +5239,7 @@ mod tests {
     use super::choose_command_approval_decision;
     use super::extract_collaboration_mode_presets;
     use super::extract_file_search_paths;
+    use super::extract_models;
     use super::extract_thread_ids;
     use super::is_builtin_command;
     use super::latest_conversation_history_items;
@@ -5034,6 +5253,7 @@ mod tests {
     use super::render_collaboration_modes;
     use super::render_experimental_features_list;
     use super::render_fuzzy_file_search_results;
+    use super::render_personality_options;
     use super::render_prompt_status;
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
@@ -5041,6 +5261,7 @@ mod tests {
     use super::render_thread_list;
     use super::seed_resumed_state_from_turns;
     use super::summarize_active_collaboration_mode;
+    use super::summarize_active_personality;
     use super::summarize_terminal_interaction;
     use super::summarize_thread_status_for_display;
     use super::try_complete_file_token;
@@ -5487,6 +5708,67 @@ mod tests {
     }
 
     #[test]
+    fn models_are_extractable_with_personality_support() {
+        let models = extract_models(&json!({
+            "data": [
+                {
+                    "id": "gpt-5-codex",
+                    "displayName": "GPT-5 Codex",
+                    "supportsPersonality": true,
+                    "isDefault": true
+                },
+                {
+                    "id": "legacy-model",
+                    "displayName": "Legacy",
+                    "supportsPersonality": false,
+                    "isDefault": false
+                }
+            ]
+        }));
+        assert_eq!(models.len(), 2);
+        assert!(models[0].supports_personality);
+        assert!(models[0].is_default);
+        assert!(!models[1].supports_personality);
+    }
+
+    #[test]
+    fn personality_rendering_shows_current_and_model_support() {
+        let mut state = AppState::new(true, false);
+        state.models = extract_models(&json!({
+            "data": [
+                {
+                    "id": "gpt-5-codex",
+                    "displayName": "GPT-5 Codex",
+                    "supportsPersonality": true,
+                    "isDefault": true
+                }
+            ]
+        }));
+        state.active_personality = Some("pragmatic".to_string());
+        let cli = Cli {
+            codex_bin: "codex".to_string(),
+            config_overrides: Vec::new(),
+            enable_features: Vec::new(),
+            disable_features: Vec::new(),
+            resume: None,
+            cwd: None,
+            model: None,
+            model_provider: None,
+            auto_continue: true,
+            verbose_events: false,
+            verbose_thinking: true,
+            raw_json: false,
+            no_experimental_api: false,
+            yolo: false,
+            prompt: Vec::new(),
+        };
+        let rendered = render_personality_options(&cli, &state);
+        assert_eq!(summarize_active_personality(&state), "Pragmatic");
+        assert!(rendered.contains("current          Pragmatic"));
+        assert!(rendered.contains("current model     GPT-5 Codex [supports personality]"));
+    }
+
+    #[test]
     fn prompt_visibility_and_input_follow_runtime_state() {
         let mut state = AppState::new(true, false);
         assert!(!prompt_is_visible(&state));
@@ -5547,6 +5829,14 @@ mod tests {
         );
         let rendered = render_prompt_status(&state);
         assert!(rendered.contains("plan mode"));
+    }
+
+    #[test]
+    fn prompt_status_mentions_personality_when_selected() {
+        let mut state = AppState::new(true, false);
+        state.active_personality = Some("friendly".to_string());
+        let rendered = render_prompt_status(&state);
+        assert!(rendered.contains("Friendly"));
     }
 
     #[test]
