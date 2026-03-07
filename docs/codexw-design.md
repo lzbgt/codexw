@@ -259,11 +259,12 @@ Current user-facing capabilities include:
 - real collaboration-mode controls through `/plan` and `/collab`, backed by `collaborationMode/list` plus `turn/start.collaborationMode`
 - backend-backed `/experimental` listing through `experimentalFeature/list`
 - backend-backed personality selection through startup-warmed `model/list` metadata plus `turn/start.personality`
+- backend-backed background-terminal cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns
 
-Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but collaboration-mode switching, experimental-feature discovery, and personality selection are no longer in that category.
+Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but collaboration-mode switching, experimental-feature discovery, personality selection, and background-terminal cleanup are no longer in that category.
 
 ## Approval and Automation Posture
 

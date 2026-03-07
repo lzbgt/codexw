@@ -172,6 +172,7 @@ Submission features:
 - `:plan` now toggles a real collaboration-mode override through app-server. `:collab` lists available collaboration mode presets from `collaborationMode/list`, and `:collab <name|mode|default>` switches the active mode for future turns.
 - `:experimental` now lists experimental feature flags directly from `experimentalFeature/list`, including lifecycle stage and enabled/default state.
 - `:personality` now shows or changes the active response style. `:personality <friendly|pragmatic|none|default>` stores a turn-level personality override and validates it against cached model capability metadata when app-server exposes `supportsPersonality`. `codexw` now warms that model metadata during startup, so the first `:status`, `:models`, and `:personality` call can already show personality support state without an extra fetch.
+- `:ps clean` now uses the real experimental `thread/backgroundTerminals/clean` API to stop all background terminals for the current thread. Plain `:ps` explains the upstream limitation: app-server exposes cleanup, but not the background-terminal listing surface the native TUI uses internally.
 - `:diff` prints the latest aggregated turn diff snapshot emitted by app-server.
 - `:apps`, `:skills`, `:models`, `:mcp`, and `:threads` expose the most useful app-server discovery surfaces directly from the inline client.
 - `:settings` loads the effective backend config snapshot, `:statusline` aliases `:status`, and `:logout` signs out through app-server then refreshes account/rate-limit state.
@@ -196,5 +197,5 @@ Submission features:
 - Unknown app-server requests now receive an explicit JSON-RPC "method not implemented" error instead of being ignored, which avoids hangs from unanswered server requests.
 - Full file contents are not always available from the app-server protocol. The client shows full command lines, command output, diffs, and file-change payloads that Codex emits.
 - `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn, terminates an active `!command`, and only exits when the client is idle with no active draft or background work.
-- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs, but collaboration-mode switching, experimental-feature listing, and personality selection are now backend-backed through app-server rather than being treated as impossible.
+- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs, but collaboration-mode switching, experimental-feature listing, personality selection, and background-terminal cleanup are now backend-backed through app-server rather than being treated as impossible.
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.
