@@ -1283,10 +1283,6 @@ fn handle_response(
         PendingRequest::Initialize => {
             send_initialized(writer)?;
             output.line_stderr("[session] connected")?;
-            send_load_apps(writer, state)?;
-            send_load_skills(writer, state, resolved_cwd)?;
-            send_load_account(writer, state)?;
-            send_load_rate_limits(writer, state)?;
             if let Some(start_mode) = start_after_initialize.take() {
                 match start_mode.resume_thread_id {
                     Some(thread_id) => {
@@ -1312,6 +1308,10 @@ fn handle_response(
                     }
                 }
             }
+            send_load_apps(writer, state)?;
+            send_load_skills(writer, state, resolved_cwd)?;
+            send_load_account(writer, state)?;
+            send_load_rate_limits(writer, state)?;
         }
         PendingRequest::StartThread { initial_prompt } => {
             state.pending_thread_switch = false;
@@ -3759,38 +3759,44 @@ fn render_resumed_history(result: &Value, state: &mut AppState, output: &mut Out
     let turns = result
         .get("thread")
         .and_then(|thread| thread.get("turns"))
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default();
+        .and_then(Value::as_array);
+    let Some(turns) = turns else {
+        return Ok(());
+    };
     if turns.is_empty() {
         return Ok(());
     }
 
-    let mut history_items = Vec::new();
-    for turn in turns {
-        if let Some(items) = turn.get("items").and_then(Value::as_array) {
-            for item in items {
-                history_items.push(item.clone());
-            }
-        }
-    }
-
-    seed_resumed_state_from_history(&history_items, state);
-
-    let conversation_items = history_items
-        .into_iter()
-        .filter(is_conversation_history_item)
-        .collect::<Vec<_>>();
+    seed_resumed_state_from_turns(turns, state);
+    let conversation_items = latest_conversation_history_items(turns, 10);
     if conversation_items.is_empty() {
         return Ok(());
     }
 
     output.line_stderr("[history] showing latest 10 conversation messages from resumed thread")?;
-    let start = conversation_items.len().saturating_sub(10);
-    for item in &conversation_items[start..] {
+    for item in conversation_items {
         render_history_item(item, state, output)?;
     }
     Ok(())
+}
+
+fn latest_conversation_history_items<'a>(turns: &'a [Value], limit: usize) -> Vec<&'a Value> {
+    let mut items = Vec::with_capacity(limit);
+    for turn in turns.iter().rev() {
+        if let Some(turn_items) = turn.get("items").and_then(Value::as_array) {
+            for item in turn_items.iter().rev() {
+                if is_conversation_history_item(item) {
+                    items.push(item);
+                    if items.len() == limit {
+                        items.reverse();
+                        return items;
+                    }
+                }
+            }
+        }
+    }
+    items.reverse();
+    items
 }
 
 fn is_conversation_history_item(item: &Value) -> bool {
@@ -3807,28 +3813,43 @@ fn is_conversation_history_item(item: &Value) -> bool {
     }
 }
 
-fn seed_resumed_state_from_history(history_items: &[Value], state: &mut AppState) {
-    for item in history_items {
-        match get_string(item, &["type"]).unwrap_or("") {
-            "userMessage" => {
-                let content = item
-                    .get("content")
-                    .and_then(Value::as_array)
-                    .cloned()
-                    .unwrap_or_default();
-                let rendered = render_user_message_history(&content);
-                if state.objective.is_none() && !rendered.trim().is_empty() {
-                    state.objective = Some(rendered);
+fn seed_resumed_state_from_turns(turns: &[Value], state: &mut AppState) {
+    let mut latest_user_message = None;
+    let mut latest_agent_message = None;
+
+    'outer: for turn in turns.iter().rev() {
+        if let Some(items) = turn.get("items").and_then(Value::as_array) {
+            for item in items.iter().rev() {
+                match get_string(item, &["type"]).unwrap_or("") {
+                    "userMessage" if latest_user_message.is_none() => {
+                        if let Some(content) = item.get("content").and_then(Value::as_array) {
+                            let rendered = render_user_message_history(content);
+                            if !rendered.trim().is_empty() {
+                                latest_user_message = Some(rendered);
+                            }
+                        }
+                    }
+                    "agentMessage" if latest_agent_message.is_none() => {
+                        let text = sanitize_history_text(get_string(item, &["text"]).unwrap_or(""));
+                        if !text.trim().is_empty() {
+                            latest_agent_message = Some(text);
+                        }
+                    }
+                    _ => {}
+                }
+
+                if latest_user_message.is_some() && latest_agent_message.is_some() {
+                    break 'outer;
                 }
             }
-            "agentMessage" => {
-                let text = get_string(item, &["text"]).unwrap_or("").to_string();
-                if !text.trim().is_empty() {
-                    state.last_agent_message = Some(sanitize_history_text(&text));
-                }
-            }
-            _ => {}
         }
+    }
+
+    if let Some(message) = latest_user_message {
+        state.objective = Some(message);
+    }
+    if let Some(message) = latest_agent_message {
+        state.last_agent_message = Some(message);
     }
 }
 
@@ -4579,6 +4600,7 @@ mod tests {
     use super::extract_file_search_paths;
     use super::extract_thread_ids;
     use super::is_builtin_command;
+    use super::latest_conversation_history_items;
     use super::normalize_cli;
     use super::params_auto_approval_result;
     use super::parse_feedback_args;
@@ -4591,11 +4613,13 @@ mod tests {
     use super::render_reasoning_item;
     use super::render_slash_completion_candidates;
     use super::render_thread_list;
+    use super::seed_resumed_state_from_turns;
     use super::summarize_terminal_interaction;
     use super::try_complete_file_token;
     use super::try_complete_slash_command;
     use crate::editor::LineEditor;
     use crate::input::AppCatalogEntry;
+    use serde_json::Value;
     use serde_json::json;
 
     #[test]
@@ -4846,6 +4870,41 @@ mod tests {
         assert!(rendered.contains(" 1. thr_1"));
         assert!(rendered.contains("Use /resume <n>"));
         assert_eq!(extract_thread_ids(&result), vec!["thr_1", "thr_2"]);
+    }
+
+    #[test]
+    fn resume_helpers_only_keep_recent_conversation_context() {
+        let turns = vec![
+            json!({
+                "items": [
+                    {"type": "userMessage", "content": [{"type": "text", "text": "old objective"}]},
+                    {"type": "agentMessage", "text": "old reply"},
+                    {"type": "reasoning", "text": "ignore"}
+                ]
+            }),
+            json!({
+                "items": [
+                    {"type": "userMessage", "content": [{"type": "text", "text": "latest request"}]},
+                    {"type": "agentMessage", "text": "latest reply"}
+                ]
+            }),
+        ];
+
+        let mut state = AppState::new(true, false);
+        seed_resumed_state_from_turns(&turns, &mut state);
+        assert_eq!(state.objective.as_deref(), Some("latest request"));
+        assert_eq!(state.last_agent_message.as_deref(), Some("latest reply"));
+
+        let recent_items = latest_conversation_history_items(&turns, 2);
+        assert_eq!(recent_items.len(), 2);
+        assert_eq!(
+            recent_items[0].get("type").and_then(Value::as_str),
+            Some("userMessage")
+        );
+        assert_eq!(
+            recent_items[1].get("type").and_then(Value::as_str),
+            Some("agentMessage")
+        );
     }
 
     #[test]

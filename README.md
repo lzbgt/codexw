@@ -97,6 +97,7 @@ Codex-style startup resume is also accepted:
 ```
 
 On resume, `codexw` now renders the latest 10 conversation messages from the stored thread so you get immediate context before entering a new prompt, without replaying the full internal reasoning/tool trace.
+Resume startup is also faster now: `codexw` sends the thread create or resume request before non-critical catalog and account lookups, and it only scans the minimum recent conversation history needed for the preview and continuation state.
 
 Useful interactive commands:
 
