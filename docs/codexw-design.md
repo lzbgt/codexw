@@ -38,13 +38,16 @@ The runtime has six main layers.
 3. Outbound request construction
    `requests.rs` owns JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions.
 
-4. Session and turn orchestration
-   `main.rs` owns process startup, event-loop control, inbound response and notification handling, approval responses, resume logic, and auto-continue. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering now lives in `session.rs`.
+4. Inbound event handling
+   `events.rs` owns inbound JSON-RPC line routing plus response, notification, approval-request, and item-completion handling.
 
-5. Human input handling
+5. Session and turn orchestration
+   `main.rs` owns process startup, event-loop control, resume logic, command dispatch, and auto-continue coordination. Session-specific helper logic for model metadata, personality, collaboration mode, realtime state rendering, and status rendering now lives in `session.rs`.
+
+6. Human input handling
    `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
 
-6. Human output handling
+7. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
 
 Session feature helpers live in `session.rs`: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
@@ -309,7 +312,9 @@ The biggest known limits are architectural, not accidental.
 ## File Map
 
 - `wrapper/src/main.rs`
-  Orchestration, session state, command handling, inbound JSON-RPC flow, resume logic, turn lifecycle, auto-continue.
+  Orchestration, session state, command handling, resume logic, turn lifecycle, auto-continue.
+- `wrapper/src/events.rs`
+  Inbound JSON-RPC line routing, response handling, notification handling, approval-request handling, and item completion rendering.
 - `wrapper/src/requests.rs`
   Outbound JSON-RPC request builders plus pending-request types for initialize, thread, turn, command, review, catalog, and realtime actions.
 - `wrapper/src/rpc.rs`
