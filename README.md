@@ -101,6 +101,26 @@ Codex-style startup resume is also accepted:
 On resume, `codexw` now renders the latest 10 conversation messages from the stored thread so you get immediate context before entering a new prompt, without replaying the full internal reasoning/tool trace.
 Resume startup is also faster now: `codexw` sends the thread create or resume request before non-critical catalog and account lookups, and it only scans the minimum recent conversation history needed for the preview and continuation state.
 
+Install the companion `session-autopilot` skill on another host:
+
+```bash
+python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo lzbgt/codexw \
+  --path skills/session-autopilot
+```
+
+That installs the skill into `~/.codex/skills/session-autopilot/`. Restart Codex after installing so the new skill is loaded.
+
+If that host does not have the installer helper available, the manual fallback is:
+
+```bash
+mkdir -p ~/.codex/skills/session-autopilot/agents
+curl -L https://raw.githubusercontent.com/lzbgt/codexw/main/skills/session-autopilot/SKILL.md \
+  -o ~/.codex/skills/session-autopilot/SKILL.md
+curl -L https://raw.githubusercontent.com/lzbgt/codexw/main/skills/session-autopilot/agents/openai.yaml \
+  -o ~/.codex/skills/session-autopilot/agents/openai.yaml
+```
+
 Useful interactive commands:
 
 - `:help` or `/help`
