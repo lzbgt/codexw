@@ -137,7 +137,7 @@ Submission features:
 - Plain input while a turn is running is sent as steer input.
 - `!<shell command>` runs a local command via `command/exec` and prints the completed stdout/stderr block when it finishes.
 - Inline `@path/to/file` references are resolved against the current working directory before submit when they point to a real file or directory. This gives `codexw` a scroll-native equivalent of Codex’s file-path insertion flow even without the native popup picker.
-- Pressing `Tab` in the prompt completes unique slash commands like `/co -> /compact ` and unique `@file` prefixes like `@src/ma -> src/main.rs `. If multiple file matches exist, `codexw` extends the common prefix and prints a short candidate list into scrollback.
+- Pressing `Tab` in the prompt completes unique slash commands like `/co -> /compact ` and unique `@file` prefixes like `@src/ma -> src/main.rs `. For ambiguous slash commands like `/re`, `codexw` now prints a numbered command shortlist with descriptions. It also surfaces fuzzy slash matches like `/ac` in a scroll-native shortlist instead of failing silently. If multiple file matches exist, `codexw` extends the common prefix and prints a short candidate list into scrollback.
 - `:mention` with no args behaves like native Codex’s mention command and seeds `@` back into the prompt so you can keep typing a file reference immediately.
 - `:mention <query>` runs app-server fuzzy file search and prints numbered repo paths. `:mention <n>` inserts one of those cached matches back into the current prompt draft.
 - `:resume` with no id lists recent threads for the current cwd. `:resume <n>` resumes one of those cached numbered threads, which is a scroll-native equivalent of a resume picker.

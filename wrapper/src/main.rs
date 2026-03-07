@@ -2702,7 +2702,10 @@ fn handle_tab_completion(
     let buffer = editor.buffer().to_string();
     let cursor_byte = editor.cursor_byte_index();
 
-    if try_complete_slash_command(editor, &buffer, cursor_byte) {
+    if let Some(result) = try_complete_slash_command(editor, &buffer, cursor_byte) {
+        if let Some(rendered) = result.rendered_candidates {
+            output.block_stdout("Command completions", &rendered)?;
+        }
         return Ok(());
     }
 
@@ -2719,34 +2722,209 @@ fn handle_tab_completion(
     Ok(())
 }
 
+fn builtin_command_description(command: &str) -> &'static str {
+    match command {
+        "help" => "show commands",
+        "quit" | "exit" => "exit CodexW",
+        "new" => "start a new thread",
+        "resume" => "resume a saved thread",
+        "fork" => "fork the current thread",
+        "compact" => "compact thread history",
+        "review" => "review current changes",
+        "clear" => "clear terminal and start a new thread",
+        "copy" => "copy the latest assistant reply",
+        "rename" => "rename the current thread",
+        "apps" => "list known app mentions",
+        "skills" => "list available skills",
+        "models" | "model" => "list available models",
+        "mcp" => "list MCP servers and tools",
+        "clean" => "stop background terminals for the thread",
+        "threads" => "list recent threads",
+        "mention" => "insert or search mentionable files",
+        "diff" => "show the latest turn diff snapshot",
+        "auto" => "toggle auto-continue",
+        "attach-image" | "attach" => "queue a local image for next submit",
+        "attach-url" => "queue a remote image for next submit",
+        "attachments" => "show queued attachments",
+        "clear-attachments" => "clear queued attachments",
+        "interrupt" => "interrupt the active turn or command",
+        "status" | "statusline" => "show current session status",
+        "approvals" | "permissions" => "show automation and permission posture",
+        "settings" | "debug-config" => "show effective backend config",
+        "feedback" => "submit feedback through app-server",
+        "logout" => "log out of Codex",
+        "fast" => "native fast-mode workflow not yet ported",
+        "personality" => "native personality workflow not yet ported",
+        "collab" => "native collaboration workflow not yet ported",
+        "agent" | "multi-agents" => "native agent picker not yet ported",
+        "theme" => "native theme picker not yet ported",
+        "realtime" => "experimental realtime workflow",
+        "rollout" => "native rollout-path display not yet ported",
+        "experimental" => "native experimental-features workflow not yet ported",
+        "sandbox-add-read-dir" => "native sandbox read-dir workflow not yet ported",
+        "setup-default-sandbox" => "native sandbox setup workflow not yet ported",
+        "init" => "create AGENTS.md instructions",
+        "ps" => "list background terminals",
+        "plan" => "switch to plan mode",
+        _ => "command",
+    }
+}
+
 struct FileCompletionResult {
     rendered_candidates: Option<String>,
 }
 
-fn try_complete_slash_command(editor: &mut LineEditor, buffer: &str, cursor_byte: usize) -> bool {
+struct SlashCompletionResult {
+    rendered_candidates: Option<String>,
+}
+
+fn try_complete_slash_command(
+    editor: &mut LineEditor,
+    buffer: &str,
+    cursor_byte: usize,
+) -> Option<SlashCompletionResult> {
     let Some((command_start, command_end, prefix)) = slash_command_at_cursor(buffer, cursor_byte)
     else {
-        return false;
+        return None;
     };
-    let matches = builtin_command_names()
-        .into_iter()
+
+    let mut prefix_matches = builtin_command_names()
+        .iter()
+        .copied()
         .filter(|name| name.starts_with(prefix))
         .collect::<Vec<_>>();
-    if matches.is_empty() {
-        return false;
+
+    if prefix_matches.is_empty() && prefix.is_empty() {
+        prefix_matches = builtin_command_names().to_vec();
     }
 
-    let replacement = if matches.len() == 1 {
-        format!("/{} ", matches[0])
-    } else {
-        let lcp = longest_common_prefix(&matches);
-        if lcp.len() <= prefix.len() {
-            return false;
+    if prefix_matches.len() == 1 {
+        editor.replace_range(
+            command_start,
+            command_end,
+            &format!("/{} ", prefix_matches[0]),
+        );
+        return Some(SlashCompletionResult {
+            rendered_candidates: None,
+        });
+    }
+
+    if !prefix_matches.is_empty() {
+        let lcp = longest_common_prefix(&prefix_matches);
+        if lcp.len() > prefix.len() {
+            editor.replace_range(command_start, command_end, &format!("/{lcp}"));
+            return Some(SlashCompletionResult {
+                rendered_candidates: None,
+            });
         }
-        format!("/{lcp}")
+
+        return Some(SlashCompletionResult {
+            rendered_candidates: Some(render_slash_completion_candidates(
+                prefix,
+                &prefix_matches,
+                false,
+            )),
+        });
+    }
+
+    let mut fuzzy_matches = builtin_command_names()
+        .iter()
+        .filter_map(|name| fuzzy_match_score(name, prefix).map(|score| (*name, score)))
+        .collect::<Vec<_>>();
+    if fuzzy_matches.is_empty() {
+        return None;
+    }
+    fuzzy_matches.sort_by(|(name_a, score_a), (name_b, score_b)| {
+        score_a.cmp(score_b).then_with(|| name_a.cmp(name_b))
+    });
+    let fuzzy_names = fuzzy_matches
+        .into_iter()
+        .map(|(name, _)| name)
+        .collect::<Vec<_>>();
+    Some(SlashCompletionResult {
+        rendered_candidates: Some(render_slash_completion_candidates(
+            prefix,
+            &fuzzy_names,
+            true,
+        )),
+    })
+}
+
+fn render_slash_completion_candidates(filter: &str, matches: &[&str], fuzzy: bool) -> String {
+    let mut lines = Vec::new();
+    if filter.is_empty() {
+        lines.push("Slash commands:".to_string());
+    } else {
+        lines.push(format!(
+            "{} matches for /{}:",
+            if fuzzy { "Fuzzy" } else { "Command" },
+            filter
+        ));
+    }
+    for (idx, name) in matches.iter().take(12).enumerate() {
+        lines.push(format!(
+            "{:>2}. /{:<16} {}",
+            idx + 1,
+            name,
+            builtin_command_description(name)
+        ));
+    }
+    if matches.len() > 12 {
+        lines.push(format!("…and {} more", matches.len() - 12));
+    }
+    lines.join("\n")
+}
+
+fn fuzzy_match_score(haystack: &str, needle: &str) -> Option<i32> {
+    if needle.is_empty() {
+        return Some(i32::MAX);
+    }
+
+    let mut lowered_chars = Vec::new();
+    let mut lowered_to_orig_char_idx = Vec::new();
+    for (orig_idx, ch) in haystack.chars().enumerate() {
+        for lc in ch.to_lowercase() {
+            lowered_chars.push(lc);
+            lowered_to_orig_char_idx.push(orig_idx);
+        }
+    }
+
+    let lowered_needle = needle.to_lowercase().chars().collect::<Vec<_>>();
+    let mut result_orig_indices = Vec::with_capacity(lowered_needle.len());
+    let mut last_lower_pos = None;
+    let mut cur = 0usize;
+    for &nc in &lowered_needle {
+        let mut found_at = None;
+        while cur < lowered_chars.len() {
+            if lowered_chars[cur] == nc {
+                found_at = Some(cur);
+                cur += 1;
+                break;
+            }
+            cur += 1;
+        }
+        let pos = found_at?;
+        result_orig_indices.push(lowered_to_orig_char_idx[pos]);
+        last_lower_pos = Some(pos);
+    }
+
+    let first_lower_pos = if result_orig_indices.is_empty() {
+        0usize
+    } else {
+        let target_orig = result_orig_indices[0];
+        lowered_to_orig_char_idx
+            .iter()
+            .position(|&oi| oi == target_orig)
+            .unwrap_or(0)
     };
-    editor.replace_range(command_start, command_end, &replacement);
-    true
+    let last_lower_pos = last_lower_pos.unwrap_or(first_lower_pos);
+    let window =
+        (last_lower_pos as i32 - first_lower_pos as i32 + 1) - (lowered_needle.len() as i32);
+    let mut score = window.max(0);
+    if first_lower_pos == 0 {
+        score -= 100;
+    }
+    Some(score)
 }
 
 fn try_complete_file_token(
@@ -4223,6 +4401,7 @@ mod tests {
     use super::render_fuzzy_file_search_results;
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
+    use super::render_slash_completion_candidates;
     use super::render_thread_list;
     use super::summarize_terminal_interaction;
     use super::try_complete_file_token;
@@ -4366,8 +4545,40 @@ mod tests {
         }
         let buffer = editor.buffer().to_string();
         let cursor = editor.cursor_byte_index();
-        assert!(try_complete_slash_command(&mut editor, &buffer, cursor));
+        assert!(try_complete_slash_command(&mut editor, &buffer, cursor).is_some());
         assert_eq!(editor.buffer(), "/diff ");
+    }
+
+    #[test]
+    fn ambiguous_slash_completion_lists_candidates() {
+        let mut editor = LineEditor::default();
+        for ch in "/re".chars() {
+            editor.insert_char(ch);
+        }
+        let buffer = editor.buffer().to_string();
+        let cursor = editor.cursor_byte_index();
+        let result = try_complete_slash_command(&mut editor, &buffer, cursor)
+            .expect("expected slash completion result");
+        let rendered = result.rendered_candidates.expect("expected candidate list");
+        assert_eq!(editor.buffer(), "/re");
+        assert!(rendered.contains("/resume"));
+        assert!(rendered.contains("/review"));
+    }
+
+    #[test]
+    fn fuzzy_slash_completion_lists_candidates() {
+        let mut editor = LineEditor::default();
+        for ch in "/ac".chars() {
+            editor.insert_char(ch);
+        }
+        let buffer = editor.buffer().to_string();
+        let cursor = editor.cursor_byte_index();
+        let result = try_complete_slash_command(&mut editor, &buffer, cursor)
+            .expect("expected slash completion result");
+        let rendered = result.rendered_candidates.expect("expected candidate list");
+        assert_eq!(editor.buffer(), "/ac");
+        assert!(rendered.contains("/feedback"));
+        assert!(rendered.contains("Fuzzy matches for /ac:"));
     }
 
     #[test]
@@ -4478,6 +4689,14 @@ mod tests {
         assert!(rendered.contains("Query: agent"));
         assert!(rendered.contains("1. src/agent.rs  [score 99]"));
         assert!(rendered.contains("2. tests/agent_test.rs  [score 78]"));
+    }
+
+    #[test]
+    fn slash_completion_rendering_includes_descriptions() {
+        let rendered = render_slash_completion_candidates("re", &["resume", "review"], false);
+        assert!(rendered.contains("/resume"));
+        assert!(rendered.contains("resume a saved thread"));
+        assert!(rendered.contains("/review"));
     }
 
     #[test]
