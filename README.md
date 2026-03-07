@@ -40,7 +40,8 @@ By default the client does not dump raw JSON payloads into the terminal. Raw JSO
 
 The client follows the normal terminal scrollback model instead of a fixed alternate-screen viewport, so you can use the terminal’s native scroll behavior rather than in-app paging.
 It renders a plain inline prompt/composer in the normal terminal flow and keeps a separate transient status line above the prompt while a turn or local command is active. The prompt is intentionally elided to a single terminal row during redraws so long drafts do not wrap and leave duplicated prompt lines behind. The input line supports left/right arrows, Home, End, Backspace, Delete, up/down history recall, `Esc` to clear the current draft when idle and interrupt an active turn or local command when running, `Tab` for inline slash-command and `@file` completion, `Ctrl-J` to insert a newline into a multiline draft, plus common terminal shortcuts like `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, and `Ctrl-W`.
-The separate status line shows live request progress, including a spinner, elapsed request time, and turn count, so quiet backend work does not look like a dead terminal without bloating the prompt widget itself.
+The separate status line shows live request progress, including a spinner, elapsed request time, turn count, and important active detail such as waiting-on-approval state, so quiet backend work does not look like a dead terminal without bloating the prompt widget itself.
+To reduce transcript duplication, codexw now prefers that transient status line over appending `[status] ...` chatter to scrollback, and it avoids printing separate "started" transcript blocks for commands and file changes that already produce a completed result block later.
 
 ## Automation Defaults
 

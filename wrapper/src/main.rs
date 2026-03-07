@@ -1816,11 +1816,7 @@ fn handle_notification(
                 state.active_turn_id = Some(turn_id.to_string());
             }
             state.reset_turn_stream_state();
-            emit_status_line(
-                output,
-                state,
-                "working; press Enter to steer, Ctrl-C to interrupt".to_string(),
-            )?;
+            state.last_status_line = None;
         }
         "turn/completed" => {
             output.finish_stream()?;
@@ -1909,7 +1905,7 @@ fn handle_notification(
                 summarize_model_reroute(&notification.params)
             ))?;
         }
-        "item/started" => render_item_started(&notification.params, output)?,
+        "item/started" => render_item_started(&notification.params, state)?,
         "item/completed" => render_item_completed(&notification.params, state, output)?,
         "item/agentMessage/delta"
         | "item/reasoning/summaryTextDelta"
@@ -1976,7 +1972,7 @@ fn handle_notification(
     Ok(())
 }
 
-fn render_item_started(params: &Value, output: &mut Output) -> Result<()> {
+fn render_item_started(params: &Value, state: &mut AppState) -> Result<()> {
     let Some(item) = params.get("item") else {
         return Ok(());
     };
@@ -1984,18 +1980,21 @@ fn render_item_started(params: &Value, output: &mut Output) -> Result<()> {
     match item_type {
         "commandExecution" => {
             let command = get_string(item, &["command"]).unwrap_or("");
-            let cwd = get_string(item, &["cwd"]).unwrap_or("");
-            output.block_stdout("$ command", &format!("{command}\n[cwd] {cwd}"))?;
+            state.last_status_line = Some(format!("running {}", summarize_text(command)));
         }
         "fileChange" => {
-            output.block_stdout("Applying file changes", &summarize_file_change_paths(item))?;
+            state.last_status_line = Some(summarize_file_change_paths(item));
         }
         "agentMessage" | "reasoning" => {}
         "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" | "plan" => {
-            output.block_stdout(
-                &format!("{} started", humanize_item_type(item_type)),
-                &summarize_tool_item(item_type, item),
-            )?;
+            state.last_status_line = Some(format!(
+                "{}",
+                summarize_text(&format!(
+                    "{} {}",
+                    humanize_item_type(item_type),
+                    summarize_tool_item(item_type, item)
+                ))
+            ));
         }
         _ => {}
     }
@@ -3369,19 +3368,41 @@ fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
 }
 
 fn render_prompt_status(state: &AppState) -> String {
+    let detail = state
+        .last_status_line
+        .as_deref()
+        .filter(|line| !line.trim().is_empty() && *line != "ready");
     if state.active_exec_process_id.is_some() {
-        format!(
-            "{} cmd · {}",
-            spinner_frame(state.activity_started_at),
-            format_elapsed(state.activity_started_at),
-        )
+        if let Some(detail) = detail {
+            format!(
+                "{} {} · {}",
+                spinner_frame(state.activity_started_at),
+                detail,
+                format_elapsed(state.activity_started_at),
+            )
+        } else {
+            format!(
+                "{} cmd · {}",
+                spinner_frame(state.activity_started_at),
+                format_elapsed(state.activity_started_at),
+            )
+        }
     } else if state.turn_running {
-        format!(
-            "{} turn {} · {}",
-            spinner_frame(state.activity_started_at),
-            state.started_turn_count.max(1),
-            format_elapsed(state.activity_started_at)
-        )
+        if let Some(detail) = detail {
+            format!(
+                "{} {} · {}",
+                spinner_frame(state.activity_started_at),
+                detail,
+                format_elapsed(state.activity_started_at),
+            )
+        } else {
+            format!(
+                "{} turn {} · {}",
+                spinner_frame(state.activity_started_at),
+                state.started_turn_count.max(1),
+                format_elapsed(state.activity_started_at)
+            )
+        }
     } else {
         format!("ready · {} turns", state.completed_turn_count)
     }
@@ -3540,12 +3561,11 @@ fn app_slug(name: &str) -> String {
     slug.trim_matches('-').to_string()
 }
 
-fn emit_status_line(output: &mut Output, state: &mut AppState, line: String) -> Result<()> {
+fn emit_status_line(_output: &mut Output, state: &mut AppState, line: String) -> Result<()> {
     if state.last_status_line.as_deref() == Some(line.as_str()) {
         return Ok(());
     }
-    state.last_status_line = Some(line.clone());
-    output.line_stderr(format!("[status] {line}"))?;
+    state.last_status_line = Some(line);
     Ok(())
 }
 
@@ -4503,10 +4523,18 @@ fn summarize_thread_status_for_display(params: &Value) -> Option<String> {
         return None;
     }
 
+    if flags.iter().any(|flag| *flag == "waitingOnApproval") {
+        return Some("waiting on approval".to_string());
+    }
+
     if flags.is_empty() {
-        Some(format!("status {status_type}"))
+        if status_type == "idle" {
+            Some("ready".to_string())
+        } else {
+            Some(status_type.to_string())
+        }
     } else {
-        Some(format!("status {status_type} [{}]", flags.join(", ")))
+        Some(flags.join(", "))
     }
 }
 
@@ -4624,12 +4652,14 @@ mod tests {
     use super::quote_if_needed;
     use super::render_apps_list;
     use super::render_fuzzy_file_search_results;
+    use super::render_prompt_status;
     use super::render_rate_limit_lines;
     use super::render_reasoning_item;
     use super::render_slash_completion_candidates;
     use super::render_thread_list;
     use super::seed_resumed_state_from_turns;
     use super::summarize_terminal_interaction;
+    use super::summarize_thread_status_for_display;
     use super::try_complete_file_token;
     use super::try_complete_slash_command;
     use crate::editor::LineEditor;
@@ -5026,6 +5056,32 @@ mod tests {
         state.active_exec_process_id = Some("proc-1".to_string());
         assert!(prompt_is_visible(&state));
         assert!(!prompt_accepts_input(&state));
+    }
+
+    #[test]
+    fn thread_status_summary_prefers_human_flags() {
+        assert_eq!(
+            summarize_thread_status_for_display(&json!({
+                "status": {"type": "active", "activeFlags": ["waitingOnApproval"]}
+            })),
+            Some("waiting on approval".to_string())
+        );
+        assert_eq!(
+            summarize_thread_status_for_display(&json!({
+                "status": {"type": "idle", "activeFlags": []}
+            })),
+            Some("ready".to_string())
+        );
+    }
+
+    #[test]
+    fn prompt_status_uses_active_detail_when_present() {
+        let mut state = AppState::new(true, false);
+        state.turn_running = true;
+        state.started_turn_count = 2;
+        state.last_status_line = Some("waiting on approval".to_string());
+        let rendered = render_prompt_status(&state);
+        assert!(rendered.contains("waiting on approval"));
     }
 
     #[test]

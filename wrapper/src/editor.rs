@@ -235,6 +235,29 @@ mod tests {
     }
 
     #[test]
+    fn backspace_removes_previous_newline_boundary() {
+        let mut editor = LineEditor::default();
+        editor.insert_str("ab\ncd");
+        editor.move_left();
+        editor.move_left();
+        editor.backspace();
+        assert_eq!(editor.buffer(), "abcd");
+        assert_eq!(editor.cursor_chars(), 2);
+    }
+
+    #[test]
+    fn delete_removes_next_newline_boundary() {
+        let mut editor = LineEditor::default();
+        editor.insert_str("ab\ncd");
+        editor.move_home();
+        editor.move_right();
+        editor.move_right();
+        editor.delete();
+        assert_eq!(editor.buffer(), "abcd");
+        assert_eq!(editor.cursor_chars(), 2);
+    }
+
+    #[test]
     fn history_navigation_restores_draft() {
         let mut editor = LineEditor::default();
         for ch in "first".chars() {
