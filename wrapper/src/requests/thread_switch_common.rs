@@ -48,6 +48,7 @@ pub(crate) fn send_thread_start(
         "sandbox": thread_sandbox_mode(cli, state),
         "serviceName": "codexw_terminal",
         "experimentalRawEvents": false,
+        "persistExtendedHistory": true,
     });
     if let Some(model) = state.session_overrides.model.as_ref() {
         params["model"] = model
@@ -91,6 +92,7 @@ pub(crate) fn send_thread_resume(
         "cwd": resolved_cwd,
         "approvalPolicy": approval_policy(cli, state),
         "sandbox": thread_sandbox_mode(cli, state),
+        "persistExtendedHistory": true,
     });
     if let Some(model) = state.session_overrides.model.as_ref() {
         params["model"] = model
@@ -131,6 +133,7 @@ pub(crate) fn send_thread_fork(
         "modelProvider": cli.model_provider,
         "approvalPolicy": approval_policy(cli, state),
         "sandbox": thread_sandbox_mode(cli, state),
+        "persistExtendedHistory": true,
     });
     if let Some(model) = state.session_overrides.model.as_ref() {
         params["model"] = model
