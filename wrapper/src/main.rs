@@ -42,7 +42,6 @@ mod history_text;
 mod input;
 mod model_catalog;
 mod model_personality;
-mod notifications;
 mod output;
 mod policy;
 mod prompt;
