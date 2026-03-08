@@ -1,5 +1,5 @@
-use crate::render_blocks::render_block_lines_to_ansi;
-use crate::render_blocks::render_line_to_ansi;
+use crate::output::render_block_lines_to_ansi;
+use crate::output::render_line_to_ansi;
 use crate::render_prompt::render_committed_prompt;
 use crate::render_prompt::render_prompt_line;
 

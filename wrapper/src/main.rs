@@ -62,7 +62,6 @@ mod render_ansi;
 mod render_block_common;
 mod render_block_markdown;
 mod render_block_structured;
-mod render_blocks;
 mod render_markdown_block_structures;
 mod render_markdown_code;
 mod render_markdown_inline;
