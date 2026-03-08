@@ -3,8 +3,8 @@ mod input_build_items;
 #[path = "input_build_mentions.rs"]
 mod input_build_mentions;
 
-use super::input_decode::decode_linked_mentions;
-use super::input_decode::expand_inline_file_mentions;
+use super::input_decode_inline::expand_inline_file_mentions;
+use super::input_decode_mentions::decode_linked_mentions;
 use super::input_types::AppCatalogEntry;
 use super::input_types::ParsedInput;
 use super::input_types::PluginCatalogEntry;

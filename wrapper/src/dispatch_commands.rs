@@ -4,8 +4,10 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::commands::builtin_help_lines;
-use crate::dispatch_command_session_control;
-use crate::dispatch_command_session_info;
+use crate::dispatch_command_session_catalog::try_handle_session_catalog_command;
+use crate::dispatch_command_session_meta::try_handle_session_meta_command;
+use crate::dispatch_command_session_modes::try_handle_session_mode_command;
+use crate::dispatch_command_session_status::try_handle_session_status_command;
 use crate::dispatch_command_thread_actions;
 use crate::dispatch_command_thread_navigation;
 use crate::dispatch_command_thread_workspace;
@@ -84,7 +86,12 @@ pub(crate) fn handle_command(
             {
                 return Ok(result);
             }
-            if let Some(result) = dispatch_command_session_info::try_handle_session_info_command(
+            if let Some(result) = try_handle_session_catalog_command(
+                command, &args, cli, state, editor, output, writer,
+            )? {
+                return Ok(result);
+            }
+            if let Some(result) = try_handle_session_status_command(
                 command,
                 &args,
                 cli,
@@ -96,18 +103,28 @@ pub(crate) fn handle_command(
             )? {
                 return Ok(result);
             }
-            if let Some(result) =
-                dispatch_command_session_control::try_handle_session_control_command(
-                    command,
-                    &args,
-                    cli,
-                    resolved_cwd,
-                    state,
-                    editor,
-                    output,
-                    writer,
-                )?
-            {
+            if let Some(result) = try_handle_session_mode_command(
+                command,
+                &args,
+                cli,
+                resolved_cwd,
+                state,
+                editor,
+                output,
+                writer,
+            )? {
+                return Ok(result);
+            }
+            if let Some(result) = try_handle_session_meta_command(
+                command,
+                &args,
+                cli,
+                resolved_cwd,
+                state,
+                editor,
+                output,
+                writer,
+            )? {
                 return Ok(result);
             }
             output.line_stderr(format!("[session] unknown command: {command}"))?;

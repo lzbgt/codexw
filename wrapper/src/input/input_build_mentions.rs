@@ -3,10 +3,10 @@ use std::collections::HashSet;
 use serde_json::Value;
 use serde_json::json;
 
-use crate::input::input_resolve::collect_tool_mentions;
-use crate::input::input_resolve::find_app_mentions;
-use crate::input::input_resolve::find_plugin_mentions;
-use crate::input::input_resolve::find_skill_mentions;
+use crate::input::input_resolve_catalog::find_app_mentions;
+use crate::input::input_resolve_catalog::find_plugin_mentions;
+use crate::input::input_resolve_catalog::find_skill_mentions;
+use crate::input::input_resolve_tools::collect_tool_mentions;
 use crate::input::input_types::AppCatalogEntry;
 use crate::input::input_types::PluginCatalogEntry;
 use crate::input::input_types::SkillCatalogEntry;
