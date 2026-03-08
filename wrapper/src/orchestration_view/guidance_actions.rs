@@ -283,7 +283,7 @@ fn guidance_lines_for_capability(
             BackgroundShellCapabilityDependencyState::Missing => vec![
                 format!("A blocking shell depends on missing service capability @{capability}."),
                 format!(
-                    "Start a provider for @{capability} or retarget an existing running service with `:ps provide <job> @{capability}` before waiting on the shell result."
+                    "Start a provider for @{capability} or retarget an existing running service with `:ps provide <jobId|alias|n> @{capability}` before waiting on the shell result."
                 ),
                 format!(
                     "Use /ps capabilities @{capability} and /ps dependencies missing @{capability} to inspect the exact blocker."
@@ -317,7 +317,7 @@ fn guidance_lines_for_capability(
                 vec![
                     format!("Reusable service capability @{capability} has no running provider."),
                     format!(
-                        "Start a provider for @{capability} or retarget an existing running service with `:ps provide <job> @{capability}`."
+                        "Start a provider for @{capability} or retarget an existing running service with `:ps provide <jobId|alias|n> @{capability}`."
                     ),
                     format!(
                         "Use /ps capabilities @{capability} to confirm the missing-provider state."
@@ -700,7 +700,7 @@ fn action_lines_for_capability(
                         "Run `:ps capabilities @{capability}` to inspect the ambiguous provider set."
                     ),
                     format!(
-                        "Run `:ps provide <jobId|alias|n> <@capability...|none>` to reassign one or more running providers before falling back to cleanup for @{capability}."
+                        "Run `:ps provide <jobId|alias|n> <@other.role|none>` to remove or replace @{capability} on one or more running providers before falling back to cleanup."
                     ),
                     "Run `:ps depend <jobId|alias|n> <@capability...|none>` if the blocked shell should be retargeted to a different dependency role."
                         .to_string(),
@@ -715,7 +715,7 @@ fn action_lines_for_capability(
                     "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the ambiguous provider set."
                 ),
                 format!(
-                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{capability}\"]}}` to reassign one or more running providers before falling back to cleanup."
+                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}}` to remove or replace the conflicting reusable role before falling back to cleanup."
                 ),
                 "Use `background_shell_update_dependencies {\"jobId\":\"<jobId|alias|n>\",\"dependsOnCapabilities\":[\"@other.role\"]}` if the blocked shell should be retargeted to a different dependency role."
                     .to_string(),

@@ -1418,4 +1418,49 @@ mod tests {
         ));
         let _ = blocked.background_shells.terminate_all_running();
     }
+
+    #[test]
+    fn focused_ambiguous_capability_actions_recommend_non_conflicting_fix() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start first provider");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start second provider");
+
+        let operator_actions = render_orchestration_actions_for_capability(&services, "@api.http")
+            .expect("focused operator actions");
+        assert!(operator_actions.contains(":ps provide <jobId|alias|n> <@other.role|none>"));
+        assert!(!operator_actions.contains(":ps provide <jobId|alias|n> <@capability...|none>"));
+
+        let tool_actions = render_orchestration_actions_for_tool_capability(&services, "@api.http")
+            .expect("focused tool actions");
+        assert!(tool_actions.contains(
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}"
+        ));
+        assert!(tool_actions.contains(
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}"
+        ));
+        assert!(!tool_actions.contains(
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
+        ));
+        let _ = services.background_shells.terminate_all_running();
+    }
 }
