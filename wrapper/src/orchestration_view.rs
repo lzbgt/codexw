@@ -1238,7 +1238,7 @@ mod tests {
         let rendered = render_orchestration_actions(&services);
         assert!(rendered.contains("Suggested actions:"));
         assert!(rendered.contains(":ps capabilities @api.http"));
-        assert!(rendered.contains(":ps provide <jobId|alias|n> <@other.role|none>"));
+        assert!(rendered.contains(":ps provide bg-1 <@other.role|none>"));
         assert!(rendered.contains(":clean services @api.http"));
 
         let tool_rendered = render_orchestration_actions_for_tool(&services);
@@ -1248,10 +1248,10 @@ mod tests {
                 .contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
         );
         assert!(tool_rendered.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}"
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"capabilities\":[\"@other.role\"]}"
         ));
         assert!(tool_rendered.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}"
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"capabilities\":null}"
         ));
         assert!(tool_rendered.contains(
             "background_shell_clean {\"scope\":\"services\",\"capability\":\"@api.http\"}"
@@ -1402,7 +1402,7 @@ mod tests {
         let operator_actions = render_orchestration_actions_for_capability(&blocked, "@api.http")
             .expect("focused operator actions");
         assert!(operator_actions.contains(":ps provide <jobId|alias|n> @api.http"));
-        assert!(operator_actions.contains(":ps depend <jobId|alias|n> <@capability...|none>"));
+        assert!(operator_actions.contains(":ps depend bg-1 <@capability...|none>"));
         assert!(operator_actions.contains(":clean blockers @api.http"));
 
         let tool_actions = render_orchestration_actions_for_tool_capability(&blocked, "@api.http")
@@ -1411,7 +1411,7 @@ mod tests {
             "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
         ));
         assert!(tool_actions.contains(
-            "background_shell_update_dependencies {\"jobId\":\"<jobId|alias|n>\",\"dependsOnCapabilities\":[\"@other.role\"]}"
+            "background_shell_update_dependencies {\"jobId\":\"bg-1\",\"dependsOnCapabilities\":[\"@other.role\"]}"
         ));
         assert!(tool_actions.contains(
             "background_shell_clean {\"scope\":\"blockers\",\"capability\":\"@api.http\"}"
@@ -1447,16 +1447,16 @@ mod tests {
 
         let operator_actions = render_orchestration_actions_for_capability(&services, "@api.http")
             .expect("focused operator actions");
-        assert!(operator_actions.contains(":ps provide <jobId|alias|n> <@other.role|none>"));
+        assert!(operator_actions.contains(":ps provide bg-1 <@other.role|none>"));
         assert!(!operator_actions.contains(":ps provide <jobId|alias|n> <@capability...|none>"));
 
         let tool_actions = render_orchestration_actions_for_tool_capability(&services, "@api.http")
             .expect("focused tool actions");
         assert!(tool_actions.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}"
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"capabilities\":[\"@other.role\"]}"
         ));
         assert!(tool_actions.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}"
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"capabilities\":null}"
         ));
         assert!(!tool_actions.contains(
             "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"

@@ -16,6 +16,39 @@ use super::terminate_jobs;
 use super::validate_service_capability;
 
 impl BackgroundShellManager {
+    pub(crate) fn running_service_provider_refs_for_capability(
+        &self,
+        capability_ref: &str,
+    ) -> Result<Vec<String>, String> {
+        let capability = if let Some(raw) = capability_ref.strip_prefix('@') {
+            validate_service_capability(raw)?
+        } else {
+            validate_service_capability(capability_ref)?
+        };
+        Ok(self
+            .running_service_providers_for_capability(&capability)
+            .into_iter()
+            .map(|snapshot| mutable_job_ref(&snapshot))
+            .collect())
+    }
+
+    pub(crate) fn blocking_dependency_job_refs_for_capability(
+        &self,
+        capability_ref: &str,
+    ) -> Result<Vec<String>, String> {
+        let capability = if let Some(raw) = capability_ref.strip_prefix('@') {
+            validate_service_capability(raw)?
+        } else {
+            validate_service_capability(capability_ref)?
+        };
+        Ok(self
+            .blocking_capability_dependency_issues()
+            .into_iter()
+            .filter(|summary| summary.capability == capability)
+            .map(|summary| dependency_consumer_ref(&summary))
+            .collect())
+    }
+
     pub(crate) fn set_running_service_contract(
         &self,
         job_id: &str,
@@ -1049,11 +1082,27 @@ fn dependency_consumer_display(summary: &BackgroundShellCapabilityDependencySumm
     }
 }
 
+fn dependency_consumer_ref(summary: &BackgroundShellCapabilityDependencySummary) -> String {
+    if let Some(alias) = summary.job_alias.as_deref() {
+        alias.to_string()
+    } else {
+        summary.job_id.clone()
+    }
+}
+
 fn provider_display(snapshot: &BackgroundShellJobSnapshot) -> String {
     if let Some(alias) = snapshot.alias.as_deref() {
         format!("{} ({alias})", snapshot.id)
     } else if let Some(label) = snapshot.label.as_deref() {
         format!("{} ({label})", snapshot.id)
+    } else {
+        snapshot.id.clone()
+    }
+}
+
+fn mutable_job_ref(snapshot: &BackgroundShellJobSnapshot) -> String {
+    if let Some(alias) = snapshot.alias.as_deref() {
+        alias.to_string()
     } else {
         snapshot.id.clone()
     }
