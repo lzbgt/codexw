@@ -2,6 +2,8 @@ use std::process::ChildStdin;
 
 use anyhow::Result;
 
+use crate::app::build_resume_hint_line;
+use crate::app::current_program_name;
 use crate::editor::EditorEvent;
 use crate::editor::LineEditor;
 use crate::output::Output;
@@ -40,6 +42,7 @@ pub(crate) fn handle_ctrl_c(
     editor: &mut LineEditor,
     output: &mut Output,
     writer: &mut ChildStdin,
+    resolved_cwd: &str,
 ) -> Result<Option<bool>> {
     if state.turn_running {
         if let Some(turn_id) = state.active_turn_id.clone() {
@@ -55,6 +58,14 @@ pub(crate) fn handle_ctrl_c(
         send_command_exec_terminate(writer, state, process_id)?;
     } else if matches!(editor.ctrl_c(), EditorEvent::CtrlC) {
         output.line_stderr("[session] exiting on Ctrl-C")?;
+        if let Some(line) = build_resume_hint_line(
+            &current_program_name(),
+            resolved_cwd,
+            state.thread_id.as_deref(),
+        ) {
+            output.line_stderr(line)?;
+            state.resume_exit_hint_emitted = true;
+        }
         return Ok(Some(false));
     }
     Ok(None)

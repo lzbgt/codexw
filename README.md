@@ -105,6 +105,8 @@ If you omit the thread id, `codexw` now opens a startup resume picker for the cu
 /Users/zongbaolu/work/codexw/bin/codexw resume
 ```
 
+Global flags such as `--cwd` can be placed either before or after the startup `resume` token. For example, `codexw resume --cwd /path/to/repo` and `codexw --cwd /path/to/repo resume` now both open the cwd-scoped resume picker when no thread id is provided.
+
 Because the app-server `thread/list` `cwd` filter is an exact match, `codexw` now automatically falls back to an all-workspaces recent-thread list when the cwd-scoped lookup is empty, instead of leaving the startup resume picker without selectable sessions.
 On resume, `codexw` now renders the latest 10 conversation messages from the stored thread so you get immediate context before entering a new prompt, without replaying the full internal reasoning/tool trace.
 Resume startup is also faster now: `codexw` sends the thread create or resume request before non-critical catalog and account lookups, and it only scans the minimum recent conversation history needed for the preview and continuation state.
@@ -204,6 +206,6 @@ Submission features:
 - `:status` now renders a richer session snapshot including cwd, thread/turn ids, started/completed turn counts, active request time, effective model capability state, personality, collaboration mode, realtime session state, automation mode, sandbox/approval posture, attachment counts, catalog counts, account/auth state, per-window remaining rate-limit capacity with reset times, token usage totals, and the last ready/working status line when available.
 - Unknown app-server requests now receive an explicit JSON-RPC "method not implemented" error instead of being ignored, which avoids hangs from unanswered server requests.
 - Full file contents are not always available from the app-server protocol. The client shows full command lines, command output, diffs, and file-change payloads that Codex emits.
-- `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn or terminates an active `!command` without discarding the current draft, and only exits when the client is idle with no active draft or background work. On exit, `codexw` now prints a copy-pasteable resume command with the current thread id when one is available.
+- `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn or terminates an active `!command` without discarding the current draft, and only exits when the client is idle with no active draft or background work. On exit, `codexw` now prints a copy-pasteable full resume command, including cwd and thread id, when one is available.
 - Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs, but collaboration-mode switching, experimental-feature listing, personality selection, background-terminal cleanup, and a text-only realtime workflow are now backend-backed through app-server rather than being treated as impossible.
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.

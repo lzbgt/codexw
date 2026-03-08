@@ -124,7 +124,8 @@ fn ctrl_c_preserves_draft_while_interrupting_active_turn() {
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
 
-    let result = handle_ctrl_c(&mut state, &mut editor, &mut output, &mut writer).expect("ctrl-c");
+    let result =
+        handle_ctrl_c(&mut state, &mut editor, &mut output, &mut writer, "/tmp").expect("ctrl-c");
     assert!(result.is_none());
     assert_eq!(editor.buffer(), "first\nsecond");
 }
@@ -145,6 +146,28 @@ fn escape_preserves_draft_while_interrupting_active_turn() {
         handle_escape(&mut state, &mut editor, &mut output, &mut writer, true).expect("escape");
     assert!(result.is_none());
     assert_eq!(editor.buffer(), "first\nsecond");
+}
+
+#[test]
+fn idle_ctrl_c_exit_marks_resume_hint_as_emitted_when_thread_exists() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    let result = handle_ctrl_c(
+        &mut state,
+        &mut editor,
+        &mut output,
+        &mut writer,
+        "/tmp/project",
+    )
+    .expect("ctrl-c");
+
+    assert_eq!(result, Some(false));
+    assert!(state.resume_exit_hint_emitted);
 }
 
 #[test]

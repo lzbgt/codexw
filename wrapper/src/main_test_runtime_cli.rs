@@ -1,5 +1,6 @@
 use crate::Cli;
 use crate::app::build_resume_command;
+use crate::app::build_resume_hint_line;
 use crate::commands_completion_render::quote_if_needed;
 use crate::dispatch_command_utils::parse_feedback_args;
 use crate::runtime_process::effective_cwd;
@@ -83,6 +84,33 @@ fn normalize_cli_supports_codex_style_resume_picker_startup() {
     assert!(cli.prompt.is_empty());
 }
 
+#[test]
+fn parse_cli_accepts_cwd_after_resume_for_picker_startup() {
+    let cli = crate::parse_cli_from(["codexw", "resume", "--cwd", "/tmp/project"])
+        .expect("parse reordered resume picker");
+    assert_eq!(cli.cwd.as_deref(), Some("/tmp/project"));
+    assert_eq!(cli.resume, None);
+    assert!(cli.resume_picker);
+    assert!(cli.prompt.is_empty());
+}
+
+#[test]
+fn parse_cli_accepts_cwd_after_resume_for_explicit_thread() {
+    let cli = crate::parse_cli_from([
+        "codexw",
+        "resume",
+        "thread-123",
+        "--cwd=/tmp/project",
+        "continue",
+        "work",
+    ])
+    .expect("parse reordered resume thread");
+    assert_eq!(cli.cwd.as_deref(), Some("/tmp/project"));
+    assert_eq!(cli.resume.as_deref(), Some("thread-123"));
+    assert!(!cli.resume_picker);
+    assert_eq!(cli.prompt, vec!["continue".to_string(), "work".to_string()]);
+}
+
 #[cfg(unix)]
 #[test]
 fn effective_cwd_canonicalizes_current_dir_without_explicit_flag() {
@@ -140,5 +168,17 @@ fn build_resume_command_includes_cwd_and_thread_id() {
     assert_eq!(
         build_resume_command("codexw", "/tmp/work tree", "thread-123"),
         "codexw --cwd \"/tmp/work tree\" resume thread-123"
+    );
+}
+
+#[test]
+fn build_resume_hint_line_includes_full_resume_command() {
+    assert_eq!(
+        build_resume_hint_line("codexw", "/tmp/work tree", Some("thread-123")).as_deref(),
+        Some("[session] resume with: codexw --cwd \"/tmp/work tree\" resume thread-123")
+    );
+    assert_eq!(
+        build_resume_hint_line("codexw", "/tmp/work tree", None),
+        None
     );
 }

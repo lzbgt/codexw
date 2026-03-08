@@ -169,6 +169,8 @@ Supported forms include:
 - `codexw resume <thread-id>`
 - `codexw resume`
 
+Global flags such as `--cwd` may appear before or after the startup `resume` token. `codexw resume --cwd /repo` is normalized to the same startup mode as `codexw --cwd /repo resume`.
+
 When startup resume is invoked without a thread id, `codexw` does not create a new thread. It loads the recent thread list for the resolved cwd, sorts it newest-first by `updatedAt`, and exposes a prompt-local picker that accepts `/resume <n>`, a raw thread id, or a bare numeric selection.
 
 On successful `thread/resume`, `codexw`:
@@ -178,7 +180,7 @@ On successful `thread/resume`, `codexw`:
 - renders a compact recent history preview
 - optionally starts a turn if a prompt was supplied
 
-When the inline client exits with an active thread id, it also prints a copy-pasteable `codexw --cwd <path> resume <thread-id>` hint so the session can be resumed directly.
+When the inline client exits with an active thread id, it also prints a copy-pasteable `codexw --cwd <path> resume <thread-id>` hint so the session can be resumed directly. Idle `Ctrl-C` emits that full command immediately before exit as well, instead of relying only on the post-loop shutdown path.
 
 ### Interactive resume
 
