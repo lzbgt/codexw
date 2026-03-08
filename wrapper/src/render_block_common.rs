@@ -64,7 +64,7 @@ pub(crate) fn header_style(title: &str) -> BlockHeaderStyle {
     let title = title.to_ascii_lowercase();
     if matches!(
         title.as_str(),
-        "assistant" | "command complete" | "file changes complete" | "thinking"
+        "assistant" | "user" | "command complete" | "file changes complete" | "thinking"
     ) {
         BlockHeaderStyle::Hidden
     } else if title.contains("proposed plan") || title.contains("updated plan") {
@@ -75,18 +75,11 @@ pub(crate) fn header_style(title: &str) -> BlockHeaderStyle {
 }
 
 fn render_plain_title_line(title: &str) -> Line<'static> {
-    let accent = if title.eq_ignore_ascii_case("Assistant") {
-        Color::Blue
-    } else if title.eq_ignore_ascii_case("Thinking") {
-        Color::DarkGray
-    } else if title.to_ascii_lowercase().contains("diff") {
-        Color::Blue
-    } else {
-        Color::DarkGray
-    };
     Line::from(Span::styled(
         title.to_string(),
-        Style::default().fg(accent).add_modifier(Modifier::BOLD),
+        Style::default()
+            .fg(Color::DarkGray)
+            .add_modifier(Modifier::BOLD),
     ))
 }
 

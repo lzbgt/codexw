@@ -35,11 +35,11 @@ fn prompt_status_uses_active_detail_when_present() {
 }
 
 #[test]
-fn active_spinner_uses_codex_bullet_frames() {
-    assert_eq!(spinner_frame(None), "•");
+fn active_spinner_uses_codex_braille_frames() {
+    assert_eq!(spinner_frame(None), "⠋");
     let now = Instant::now();
-    assert_eq!(spinner_frame(Some(now - Duration::from_millis(100))), "•");
-    assert_eq!(spinner_frame(Some(now - Duration::from_millis(700))), "◦");
+    assert_eq!(spinner_frame(Some(now - Duration::from_millis(100))), "⠙");
+    assert_eq!(spinner_frame(Some(now - Duration::from_millis(700))), "⠇");
 }
 
 #[test]

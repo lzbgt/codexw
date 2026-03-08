@@ -55,7 +55,7 @@ pub(crate) fn render_markdown_line(raw_line: &str, trimmed: &str) -> Option<Line
         let mut spans = vec![Span::styled(
             format!("{marker}. "),
             Style::default()
-                .fg(Color::LightBlue)
+                .fg(Color::Gray)
                 .add_modifier(Modifier::BOLD),
         )];
         spans.extend(render_inline_markdown(content));

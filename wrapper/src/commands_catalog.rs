@@ -37,9 +37,18 @@ pub(crate) fn builtin_command_names() -> Vec<&'static str> {
         .collect()
 }
 
+pub(crate) fn builtin_visible_command_names() -> Vec<&'static str> {
+    builtin_command_entries()
+        .iter()
+        .filter(|entry| !is_hidden_builtin_command(entry.name))
+        .map(|entry| entry.name)
+        .collect()
+}
+
 pub(crate) fn builtin_help_lines() -> Vec<String> {
     builtin_command_entries()
         .iter()
+        .filter(|entry| !is_hidden_builtin_command(entry.name))
         .map(|entry| format!(":{:<26} {}", entry.help_syntax, entry.description))
         .collect()
 }
@@ -109,4 +118,16 @@ fn builtin_command_rank(name: &str) -> usize {
         "help" => 48,
         _ => usize::MAX,
     }
+}
+
+fn is_hidden_builtin_command(name: &str) -> bool {
+    matches!(
+        name,
+        "agent"
+            | "multi-agents"
+            | "init"
+            | "rollout"
+            | "sandbox-add-read-dir"
+            | "setup-default-sandbox"
+    )
 }

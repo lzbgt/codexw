@@ -36,6 +36,15 @@ fn assistant_blocks_render_with_ansi_styling() {
     assert!(rendered.contains("fn"));
     assert!(rendered.contains("main"));
     assert!(!visible.contains("Assistant"));
+    assert!(visible.contains("• # Heading"));
+}
+
+#[test]
+fn resumed_user_blocks_render_without_user_caption() {
+    let rendered = render_block_lines_to_ansi("User", "resume this session").join("\n");
+    let visible = strip_ansi(&rendered);
+    assert!(!visible.contains("User"));
+    assert!(visible.contains("› resume this session"));
 }
 
 #[test]

@@ -1,4 +1,4 @@
-use crate::commands_catalog::builtin_command_names;
+use crate::commands_catalog::builtin_visible_command_names;
 use crate::commands_match::fuzzy_match_score;
 use crate::commands_match::longest_common_prefix;
 use crate::commands_match::slash_command_at_cursor;
@@ -17,13 +17,13 @@ pub(crate) fn try_complete_slash_command(
 ) -> Option<SlashCompletionResult> {
     let (command_start, command_end, prefix) = slash_command_at_cursor(buffer, cursor_byte)?;
 
-    let mut prefix_matches = builtin_command_names()
+    let mut prefix_matches = builtin_visible_command_names()
         .into_iter()
         .filter(|name| name.starts_with(prefix))
         .collect::<Vec<_>>();
 
     if prefix_matches.is_empty() && prefix.is_empty() {
-        prefix_matches = builtin_command_names();
+        prefix_matches = builtin_visible_command_names();
     }
 
     if prefix_matches.len() == 1 {
@@ -55,7 +55,7 @@ pub(crate) fn try_complete_slash_command(
         });
     }
 
-    let mut fuzzy_matches = builtin_command_names()
+    let mut fuzzy_matches = builtin_visible_command_names()
         .into_iter()
         .filter_map(|name| fuzzy_match_score(name, prefix).map(|score| (name, score)))
         .collect::<Vec<_>>();

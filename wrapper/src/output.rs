@@ -2,6 +2,11 @@ use std::io;
 use std::io::Write;
 
 use crossterm::terminal;
+use ratatui::style::Color;
+use ratatui::style::Modifier;
+use ratatui::style::Style;
+use ratatui::text::Line;
+use ratatui::text::Span;
 use ratatui::text::Text;
 
 pub(crate) const CLEAR_LINE: &str = "\r\x1b[2K";
@@ -234,6 +239,7 @@ pub(crate) fn render_block_lines_to_ansi(title: &str, body: &str) -> Vec<String>
             }
         });
     }
+    apply_transcript_prefix(title, &mut text);
     text.lines.iter().map(line_to_ansi).collect()
 }
 
@@ -242,4 +248,31 @@ pub(crate) fn render_line_to_ansi(line: &str) -> String {
         return String::new();
     }
     line_to_ansi(&style_status_line(line))
+}
+
+fn apply_transcript_prefix(title: &str, text: &mut Text<'static>) {
+    let (first_prefix, continuation_prefix) = match title.to_ascii_lowercase().as_str() {
+        "assistant" => ("• ", "  "),
+        "user" => ("› ", "  "),
+        _ => return,
+    };
+
+    let prefix_style = Style::default()
+        .fg(Color::DarkGray)
+        .add_modifier(Modifier::DIM);
+    let lines = std::mem::take(&mut text.lines);
+    text.lines = lines
+        .into_iter()
+        .enumerate()
+        .map(|(idx, line)| {
+            let prefix = if idx == 0 {
+                first_prefix
+            } else {
+                continuation_prefix
+            };
+            let mut spans = vec![Span::styled(prefix.to_string(), prefix_style)];
+            spans.extend(line.spans);
+            Line::from(spans)
+        })
+        .collect();
 }

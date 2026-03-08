@@ -1,5 +1,6 @@
 use crate::commands_catalog::builtin_command_names;
 use crate::commands_catalog::builtin_help_lines;
+use crate::commands_catalog::builtin_visible_command_names;
 use crate::commands_completion_render::quote_if_needed;
 use crate::commands_completion_render::render_slash_completion_candidates;
 
@@ -28,6 +29,29 @@ fn help_lines_are_derived_from_command_metadata() {
     assert!(rendered.contains(":resume [thread-id|n]"));
     assert!(rendered.contains("resume a saved thread"));
     assert!(rendered.contains(":feedback <category> [reason] [--logs|--no-logs]"));
+}
+
+#[test]
+fn slash_catalog_hides_unimplemented_native_placeholders() {
+    let rendered = render_slash_completion_candidates("", &builtin_visible_command_names(), false);
+    assert!(!rendered.contains("/agent"));
+    assert!(!rendered.contains("/multi-agents"));
+    assert!(!rendered.contains("/init"));
+    assert!(!rendered.contains("/rollout"));
+    assert!(!rendered.contains("/setup-default-sandbox"));
+    assert!(!rendered.contains("/sandbox-add-read-dir"));
+    assert!(builtin_command_names().contains(&"agent"));
+}
+
+#[test]
+fn help_hides_unimplemented_native_placeholders() {
+    let rendered = builtin_help_lines().join("\n");
+    assert!(!rendered.contains(":agent"));
+    assert!(!rendered.contains(":multi-agents"));
+    assert!(!rendered.contains(":init"));
+    assert!(!rendered.contains(":rollout"));
+    assert!(!rendered.contains(":setup-default-sandbox"));
+    assert!(!rendered.contains(":sandbox-add-read-dir"));
 }
 
 #[test]
