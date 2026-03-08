@@ -278,12 +278,21 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_update_service",
-            "description": "Update mutable metadata for a running service background shell job by jobId, alias, or @capability. Supports replacing declared reusable capabilities and updating or clearing the live service label.",
+            "description": "Update mutable metadata for a running service background shell job by jobId, alias, or @capability. Supports replacing declared reusable capabilities and updating or clearing the live service label, protocol, endpoint, and attach hint.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "jobId": {"type": "string"},
                     "label": {
+                        "type": ["string", "null"]
+                    },
+                    "protocol": {
+                        "type": ["string", "null"]
+                    },
+                    "endpoint": {
+                        "type": ["string", "null"]
+                    },
+                    "attachHint": {
                         "type": ["string", "null"]
                     },
                     "capabilities": {

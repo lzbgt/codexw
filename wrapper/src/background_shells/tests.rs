@@ -221,6 +221,40 @@ fn running_service_label_can_be_updated_without_restart() {
 }
 
 #[test]
+fn running_service_contract_can_be_updated_without_restart() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"],
+                "protocol": "http",
+                "endpoint": "http://127.0.0.1:3000",
+                "attachHint": "use /health"
+            }),
+            "/tmp",
+        )
+        .expect("start service");
+
+    manager
+        .set_running_service_contract(
+            "bg-1",
+            Some(Some("grpc".to_string())),
+            Some(Some("grpc://127.0.0.1:50051".to_string())),
+            Some(None),
+        )
+        .expect("update contract");
+
+    let rendered = manager.attach_for_operator("bg-1").expect("attach summary");
+    assert!(rendered.contains("Protocol: grpc"));
+    assert!(rendered.contains("Endpoint: grpc://127.0.0.1:50051"));
+    assert!(!rendered.contains("Attach hint: use /health"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn running_dependency_capabilities_can_be_updated_without_restart() {
     let manager = BackgroundShellManager::default();
     manager

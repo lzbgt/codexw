@@ -313,6 +313,56 @@ fn background_shell_update_service_can_update_label() {
 }
 
 #[test]
+fn background_shell_update_service_can_update_contract_metadata() {
+    let manager = BackgroundShellManager::default();
+    execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_start",
+            "arguments": {
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"],
+                "protocol": "http",
+                "endpoint": "http://127.0.0.1:3000",
+                "attachHint": "use /health"
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_update_service",
+            "arguments": {
+                "jobId": "bg-1",
+                "protocol": "grpc",
+                "endpoint": "grpc://127.0.0.1:50051",
+                "attachHint": null
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("update text");
+    assert!(text.contains("Updated service metadata"));
+    assert!(text.contains("protocol=grpc"));
+    assert!(text.contains("endpoint=grpc://127.0.0.1:50051"));
+    assert!(text.contains("cleared attachHint"));
+
+    let rendered = manager.attach_for_operator("bg-1").expect("attach summary");
+    assert!(rendered.contains("Protocol: grpc"));
+    assert!(rendered.contains("Endpoint: grpc://127.0.0.1:50051"));
+    assert!(!rendered.contains("Attach hint: use /health"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn background_shell_update_dependencies_can_retarget_running_job() {
     let manager = BackgroundShellManager::default();
     execute_dynamic_tool_call(

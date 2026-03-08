@@ -14,6 +14,49 @@ use super::terminate_jobs;
 use super::validate_service_capability;
 
 impl BackgroundShellManager {
+    pub(crate) fn set_running_service_contract(
+        &self,
+        job_id: &str,
+        protocol: Option<Option<String>>,
+        endpoint: Option<Option<String>>,
+        attach_hint: Option<Option<String>>,
+    ) -> Result<(), String> {
+        let normalized_protocol = match protocol {
+            Some(protocol) => Some(normalize_service_label_update(protocol)?),
+            None => None,
+        };
+        let normalized_endpoint = match endpoint {
+            Some(endpoint) => Some(normalize_service_label_update(endpoint)?),
+            None => None,
+        };
+        let normalized_attach_hint = match attach_hint {
+            Some(attach_hint) => Some(normalize_service_label_update(attach_hint)?),
+            None => None,
+        };
+        let job = self.lookup_job(job_id)?;
+        let mut state = job.lock().expect("background shell job lock");
+        if !matches!(state.status, BackgroundShellJobStatus::Running) {
+            return Err(format!(
+                "background shell job `{job_id}` is not running; only running service jobs can change service metadata"
+            ));
+        }
+        if state.intent != BackgroundShellIntent::Service {
+            return Err(format!(
+                "background shell job `{job_id}` is not a service job; only running service jobs can change service metadata"
+            ));
+        }
+        if let Some(protocol) = normalized_protocol.clone() {
+            state.service_protocol = protocol;
+        }
+        if let Some(endpoint) = normalized_endpoint.clone() {
+            state.service_endpoint = endpoint;
+        }
+        if let Some(attach_hint) = normalized_attach_hint.clone() {
+            state.attach_hint = attach_hint;
+        }
+        Ok(())
+    }
+
     pub(crate) fn set_running_dependency_capabilities(
         &self,
         job_id: &str,
@@ -86,6 +129,9 @@ impl BackgroundShellManager {
             &resolved_job_id,
             None,
             Some(normalized),
+            None,
+            None,
+            None,
         ))
     }
 
@@ -100,6 +146,40 @@ impl BackgroundShellManager {
             &resolved_job_id,
             Some(&normalized),
             None,
+            None,
+            None,
+            None,
+        ))
+    }
+
+    pub(crate) fn update_service_contract_for_operator(
+        &self,
+        reference: &str,
+        protocol: Option<Option<String>>,
+        endpoint: Option<Option<String>>,
+        attach_hint: Option<Option<String>>,
+    ) -> Result<String, String> {
+        let resolved_job_id = self.resolve_job_reference(reference)?;
+        let normalized_protocol = protocol
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        let normalized_endpoint = endpoint
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        let normalized_attach_hint = attach_hint
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        self.set_running_service_contract(&resolved_job_id, protocol, endpoint, attach_hint)?;
+        Ok(render_service_metadata_update_summary(
+            &resolved_job_id,
+            None,
+            None,
+            normalized_protocol,
+            normalized_endpoint,
+            normalized_attach_hint,
         ))
     }
 
@@ -145,9 +225,38 @@ impl BackgroundShellManager {
         } else {
             None
         };
-        if capabilities.is_none() && label.is_none() {
+        let protocol = if object.contains_key("protocol") {
+            Some(parse_service_label_argument(
+                object.get("protocol"),
+                "background_shell_update_service",
+            )?)
+        } else {
+            None
+        };
+        let endpoint = if object.contains_key("endpoint") {
+            Some(parse_service_label_argument(
+                object.get("endpoint"),
+                "background_shell_update_service",
+            )?)
+        } else {
+            None
+        };
+        let attach_hint = if object.contains_key("attachHint") {
+            Some(parse_service_label_argument(
+                object.get("attachHint"),
+                "background_shell_update_service",
+            )?)
+        } else {
+            None
+        };
+        if capabilities.is_none()
+            && label.is_none()
+            && protocol.is_none()
+            && endpoint.is_none()
+            && attach_hint.is_none()
+        {
             return Err(
-                "background_shell_update_service requires at least one of `capabilities` or `label`"
+                "background_shell_update_service requires at least one mutable field such as `capabilities`, `label`, `protocol`, `endpoint`, or `attachHint`"
                     .to_string(),
             );
         }
@@ -162,10 +271,28 @@ impl BackgroundShellManager {
             Some(label) => Some(self.set_running_service_label(&resolved_job_id, label)?),
             None => None,
         };
+        let normalized_protocol = protocol
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        let normalized_endpoint = endpoint
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        let normalized_attach_hint = attach_hint
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        if protocol.is_some() || endpoint.is_some() || attach_hint.is_some() {
+            self.set_running_service_contract(&resolved_job_id, protocol, endpoint, attach_hint)?;
+        }
         Ok(render_service_metadata_update_summary(
             &resolved_job_id,
             normalized_capabilities.as_deref(),
             normalized_label,
+            normalized_protocol,
+            normalized_endpoint,
+            normalized_attach_hint,
         ))
     }
 
@@ -912,6 +1039,9 @@ fn render_service_metadata_update_summary(
     job_id: &str,
     capabilities: Option<&[String]>,
     label: Option<Option<String>>,
+    protocol: Option<Option<String>>,
+    endpoint: Option<Option<String>>,
+    attach_hint: Option<Option<String>>,
 ) -> String {
     let mut parts = Vec::new();
     if let Some(capabilities) = capabilities {
@@ -932,6 +1062,24 @@ fn render_service_metadata_update_summary(
         match label {
             Some(label) => parts.push(format!("label={label}")),
             None => parts.push("cleared label".to_string()),
+        }
+    }
+    if let Some(protocol) = protocol {
+        match protocol {
+            Some(protocol) => parts.push(format!("protocol={protocol}")),
+            None => parts.push("cleared protocol".to_string()),
+        }
+    }
+    if let Some(endpoint) = endpoint {
+        match endpoint {
+            Some(endpoint) => parts.push(format!("endpoint={endpoint}")),
+            None => parts.push("cleared endpoint".to_string()),
+        }
+    }
+    if let Some(attach_hint) = attach_hint {
+        match attach_hint {
+            Some(attach_hint) => parts.push(format!("attachHint={attach_hint}")),
+            None => parts.push("cleared attachHint".to_string()),
         }
     }
 

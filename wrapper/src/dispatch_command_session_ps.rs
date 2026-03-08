@@ -296,6 +296,49 @@ pub(crate) fn handle_ps_command(
             Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
+    } else if matches!(action, Some("contract")) {
+        let Some((reference, contract)) = parse_ps_contract_args(raw_args) else {
+            output.line_stderr(
+                "[session] usage: :ps contract <jobId|alias|@capability|n> <json-object>",
+            )?;
+            return Ok(true);
+        };
+        let protocol = match parse_optional_contract_field(contract.get("protocol"), "protocol") {
+            Ok(value) => value,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let endpoint = match parse_optional_contract_field(contract.get("endpoint"), "endpoint") {
+            Ok(value) => value,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let attach_hint =
+            match parse_optional_contract_field(contract.get("attachHint"), "attachHint") {
+                Ok(value) => value,
+                Err(err) => {
+                    output.line_stderr(format!("[session] {err}"))?;
+                    return Ok(true);
+                }
+            };
+        if protocol.is_none() && endpoint.is_none() && attach_hint.is_none() {
+            output.line_stderr(
+                "[session] :ps contract requires at least one of `protocol`, `endpoint`, or `attachHint`",
+            )?;
+            return Ok(true);
+        }
+        match state
+            .orchestration
+            .background_shells
+            .update_service_contract_for_operator(reference, protocol, endpoint, attach_hint)
+        {
+            Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        }
     } else if matches!(action, Some("relabel")) {
         let Some((reference, label)) = parse_ps_relabel_args(raw_args) else {
             output.line_stderr(
@@ -456,7 +499,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|depend <jobId|alias|@capability|n> <@capability...|none>|relabel <jobId|alias|@capability|n> <label|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|depend <jobId|alias|@capability|n> <@capability...|none>|contract <jobId|alias|@capability|n> <json-object>|relabel <jobId|alias|@capability|n> <label|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)
@@ -514,6 +557,41 @@ fn parse_ps_relabel_args(raw_args: &str) -> Option<(&str, Option<String>)> {
         Some(label.to_string())
     };
     Some((reference, normalized))
+}
+
+fn parse_ps_contract_args(
+    raw_args: &str,
+) -> Option<(&str, serde_json::Map<String, serde_json::Value>)> {
+    let remainder = raw_args.trim_start().strip_prefix("contract")?.trim_start();
+    let (reference, contract) = remainder.split_once(char::is_whitespace)?;
+    let contract = contract.trim_start();
+    if reference.is_empty() || contract.is_empty() {
+        return None;
+    }
+    let value: serde_json::Value = serde_json::from_str(contract).ok()?;
+    let object = value.as_object()?.clone();
+    Some((reference, object))
+}
+
+fn parse_optional_contract_field(
+    value: Option<&serde_json::Value>,
+    field_name: &str,
+) -> Result<Option<Option<String>>, String> {
+    match value {
+        None => Ok(None),
+        Some(serde_json::Value::Null) => Ok(Some(None)),
+        Some(serde_json::Value::String(text)) => {
+            let trimmed = text.trim();
+            if trimmed.is_empty() {
+                Err(format!(":ps contract `{field_name}` cannot be empty"))
+            } else {
+                Ok(Some(Some(trimmed.to_string())))
+            }
+        }
+        Some(_) => Err(format!(
+            ":ps contract `{field_name}` must be a string or null"
+        )),
+    }
 }
 
 fn parse_operator_recipe_args(

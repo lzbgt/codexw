@@ -1685,6 +1685,52 @@ fn ps_command_can_retarget_dependency_capabilities() {
 }
 
 #[test]
+fn ps_command_can_update_service_contract_metadata() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"],
+                "protocol": "http",
+                "endpoint": "http://127.0.0.1:3000",
+                "attachHint": "use /health"
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+
+    handle_ps_command(
+        r#"contract 1 {"protocol":"grpc","endpoint":"grpc://127.0.0.1:50051","attachHint":null}"#,
+        &[
+            "contract",
+            "1",
+            r#"{"protocol":"grpc","endpoint":"grpc://127.0.0.1:50051","attachHint":null}"#,
+        ],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("update service contract");
+
+    let rendered = state
+        .background_shells
+        .attach_for_operator("bg-1")
+        .expect("attach updated service");
+    assert!(rendered.contains("Protocol: grpc"));
+    assert!(rendered.contains("Endpoint: grpc://127.0.0.1:50051"));
+    assert!(!rendered.contains("Attach hint: use /health"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
 fn ps_command_can_render_service_attachment_metadata_for_aliased_job() {
     let cli = test_cli();
     let mut state = crate::state::AppState::new(true, false);
