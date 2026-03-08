@@ -76,7 +76,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_start",
-            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `readyPattern` so the wrapper can distinguish booting versus ready services.",
+            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `readyPattern`, `endpoint`, and `attachHint` so the wrapper can distinguish booting versus ready services and expose a structured attach surface.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -87,7 +87,9 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                         "enum": ["prerequisite", "observation", "service"]
                     },
                     "label": {"type": "string"},
-                    "readyPattern": {"type": "string"}
+                    "readyPattern": {"type": "string"},
+                    "endpoint": {"type": "string"},
+                    "attachHint": {"type": "string"}
                 },
                 "required": ["command"]
             }
@@ -116,6 +118,17 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                     "appendNewline": {"type": "boolean"}
                 },
                 "required": ["jobId", "text"]
+            }
+        }),
+        json!({
+            "name": "background_shell_attach",
+            "description": "Show structured attachment metadata for a service background shell job by jobId or alias, including endpoint and attach hints when declared.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"}
+                },
+                "required": ["jobId"]
             }
         }),
         json!({
@@ -163,6 +176,7 @@ pub(crate) fn execute_dynamic_tool_call(
         ),
         "background_shell_poll" => background_shells.poll_from_tool(arguments),
         "background_shell_send" => background_shells.send_input_from_tool(arguments),
+        "background_shell_attach" => background_shells.attach_from_tool(arguments),
         "background_shell_list" => Ok(background_shells.list_from_tool()),
         "background_shell_terminate" => background_shells.terminate_from_tool(arguments),
         _ => Err(format!("unsupported client dynamic tool `{tool}`")),
@@ -537,6 +551,7 @@ mod tests {
                 "background_shell_start",
                 "background_shell_poll",
                 "background_shell_send",
+                "background_shell_attach",
                 "background_shell_list",
                 "background_shell_terminate"
             ]
@@ -657,6 +672,46 @@ mod tests {
         }
 
         assert!(rendered.contains("ping from tool"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_attach_returns_service_metadata() {
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "label": "dev api",
+                    "endpoint": "http://127.0.0.1:4000",
+                    "attachHint": "Send HTTP requests to /health"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        manager.set_job_alias("bg-1", "dev.api").expect("set alias");
+
+        let attach_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_attach",
+                "arguments": {
+                    "jobId": "dev.api"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(attach_result["success"], true);
+        let rendered = attach_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("attach text");
+        assert!(rendered.contains("Service job: bg-1"));
+        assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
+        assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
         let _ = manager.terminate_all_running();
     }
 

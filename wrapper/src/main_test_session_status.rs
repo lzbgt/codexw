@@ -757,6 +757,55 @@ fn ps_command_can_send_input_to_aliased_background_shell_job() {
 }
 
 #[test]
+fn ps_command_can_render_service_attachment_metadata_for_aliased_job() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "dev api",
+                "endpoint": "http://127.0.0.1:4000",
+                "attachHint": "Send HTTP requests to /health"
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+
+    handle_ps_command(
+        "alias 1 dev.api",
+        &["alias", "1", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("alias background shell");
+
+    handle_ps_command(
+        "attach dev.api",
+        &["attach", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render service attachment");
+
+    let rendered = state
+        .background_shells
+        .attach_for_operator("bg-1")
+        .expect("attachment summary");
+    assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
+    assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
 fn collab_wait_item_sets_waiting_on_agent_status() {
     let cli = test_cli();
     let mut state = crate::state::AppState::new(true, false);

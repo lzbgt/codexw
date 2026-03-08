@@ -94,6 +94,8 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) intent: BackgroundShellIntent,
     pub(crate) label: Option<String>,
     pub(crate) alias: Option<String>,
+    pub(crate) service_endpoint: Option<String>,
+    pub(crate) attach_hint: Option<String>,
     pub(crate) ready_pattern: Option<String>,
     pub(crate) service_readiness: Option<BackgroundShellServiceReadiness>,
     pub(crate) origin: BackgroundShellOrigin,
@@ -112,6 +114,8 @@ struct BackgroundShellJobState {
     intent: BackgroundShellIntent,
     label: Option<String>,
     alias: Option<String>,
+    service_endpoint: Option<String>,
+    attach_hint: Option<String>,
     ready_pattern: Option<String>,
     service_ready: bool,
     origin: BackgroundShellOrigin,
@@ -166,11 +170,16 @@ impl BackgroundShellManager {
         )?;
         let intent = parse_background_shell_intent(object.get("intent"))?;
         let label = parse_background_shell_label(object.get("label"));
+        let service_endpoint =
+            parse_background_shell_optional_string(object.get("endpoint"), "endpoint")?;
+        let attach_hint =
+            parse_background_shell_optional_string(object.get("attachHint"), "attachHint")?;
         let ready_pattern = parse_background_shell_ready_pattern(object.get("readyPattern"))?;
-        if ready_pattern.is_some() && intent != BackgroundShellIntent::Service {
+        if (ready_pattern.is_some() || service_endpoint.is_some() || attach_hint.is_some())
+            && intent != BackgroundShellIntent::Service
+        {
             return Err(
-                "background_shell_start `readyPattern` is only supported when `intent=service`"
-                    .to_string(),
+                "background_shell_start service attachment fields (`readyPattern`, `endpoint`, `attachHint`) are only supported when `intent=service`".to_string(),
             );
         }
         let job_id = format!(
@@ -199,6 +208,8 @@ impl BackgroundShellManager {
             intent,
             label: label.clone(),
             alias: None,
+            service_endpoint: service_endpoint.clone(),
+            attach_hint: attach_hint.clone(),
             ready_pattern: ready_pattern.clone(),
             service_ready: false,
             origin: origin.clone(),
@@ -242,6 +253,12 @@ impl BackgroundShellManager {
         ];
         if let Some(label) = label {
             lines.insert(4, format!("Label: {label}"));
+        }
+        if let Some(service_endpoint) = service_endpoint.as_deref() {
+            lines.push(format!("Endpoint: {service_endpoint}"));
+        }
+        if let Some(attach_hint) = attach_hint.as_deref() {
+            lines.push(format!("Attach hint: {attach_hint}"));
         }
         if let Some(ready_pattern) = ready_pattern.as_deref() {
             lines.push(format!("Ready pattern: {ready_pattern}"));
@@ -299,6 +316,12 @@ impl BackgroundShellManager {
         if let Some(alias) = state.alias.as_deref() {
             lines.push(format!("Alias: {alias}"));
         }
+        if let Some(service_endpoint) = state.service_endpoint.as_deref() {
+            lines.push(format!("Endpoint: {service_endpoint}"));
+        }
+        if let Some(attach_hint) = state.attach_hint.as_deref() {
+            lines.push(format!("Attach hint: {attach_hint}"));
+        }
         if let Some(ready_pattern) = state.ready_pattern.as_deref() {
             lines.push(format!("Ready pattern: {ready_pattern}"));
         }
@@ -354,6 +377,9 @@ impl BackgroundShellManager {
             }
             if let Some(alias) = snapshot.alias.as_deref() {
                 line.push_str(&format!("  alias={alias}"));
+            }
+            if let Some(endpoint) = snapshot.service_endpoint.as_deref() {
+                line.push_str(&format!("  endpoint={endpoint}"));
             }
             if let Some(service_readiness) = snapshot.service_readiness {
                 line.push_str(&format!("  service={}", service_readiness.as_str()));
@@ -416,6 +442,18 @@ impl BackgroundShellManager {
             "Sent {bytes_written} byte{} to background shell job {resolved_job_id}.",
             if bytes_written == 1 { "" } else { "s" }
         ))
+    }
+
+    pub(crate) fn attach_from_tool(&self, arguments: &serde_json::Value) -> Result<String, String> {
+        let object = arguments
+            .as_object()
+            .ok_or_else(|| "background_shell_attach expects an object argument".to_string())?;
+        let job_id = object
+            .get("jobId")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_attach requires `jobId`".to_string())?;
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        self.service_attachment_summary(&resolved_job_id)
     }
 
     pub(crate) fn resolve_job_reference(&self, reference: &str) -> Result<String, String> {
@@ -510,6 +548,10 @@ impl BackgroundShellManager {
         append_newline: bool,
     ) -> Result<usize, String> {
         self.send_input_to_job(job_id, text, append_newline)
+    }
+
+    pub(crate) fn attach_for_operator(&self, job_id: &str) -> Result<String, String> {
+        self.service_attachment_summary(job_id)
     }
 
     pub(crate) fn running_count(&self) -> usize {
@@ -622,6 +664,12 @@ impl BackgroundShellManager {
             if let Some(alias) = snapshot.alias.as_deref() {
                 lines.push(format!("    alias    {alias}"));
             }
+            if let Some(endpoint) = snapshot.service_endpoint.as_deref() {
+                lines.push(format!("    endpoint {endpoint}"));
+            }
+            if let Some(attach_hint) = snapshot.attach_hint.as_deref() {
+                lines.push(format!("    attach   {attach_hint}"));
+            }
             if let Some(ready_pattern) = snapshot.ready_pattern.as_deref() {
                 lines.push(format!("    ready on {ready_pattern}"));
             }
@@ -698,6 +746,48 @@ impl BackgroundShellManager {
         })?;
         Ok(payload.len())
     }
+
+    fn service_attachment_summary(&self, job_id: &str) -> Result<String, String> {
+        let job = self.lookup_job(job_id)?;
+        let state = job.lock().expect("background shell job lock");
+        if state.intent != BackgroundShellIntent::Service {
+            return Err(format!(
+                "background shell job `{job_id}` is not a service shell"
+            ));
+        }
+        let mut lines = vec![
+            format!("Service job: {}", state.id),
+            format!(
+                "State: {}",
+                service_readiness_for_state(&state)
+                    .expect("service readiness")
+                    .as_str()
+            ),
+            format!("Command: {}", state.command),
+        ];
+        if let Some(label) = state.label.as_deref() {
+            lines.push(format!("Label: {label}"));
+        }
+        if let Some(alias) = state.alias.as_deref() {
+            lines.push(format!("Alias: {alias}"));
+        }
+        if let Some(endpoint) = state.service_endpoint.as_deref() {
+            lines.push(format!("Endpoint: {endpoint}"));
+        }
+        if let Some(attach_hint) = state.attach_hint.as_deref() {
+            lines.push(format!("Attach hint: {attach_hint}"));
+        }
+        if let Some(ready_pattern) = state.ready_pattern.as_deref() {
+            lines.push(format!("Ready pattern: {ready_pattern}"));
+        }
+        if state.service_endpoint.is_none() && state.attach_hint.is_none() {
+            lines.push(
+                "No explicit service attachment metadata has been declared for this job."
+                    .to_string(),
+            );
+        }
+        Ok(lines.join("\n"))
+    }
 }
 
 fn resolve_background_cwd(raw_cwd: Option<&str>, resolved_cwd: &str) -> Result<PathBuf, String> {
@@ -754,8 +844,9 @@ fn parse_background_shell_label(value: Option<&serde_json::Value>) -> Option<Str
         .map(ToOwned::to_owned)
 }
 
-fn parse_background_shell_ready_pattern(
+fn parse_background_shell_optional_string(
     value: Option<&serde_json::Value>,
+    field_name: &str,
 ) -> Result<Option<String>, String> {
     match value {
         None => Ok(None),
@@ -766,9 +857,15 @@ fn parse_background_shell_ready_pattern(
             .map(ToOwned::to_owned)
             .map(Some)
             .ok_or_else(|| {
-                "background_shell_start `readyPattern` must be a non-empty string".to_string()
+                format!("background_shell_start `{field_name}` must be a non-empty string")
             }),
     }
+}
+
+fn parse_background_shell_ready_pattern(
+    value: Option<&serde_json::Value>,
+) -> Result<Option<String>, String> {
+    parse_background_shell_optional_string(value, "readyPattern")
 }
 
 fn validate_alias(alias: &str) -> Result<String, String> {
@@ -884,6 +981,8 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         intent: state.intent,
         label: state.label.clone(),
         alias: state.alias.clone(),
+        service_endpoint: state.service_endpoint.clone(),
+        attach_hint: state.attach_hint.clone(),
         ready_pattern: state.ready_pattern.clone(),
         service_readiness: service_readiness_for_state(&state),
         origin: state.origin.clone(),
@@ -1073,7 +1172,9 @@ mod tests {
                 &json!({
                     "command": "sleep 0.4",
                     "intent": "service",
-                    "label": "webpack dev server"
+                    "label": "webpack dev server",
+                    "endpoint": "http://127.0.0.1:3000",
+                    "attachHint": "Open the dev server in a browser"
                 }),
                 "/tmp",
                 BackgroundShellOrigin {
@@ -1091,11 +1192,21 @@ mod tests {
         );
         assert_eq!(snapshots[0].intent, BackgroundShellIntent::Service);
         assert_eq!(snapshots[0].label.as_deref(), Some("webpack dev server"));
+        assert_eq!(
+            snapshots[0].service_endpoint.as_deref(),
+            Some("http://127.0.0.1:3000")
+        );
+        assert_eq!(
+            snapshots[0].attach_hint.as_deref(),
+            Some("Open the dev server in a browser")
+        );
         let rendered = manager
             .poll_from_tool(&json!({"jobId": "bg-1"}))
             .expect("poll background shell");
         assert!(rendered.contains("Intent: service"));
         assert!(rendered.contains("Label: webpack dev server"));
+        assert!(rendered.contains("Endpoint: http://127.0.0.1:3000"));
+        assert!(rendered.contains("Attach hint: Open the dev server in a browser"));
         assert!(rendered.contains("Source thread: thread-agent-1"));
         assert!(rendered.contains("Source call: call-77"));
         let _ = manager.terminate_all_running();
@@ -1150,6 +1261,48 @@ mod tests {
             .expect_err("readyPattern should require service intent");
         assert!(err.contains("readyPattern"));
         assert_eq!(manager.job_count(), 0);
+    }
+
+    #[test]
+    fn service_attachment_summary_exposes_endpoint_and_attach_hint() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "label": "dev api",
+                    "endpoint": "http://127.0.0.1:4000",
+                    "attachHint": "Send HTTP requests to /health"
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let rendered = manager
+            .attach_for_operator("bg-1")
+            .expect("render attachment summary");
+        assert!(rendered.contains("Service job: bg-1"));
+        assert!(rendered.contains("Label: dev api"));
+        assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
+        assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_attachment_fields_require_service_intent() {
+        let manager = BackgroundShellManager::default();
+        let err = manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.1",
+                    "intent": "observation",
+                    "endpoint": "http://127.0.0.1:4000"
+                }),
+                "/tmp",
+            )
+            .expect_err("service attachment fields should require service intent");
+        assert!(err.contains("service attachment fields"));
     }
 
     #[test]

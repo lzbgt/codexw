@@ -59,9 +59,29 @@ pub(crate) fn handle_ps_command(
             ))?,
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
+    } else if matches!(action, Some("attach")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps attach <jobId|alias|n>")?;
+            return Ok(true);
+        };
+        let job_id = match state.background_shells.resolve_job_reference(reference) {
+            Ok(job_id) => job_id,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let rendered = match state.background_shells.attach_for_operator(&job_id) {
+            Ok(rendered) => rendered,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        output.block_stdout("Service Attachment", &rendered)?;
     } else if matches!(action, Some("poll" | "show" | "inspect")) {
         let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps poll <jobId|n>")?;
+            output.line_stderr("[session] usage: :ps poll <jobId|alias|n>")?;
             return Ok(true);
         };
         let job_id = match state.background_shells.resolve_job_reference(reference) {
@@ -114,7 +134,7 @@ pub(crate) fn handle_ps_command(
         }
     } else if matches!(action, Some("terminate" | "stop" | "kill")) {
         let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps terminate <jobId|n>")?;
+            output.line_stderr("[session] usage: :ps terminate <jobId|alias|n>")?;
             return Ok(true);
         };
         let job_id = match state.background_shells.resolve_job_reference(reference) {
@@ -139,7 +159,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [blockers|agents|shells|services|terminals|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [blockers|agents|shells|services|terminals|attach|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)

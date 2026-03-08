@@ -649,7 +649,13 @@ mod tests {
         state
             .background_shells
             .start_from_tool(
-                &serde_json::json!({"command": "sleep 0.4", "intent": "service", "label": "dev server"}),
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "label": "dev server",
+                    "endpoint": "http://127.0.0.1:3000",
+                    "attachHint": "Open the dev server in a browser"
+                }),
                 "/tmp",
             )
             .expect("start service shell");
@@ -676,6 +682,8 @@ mod tests {
         assert!(services.contains("Local background shell jobs:"));
         assert!(services.contains("intent   service"));
         assert!(services.contains("label    dev server"));
+        assert!(services.contains("endpoint http://127.0.0.1:3000"));
+        assert!(services.contains("attach   Open the dev server in a browser"));
         assert!(services.contains("service  untracked"));
         assert!(!services.contains("intent   prerequisite"));
 
