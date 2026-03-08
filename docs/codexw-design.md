@@ -63,7 +63,7 @@ The runtime has thirteen main layers.
    `views.rs`, `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
 12. Human input handling
-   `editor.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs` and `dispatch.rs` are compatibility facades over those splits.
+   `editor.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `dispatch.rs`, and `dispatch_commands.rs` are compatibility facades over those splits.
 
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` is the compatibility facade over that split.
@@ -79,7 +79,7 @@ Compatibility re-exports live in `views.rs`: stable import surface over the spli
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
-Command-dispatch helpers are split across `dispatch_submit.rs` and `dispatch_commands.rs`, with `dispatch.rs` kept as a thin compatibility facade for imports and tests.
+Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs` and `dispatch_commands.rs` kept as thin compatibility facades for imports and tests.
 Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and tests.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers live in `responses.rs`: JSON-RPC success/error handling for pending outbound requests.
@@ -404,7 +404,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_submit.rs`
   Normal prompt submission, slash-command detection, local `!command` launch, and turn/steer handoff.
 - `wrapper/src/dispatch_commands.rs`
-  Built-in slash-command workflows, feedback parsing, clipboard handling, and thread/session command routing.
+  Compatibility facade for the split slash-command layer.
+- `wrapper/src/dispatch_command_thread.rs`
+  Thread-oriented slash-command workflows such as new/resume/fork/review/rename/interrupt and attachment queue manipulation.
+- `wrapper/src/dispatch_command_session.rs`
+  Session/catalog/realtime slash-command workflows such as status, permissions, personality, collaboration, feedback, and realtime control.
+- `wrapper/src/dispatch_command_utils.rs`
+  Shared slash-command helpers such as built-in detection, feedback parsing, prompt joining, and clipboard handling.
 - `wrapper/src/prompting.rs`
   Prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion helpers.
 - `wrapper/src/editor.rs`
