@@ -3,6 +3,8 @@ mod catalog;
 mod catalog_views;
 mod collaboration;
 mod commands;
+mod commands_completion;
+mod commands_metadata;
 mod dispatch;
 mod dispatch_command_session;
 mod dispatch_command_thread;
@@ -106,8 +108,8 @@ mod tests {
     use crate::commands::builtin_command_names;
     use crate::commands::builtin_help_lines;
     use crate::commands::quote_if_needed;
-    use crate::commands::render_slash_completion_candidates;
     use crate::commands::try_complete_slash_command;
+    use crate::commands_completion::render_slash_completion_candidates;
     use crate::dispatch::is_builtin_command;
     use crate::dispatch_command_utils::parse_feedback_args;
     use crate::editor::LineEditor;

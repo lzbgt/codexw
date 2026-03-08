@@ -79,6 +79,8 @@ Compatibility re-exports live in `views.rs`: stable import surface over the spli
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
+Command metadata helpers live in `commands_metadata.rs`: builtin command catalog, descriptions, and help-line generation.
+Command completion helpers live in `commands_completion.rs`: slash completion, fuzzy scoring, prefix logic, and generic quoting helpers.
 Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs` and `dispatch_commands.rs` kept as thin compatibility facades for imports and tests.
 Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and tests.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
@@ -389,6 +391,12 @@ The biggest known limits are architectural, not accidental.
   Thread, realtime, review, turn, and local command request builders.
 - `wrapper/src/rpc.rs`
   JSON-RPC wire types and line parsing.
+- `wrapper/src/commands.rs`
+  Compatibility facade for the split command metadata/completion layer.
+- `wrapper/src/commands_metadata.rs`
+  Builtin command catalog, descriptions, and help-line generation.
+- `wrapper/src/commands_completion.rs`
+  Slash completion, fuzzy scoring, prefix helpers, and quote-if-needed rendering.
 - `wrapper/src/input.rs`
   Compatibility facade for the split input layer.
 - `wrapper/src/input/input_types.rs`
