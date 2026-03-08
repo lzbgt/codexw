@@ -32,9 +32,9 @@ pub(crate) fn summarize_text(text: &str) -> String {
     } else {
         let truncated = single_line
             .chars()
-            .take(LIMIT.saturating_sub(1))
+            .take(LIMIT.saturating_sub(3))
             .collect::<String>();
-        format!("{truncated}…")
+        format!("{truncated}...")
     }
 }
 

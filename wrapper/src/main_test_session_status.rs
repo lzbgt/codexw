@@ -45,6 +45,7 @@ fn prompt_status_mentions_startup_resume_picker() {
     state.startup_resume_picker = true;
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("resume picker"));
+    assert!(rendered.contains(" | "));
     assert!(rendered.contains("/new"));
 }
 
@@ -63,6 +64,7 @@ fn prompt_status_ready_includes_collaboration_and_personality() {
     assert!(rendered.contains("plan mode"));
     assert!(rendered.contains("Pragmatic"));
     assert!(rendered.contains("3 turns"));
+    assert!(rendered.contains(" | "));
 }
 
 #[test]

@@ -2,7 +2,7 @@ use crate::state::AppState;
 use std::time::Instant;
 
 pub(crate) fn spinner_frame(started_at: Option<Instant>) -> &'static str {
-    const FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    const FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
     let idx = started_at
         .map(|start| {
             ((Instant::now().saturating_duration_since(start).as_millis() / 100) as usize)
@@ -33,14 +33,14 @@ pub(crate) fn active_status_detail(state: &AppState) -> Option<&str> {
 pub(crate) fn render_exec_status(state: &AppState) -> String {
     if let Some(detail) = active_status_detail(state) {
         format!(
-            "{} {} · {}",
+            "{} {} | {}",
             spinner_frame(state.activity_started_at),
             detail,
             format_elapsed(state.activity_started_at),
         )
     } else {
         format!(
-            "{} cmd · {}",
+            "{} cmd | {}",
             spinner_frame(state.activity_started_at),
             format_elapsed(state.activity_started_at),
         )
@@ -50,14 +50,14 @@ pub(crate) fn render_exec_status(state: &AppState) -> String {
 pub(crate) fn render_turn_status(state: &AppState) -> String {
     if let Some(detail) = active_status_detail(state) {
         format!(
-            "{} {} · {}",
+            "{} {} | {}",
             spinner_frame(state.activity_started_at),
             detail,
             format_elapsed(state.activity_started_at),
         )
     } else {
         format!(
-            "{} turn {} · {}",
+            "{} turn {} | {}",
             spinner_frame(state.activity_started_at),
             state.started_turn_count.max(1),
             format_elapsed(state.activity_started_at)
@@ -67,7 +67,7 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
 
 pub(crate) fn render_realtime_status(state: &AppState) -> String {
     format!(
-        "{} realtime · {}",
+        "{} realtime | {}",
         spinner_frame(state.realtime_started_at),
         format_elapsed(state.realtime_started_at)
     )

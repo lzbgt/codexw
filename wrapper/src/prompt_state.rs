@@ -29,7 +29,7 @@ pub(crate) fn update_prompt(
 
 pub(crate) fn render_prompt_status(state: &AppState) -> String {
     if state.startup_resume_picker && state.thread_id.is_none() {
-        "resume picker · enter a number or thread id · /new for a fresh thread".to_string()
+        "resume picker | enter a number or thread id | /new for a fresh thread".to_string()
     } else if state.active_exec_process_id.is_some() {
         session_prompt_status_active::render_exec_status(state)
     } else if state.turn_running {

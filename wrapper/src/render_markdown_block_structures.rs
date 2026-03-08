@@ -37,7 +37,7 @@ pub(crate) fn render_markdown_line(raw_line: &str, trimmed: &str) -> Option<Line
 
     if trimmed.starts_with('>') {
         let quote = trimmed.trim_start_matches('>').trim_start();
-        let mut spans = vec![Span::styled("▏ ", Style::default().fg(Color::Green))];
+        let mut spans = vec![Span::styled("> ", Style::default().fg(Color::Green))];
         spans.extend(tint_spans(render_inline_markdown(quote), Color::Green));
         return Some(Line::from(spans));
     }
@@ -46,7 +46,7 @@ pub(crate) fn render_markdown_line(raw_line: &str, trimmed: &str) -> Option<Line
         .strip_prefix("- ")
         .or_else(|| trimmed.strip_prefix("* "))
     {
-        let mut spans = vec![Span::raw("• ")];
+        let mut spans = vec![Span::raw("- ")];
         spans.extend(render_inline_markdown(content));
         return Some(Line::from(spans));
     }
@@ -64,7 +64,7 @@ pub(crate) fn render_markdown_line(raw_line: &str, trimmed: &str) -> Option<Line
 
     if trimmed.chars().all(|ch| ch == '-' || ch == '—') && trimmed.len() >= 3 {
         return Some(Line::from(Span::styled(
-            "────────────────",
+            "----------------",
             Style::default().fg(Color::DarkGray),
         )));
     }

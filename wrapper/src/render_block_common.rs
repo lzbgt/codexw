@@ -49,7 +49,7 @@ pub(crate) fn render_title_line(title: &str) -> Line<'static> {
         Color::DarkGray
     };
     Line::from(vec![
-        Span::styled("▌ ", Style::default().fg(accent)),
+        Span::styled("| ", Style::default().fg(accent)),
         Span::styled(
             title.to_string(),
             Style::default().fg(accent).add_modifier(Modifier::BOLD),
