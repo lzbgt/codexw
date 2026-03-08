@@ -821,6 +821,57 @@ fn ps_command_can_render_service_attachment_metadata_for_aliased_job() {
 }
 
 #[test]
+fn ps_command_can_wait_for_service_readiness_by_alias() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": if cfg!(windows) {
+                    "ping -n 2 127.0.0.1 >NUL && echo READY && ping -n 2 127.0.0.1 >NUL"
+                } else {
+                    "sleep 0.15; printf 'READY\\n'; sleep 0.3"
+                },
+                "intent": "service",
+                "readyPattern": "READY"
+            }),
+            "/tmp",
+        )
+        .expect("start delayed-ready service shell");
+
+    handle_ps_command(
+        "alias 1 dev.api",
+        &["alias", "1", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("alias background shell");
+
+    handle_ps_command(
+        "wait dev.api 2000",
+        &["wait", "dev.api", "2000"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("wait for service readiness");
+
+    let rendered = state
+        .background_shells
+        .wait_ready_for_operator("bg-1", 2_000)
+        .expect("re-wait after ready");
+    assert!(rendered.contains("Ready pattern: READY"));
+    assert!(rendered.contains("ready"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
 fn ps_command_can_invoke_service_recipe_for_aliased_job() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind listener");
     let addr = listener.local_addr().expect("local addr");

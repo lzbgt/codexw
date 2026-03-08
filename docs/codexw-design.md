@@ -193,6 +193,7 @@ The current `codexw` implementation now reflects that model partially:
   - `background_shell_poll`
   - `background_shell_send`
   - `background_shell_attach`
+  - `background_shell_wait_ready`
   - `background_shell_invoke_recipe`
   - `background_shell_list`
   - `background_shell_terminate`
@@ -222,6 +223,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
   - `:ps attach <jobId|alias|n>` renders the structured attachment metadata for one service shell job
+  - `:ps wait <jobId|alias|n> [timeoutMs]` blocks until one service shell reaches its declared `readyPattern`
   - `:ps run <jobId|alias|n> <recipe> [json-args]` invokes one declared service recipe through the wrapper-owned typed action layer, with optional per-invocation arguments
   - `:ps poll <jobId|n>` renders the full current poll snapshot for one wrapper-owned shell job
   - `:ps send <jobId|alias|n> <text>` sends targeted stdin back into one wrapper-owned shell job without blocking the turn
@@ -261,8 +263,11 @@ The current `codexw` implementation now reflects that model partially:
     - descriptive-only recipes are still valid and remain attach-only instead of invokable
   - recipe actions now support placeholder substitution using `{{name}}` syntax driven by declared parameter values
     - operator path: `:ps run <job> <recipe> {"name":"value"}`
-    - model path: `background_shell_invoke_recipe` with optional `args` object
+    - model path: `background_shell_invoke_recipe` with optional `args` object and `waitForReadyMs`
     - defaults are applied automatically, missing required args fail early, and unknown args are rejected instead of being silently ignored
+  - executable network recipes (`http`, `tcp`, `redis`) now automatically wait for service readiness when the service declared `readyPattern`
+    - explicit wait is also available through `:ps wait ...` and `background_shell_wait_ready`
+    - `background_shell_invoke_recipe.waitForReadyMs` can lengthen or disable that auto-wait (`0` disables it)
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
   - `:ps unalias <name>` removes that alias
@@ -500,7 +505,7 @@ Current user-facing capabilities include:
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
 - backend-backed `/agent` and `/multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
-- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_attach`, `background_shell_invoke_recipe`, `background_shell_list`, `background_shell_terminate`), including service readiness contracts via `readyPattern` and service attachment metadata via `protocol` / `endpoint` / `attachHint` / `recipes`
+- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_attach`, `background_shell_wait_ready`, `background_shell_invoke_recipe`, `background_shell_list`, `background_shell_terminate`), including service readiness contracts via `readyPattern`, explicit readiness waits, and service attachment metadata via `protocol` / `endpoint` / `attachHint` / `recipes`
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
 - live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with scoped cleanup for local shell classes and backend-tracked terminals

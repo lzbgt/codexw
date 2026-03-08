@@ -188,6 +188,18 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             }
         }),
         json!({
+            "name": "background_shell_wait_ready",
+            "description": "Wait for a service background shell job with a declared readyPattern to become ready.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"},
+                    "timeoutMs": {"type": "integer", "minimum": 0}
+                },
+                "required": ["jobId"]
+            }
+        }),
+        json!({
             "name": "background_shell_invoke_recipe",
             "description": "Invoke a structured recipe declared by a service background shell job. Supports jobId or alias references.",
             "inputSchema": {
@@ -195,6 +207,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                 "properties": {
                     "jobId": {"type": "string"},
                     "recipe": {"type": "string"},
+                    "waitForReadyMs": {"type": "integer", "minimum": 0},
                     "args": {
                         "type": "object",
                         "additionalProperties": {
@@ -251,6 +264,7 @@ pub(crate) fn execute_dynamic_tool_call(
         "background_shell_poll" => background_shells.poll_from_tool(arguments),
         "background_shell_send" => background_shells.send_input_from_tool(arguments),
         "background_shell_attach" => background_shells.attach_from_tool(arguments),
+        "background_shell_wait_ready" => background_shells.wait_ready_from_tool(arguments),
         "background_shell_invoke_recipe" => background_shells.invoke_recipe_from_tool(arguments),
         "background_shell_list" => Ok(background_shells.list_from_tool()),
         "background_shell_terminate" => background_shells.terminate_from_tool(arguments),
@@ -627,6 +641,7 @@ mod tests {
                 "background_shell_poll",
                 "background_shell_send",
                 "background_shell_attach",
+                "background_shell_wait_ready",
                 "background_shell_invoke_recipe",
                 "background_shell_list",
                 "background_shell_terminate"
@@ -1137,6 +1152,118 @@ mod tests {
             .expect("invoke text");
         assert!(rendered.contains("Action: redis GET alpha"));
         assert!(rendered.contains("Value: value"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_wait_ready_reports_ready_services() {
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": if cfg!(windows) {
+                        "ping -n 2 127.0.0.1 >NUL && echo READY && ping -n 2 127.0.0.1 >NUL"
+                    } else {
+                        "sleep 0.15; printf 'READY\\n'; sleep 0.3"
+                    },
+                    "intent": "service",
+                    "readyPattern": "READY"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        let wait_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_wait_ready",
+                "arguments": {
+                    "jobId": "bg-1",
+                    "timeoutMs": 2_000
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(wait_result["success"], true);
+        let rendered = wait_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("wait text");
+        assert!(rendered.contains("Ready pattern: READY"));
+        assert!(rendered.contains("ready"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_invoke_recipe_waits_for_ready_pattern_before_http_call() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("local addr");
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut request = [0_u8; 4096];
+            let bytes = std::io::Read::read(&mut stream, &mut request).expect("read request");
+            let request = String::from_utf8_lossy(&request[..bytes]);
+            assert!(request.starts_with("GET /health HTTP/1.1\r\n"));
+            std::io::Write::write_all(
+                &mut stream,
+                b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
+            )
+            .expect("write response");
+        });
+
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": if cfg!(windows) {
+                        "ping -n 2 127.0.0.1 >NUL && echo READY && ping -n 2 127.0.0.1 >NUL"
+                    } else {
+                        "sleep 0.15; printf 'READY\\n'; sleep 0.3"
+                    },
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": format!("http://{addr}"),
+                    "readyPattern": "READY",
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health"
+                            }
+                        }
+                    ]
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        let started = std::time::Instant::now();
+        let invoke_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_invoke_recipe",
+                "arguments": {
+                    "jobId": "bg-1",
+                    "recipe": "health",
+                    "waitForReadyMs": 2_000
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(invoke_result["success"], true);
+        assert!(started.elapsed() >= std::time::Duration::from_millis(100));
+        let rendered = invoke_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("invoke text");
+        assert!(rendered.contains("Readiness: waited"));
+        assert!(rendered.contains("Status: HTTP/1.1 200 OK"));
         let _ = manager.terminate_all_running();
     }
 

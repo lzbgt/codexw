@@ -579,6 +579,7 @@ fn new_thread_requests_advertise_client_dynamic_tools() {
             "background_shell_poll",
             "background_shell_send",
             "background_shell_attach",
+            "background_shell_wait_ready",
             "background_shell_invoke_recipe",
             "background_shell_list",
             "background_shell_terminate"

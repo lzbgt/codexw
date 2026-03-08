@@ -17,12 +17,15 @@ use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 use url::Url;
 
 const DEFAULT_POLL_LIMIT: usize = 40;
 const MAX_POLL_LIMIT: usize = 200;
 const MAX_STORED_LINES: usize = 2_000;
 const MAX_RENDERED_RECENT_LINES: usize = 3;
+const DEFAULT_READY_WAIT_TIMEOUT_MS: u64 = 5_000;
+const READY_WAIT_POLL_INTERVAL_MS: u64 = 25;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) enum BackgroundShellIntent {
@@ -60,6 +63,12 @@ pub(crate) enum BackgroundShellServiceReadiness {
     Booting,
     Ready,
     Untracked,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BackgroundShellReadyWaitOutcome {
+    AlreadyReady,
+    BecameReady { waited_ms: u64 },
 }
 
 impl BackgroundShellServiceReadiness {
@@ -550,6 +559,26 @@ impl BackgroundShellManager {
         self.service_attachment_summary(&resolved_job_id)
     }
 
+    pub(crate) fn wait_ready_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments
+            .as_object()
+            .ok_or_else(|| "background_shell_wait_ready expects an object argument".to_string())?;
+        let job_id = object
+            .get("jobId")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_wait_ready requires `jobId`".to_string())?;
+        let timeout_ms = parse_background_shell_timeout_ms(
+            object.get("timeoutMs"),
+            "background_shell_wait_ready",
+        )?
+        .unwrap_or(DEFAULT_READY_WAIT_TIMEOUT_MS);
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        self.wait_ready_for_operator(&resolved_job_id, timeout_ms)
+    }
+
     pub(crate) fn invoke_recipe_from_tool(
         &self,
         arguments: &serde_json::Value,
@@ -567,10 +596,14 @@ impl BackgroundShellManager {
             .map(str::trim)
             .filter(|value| !value.is_empty())
             .ok_or_else(|| "background_shell_invoke_recipe requires `recipe`".to_string())?;
+        let wait_for_ready_ms = parse_background_shell_timeout_ms(
+            object.get("waitForReadyMs"),
+            "background_shell_invoke_recipe",
+        )?;
         let args =
             parse_recipe_arguments_map(object.get("args"), "background_shell_invoke_recipe")?;
         let resolved_job_id = self.resolve_job_reference(job_id)?;
-        self.invoke_recipe(&resolved_job_id, recipe_name, &args)
+        self.invoke_recipe(&resolved_job_id, recipe_name, &args, wait_for_ready_ms)
     }
 
     pub(crate) fn resolve_job_reference(&self, reference: &str) -> Result<String, String> {
@@ -671,13 +704,34 @@ impl BackgroundShellManager {
         self.service_attachment_summary(job_id)
     }
 
+    pub(crate) fn wait_ready_for_operator(
+        &self,
+        job_id: &str,
+        timeout_ms: u64,
+    ) -> Result<String, String> {
+        let outcome = self.wait_for_service_ready(job_id, timeout_ms)?;
+        let job = self.lookup_job(job_id)?;
+        let state = job.lock().expect("background shell job lock");
+        let job_label = state.alias.clone().unwrap_or_else(|| state.id.clone());
+        let ready_pattern = state.ready_pattern.clone().unwrap_or_default();
+        let message = match outcome {
+            BackgroundShellReadyWaitOutcome::AlreadyReady => {
+                format!("Service background shell job {job_label} is already ready.")
+            }
+            BackgroundShellReadyWaitOutcome::BecameReady { waited_ms } => format!(
+                "Service background shell job {job_label} became ready after {waited_ms}ms."
+            ),
+        };
+        Ok(format!("{message}\nReady pattern: {ready_pattern}"))
+    }
+
     #[cfg(test)]
     pub(crate) fn invoke_recipe_for_operator(
         &self,
         job_id: &str,
         recipe_name: &str,
     ) -> Result<String, String> {
-        self.invoke_recipe(job_id, recipe_name, &HashMap::new())
+        self.invoke_recipe(job_id, recipe_name, &HashMap::new(), None)
     }
 
     pub(crate) fn invoke_recipe_for_operator_with_args(
@@ -686,7 +740,7 @@ impl BackgroundShellManager {
         recipe_name: &str,
         args: &HashMap<String, String>,
     ) -> Result<String, String> {
-        self.invoke_recipe(job_id, recipe_name, args)
+        self.invoke_recipe(job_id, recipe_name, args, None)
     }
 
     pub(crate) fn running_count(&self) -> usize {
@@ -968,8 +1022,9 @@ impl BackgroundShellManager {
         job_id: &str,
         recipe_name: &str,
         args: &HashMap<String, String>,
+        wait_for_ready_ms: Option<u64>,
     ) -> Result<String, String> {
-        let (job_label, action, endpoint, parameters) = {
+        let (job_label, action, endpoint, parameters, has_ready_pattern) = {
             let job = self.lookup_job(job_id)?;
             let state = job.lock().expect("background shell job lock");
             if state.intent != BackgroundShellIntent::Service {
@@ -990,10 +1045,32 @@ impl BackgroundShellManager {
                 recipe.action,
                 state.service_endpoint.clone(),
                 recipe.parameters,
+                state.ready_pattern.is_some(),
             )
         };
         let resolved_args = resolve_recipe_arguments(&parameters, args)?;
         let action = apply_recipe_arguments_to_action(action, &resolved_args)?;
+        let readiness_note = if has_ready_pattern
+            && matches!(
+                action,
+                BackgroundShellInteractionAction::Http { .. }
+                    | BackgroundShellInteractionAction::Tcp { .. }
+                    | BackgroundShellInteractionAction::Redis { .. }
+            ) {
+            let wait_timeout_ms = wait_for_ready_ms.unwrap_or(DEFAULT_READY_WAIT_TIMEOUT_MS);
+            if wait_timeout_ms == 0 {
+                None
+            } else {
+                match self.wait_for_service_ready(job_id, wait_timeout_ms)? {
+                    BackgroundShellReadyWaitOutcome::AlreadyReady => None,
+                    BackgroundShellReadyWaitOutcome::BecameReady { waited_ms } => Some(format!(
+                        "Readiness: waited {waited_ms}ms for service readiness."
+                    )),
+                }
+            }
+        } else {
+            None
+        };
 
         match action {
             BackgroundShellInteractionAction::Informational => Err(format!(
@@ -1004,14 +1081,24 @@ impl BackgroundShellManager {
                 append_newline,
             } => {
                 let bytes_written = self.send_input_to_job(job_id, &text, append_newline)?;
-                Ok(format!(
-                    "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nSent {bytes_written} byte{} to stdin.",
-                    interaction_action_summary(&BackgroundShellInteractionAction::Stdin {
-                        text,
-                        append_newline,
-                    }),
+                let mut lines = vec![
+                    format!("Invoked recipe `{recipe_name}` on background shell job {job_label}."),
+                    format!(
+                        "Action: {}",
+                        interaction_action_summary(&BackgroundShellInteractionAction::Stdin {
+                            text,
+                            append_newline,
+                        })
+                    ),
+                ];
+                if let Some(note) = readiness_note {
+                    lines.push(note);
+                }
+                lines.push(format!(
+                    "Sent {bytes_written} byte{} to stdin.",
                     if bytes_written == 1 { "" } else { "s" }
-                ))
+                ));
+                Ok(lines.join("\n"))
             }
             BackgroundShellInteractionAction::Http {
                 method,
@@ -1033,17 +1120,25 @@ impl BackgroundShellManager {
                     &headers,
                     expected_status,
                 )?;
-                Ok(format!(
-                    "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nResponse:\n{}",
-                    interaction_action_summary(&BackgroundShellInteractionAction::Http {
-                        method,
-                        path,
-                        body,
-                        headers,
-                        expected_status,
-                    }),
-                    response
-                ))
+                let mut lines = vec![
+                    format!("Invoked recipe `{recipe_name}` on background shell job {job_label}."),
+                    format!(
+                        "Action: {}",
+                        interaction_action_summary(&BackgroundShellInteractionAction::Http {
+                            method,
+                            path,
+                            body,
+                            headers,
+                            expected_status,
+                        })
+                    ),
+                ];
+                if let Some(note) = readiness_note {
+                    lines.push(note);
+                }
+                lines.push("Response:".to_string());
+                lines.push(response);
+                Ok(lines.join("\n"))
             }
             BackgroundShellInteractionAction::Tcp {
                 payload,
@@ -1063,16 +1158,24 @@ impl BackgroundShellManager {
                     expect_substring.as_deref(),
                     read_timeout_ms,
                 )?;
-                Ok(format!(
-                    "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nResponse:\n{}",
-                    interaction_action_summary(&BackgroundShellInteractionAction::Tcp {
-                        payload,
-                        append_newline,
-                        expect_substring,
-                        read_timeout_ms,
-                    }),
-                    response
-                ))
+                let mut lines = vec![
+                    format!("Invoked recipe `{recipe_name}` on background shell job {job_label}."),
+                    format!(
+                        "Action: {}",
+                        interaction_action_summary(&BackgroundShellInteractionAction::Tcp {
+                            payload,
+                            append_newline,
+                            expect_substring,
+                            read_timeout_ms,
+                        })
+                    ),
+                ];
+                if let Some(note) = readiness_note {
+                    lines.push(note);
+                }
+                lines.push("Response:".to_string());
+                lines.push(response);
+                Ok(lines.join("\n"))
             }
             BackgroundShellInteractionAction::Redis {
                 command,
@@ -1090,16 +1193,75 @@ impl BackgroundShellManager {
                     expect_substring.as_deref(),
                     read_timeout_ms,
                 )?;
-                Ok(format!(
-                    "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nResponse:\n{}",
-                    interaction_action_summary(&BackgroundShellInteractionAction::Redis {
-                        command,
-                        expect_substring,
-                        read_timeout_ms,
-                    }),
-                    response
-                ))
+                let mut lines = vec![
+                    format!("Invoked recipe `{recipe_name}` on background shell job {job_label}."),
+                    format!(
+                        "Action: {}",
+                        interaction_action_summary(&BackgroundShellInteractionAction::Redis {
+                            command,
+                            expect_substring,
+                            read_timeout_ms,
+                        })
+                    ),
+                ];
+                if let Some(note) = readiness_note {
+                    lines.push(note);
+                }
+                lines.push("Response:".to_string());
+                lines.push(response);
+                Ok(lines.join("\n"))
             }
+        }
+    }
+
+    fn wait_for_service_ready(
+        &self,
+        job_id: &str,
+        timeout_ms: u64,
+    ) -> Result<BackgroundShellReadyWaitOutcome, String> {
+        let start = Instant::now();
+        loop {
+            let job = self.lookup_job(job_id)?;
+            let state = job.lock().expect("background shell job lock");
+            if state.intent != BackgroundShellIntent::Service {
+                return Err(format!(
+                    "background shell job `{job_id}` is not a service shell"
+                ));
+            }
+            let readiness = service_readiness_for_state(&state).expect("service readiness");
+            match readiness {
+                BackgroundShellServiceReadiness::Ready => {
+                    let waited_ms = start.elapsed().as_millis() as u64;
+                    return Ok(if waited_ms == 0 {
+                        BackgroundShellReadyWaitOutcome::AlreadyReady
+                    } else {
+                        BackgroundShellReadyWaitOutcome::BecameReady { waited_ms }
+                    });
+                }
+                BackgroundShellServiceReadiness::Untracked => {
+                    return Err(format!(
+                        "background shell job `{job_id}` does not declare a `readyPattern`; readiness is untracked"
+                    ));
+                }
+                BackgroundShellServiceReadiness::Booting => {
+                    if !matches!(state.status, BackgroundShellJobStatus::Running) {
+                        return Err(format!(
+                            "background shell job `{job_id}` stopped before reaching its ready pattern"
+                        ));
+                    }
+                }
+            }
+            drop(state);
+            let waited_ms = start.elapsed().as_millis() as u64;
+            if waited_ms >= timeout_ms {
+                return Err(format!(
+                    "background shell job `{job_id}` did not become ready within {timeout_ms}ms"
+                ));
+            }
+            let remaining_ms = timeout_ms.saturating_sub(waited_ms);
+            thread::sleep(Duration::from_millis(
+                READY_WAIT_POLL_INTERVAL_MS.min(remaining_ms.max(1)),
+            ));
         }
     }
 }
@@ -1180,6 +1342,19 @@ fn parse_background_shell_ready_pattern(
     value: Option<&serde_json::Value>,
 ) -> Result<Option<String>, String> {
     parse_background_shell_optional_string(value, "readyPattern")
+}
+
+fn parse_background_shell_timeout_ms(
+    value: Option<&serde_json::Value>,
+    context: &str,
+) -> Result<Option<u64>, String> {
+    match value {
+        None => Ok(None),
+        Some(raw) => raw
+            .as_u64()
+            .map(Some)
+            .ok_or_else(|| format!("{context} timeout field must be a non-negative integer")),
+    }
 }
 
 fn parse_background_shell_interaction_recipes(
@@ -2485,6 +2660,16 @@ mod tests {
         "echo booting && echo READY && ping -n 2 127.0.0.1 >NUL"
     }
 
+    #[cfg(unix)]
+    fn delayed_service_ready_command() -> &'static str {
+        "sleep 0.15; printf 'READY\\n'; sleep 0.4"
+    }
+
+    #[cfg(windows)]
+    fn delayed_service_ready_command() -> &'static str {
+        "ping -n 2 127.0.0.1 >NUL && echo READY && ping -n 2 127.0.0.1 >NUL"
+    }
+
     fn spawn_test_http_server(
         expected_method: &'static str,
         expected_path: &'static str,
@@ -2695,6 +2880,48 @@ mod tests {
             manager.running_service_count_by_readiness(BackgroundShellServiceReadiness::Ready),
             1
         );
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn wait_ready_for_operator_reports_service_readiness() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": delayed_service_ready_command(),
+                    "intent": "service",
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start ready-pattern service shell");
+
+        let rendered = manager
+            .wait_ready_for_operator("bg-1", 2_000)
+            .expect("wait for service readiness");
+        assert!(rendered.contains("Ready pattern: READY"));
+        assert!(rendered.contains("ready"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn wait_ready_for_operator_rejects_untracked_services() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.2",
+                    "intent": "service"
+                }),
+                "/tmp",
+            )
+            .expect("start untracked service shell");
+
+        let err = manager
+            .wait_ready_for_operator("bg-1", 500)
+            .expect_err("untracked service should reject ready wait");
+        assert!(err.contains("does not declare a `readyPattern`"));
         let _ = manager.terminate_all_running();
     }
 
@@ -2975,6 +3202,44 @@ mod tests {
         assert!(rendered.contains("Action: http GET /health"));
         assert!(rendered.contains("Status: HTTP/1.1 200 OK"));
         assert!(rendered.contains("ok"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_http_action_waits_for_booting_service_readiness() {
+        let endpoint = spawn_test_http_server("GET", "/health", "ok");
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": delayed_service_ready_command(),
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": endpoint,
+                    "readyPattern": "READY",
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health"
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let started = std::time::Instant::now();
+        let rendered = manager
+            .invoke_recipe_for_operator("bg-1", "health")
+            .expect("invoke recipe after readiness wait");
+        assert!(started.elapsed() >= Duration::from_millis(100));
+        assert!(rendered.contains("Readiness: waited"));
+        assert!(rendered.contains("Status: HTTP/1.1 200 OK"));
         let _ = manager.terminate_all_running();
     }
 

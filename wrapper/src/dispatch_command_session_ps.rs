@@ -79,6 +79,36 @@ pub(crate) fn handle_ps_command(
             }
         };
         output.block_stdout("Service Attachment", &rendered)?;
+    } else if matches!(action, Some("wait")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps wait <jobId|alias|n> [timeoutMs]")?;
+            return Ok(true);
+        };
+        let job_id = match state.background_shells.resolve_job_reference(reference) {
+            Ok(job_id) => job_id,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let timeout_ms = match parse_ps_wait_timeout(args.get(2).copied()) {
+            Ok(timeout_ms) => timeout_ms,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let rendered = match state
+            .background_shells
+            .wait_ready_for_operator(&job_id, timeout_ms)
+        {
+            Ok(rendered) => rendered,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        output.block_stdout("Service Ready", &rendered)?;
     } else if matches!(action, Some("run" | "invoke")) {
         let Some((reference, recipe, invoke_args)) = parse_ps_run_args(raw_args) else {
             output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe> [json-args]")?;
@@ -189,7 +219,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [blockers|agents|shells|services|terminals|attach|run|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [blockers|agents|shells|services|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
@@ -260,6 +290,14 @@ fn parse_operator_recipe_args(
         args.insert(key.clone(), rendered);
     }
     Ok(args)
+}
+
+fn parse_ps_wait_timeout(raw: Option<&str>) -> Result<u64> {
+    let Some(raw) = raw else {
+        return Ok(5_000);
+    };
+    raw.parse::<u64>()
+        .map_err(|_| anyhow::anyhow!("timeoutMs must be a non-negative integer"))
 }
 
 pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {
