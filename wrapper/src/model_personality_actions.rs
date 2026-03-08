@@ -6,6 +6,9 @@ use crate::catalog_backend_views::render_models_list;
 use crate::model_catalog::effective_model_entry;
 use crate::model_catalog::extract_models;
 use crate::output::Output;
+use crate::selection_flow::apply_model_choice;
+use crate::selection_flow::open_model_picker;
+use crate::selection_flow::open_personality_picker;
 use crate::state::AppState;
 
 use crate::model_personality_view::personality_label;
@@ -15,7 +18,12 @@ use crate::model_personality_view::render_personality_options;
 pub(crate) enum ModelsAction {
     CacheOnly,
     ShowModels,
-    ShowPersonality,
+    OpenModelPicker,
+    OpenPersonalityPicker,
+    SetModel {
+        selector: String,
+        effort: Option<String>,
+    },
     SetPersonality(String),
 }
 
@@ -28,6 +36,7 @@ pub(crate) fn apply_personality_selection(
     let normalized = selector.trim().to_ascii_lowercase();
     if matches!(normalized.as_str(), "default" | "clear") {
         state.active_personality = None;
+        state.session_overrides.personality = Some(None);
         output.line_stderr("[session] personality cleared; using backend default")?;
         return Ok(());
     }
@@ -46,6 +55,7 @@ pub(crate) fn apply_personality_selection(
         return Ok(());
     }
     state.active_personality = Some(normalized.clone());
+    state.session_overrides.personality = Some(Some(normalized.clone()));
     output.line_stderr(format!(
         "[session] personality set to {}",
         personality_label(&normalized)
@@ -66,8 +76,14 @@ pub(crate) fn apply_models_action(
         ModelsAction::ShowModels => {
             output.block_stdout("Models", &render_models_list(result))?;
         }
-        ModelsAction::ShowPersonality => {
-            output.block_stdout("Personality", &render_personality_options(cli, state))?;
+        ModelsAction::OpenModelPicker => {
+            open_model_picker(cli, state, output)?;
+        }
+        ModelsAction::OpenPersonalityPicker => {
+            open_personality_picker(cli, state, output)?;
+        }
+        ModelsAction::SetModel { selector, effort } => {
+            apply_model_choice(&selector, effort.as_deref(), cli, state, output)?;
         }
         ModelsAction::SetPersonality(selector) => {
             apply_personality_selection(cli, state, &selector, output)?;

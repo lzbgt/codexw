@@ -41,11 +41,11 @@ pub(crate) fn render_status_overview(
             state.active_exec_process_id.as_deref().unwrap_or("-")
         ),
         format!("auto-continue   {}", state.auto_continue),
-        format!("approval        {}", approval_policy(cli)),
-        format!("sandbox(thread) {}", thread_sandbox_mode(cli)),
+        format!("approval        {}", approval_policy(cli, state)),
+        format!("sandbox(thread) {}", thread_sandbox_mode(cli, state)),
         format!(
             "sandbox(turn)   {}",
-            summarize_sandbox_policy(&turn_sandbox_policy(cli))
+            summarize_sandbox_policy(&turn_sandbox_policy(cli, state))
         ),
         format!("model           {}", effective_model_summary),
         format!(

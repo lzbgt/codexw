@@ -8,6 +8,7 @@ use crate::dispatch_commands::is_builtin_command;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_command_exec;
+use crate::selection_flow::handle_pending_selection;
 use crate::state::AppState;
 use crate::state::emit_status_line;
 use crate::state::summarize_text;
@@ -53,6 +54,10 @@ pub(crate) fn try_handle_prefixed_submission(
         )?;
         send_command_exec(writer, state, cli, resolved_cwd, command.to_string())?;
         return Ok(Some(true));
+    }
+
+    if state.pending_selection.is_some() {
+        return handle_pending_selection(trimmed, cli, state, output).map(Some);
     }
 
     if state.startup_resume_picker && state.thread_id.is_none() {

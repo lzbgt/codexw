@@ -37,13 +37,30 @@ pub(crate) fn send_turn_start(
         "threadId": thread_id,
         "input": submission.items,
         "cwd": resolved_cwd,
-        "approvalPolicy": approval_policy(cli),
-        "sandboxPolicy": turn_sandbox_policy(cli),
+        "approvalPolicy": approval_policy(cli, state),
+        "sandboxPolicy": turn_sandbox_policy(cli, state),
         "model": cli.model,
         "summary": reasoning_summary(cli),
     });
-    if let Some(personality) = state.active_personality.as_deref() {
-        params["personality"] = Value::String(personality.to_string());
+    if let Some(model) = state.session_overrides.model.as_ref() {
+        params["model"] = model
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(service_tier) = state.session_overrides.service_tier.as_ref() {
+        params["serviceTier"] = service_tier
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(effort) = state.session_overrides.reasoning_effort.as_ref() {
+        params["effort"] = effort
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(personality) = state.session_overrides.personality.as_ref() {
+        params["personality"] = personality
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
     }
     if let Some(collaboration_mode) =
         current_collaboration_mode_value(state.active_collaboration_mode.as_ref())

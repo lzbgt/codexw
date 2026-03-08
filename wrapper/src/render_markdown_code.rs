@@ -1,4 +1,5 @@
 use std::sync::LazyLock;
+use std::sync::RwLock;
 
 use ratatui::style::Color;
 use ratatui::style::Style;
@@ -13,18 +14,47 @@ use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
 
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
-static SYNTAX_THEME: LazyLock<Theme> = LazyLock::new(|| {
-    let themes = ThemeSet::load_defaults();
-    themes
+static THEME_SET: LazyLock<ThemeSet> = LazyLock::new(ThemeSet::load_defaults);
+static THEME_NAME: LazyLock<RwLock<String>> =
+    LazyLock::new(|| RwLock::new("base16-ocean.dark".to_string()));
+
+fn selected_theme() -> Theme {
+    let theme_name = THEME_NAME
+        .read()
+        .map(|value| value.clone())
+        .unwrap_or_else(|_| "base16-ocean.dark".to_string());
+    THEME_SET
         .themes
-        .get("base16-ocean.dark")
+        .get(theme_name.as_str())
         .cloned()
         .unwrap_or_default()
-});
+}
+
+pub(crate) fn available_theme_names() -> Vec<String> {
+    let mut names = THEME_SET.themes.keys().cloned().collect::<Vec<_>>();
+    names.sort();
+    names
+}
+
+pub(crate) fn current_theme_name() -> String {
+    THEME_NAME
+        .read()
+        .map(|value| value.clone())
+        .unwrap_or_else(|_| "base16-ocean.dark".to_string())
+}
+
+pub(crate) fn set_theme(theme_name: &str) {
+    if THEME_SET.themes.contains_key(theme_name)
+        && let Ok(mut current) = THEME_NAME.write()
+    {
+        *current = theme_name.to_string();
+    }
+}
 
 pub(crate) fn render_code_block(language: &str, code: &str) -> Text<'static> {
     let syntax = syntax_for_language(language);
-    let mut highlighter = HighlightLines::new(syntax, &SYNTAX_THEME);
+    let theme = selected_theme();
+    let mut highlighter = HighlightLines::new(syntax, &theme);
     let mut lines = Vec::new();
     if !language.trim().is_empty() {
         lines.push(Line::from(Span::styled(
@@ -72,7 +102,8 @@ pub(crate) fn render_code_block(language: &str, code: &str) -> Text<'static> {
 
 pub(crate) fn highlight_code_line(language: &str, line: &str) -> Line<'static> {
     let syntax = syntax_for_language(language);
-    let mut highlighter = HighlightLines::new(syntax, &SYNTAX_THEME);
+    let theme = selected_theme();
+    let mut highlighter = HighlightLines::new(syntax, &theme);
     match highlighter.highlight_line(line, &SYNTAX_SET) {
         Ok(ranges) => Line::from(
             ranges

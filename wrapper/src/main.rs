@@ -85,6 +85,7 @@ mod rpc;
 mod runtime_event_sources;
 mod runtime_keys;
 mod runtime_process;
+mod selection_flow;
 mod session_prompt_status_active;
 mod session_prompt_status_ready;
 mod session_realtime_item;
@@ -139,6 +140,8 @@ mod main_test_session_personality_status;
 mod main_test_session_realtime;
 #[cfg(test)]
 mod main_test_session_render;
+#[cfg(test)]
+mod main_test_session_selections;
 #[cfg(test)]
 mod main_test_session_status;
 #[cfg(test)]

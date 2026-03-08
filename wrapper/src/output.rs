@@ -16,6 +16,7 @@ use crate::render_block_markdown::tint_text;
 use crate::render_block_structured::render_command_text;
 use crate::render_block_structured::render_diff_text;
 use crate::render_block_structured::render_plain_text;
+use crate::render_block_structured::render_plan_text;
 use crate::render_prompt::fit_status_line;
 use crate::render_prompt::render_committed_prompt;
 use crate::render_prompt::render_prompt_lines;
@@ -217,10 +218,13 @@ pub(crate) fn render_block_lines_to_ansi(title: &str, body: &str) -> Vec<String>
             BlockKind::Markdown => render_markdown_text(body).lines,
             BlockKind::Diff => render_diff_text(body).lines,
             BlockKind::Command => render_command_text(body).lines,
+            BlockKind::Plan => render_plan_text(body).lines,
             BlockKind::Thinking => {
-                tint_text(render_markdown_text(body), ratatui::style::Color::DarkGray).lines
+                tint_text(render_markdown_text(body), ratatui::style::Color::Gray).lines
             }
-            BlockKind::Plain => render_plain_text(body).lines,
+            BlockKind::Plain => {
+                tint_text(render_plain_text(body), ratatui::style::Color::Gray).lines
+            }
         });
     }
     text.lines.iter().map(line_to_ansi).collect()

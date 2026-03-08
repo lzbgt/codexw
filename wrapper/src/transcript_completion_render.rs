@@ -9,7 +9,7 @@ pub(crate) fn render_command_completion(
     exit_code: &str,
     output: Option<&str>,
 ) -> String {
-    let mut rendered = format!("{command}\nstatus  {status}\nexit    {exit_code}");
+    let mut rendered = format!("$ {command}\nstatus  {status}\nexit    {exit_code}");
     if let Some(output) = output {
         let trimmed = output.trim_end();
         if !trimmed.is_empty() {
@@ -26,7 +26,7 @@ pub(crate) fn render_local_command_completion(
     stdout: &str,
     stderr: &str,
 ) -> String {
-    let mut rendered = format!("{command}\nexit    {exit_code}");
+    let mut rendered = format!("$ {command}\nexit    {exit_code}");
     if !stdout.trim().is_empty() {
         rendered.push_str("\n\n[stdout]\n");
         rendered.push_str(stdout.trim_end());

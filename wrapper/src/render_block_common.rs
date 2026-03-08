@@ -9,6 +9,7 @@ pub(crate) enum BlockKind {
     Markdown,
     Diff,
     Command,
+    Plan,
     Thinking,
     Plain,
 }
@@ -17,6 +18,14 @@ pub(crate) fn classify_block(title: &str, body: &str) -> BlockKind {
     let title = title.to_ascii_lowercase();
     if title.contains("assistant") {
         BlockKind::Markdown
+    } else if title.contains("proposed plan") {
+        BlockKind::Markdown
+    } else if title.contains("updated plan")
+        || body
+            .lines()
+            .any(|line| line.starts_with("✔ ") || line.starts_with("□ "))
+    {
+        BlockKind::Plan
     } else if title.contains("thinking") {
         BlockKind::Thinking
     } else if title.contains("diff")
@@ -43,8 +52,6 @@ pub(crate) fn render_title_line(title: &str) -> Line<'static> {
         Color::DarkGray
     } else if title.to_ascii_lowercase().contains("diff") {
         Color::Blue
-    } else if title.to_ascii_lowercase().contains("command") {
-        Color::Green
     } else {
         Color::DarkGray
     };

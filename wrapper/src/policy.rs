@@ -2,20 +2,40 @@ use serde_json::Value;
 use serde_json::json;
 
 use crate::Cli;
+use crate::state::AppState;
 
-pub(crate) fn approval_policy(cli: &Cli) -> &'static str {
+pub(crate) fn approval_policy(cli: &Cli, state: &AppState) -> String {
     let _ = cli;
-    "never"
+    state
+        .session_overrides
+        .approval_policy
+        .clone()
+        .unwrap_or_else(|| "never".to_string())
 }
 
-pub(crate) fn thread_sandbox_mode(cli: &Cli) -> &'static str {
+pub(crate) fn thread_sandbox_mode(cli: &Cli, state: &AppState) -> String {
     let _ = cli;
-    "danger-full-access"
+    state
+        .session_overrides
+        .thread_sandbox_mode
+        .clone()
+        .unwrap_or_else(|| "danger-full-access".to_string())
 }
 
-pub(crate) fn turn_sandbox_policy(cli: &Cli) -> Value {
-    let _ = cli;
-    json!({"type": "dangerFullAccess"})
+pub(crate) fn turn_sandbox_policy(cli: &Cli, state: &AppState) -> Value {
+    let sandbox_mode = thread_sandbox_mode(cli, state);
+    match sandbox_mode.as_str() {
+        "read-only" => json!({
+            "type": "readOnly",
+            "networkAccess": false,
+            "access": {"type": "fullAccess"},
+        }),
+        "workspace-write" => json!({
+            "type": "workspaceWrite",
+            "networkAccess": false,
+        }),
+        _ => json!({"type": "dangerFullAccess"}),
+    }
 }
 
 pub(crate) fn reasoning_summary(cli: &Cli) -> &'static str {

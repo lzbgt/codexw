@@ -41,7 +41,7 @@ pub(crate) fn send_command_exec(
                 "processId": process_id,
                 "cwd": resolved_cwd,
                 "streamStdoutStderr": true,
-                "sandboxPolicy": turn_sandbox_policy(cli),
+                "sandboxPolicy": turn_sandbox_policy(cli, state),
             }),
         },
     )

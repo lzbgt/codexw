@@ -34,8 +34,7 @@ pub(crate) fn handle_buffer_update(
         "turn/plan/updated" => {
             let plan_text = format_plan(params);
             if !plan_text.is_empty() {
-                output.line_stdout("[plan]")?;
-                output.line_stdout(plan_text)?;
+                output.block_stdout("Updated Plan", &plan_text)?;
             }
         }
         "item/commandExecution/outputDelta" => {

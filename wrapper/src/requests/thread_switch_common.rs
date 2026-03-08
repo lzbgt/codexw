@@ -39,20 +39,36 @@ pub(crate) fn send_thread_start(
     resolved_cwd: &str,
     initial_prompt: Option<String>,
 ) -> Result<()> {
+    let mut params = json!({
+        "model": cli.model,
+        "modelProvider": cli.model_provider,
+        "cwd": resolved_cwd,
+        "approvalPolicy": approval_policy(cli, state),
+        "sandbox": thread_sandbox_mode(cli, state),
+        "serviceName": "codexw_terminal",
+        "experimentalRawEvents": false,
+    });
+    if let Some(model) = state.session_overrides.model.as_ref() {
+        params["model"] = model
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(service_tier) = state.session_overrides.service_tier.as_ref() {
+        params["serviceTier"] = service_tier
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(personality) = state.session_overrides.personality.as_ref() {
+        params["personality"] = personality
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
     send_thread_switch_request(
         writer,
         state,
         "thread/start",
         PendingRequest::StartThread { initial_prompt },
-        json!({
-            "model": cli.model,
-            "modelProvider": cli.model_provider,
-            "cwd": resolved_cwd,
-            "approvalPolicy": approval_policy(cli),
-            "sandbox": thread_sandbox_mode(cli),
-            "serviceName": "codexw_terminal",
-            "experimentalRawEvents": false,
-        }),
+        params,
     )
 }
 
@@ -64,19 +80,35 @@ pub(crate) fn send_thread_resume(
     thread_id: String,
     initial_prompt: Option<String>,
 ) -> Result<()> {
+    let mut params = json!({
+        "threadId": thread_id,
+        "model": cli.model,
+        "modelProvider": cli.model_provider,
+        "cwd": resolved_cwd,
+        "approvalPolicy": approval_policy(cli, state),
+        "sandbox": thread_sandbox_mode(cli, state),
+    });
+    if let Some(model) = state.session_overrides.model.as_ref() {
+        params["model"] = model
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(service_tier) = state.session_overrides.service_tier.as_ref() {
+        params["serviceTier"] = service_tier
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(personality) = state.session_overrides.personality.as_ref() {
+        params["personality"] = personality
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
     send_thread_switch_request(
         writer,
         state,
         "thread/resume",
         PendingRequest::ResumeThread { initial_prompt },
-        json!({
-            "threadId": thread_id,
-            "model": cli.model,
-            "modelProvider": cli.model_provider,
-            "cwd": resolved_cwd,
-            "approvalPolicy": approval_policy(cli),
-            "sandbox": thread_sandbox_mode(cli),
-        }),
+        params,
     )
 }
 
@@ -88,18 +120,29 @@ pub(crate) fn send_thread_fork(
     thread_id: String,
     initial_prompt: Option<String>,
 ) -> Result<()> {
+    let mut params = json!({
+        "threadId": thread_id,
+        "cwd": resolved_cwd,
+        "model": cli.model,
+        "modelProvider": cli.model_provider,
+        "approvalPolicy": approval_policy(cli, state),
+        "sandbox": thread_sandbox_mode(cli, state),
+    });
+    if let Some(model) = state.session_overrides.model.as_ref() {
+        params["model"] = model
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if let Some(service_tier) = state.session_overrides.service_tier.as_ref() {
+        params["serviceTier"] = service_tier
+            .as_ref()
+            .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
     send_thread_switch_request(
         writer,
         state,
         "thread/fork",
         PendingRequest::ForkThread { initial_prompt },
-        json!({
-            "threadId": thread_id,
-            "cwd": resolved_cwd,
-            "model": cli.model,
-            "modelProvider": cli.model_provider,
-            "approvalPolicy": approval_policy(cli),
-            "sandbox": thread_sandbox_mode(cli),
-        }),
+        params,
     )
 }

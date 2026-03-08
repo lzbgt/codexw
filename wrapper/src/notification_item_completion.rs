@@ -69,7 +69,14 @@ pub(crate) fn render_item_completed(
                 output.block_stdout("Thinking", &rendered)?;
             }
         }
-        "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" | "plan" => {
+        "plan" => {
+            output.finish_stream()?;
+            let rendered = get_string(item, &["text"]).unwrap_or("").trim().to_string();
+            if !rendered.is_empty() {
+                output.block_stdout("Proposed Plan", &rendered)?;
+            }
+        }
+        "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" => {
             output.finish_stream()?;
             output.block_stdout(
                 &format!("{} complete", humanize_item_type(item_type)),

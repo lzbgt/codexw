@@ -22,6 +22,25 @@ pub(crate) struct ProcessOutputBuffer {
     pub(crate) stderr: String,
 }
 
+#[derive(Debug, Clone, Default)]
+pub(crate) struct SessionOverrides {
+    pub(crate) model: Option<Option<String>>,
+    pub(crate) reasoning_effort: Option<Option<String>>,
+    pub(crate) service_tier: Option<Option<String>>,
+    pub(crate) personality: Option<Option<String>>,
+    pub(crate) approval_policy: Option<String>,
+    pub(crate) thread_sandbox_mode: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum PendingSelection {
+    Model,
+    ReasoningEffort { model_id: String },
+    Personality,
+    Permissions,
+    Theme,
+}
+
 pub(crate) struct AppState {
     pub(crate) thread_id: Option<String>,
     pub(crate) active_turn_id: Option<String>,
@@ -59,6 +78,8 @@ pub(crate) struct AppState {
     pub(crate) last_listed_thread_ids: Vec<String>,
     pub(crate) last_file_search_paths: Vec<String>,
     pub(crate) last_status_line: Option<String>,
+    pub(crate) session_overrides: SessionOverrides,
+    pub(crate) pending_selection: Option<PendingSelection>,
     pub(crate) resume_exit_hint_emitted: bool,
     pub(crate) raw_json: bool,
     pub(crate) pending: HashMap<RequestId, PendingRequest>,
@@ -104,6 +125,8 @@ impl AppState {
             last_listed_thread_ids: Vec::new(),
             last_file_search_paths: Vec::new(),
             last_status_line: None,
+            session_overrides: SessionOverrides::default(),
+            pending_selection: None,
             resume_exit_hint_emitted: false,
             raw_json,
             pending: HashMap::new(),
@@ -142,8 +165,8 @@ impl AppState {
         self.startup_resume_picker = false;
         self.objective = None;
         self.last_token_usage = None;
-        self.active_personality = None;
         self.active_collaboration_mode = None;
+        self.pending_selection = None;
     }
 
     pub(crate) fn take_pending_attachments(&mut self) -> (Vec<String>, Vec<String>) {

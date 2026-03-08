@@ -6,11 +6,12 @@ use crate::Cli;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_load_config;
+use crate::selection_flow::apply_permission_preset;
+use crate::selection_flow::open_permissions_picker;
 use crate::session_realtime_status::render_realtime_status;
 use crate::session_snapshot_overview::render_status_overview;
 use crate::session_snapshot_runtime::render_status_runtime;
 use crate::state::AppState;
-use crate::status_config::render_permissions_snapshot;
 use crate::transcript_completion_render::render_pending_attachments;
 
 #[allow(clippy::too_many_arguments)]
@@ -38,7 +39,11 @@ pub(crate) fn try_handle_session_status_command(
             true
         }
         "approvals" | "permissions" => {
-            output.block_stdout("Permissions", &render_permissions_snapshot(cli))?;
+            if args.is_empty() {
+                open_permissions_picker(cli, state, output)?;
+            } else {
+                apply_permission_preset(args[0], cli, state, output)?;
+            }
             true
         }
         "status" | "statusline" => {

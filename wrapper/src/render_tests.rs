@@ -5,6 +5,24 @@ use crate::render_prompt::render_committed_prompt;
 use crate::render_prompt::render_prompt_lines;
 use crate::transcript_completion_render::render_command_completion;
 
+fn strip_ansi(text: &str) -> String {
+    let mut out = String::new();
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\u{1b}' && chars.peek() == Some(&'[') {
+            chars.next();
+            for next in chars.by_ref() {
+                if ('@'..='~').contains(&next) {
+                    break;
+                }
+            }
+            continue;
+        }
+        out.push(ch);
+    }
+    out
+}
+
 #[test]
 fn assistant_blocks_render_with_ansi_styling() {
     let rendered = render_block_lines_to_ansi(
@@ -34,17 +52,45 @@ fn command_completion_preserves_shell_quotes_and_plain_labels() {
         "0",
         None,
     );
-    assert!(body.contains("/bin/zsh -lc \"sed -n '96,116p' README.md\""));
+    assert!(body.contains("$ /bin/zsh -lc \"sed -n '96,116p' README.md\""));
     assert!(body.contains("\nstatus  completed\nexit    0"));
     assert!(!body.contains("[status]"));
     assert!(!body.contains("[exit]"));
 
     let rendered = render_block_lines_to_ansi("Command complete", &body).join("\n");
-    assert!(rendered.contains("/bin/zsh -lc \"sed -n '96,116p' README.md\""));
-    assert!(rendered.contains("status"));
-    assert!(rendered.contains("completed"));
-    assert!(rendered.contains("exit"));
-    assert!(rendered.contains("0"));
+    let visible = strip_ansi(&rendered);
+    assert!(visible.contains("$ /bin/zsh -lc \"sed -n '96,116p' README.md\""));
+    assert!(visible.contains("status"));
+    assert!(visible.contains("completed"));
+    assert!(visible.contains("exit"));
+    assert!(visible.contains("0"));
+}
+
+#[test]
+fn updated_plan_blocks_use_checkbox_style() {
+    let rendered = render_block_lines_to_ansi(
+        "Updated Plan",
+        "Adapting plan\n✔ Explore codebase\n□ Implement feature\n◦ Write tests",
+    )
+    .join("\n");
+    let visible = strip_ansi(&rendered);
+    assert!(visible.contains("Updated Plan"));
+    assert!(visible.contains("✔ Explore codebase"));
+    assert!(visible.contains("□ Implement feature"));
+    assert!(visible.contains("◦ Write tests"));
+    assert!(rendered.contains("\u{1b}["));
+}
+
+#[test]
+fn proposed_plan_blocks_render_markdown_body() {
+    let rendered =
+        render_block_lines_to_ansi("Proposed Plan", "## Plan\n\n1. Inspect\n2. Patch").join("\n");
+    let visible = strip_ansi(&rendered);
+    assert!(visible.contains("Proposed Plan"));
+    assert!(visible.contains("## Plan"));
+    assert!(visible.contains("1. Inspect"));
+    assert!(visible.contains("2. Patch"));
+    assert!(rendered.contains("\u{1b}["));
 }
 
 #[test]

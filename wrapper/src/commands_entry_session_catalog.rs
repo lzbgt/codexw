@@ -19,12 +19,12 @@ pub(crate) const SESSION_CATALOG_COMMAND_ENTRIES: &[BuiltinCommandEntry] = &[
     BuiltinCommandEntry {
         name: "approvals",
         help_syntax: "approvals or /permissions",
-        description: "show automation and permission posture",
+        description: "choose automation and permission posture",
     },
     BuiltinCommandEntry {
         name: "permissions",
         help_syntax: "permissions or /approvals",
-        description: "show automation and permission posture",
+        description: "choose automation and permission posture",
     },
     BuiltinCommandEntry {
         name: "experimental",

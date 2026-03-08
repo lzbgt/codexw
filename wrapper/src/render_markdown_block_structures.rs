@@ -53,7 +53,7 @@ pub(crate) fn render_markdown_line(raw_line: &str, trimmed: &str) -> Option<Line
 
     if let Some((marker, content)) = parse_numbered_list(trimmed) {
         let mut spans = vec![Span::styled(
-            format!("{marker} "),
+            format!("{marker}. "),
             Style::default()
                 .fg(Color::LightBlue)
                 .add_modifier(Modifier::BOLD),

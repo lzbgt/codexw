@@ -8,6 +8,9 @@ use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_feedback_upload;
 use crate::requests::send_logout_account;
+use crate::selection_flow::apply_theme_choice;
+use crate::selection_flow::open_theme_picker;
+use crate::selection_flow::toggle_fast_mode;
 use crate::state::AppState;
 use crate::state::summarize_text;
 
@@ -51,10 +54,20 @@ pub(crate) fn try_handle_session_meta_command(
             send_logout_account(writer, state)?;
             true
         }
-        "fast"
-        | "agent"
+        "fast" => {
+            toggle_fast_mode(state, output)?;
+            true
+        }
+        "theme" => {
+            if args.is_empty() {
+                open_theme_picker(state, output)?;
+            } else {
+                apply_theme_choice(&args.join(" "), state, output)?;
+            }
+            true
+        }
+        "agent"
         | "multi-agents"
-        | "theme"
         | "rollout"
         | "sandbox-add-read-dir"
         | "setup-default-sandbox"
