@@ -86,13 +86,15 @@ mod state_core;
 mod state_helpers;
 mod status_account;
 mod status_config;
-mod status_rate_limits;
+mod status_rate_credits;
+mod status_rate_windows;
 mod status_token_usage;
 mod status_views;
+mod transcript_approval_summary;
 mod transcript_completion_render;
+mod transcript_item_summary;
 mod transcript_plan_render;
-mod transcript_render;
-mod transcript_summary;
+mod transcript_status_summary;
 
 #[cfg(test)]
 mod editor_tests;

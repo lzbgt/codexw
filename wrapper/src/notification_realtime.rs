@@ -10,7 +10,7 @@ use crate::session_realtime_item::render_realtime_item;
 use crate::state::AppState;
 use crate::state::emit_status_line;
 use crate::state::get_string;
-use crate::transcript_summary::summarize_thread_status_for_display;
+use crate::transcript_status_summary::summarize_thread_status_for_display;
 
 pub(crate) fn handle_realtime_notification(
     notification: &RpcNotification,

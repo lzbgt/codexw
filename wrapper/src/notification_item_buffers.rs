@@ -8,7 +8,8 @@ use crate::state::buffer_item_delta;
 use crate::state::buffer_process_delta;
 use crate::state::get_string;
 use crate::status_views::summarize_value;
-use crate::transcript_render::format_plan;
+use crate::transcript_approval_summary::summarize_terminal_interaction;
+use crate::transcript_plan_render::format_plan;
 
 pub(crate) fn handle_buffer_update(
     method: &str,
@@ -43,8 +44,7 @@ pub(crate) fn handle_buffer_update(
         "item/fileChange/outputDelta" => buffer_item_delta(&mut state.file_output_buffers, params),
         "item/commandExecution/terminalInteraction" => {
             if cli.verbose_events
-                && let Some(summary) =
-                    crate::transcript_summary::summarize_terminal_interaction(params)
+                && let Some(summary) = summarize_terminal_interaction(params)
             {
                 output.line_stderr(format!("[command-input] {summary}"))?;
             }

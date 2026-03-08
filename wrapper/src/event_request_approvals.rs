@@ -10,8 +10,8 @@ use crate::policy::choose_first_allowed_decision;
 use crate::requests::send_json;
 use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcRequest;
-use crate::transcript_summary::summarize_command_approval_request;
-use crate::transcript_summary::summarize_generic_approval_request;
+use crate::transcript_approval_summary::summarize_command_approval_request;
+use crate::transcript_approval_summary::summarize_generic_approval_request;
 
 pub(crate) fn handle_approval_request(
     request: &RpcRequest,

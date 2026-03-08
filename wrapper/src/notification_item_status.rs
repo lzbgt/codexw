@@ -6,11 +6,11 @@ use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
 use crate::state::summarize_text;
-use crate::transcript_summary::humanize_item_type;
-use crate::transcript_summary::summarize_file_change_paths;
-use crate::transcript_summary::summarize_model_reroute;
-use crate::transcript_summary::summarize_server_request_resolved;
-use crate::transcript_summary::summarize_tool_item;
+use crate::transcript_approval_summary::summarize_server_request_resolved;
+use crate::transcript_item_summary::humanize_item_type;
+use crate::transcript_item_summary::summarize_file_change_paths;
+use crate::transcript_item_summary::summarize_tool_item;
+use crate::transcript_status_summary::summarize_model_reroute;
 
 pub(crate) fn handle_status_update(
     method: &str,

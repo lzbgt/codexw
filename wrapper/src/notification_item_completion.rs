@@ -4,11 +4,11 @@ use serde_json::Value;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
-use crate::transcript_render::render_command_completion;
-use crate::transcript_render::render_file_change_completion;
-use crate::transcript_render::render_reasoning_item;
-use crate::transcript_summary::humanize_item_type;
-use crate::transcript_summary::summarize_tool_item;
+use crate::transcript_completion_render::render_command_completion;
+use crate::transcript_completion_render::render_file_change_completion;
+use crate::transcript_item_summary::humanize_item_type;
+use crate::transcript_item_summary::summarize_tool_item;
+use crate::transcript_plan_render::render_reasoning_item;
 
 pub(crate) fn render_item_completed(
     params: &Value,

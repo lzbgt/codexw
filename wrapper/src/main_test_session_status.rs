@@ -2,7 +2,7 @@ use crate::Cli;
 use crate::session_prompt_status::render_prompt_status;
 use crate::session_snapshot_overview::render_status_overview;
 use crate::session_snapshot_runtime::render_status_runtime;
-use crate::transcript_summary::summarize_thread_status_for_display;
+use crate::transcript_status_summary::summarize_thread_status_for_display;
 use serde_json::json;
 
 #[test]

@@ -1,7 +1,7 @@
 use serde_json::Value;
 
 use crate::state::get_string;
-use crate::transcript_summary::summarize_file_change_paths;
+use crate::transcript_item_summary::summarize_file_change_paths;
 
 pub(crate) fn render_command_completion(
     command: &str,

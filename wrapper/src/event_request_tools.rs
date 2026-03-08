@@ -6,8 +6,8 @@ use crate::output::Output;
 use crate::requests::send_json;
 use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcRequest;
-use crate::transcript_render::build_tool_user_input_response;
-use crate::transcript_summary::summarize_tool_request;
+use crate::transcript_approval_summary::summarize_tool_request;
+use crate::transcript_plan_render::build_tool_user_input_response;
 
 pub(crate) fn handle_tool_request(
     request: &RpcRequest,

@@ -4,7 +4,7 @@ use serde_json::Value;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
-use crate::transcript_render::render_local_command_completion;
+use crate::transcript_completion_render::render_local_command_completion;
 
 pub(crate) fn handle_exec_command(
     result: &Value,
