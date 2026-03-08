@@ -1,6 +1,7 @@
 mod app;
 mod catalog;
 mod commands;
+mod dispatch;
 mod editor;
 mod events;
 mod history;
@@ -9,6 +10,7 @@ mod interaction;
 mod output;
 mod policy;
 mod prompt;
+mod prompting;
 mod render;
 mod requests;
 mod rpc;

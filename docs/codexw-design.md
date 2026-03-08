@@ -63,7 +63,7 @@ The runtime has thirteen main layers.
    `views.rs` owns app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
 12. Human input handling
-   `editor.rs` and `input.rs` implement the inline editor, command parsing, mention decoding, attachment handling, and structured app-server user input construction.
+   `editor.rs`, `input.rs`, `dispatch.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, prompt visibility rules, and structured app-server user input construction.
 
 13. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
@@ -76,6 +76,8 @@ Display helpers live in `views.rs`: formatted thread/model/app output, approval/
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
+Command-dispatch helpers live in `dispatch.rs`: slash-command routing, local-command launch, feedback parsing, and thread/session command workflows.
+Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 
 ## Process Model
 
@@ -251,6 +253,14 @@ The core function is `build_turn_input(...)`, which returns:
 
 This keeps the visible prompt text and the actual submitted protocol payload aligned.
 
+`dispatch.rs` sits above that payload construction layer. It decides whether a line is:
+
+- a built-in slash command
+- a local `!command`
+- a normal user turn submission
+
+That keeps command workflows separate from lower-level input item construction.
+
 ## Output and Rendering
 
 `output.rs` owns terminal writes and prompt redraw ordering.
@@ -359,6 +369,10 @@ The biggest known limits are architectural, not accidental.
   JSON-RPC wire types and line parsing.
 - `wrapper/src/input.rs`
   Input preprocessing, mentions, attachments, file-path expansion, structured turn payload construction.
+- `wrapper/src/dispatch.rs`
+  Built-in slash-command routing, local-command dispatch, feedback parsing, and normal turn submission handoff.
+- `wrapper/src/prompting.rs`
+  Prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion helpers.
 - `wrapper/src/editor.rs`
   Inline line editor and editing semantics.
 - `wrapper/src/output.rs`
