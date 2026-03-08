@@ -1,252 +1,78 @@
 use crate::commands_catalog::BuiltinCommandEntry;
+use std::sync::OnceLock;
+
+#[path = "commands_entry_runtime.rs"]
+mod commands_entry_runtime;
+#[path = "commands_entry_session.rs"]
+mod commands_entry_session;
+#[path = "commands_entry_thread.rs"]
+mod commands_entry_thread;
 
 pub(crate) fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
-    const ENTRIES: &[BuiltinCommandEntry] = &[
-        BuiltinCommandEntry {
-            name: "model",
-            help_syntax: "model",
-            description: "choose what model and reasoning effort to use",
-        },
-        BuiltinCommandEntry {
-            name: "models",
-            help_syntax: "models",
-            description: "list available models",
-        },
-        BuiltinCommandEntry {
-            name: "fast",
-            help_syntax: "fast",
-            description: "toggle Fast mode to enable fastest inference at 2X plan usage",
-        },
-        BuiltinCommandEntry {
-            name: "approvals",
-            help_syntax: "approvals or /permissions",
-            description: "show automation and permission posture",
-        },
-        BuiltinCommandEntry {
-            name: "permissions",
-            help_syntax: "permissions or /approvals",
-            description: "show automation and permission posture",
-        },
-        BuiltinCommandEntry {
-            name: "setup-default-sandbox",
-            help_syntax: "setup-default-sandbox",
-            description: "native sandbox setup workflow not yet ported",
-        },
-        BuiltinCommandEntry {
-            name: "sandbox-add-read-dir",
-            help_syntax: "sandbox-add-read-dir",
-            description: "native sandbox read-dir workflow not yet ported",
-        },
-        BuiltinCommandEntry {
-            name: "experimental",
-            help_syntax: "experimental",
-            description: "list experimental feature flags from app-server",
-        },
-        BuiltinCommandEntry {
-            name: "skills",
-            help_syntax: "skills",
-            description: "use skills to improve how Codex performs specific tasks",
-        },
-        BuiltinCommandEntry {
-            name: "review",
-            help_syntax: "review [instructions]",
-            description: "review current changes and find issues",
-        },
-        BuiltinCommandEntry {
-            name: "rename",
-            help_syntax: "rename <name>",
-            description: "rename the current thread",
-        },
-        BuiltinCommandEntry {
-            name: "new",
-            help_syntax: "new",
-            description: "start a new thread",
-        },
-        BuiltinCommandEntry {
-            name: "resume",
-            help_syntax: "resume [thread-id|n]",
-            description: "resume a saved thread",
-        },
-        BuiltinCommandEntry {
-            name: "fork",
-            help_syntax: "fork",
-            description: "fork the current thread",
-        },
-        BuiltinCommandEntry {
-            name: "init",
-            help_syntax: "init",
-            description: "create an AGENTS.md file with instructions for Codex",
-        },
-        BuiltinCommandEntry {
-            name: "compact",
-            help_syntax: "compact",
-            description: "summarize conversation to prevent hitting the context limit",
-        },
-        BuiltinCommandEntry {
-            name: "plan",
-            help_syntax: "plan",
-            description: "toggle plan collaboration mode",
-        },
-        BuiltinCommandEntry {
-            name: "collab",
-            help_syntax: "collab [name|mode|default]",
-            description: "list or change collaboration mode",
-        },
-        BuiltinCommandEntry {
-            name: "agent",
-            help_syntax: "agent",
-            description: "switch the active agent thread",
-        },
-        BuiltinCommandEntry {
-            name: "multi-agents",
-            help_syntax: "multi-agents",
-            description: "switch the active agent thread",
-        },
-        BuiltinCommandEntry {
-            name: "diff",
-            help_syntax: "diff",
-            description: "show the latest turn diff snapshot",
-        },
-        BuiltinCommandEntry {
-            name: "copy",
-            help_syntax: "copy",
-            description: "copy the latest assistant reply",
-        },
-        BuiltinCommandEntry {
-            name: "mention",
-            help_syntax: "mention [query|n]",
-            description: "insert or search mentionable files",
-        },
-        BuiltinCommandEntry {
-            name: "status",
-            help_syntax: "status",
-            description: "show current session configuration and token usage",
-        },
-        BuiltinCommandEntry {
-            name: "debug-config",
-            help_syntax: "debug-config",
-            description: "show config layers and requirement sources for debugging",
-        },
-        BuiltinCommandEntry {
-            name: "statusline",
-            help_syntax: "statusline",
-            description: "show current session status",
-        },
-        BuiltinCommandEntry {
-            name: "theme",
-            help_syntax: "theme",
-            description: "choose a syntax highlighting theme",
-        },
-        BuiltinCommandEntry {
-            name: "mcp",
-            help_syntax: "mcp",
-            description: "list MCP servers and tools",
-        },
-        BuiltinCommandEntry {
-            name: "apps",
-            help_syntax: "apps",
-            description: "list known app mentions",
-        },
-        BuiltinCommandEntry {
-            name: "logout",
-            help_syntax: "logout",
-            description: "log out of Codex",
-        },
-        BuiltinCommandEntry {
-            name: "quit",
-            help_syntax: "quit",
-            description: "exit CodexW",
-        },
-        BuiltinCommandEntry {
-            name: "exit",
-            help_syntax: "exit",
-            description: "exit CodexW",
-        },
-        BuiltinCommandEntry {
-            name: "feedback",
-            help_syntax: "feedback <category> [reason] [--logs|--no-logs]",
-            description: "submit feedback through app-server",
-        },
-        BuiltinCommandEntry {
-            name: "rollout",
-            help_syntax: "rollout",
-            description: "native rollout-path display not yet ported",
-        },
-        BuiltinCommandEntry {
-            name: "ps",
-            help_syntax: "ps [clean]",
-            description: "explain background-terminal limits or stop all background terminals",
-        },
-        BuiltinCommandEntry {
-            name: "clean",
-            help_syntax: "clean",
-            description: "stop background terminals for the thread",
-        },
-        BuiltinCommandEntry {
-            name: "clear",
-            help_syntax: "clear",
-            description: "clear terminal and start a new thread",
-        },
-        BuiltinCommandEntry {
-            name: "personality",
-            help_syntax: "personality [friendly|pragmatic|none|default]",
-            description: "show or change the active response style",
-        },
-        BuiltinCommandEntry {
-            name: "realtime",
-            help_syntax: "realtime [start [prompt...]|send <text>|stop|status]",
-            description: "experimental text realtime workflow",
-        },
-        BuiltinCommandEntry {
-            name: "settings",
-            help_syntax: "settings",
-            description: "show effective backend config",
-        },
-        BuiltinCommandEntry {
-            name: "threads",
-            help_syntax: "threads [query]",
-            description: "list recent threads",
-        },
-        BuiltinCommandEntry {
-            name: "auto",
-            help_syntax: "auto on|off",
-            description: "toggle auto-continue",
-        },
-        BuiltinCommandEntry {
-            name: "attach-image",
-            help_syntax: "attach-image <path>",
-            description: "queue a local image for next submit",
-        },
-        BuiltinCommandEntry {
-            name: "attach",
-            help_syntax: "attach <path>",
-            description: "queue a local image for next submit",
-        },
-        BuiltinCommandEntry {
-            name: "attach-url",
-            help_syntax: "attach-url <url>",
-            description: "queue a remote image for next submit",
-        },
-        BuiltinCommandEntry {
-            name: "attachments",
-            help_syntax: "attachments",
-            description: "show queued attachments",
-        },
-        BuiltinCommandEntry {
-            name: "clear-attachments",
-            help_syntax: "clear-attachments",
-            description: "clear queued attachments",
-        },
-        BuiltinCommandEntry {
-            name: "interrupt",
-            help_syntax: "interrupt",
-            description: "interrupt the current turn or local command",
-        },
-        BuiltinCommandEntry {
-            name: "help",
-            help_syntax: "help",
-            description: "show available commands",
-        },
-    ];
+    static ENTRIES: OnceLock<Vec<BuiltinCommandEntry>> = OnceLock::new();
     ENTRIES
+        .get_or_init(|| {
+            let mut entries = Vec::new();
+            entries.extend_from_slice(commands_entry_session::SESSION_COMMAND_ENTRIES);
+            entries.extend_from_slice(commands_entry_thread::THREAD_COMMAND_ENTRIES);
+            entries.extend_from_slice(commands_entry_runtime::RUNTIME_COMMAND_ENTRIES);
+            entries.sort_by_key(|entry| builtin_command_rank(entry.name));
+            entries
+        })
+        .as_slice()
+}
+
+fn builtin_command_rank(name: &str) -> usize {
+    match name {
+        "model" => 0,
+        "models" => 1,
+        "fast" => 2,
+        "approvals" => 3,
+        "permissions" => 4,
+        "setup-default-sandbox" => 5,
+        "sandbox-add-read-dir" => 6,
+        "experimental" => 7,
+        "skills" => 8,
+        "review" => 9,
+        "rename" => 10,
+        "new" => 11,
+        "resume" => 12,
+        "fork" => 13,
+        "init" => 14,
+        "compact" => 15,
+        "plan" => 16,
+        "collab" => 17,
+        "agent" => 18,
+        "multi-agents" => 19,
+        "diff" => 20,
+        "copy" => 21,
+        "mention" => 22,
+        "status" => 23,
+        "debug-config" => 24,
+        "statusline" => 25,
+        "theme" => 26,
+        "mcp" => 27,
+        "apps" => 28,
+        "logout" => 29,
+        "quit" => 30,
+        "exit" => 31,
+        "feedback" => 32,
+        "rollout" => 33,
+        "ps" => 34,
+        "clean" => 35,
+        "clear" => 36,
+        "personality" => 37,
+        "realtime" => 38,
+        "settings" => 39,
+        "threads" => 40,
+        "auto" => 41,
+        "attach-image" => 42,
+        "attach" => 43,
+        "attach-url" => 44,
+        "attachments" => 45,
+        "clear-attachments" => 46,
+        "interrupt" => 47,
+        "help" => 48,
+        _ => usize::MAX,
+    }
 }

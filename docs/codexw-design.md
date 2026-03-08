@@ -60,7 +60,7 @@ The runtime has thirteen main layers.
    `history.rs`, `history_render.rs`, `history_state.rs`, and `history_text.rs` own resumed-thread state seeding, compact conversation-history extraction, resumed history rendering, and shared history text normalization/user-message rendering. `history.rs` is the thin facade over the split render/state helpers.
 
 11. View and transcript rendering helpers
-   `catalog_views.rs`, `catalog_lists.rs`, `catalog_app_views.rs`, `catalog_backend_views.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `status_rate_limits.rs`, `status_token_usage.rs`, `transcript_views.rs`, `transcript_render.rs`, `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_summary.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `catalog_lists.rs`, `status_views.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` remain narrow compatibility facades over the split helpers.
+  `catalog_views.rs`, `catalog_lists.rs`, `catalog_app_views.rs`, `catalog_backend_views.rs`, `catalog_threads.rs`, `catalog_thread_list.rs`, `catalog_file_search.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `status_rate_limits.rs`, `status_token_usage.rs`, `transcript_views.rs`, `transcript_render.rs`, `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_summary.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `catalog_lists.rs`, `catalog_threads.rs`, `status_views.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` remain narrow compatibility facades over the split helpers.
 
 12. Human input handling
    `editor.rs`, `editor_buffer.rs`, `editor_history.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_tokens.rs`, `input/input_resolve.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_catalog.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_control.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, `prompt_file_completions.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `editor.rs`, `input.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_modes.rs`, and `prompting.rs` are compatibility facades over those splits.
@@ -72,13 +72,13 @@ Session feature helpers are split across `model_catalog.rs`, `model_personality.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers are split across `app.rs`, `app_input.rs`, `app_input_editor.rs`, and `app_input_interrupt.rs`: `app.rs` owns backend/session startup and the top-level runtime loop, `app_input.rs` is the input facade, `app_input_editor.rs` owns editor-key behavior and submit handling, and `app_input_interrupt.rs` owns interrupt and exit behavior.
 Resume-preview helpers live across `history_render.rs`, `history_state.rs`, and `history_text.rs`, with `history.rs` kept as the thin facade for recent conversation extraction, resumed objective/last-reply seeding, resumed transcript rendering, and shared history text formatting.
-Catalog display helpers are split across `catalog_app_views.rs`, `catalog_backend_views.rs`, and `catalog_threads.rs`, with `catalog_lists.rs` and `catalog_views.rs` kept as thin facades over app/skill/model/MCP display plus thread/search rendering.
+Catalog display helpers are split across `catalog_app_views.rs`, `catalog_backend_views.rs`, `catalog_thread_list.rs`, and `catalog_file_search.rs`, with `catalog_lists.rs`, `catalog_threads.rs`, and `catalog_views.rs` kept as thin facades over app/skill/model/MCP display plus thread/search rendering.
 Status display helpers are split across `status_config.rs`, `status_account.rs`, `status_rate_limits.rs`, and `status_token_usage.rs`, with `status_views.rs` and `status_limits.rs` kept as thin facades plus the generic value summarizer.
 Transcript display helpers are split across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, with `transcript_render.rs`, `transcript_summary.rs`, and `transcript_views.rs` kept as thin compatibility facades over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
 Runtime helpers live across `runtime_process.rs`, `runtime_input.rs`, `runtime_event_sources.rs`, and `runtime_keys.rs`, with `runtime.rs` kept as the thin facade over backend process startup, raw terminal mode, key mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers are split across `state_model.rs`, `state_mutations.rs`, `state_core.rs`, and `state_helpers.rs`, with `state.rs` kept as the thin facade over `AppState`, buffer/state types, and common text/path helper functions used across modules.
-Command catalog helpers are split across `commands_entries.rs` and `commands_catalog.rs`: entry data now lives in `commands_entries.rs`, while `commands_catalog.rs` keeps the public entrypoint and stable command-name ordering.
+Command catalog helpers are split across `commands_entry_session.rs`, `commands_entry_thread.rs`, `commands_entry_runtime.rs`, `commands_entries.rs`, and `commands_catalog.rs`: grouped command-entry data lives in the `commands_entry_*` modules, `commands_entries.rs` is the compatibility facade that assembles the shared table, and `commands_catalog.rs` keeps the public entrypoint and stable command-name ordering.
 Command metadata helpers live in `commands_metadata.rs`: command descriptions and help-line generation over the shared command catalog.
 Command completion helpers live in `commands_completion.rs` and `commands_match.rs`: slash completion rendering stays in the facade while cursor parsing, fuzzy scoring, and prefix logic live in the extracted matcher module.
 Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session_catalog.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, and `dispatch_command_session_control.rs` kept as thin compatibility facades for imports and tests.
@@ -362,7 +362,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_approvals.rs`
   Approval-decision and auto-approval regression tests.
 - `wrapper/src/main_test_catalog.rs`
-  Catalog/help/completion, thread-list, rate-limit, and resume-preview regression tests.
+  Resume-preview and rate-limit regression tests.
+- `wrapper/src/main_test_catalog_views.rs`
+  Catalog rendering, thread-list, and file-search regression tests.
+- `wrapper/src/main_test_commands.rs`
+  Slash-command completion, ordering, help-line, and quoting regression tests.
 - `wrapper/src/main_test_runtime.rs`
   Runtime/editor/completion normalization and feedback-argument regression tests.
 - `wrapper/src/main_test_session.rs`
@@ -409,6 +413,10 @@ The biggest known limits are architectural, not accidental.
   Compatibility facade for the split catalog display helpers.
 - `wrapper/src/catalog_lists.rs`
   Compatibility facade for the split catalog list renderers.
+- `wrapper/src/catalog_thread_list.rs`
+  Thread-list rendering and thread-id extraction helpers.
+- `wrapper/src/catalog_file_search.rs`
+  File-search rendering and extracted-path helpers for `/mention`.
 - `wrapper/src/catalog_app_views.rs`
   Apps, skills, and experimental-feature rendering helpers.
 - `wrapper/src/catalog_backend_views.rs`
@@ -489,7 +497,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/commands.rs`
   Compatibility facade for the split command metadata/completion layer.
 - `wrapper/src/commands_entries.rs`
-  Static builtin command entry table.
+  Compatibility facade assembling the grouped builtin command-entry tables.
+- `wrapper/src/commands_entry_session.rs`
+  Session/catalog-oriented builtin command entries.
+- `wrapper/src/commands_entry_thread.rs`
+  Thread/workspace-oriented builtin command entries.
+- `wrapper/src/commands_entry_runtime.rs`
+  Runtime/meta/control builtin command entries.
 - `wrapper/src/commands_catalog.rs`
   Command catalog facade and stable command-name ordering over the shared builtin entry table.
 - `wrapper/src/commands_metadata.rs`
