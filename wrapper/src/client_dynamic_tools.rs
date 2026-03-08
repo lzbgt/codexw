@@ -6,6 +6,7 @@ use serde_json::Value;
 use serde_json::json;
 
 use crate::background_shells::BackgroundShellManager;
+use crate::background_shells::BackgroundShellOrigin;
 
 const MAX_FILE_BYTES: u64 = 256 * 1024;
 const DEFAULT_LIMIT: usize = 20;
@@ -136,7 +137,11 @@ pub(crate) fn execute_dynamic_tool_call(
         "workspace_read_file" => workspace_read_file(arguments, resolved_cwd),
         "workspace_find_files" => workspace_find_files(arguments, resolved_cwd),
         "workspace_search_text" => workspace_search_text(arguments, resolved_cwd),
-        "background_shell_start" => background_shells.start_from_tool(arguments, resolved_cwd),
+        "background_shell_start" => background_shells.start_from_tool_with_context(
+            arguments,
+            resolved_cwd,
+            dynamic_tool_origin(params),
+        ),
         "background_shell_poll" => background_shells.poll_from_tool(arguments),
         "background_shell_list" => Ok(background_shells.list_from_tool()),
         "background_shell_terminate" => background_shells.terminate_from_tool(arguments),
@@ -152,6 +157,23 @@ pub(crate) fn execute_dynamic_tool_call(
             "contentItems": [{"type": "inputText", "text": err}],
             "success": false
         }),
+    }
+}
+
+fn dynamic_tool_origin(params: &Value) -> BackgroundShellOrigin {
+    BackgroundShellOrigin {
+        source_thread_id: params
+            .get("threadId")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        source_call_id: params
+            .get("callId")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        source_tool: params
+            .get("tool")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
     }
 }
 
@@ -525,6 +547,34 @@ mod tests {
         assert!(text.contains("a.txt"));
         assert!(text.contains("dir   -"));
         assert!(text.contains("src"));
+    }
+
+    #[test]
+    fn background_shell_start_preserves_request_origin_metadata() {
+        let manager = BackgroundShellManager::default();
+        let result = execute_dynamic_tool_call(
+            &json!({
+                "threadId": "thread-agent-1",
+                "callId": "call-55",
+                "tool": "background_shell_start",
+                "arguments": {"command": "sleep 0.4"}
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(result["success"], true);
+        let snapshots = manager.snapshots();
+        assert_eq!(snapshots.len(), 1);
+        assert_eq!(
+            snapshots[0].origin.source_thread_id.as_deref(),
+            Some("thread-agent-1")
+        );
+        assert_eq!(
+            snapshots[0].origin.source_call_id.as_deref(),
+            Some("call-55")
+        );
+        let _ = manager.terminate_all_running();
     }
 
     #[test]

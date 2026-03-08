@@ -17,6 +17,13 @@ const MAX_POLL_LIMIT: usize = 200;
 const MAX_STORED_LINES: usize = 2_000;
 const MAX_RENDERED_RECENT_LINES: usize = 3;
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct BackgroundShellOrigin {
+    pub(crate) source_thread_id: Option<String>,
+    pub(crate) source_call_id: Option<String>,
+    pub(crate) source_tool: Option<String>,
+}
+
 #[derive(Clone, Default)]
 pub(crate) struct BackgroundShellManager {
     inner: Arc<BackgroundShellManagerInner>,
@@ -34,6 +41,7 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) pid: u32,
     pub(crate) command: String,
     pub(crate) cwd: String,
+    pub(crate) origin: BackgroundShellOrigin,
     pub(crate) status: String,
     pub(crate) exit_code: Option<i32>,
     pub(crate) total_lines: u64,
@@ -46,6 +54,7 @@ struct BackgroundShellJobState {
     pid: u32,
     command: String,
     cwd: String,
+    origin: BackgroundShellOrigin,
     status: BackgroundShellJobStatus,
     total_lines: u64,
     lines: VecDeque<BackgroundShellOutputLine>,
@@ -66,10 +75,20 @@ enum BackgroundShellJobStatus {
 }
 
 impl BackgroundShellManager {
+    #[cfg(test)]
     pub(crate) fn start_from_tool(
         &self,
         arguments: &serde_json::Value,
         resolved_cwd: &str,
+    ) -> Result<String, String> {
+        self.start_from_tool_with_context(arguments, resolved_cwd, BackgroundShellOrigin::default())
+    }
+
+    pub(crate) fn start_from_tool_with_context(
+        &self,
+        arguments: &serde_json::Value,
+        resolved_cwd: &str,
+        origin: BackgroundShellOrigin,
     ) -> Result<String, String> {
         let object = arguments
             .as_object()
@@ -103,6 +122,7 @@ impl BackgroundShellManager {
             pid,
             command: command.to_string(),
             cwd: cwd.display().to_string(),
+            origin: origin.clone(),
             status: BackgroundShellJobStatus::Running,
             total_lines: 0,
             lines: VecDeque::new(),
@@ -174,6 +194,15 @@ impl BackgroundShellManager {
             format!("Command: {}", state.command),
             format!("Next afterLine: {}", state.total_lines),
         ];
+        if let Some(source_thread_id) = state.origin.source_thread_id.as_deref() {
+            lines.push(format!("Source thread: {source_thread_id}"));
+        }
+        if let Some(source_call_id) = state.origin.source_call_id.as_deref() {
+            lines.push(format!("Source call: {source_call_id}"));
+        }
+        if let Some(source_tool) = state.origin.source_tool.as_deref() {
+            lines.push(format!("Source tool: {source_tool}"));
+        }
         if let Some(exit_code) = exit_code(&state.status) {
             lines.push(format!("Exit code: {exit_code}"));
         }
@@ -204,6 +233,9 @@ impl BackgroundShellManager {
             );
             if let Some(exit_code) = snapshot.exit_code {
                 line.push_str(&format!("  exit={exit_code}"));
+            }
+            if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
+                line.push_str(&format!("  source={source_thread_id}"));
             }
             if snapshot.status == "failed" && !snapshot.recent_lines.is_empty() {
                 line.push_str(&format!("  {}", snapshot.recent_lines.join(" | ")));
@@ -299,6 +331,12 @@ impl BackgroundShellManager {
             lines.push(format!("    process  {}", snapshot.pid));
             lines.push(format!("    cwd      {}", snapshot.cwd));
             lines.push(format!("    lines    {}", snapshot.total_lines));
+            if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
+                lines.push(format!("    origin   thread={source_thread_id}"));
+            }
+            if let Some(source_call_id) = snapshot.origin.source_call_id.as_deref() {
+                lines.push(format!("    call     {source_call_id}"));
+            }
             if !snapshot.recent_lines.is_empty() {
                 lines.push(format!(
                     "    output   {}",
@@ -442,6 +480,7 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         pid: state.pid,
         command: state.command.clone(),
         cwd: state.cwd.clone(),
+        origin: state.origin.clone(),
         status: status_label(&state.status).to_string(),
         exit_code: exit_code(&state.status),
         total_lines: state.total_lines,
@@ -516,6 +555,7 @@ fn terminate_pid(pid: u32) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::BackgroundShellManager;
+    use super::BackgroundShellOrigin;
     use serde_json::json;
     use std::thread;
     use std::time::Duration;
@@ -554,6 +594,34 @@ mod tests {
         assert!(rendered.contains("Background shell jobs:"));
         assert!(rendered.contains("bg-1"));
         assert!(rendered.contains("running"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_origin_is_preserved_in_snapshots_and_poll() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool_with_context(
+                &json!({"command": "sleep 0.4"}),
+                "/tmp",
+                BackgroundShellOrigin {
+                    source_thread_id: Some("thread-agent-1".to_string()),
+                    source_call_id: Some("call-77".to_string()),
+                    source_tool: Some("background_shell_start".to_string()),
+                },
+            )
+            .expect("start background shell");
+
+        let snapshots = manager.snapshots();
+        assert_eq!(
+            snapshots[0].origin.source_thread_id.as_deref(),
+            Some("thread-agent-1")
+        );
+        let rendered = manager
+            .poll_from_tool(&json!({"jobId": "bg-1"}))
+            .expect("poll background shell");
+        assert!(rendered.contains("Source thread: thread-agent-1"));
+        assert!(rendered.contains("Source call: call-77"));
         let _ = manager.terminate_all_running();
     }
 }

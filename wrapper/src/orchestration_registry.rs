@@ -147,7 +147,7 @@ pub(crate) fn orchestration_dependency_edges(state: &AppState) -> Vec<Orchestrat
     }
     for shell in running_background_shells(state) {
         let edge = OrchestrationDependencyEdge {
-            from: "main".to_string(),
+            from: shell_source_node(state, &shell),
             to: format!("shell:{}", shell.id),
             kind: "backgroundShell".to_string(),
             blocking: false,
@@ -229,6 +229,31 @@ fn running_background_shells(state: &AppState) -> Vec<BackgroundShellJobSnapshot
         .collect()
 }
 
+fn shell_source_node(state: &AppState, shell: &BackgroundShellJobSnapshot) -> String {
+    let Some(source_thread_id) = shell.origin.source_thread_id.as_deref() else {
+        return "main".to_string();
+    };
+    if state.thread_id.as_deref() == Some(source_thread_id) {
+        return "main".to_string();
+    }
+    if known_agent_thread_ids(state).contains(source_thread_id) {
+        return format!("agent:{source_thread_id}");
+    }
+    format!("thread:{source_thread_id}")
+}
+
+fn known_agent_thread_ids(state: &AppState) -> BTreeSet<String> {
+    let mut ids = state
+        .cached_agent_threads
+        .iter()
+        .map(|thread| thread.id.clone())
+        .collect::<BTreeSet<_>>();
+    for task in state.live_agent_tasks.values() {
+        ids.extend(task.receiver_thread_ids.iter().cloned());
+    }
+    ids
+}
+
 fn is_active_wait_task(task: &LiveAgentTaskSummary) -> bool {
     task.tool == "wait" && task.status == "inProgress"
 }
@@ -297,6 +322,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use crate::orchestration_registry::LiveAgentTaskSummary;
+    use crate::orchestration_view::CachedAgentThreadSummary;
 
     use super::active_sidecar_agent_task_count;
     use super::active_wait_task_count;
@@ -431,6 +457,7 @@ mod tests {
     #[test]
     fn dependency_edges_include_wait_sidecars_and_running_background_shells() {
         let mut state = crate::state::AppState::new(true, false);
+        state.thread_id = Some("thread-main".to_string());
         state.live_agent_tasks.insert(
             "wait-1".to_string(),
             LiveAgentTaskSummary {
@@ -455,9 +482,23 @@ mod tests {
                 agent_statuses: BTreeMap::new(),
             },
         );
+        state.cached_agent_threads = vec![CachedAgentThreadSummary {
+            id: "thread-agent-2".to_string(),
+            status: "running".to_string(),
+            preview: "spawned".to_string(),
+            updated_at: None,
+        }];
         state
             .background_shells
-            .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+            .start_from_tool_with_context(
+                &json!({"command": "sleep 0.4"}),
+                "/tmp",
+                crate::background_shells::BackgroundShellOrigin {
+                    source_thread_id: Some("thread-agent-2".to_string()),
+                    source_call_id: Some("call-77".to_string()),
+                    source_tool: Some("background_shell_start".to_string()),
+                },
+            )
             .expect("start background shell");
 
         let edges = orchestration_dependency_edges(&state);
@@ -471,11 +512,9 @@ mod tests {
                 .iter()
                 .any(|edge| edge.to == "agent:thread-agent-2" && !edge.blocking)
         );
-        assert!(
-            edges
-                .iter()
-                .any(|edge| edge.to == "shell:bg-1" && !edge.blocking)
-        );
+        assert!(edges.iter().any(|edge| edge.from == "agent:thread-agent-2"
+            && edge.to == "shell:bg-1"
+            && !edge.blocking));
         assert_eq!(blocking_dependency_count(&state), 1);
         assert_eq!(sidecar_dependency_count(&state), 2);
         let _ = state.background_shells.terminate_all_running();
