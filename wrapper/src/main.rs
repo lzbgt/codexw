@@ -57,6 +57,7 @@ mod notification_item_completion;
 mod notification_item_status;
 mod notification_turn_completed;
 mod notification_turn_started;
+mod orchestration_view;
 mod output;
 mod policy;
 mod prompt;

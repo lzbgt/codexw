@@ -1,6 +1,6 @@
 use crate::Cli;
 use crate::background_terminals::background_terminal_count;
-use crate::background_terminals::server_background_terminal_count;
+use crate::orchestration_view::orchestration_runtime_summary;
 use crate::session_prompt_status_active::format_elapsed;
 use crate::state::AppState;
 use crate::state::summarize_text;
@@ -35,13 +35,8 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             background_terminal_count(state)
         ));
     }
-    if state.background_shells.job_count() > 0 || server_background_terminal_count(state) > 0 {
-        lines.push(format!(
-            "workers         shells={} thread_terms={} agents_cached={}",
-            state.background_shells.job_count(),
-            server_background_terminal_count(state),
-            state.last_listed_agent_thread_ids.len()
-        ));
+    if let Some(summary) = orchestration_runtime_summary(state) {
+        lines.push(format!("workers         {summary}"));
     }
 
     if let Some(account) = render_account_summary(state.account_info.as_ref()) {

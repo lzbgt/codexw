@@ -9,6 +9,7 @@ use crate::input::AppCatalogEntry;
 use crate::input::PluginCatalogEntry;
 use crate::input::SkillCatalogEntry;
 use crate::model_catalog::ModelCatalogEntry;
+use crate::orchestration_view::CachedAgentThreadSummary;
 use crate::requests::PendingRequest;
 use crate::rpc::RequestId;
 pub(crate) use crate::state_helpers::buffer_item_delta;
@@ -83,7 +84,7 @@ pub(crate) struct AppState {
     pub(crate) collaboration_modes: Vec<CollaborationModePreset>,
     pub(crate) active_collaboration_mode: Option<CollaborationModePreset>,
     pub(crate) last_listed_thread_ids: Vec<String>,
-    pub(crate) last_listed_agent_thread_ids: Vec<String>,
+    pub(crate) cached_agent_threads: Vec<CachedAgentThreadSummary>,
     pub(crate) last_file_search_paths: Vec<String>,
     pub(crate) last_status_line: Option<String>,
     pub(crate) codex_home_override: Option<PathBuf>,
@@ -136,7 +137,7 @@ impl AppState {
             collaboration_modes: Vec::new(),
             active_collaboration_mode: None,
             last_listed_thread_ids: Vec::new(),
-            last_listed_agent_thread_ids: Vec::new(),
+            cached_agent_threads: Vec::new(),
             last_file_search_paths: Vec::new(),
             last_status_line: None,
             codex_home_override: None,
@@ -183,6 +184,7 @@ impl AppState {
         self.objective = None;
         self.last_token_usage = None;
         self.active_collaboration_mode = None;
+        self.cached_agent_threads.clear();
         self.pending_selection = None;
     }
 

@@ -5,6 +5,7 @@ use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
 use crate::notification_item_status::handle_status_update;
+use crate::orchestration_view::CachedAgentThreadSummary;
 use crate::output::Output;
 use crate::prompt_state::render_prompt_status;
 use crate::session_prompt_status_active::spinner_frame;
@@ -370,7 +371,20 @@ fn background_task_rendering_includes_local_background_shell_jobs() {
 #[test]
 fn status_overview_reports_orchestration_breakdown() {
     let mut state = crate::state::AppState::new(true, false);
-    state.last_listed_agent_thread_ids = vec!["agent-1".to_string(), "agent-2".to_string()];
+    state.cached_agent_threads = vec![
+        CachedAgentThreadSummary {
+            id: "agent-1".to_string(),
+            status: "active".to_string(),
+            preview: "inspect auth flow".to_string(),
+            updated_at: Some(100),
+        },
+        CachedAgentThreadSummary {
+            id: "agent-2".to_string(),
+            status: "idle".to_string(),
+            preview: "review API schema".to_string(),
+            updated_at: Some(90),
+        },
+    ];
     state.background_terminals.insert(
         "proc-1".to_string(),
         crate::background_terminals::BackgroundTerminalSummary {
@@ -389,6 +403,8 @@ fn status_overview_reports_orchestration_breakdown() {
 
     let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
     assert!(rendered.contains("orchestration   main=1 agents_cached=2"));
+    assert!(rendered.contains("active=1"));
+    assert!(rendered.contains("idle=1"));
     assert!(rendered.contains("bg_shells=1"));
     assert!(rendered.contains("thread_terms=1"));
     let _ = state.background_shells.terminate_all_running();

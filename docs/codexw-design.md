@@ -193,7 +193,7 @@ The current `codexw` implementation now reflects that model partially:
   - `background_shell_poll`
   - `background_shell_list`
   - `background_shell_terminate`
-- `/ps` renders both backend-observed background terminals and wrapper-owned background shell jobs
+- `/ps` renders the tracked worker snapshot: cached cognitive workers from `/agent` or `/multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
 - `/status` now reports an orchestration breakdown with:
   - `main=1`
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing

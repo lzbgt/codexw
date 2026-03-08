@@ -1,8 +1,8 @@
 use crate::Cli;
-use crate::background_terminals::server_background_terminal_count;
 use crate::collaboration_view::summarize_active_collaboration_mode;
 use crate::model_catalog::effective_model_entry;
 use crate::model_personality_view::summarize_active_personality;
+use crate::orchestration_view::orchestration_overview_summary;
 use crate::policy::approval_policy;
 use crate::policy::thread_sandbox_mode;
 use crate::policy::turn_sandbox_policy;
@@ -82,10 +82,8 @@ pub(crate) fn render_status_overview(
         ));
     }
     lines.push(format!(
-        "orchestration   main=1 agents_cached={} bg_shells={} thread_terms={}",
-        state.last_listed_agent_thread_ids.len(),
-        state.background_shells.job_count(),
-        server_background_terminal_count(state),
+        "orchestration   {}",
+        orchestration_overview_summary(state)
     ));
     if !state.models.is_empty() {
         lines.push(format!("models cached   {}", state.models.len()));

@@ -5,6 +5,7 @@ use crate::catalog_backend_views::render_mcp_server_list;
 use crate::catalog_feature_views::render_experimental_features_list;
 use crate::catalog_file_search::extract_file_search_paths;
 use crate::catalog_file_search::render_fuzzy_file_search_results;
+use crate::catalog_thread_list::extract_agent_thread_summaries;
 use crate::catalog_thread_list::extract_thread_ids;
 use crate::catalog_thread_list::render_thread_list;
 use crate::output::Output;
@@ -40,7 +41,8 @@ pub(crate) fn handle_threads_listed(
     let extracted = extract_thread_ids(result);
     state.last_listed_thread_ids = extracted.clone();
     if matches!(view, ThreadListView::Agents) {
-        state.last_listed_agent_thread_ids = extracted;
+        let _ = extracted;
+        state.cached_agent_threads = extract_agent_thread_summaries(result);
     }
     let title = match view {
         ThreadListView::Threads => "Threads",

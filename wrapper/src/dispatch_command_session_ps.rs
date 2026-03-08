@@ -3,7 +3,7 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::background_terminals::render_background_terminals;
+use crate::orchestration_view::render_orchestration_workers;
 use crate::output::Output;
 use crate::requests::send_clean_background_terminals;
 use crate::state::AppState;
@@ -41,7 +41,7 @@ pub(crate) fn handle_ps_command(
             send_clean_background_terminals(writer, state, current_thread_id)?;
         }
     } else {
-        output.block_stdout("Background tasks", &render_background_terminals(state))?;
+        output.block_stdout("Workers", &render_orchestration_workers(state))?;
     }
     Ok(true)
 }
