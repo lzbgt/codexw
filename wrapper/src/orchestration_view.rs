@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use crate::background_terminals::render_background_terminals;
 use crate::background_terminals::server_background_terminal_count;
 use crate::orchestration_registry::LiveAgentTaskSummary;
+use crate::orchestration_registry::active_wait_task_count;
+use crate::orchestration_registry::wait_dependency_summary;
 use crate::state::AppState;
 use crate::state::summarize_text;
 
@@ -37,8 +39,9 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
     let snapshot = orchestration_snapshot(state);
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     format!(
-        "main={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} waits={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
+        active_wait_task_count(state),
         snapshot.live_agent_tasks.len(),
         snapshot.cached_agent_threads.len(),
         if agent_counts.is_empty() {
@@ -62,7 +65,8 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
     }
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     Some(format!(
-        "agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "waits={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        active_wait_task_count(state),
         snapshot.live_agent_tasks.len(),
         snapshot.background_shell_jobs,
         snapshot.thread_background_terminals,
@@ -79,7 +83,13 @@ pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
     let background = render_background_terminals(state);
     let has_background = background != "No background terminals running.";
     let mut lines = Vec::new();
+    if let Some(waiting_on) = wait_dependency_summary(state) {
+        lines.push(format!("Main agent status: {waiting_on}"));
+    }
     if !state.live_agent_tasks.is_empty() {
+        if !lines.is_empty() {
+            lines.push(String::new());
+        }
         lines.push("Live agent tasks:".to_string());
         for (index, task) in live_agent_tasks(state).iter().enumerate() {
             let receiver_preview = if task.receiver_thread_ids.is_empty() {
@@ -105,6 +115,14 @@ pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
                 receiver_preview
             ));
             lines.push(format!("    task     {}", task.id));
+            lines.push(format!(
+                "    blocking {}",
+                if task.tool == "wait" && task.status == "inProgress" {
+                    "yes"
+                } else {
+                    "no"
+                }
+            ));
             lines.push(format!("    agents   {status_preview}"));
             if let Some(prompt) = task.prompt.as_deref() {
                 lines.push(format!("    prompt   {prompt}"));
@@ -195,6 +213,7 @@ mod tests {
         ];
         let summary = orchestration_overview_summary(&state);
         assert!(summary.contains("main=1"));
+        assert!(summary.contains("waits=0"));
         assert!(summary.contains("agents_live=0"));
         assert!(summary.contains("agents_cached=2"));
         assert!(summary.contains("active=1"));
@@ -222,6 +241,18 @@ mod tests {
                 agent_statuses: BTreeMap::from([("agent-1".to_string(), "running".to_string())]),
             },
         );
+        state.live_agent_tasks.insert(
+            "call-2".to_string(),
+            LiveAgentTaskSummary {
+                id: "call-2".to_string(),
+                tool: "wait".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["agent-1".to_string()],
+                prompt: None,
+                agent_statuses: BTreeMap::from([("agent-1".to_string(), "running".to_string())]),
+            },
+        );
         state.cached_agent_threads = vec![CachedAgentThreadSummary {
             id: "agent-1".to_string(),
             status: "active".to_string(),
@@ -241,8 +272,11 @@ mod tests {
         );
 
         let rendered = render_orchestration_workers(&state);
+        assert!(rendered.contains("Main agent status: waiting on agent agent-1"));
         assert!(rendered.contains("Live agent tasks:"));
         assert!(rendered.contains("spawnAgent  [inProgress]  thread-main -> agent-1"));
+        assert!(rendered.contains("wait  [inProgress]  thread-main -> agent-1"));
+        assert!(rendered.contains("blocking yes"));
         assert!(rendered.contains("Cached agent threads:"));
         assert!(rendered.contains("agent-1  [active]"));
         assert!(rendered.contains("inspect auth"));

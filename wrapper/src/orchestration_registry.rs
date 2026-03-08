@@ -18,6 +18,51 @@ pub(crate) struct LiveAgentTaskSummary {
     pub(crate) agent_statuses: BTreeMap<String, String>,
 }
 
+pub(crate) fn active_wait_task_count(state: &AppState) -> usize {
+    state
+        .live_agent_tasks
+        .values()
+        .filter(|task| is_active_wait_task(task))
+        .count()
+}
+
+pub(crate) fn wait_dependency_summary(state: &AppState) -> Option<String> {
+    let waiting_on = wait_dependency_threads(state);
+    match waiting_on.len() {
+        0 => None,
+        1 => Some(format!("waiting on agent {}", waiting_on[0])),
+        _ => {
+            let preview = waiting_on
+                .iter()
+                .take(3)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ");
+            if waiting_on.len() <= 3 {
+                Some(format!("waiting on agents {preview}"))
+            } else {
+                Some(format!(
+                    "waiting on agents {} and {} more",
+                    preview,
+                    waiting_on.len() - 3
+                ))
+            }
+        }
+    }
+}
+
+pub(crate) fn wait_dependency_threads(state: &AppState) -> Vec<String> {
+    let mut threads = state
+        .live_agent_tasks
+        .values()
+        .filter(|task| is_active_wait_task(task))
+        .flat_map(|task| task.receiver_thread_ids.iter().cloned())
+        .collect::<Vec<_>>();
+    threads.sort();
+    threads.dedup();
+    threads
+}
+
 pub(crate) fn track_collab_agent_task_started(state: &mut AppState, item: &Value) {
     let Some(task) = parse_live_agent_task(item) else {
         return;
@@ -64,6 +109,10 @@ fn parse_live_agent_task(item: &Value) -> Option<LiveAgentTaskSummary> {
         prompt,
         agent_statuses,
     })
+}
+
+fn is_active_wait_task(task: &LiveAgentTaskSummary) -> bool {
+    task.tool == "wait" && task.status == "inProgress"
 }
 
 fn parse_agent_statuses(value: Option<&Value>) -> BTreeMap<String, String> {
@@ -127,8 +176,10 @@ fn upsert_cached_agent_thread(
 
 #[cfg(test)]
 mod tests {
+    use super::active_wait_task_count;
     use super::track_collab_agent_task_completed;
     use super::track_collab_agent_task_started;
+    use super::wait_dependency_summary;
     use serde_json::json;
 
     #[test]
@@ -177,5 +228,40 @@ mod tests {
         assert!(state.live_agent_tasks.is_empty());
         assert_eq!(state.cached_agent_threads[0].status, "completed");
         assert_eq!(state.cached_agent_threads[0].preview, "done");
+    }
+
+    #[test]
+    fn wait_dependency_summary_dedupes_and_counts_receivers() {
+        let mut state = crate::state::AppState::new(true, false);
+        track_collab_agent_task_started(
+            &mut state,
+            &json!({
+                "type": "collabAgentToolCall",
+                "id": "wait-1",
+                "tool": "wait",
+                "status": "inProgress",
+                "senderThreadId": "thread-main",
+                "receiverThreadIds": ["thread-agent-1", "thread-agent-2"],
+                "agentsStates": {}
+            }),
+        );
+        track_collab_agent_task_started(
+            &mut state,
+            &json!({
+                "type": "collabAgentToolCall",
+                "id": "wait-2",
+                "tool": "wait",
+                "status": "inProgress",
+                "senderThreadId": "thread-main",
+                "receiverThreadIds": ["thread-agent-2"],
+                "agentsStates": {}
+            }),
+        );
+
+        assert_eq!(active_wait_task_count(&state), 2);
+        assert_eq!(
+            wait_dependency_summary(&state).as_deref(),
+            Some("waiting on agents thread-agent-1, thread-agent-2")
+        );
     }
 }

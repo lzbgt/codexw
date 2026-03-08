@@ -4,6 +4,7 @@ use serde_json::Value;
 use crate::Cli;
 use crate::background_terminals::track_started_command_item;
 use crate::orchestration_registry::track_collab_agent_task_started;
+use crate::orchestration_registry::wait_dependency_summary;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -70,11 +71,13 @@ fn render_item_started(params: &Value, cli: &Cli, state: &mut AppState) -> Resul
         }
         "collabAgentToolCall" => {
             track_collab_agent_task_started(state, item);
-            state.last_status_line = Some(summarize_text(&format!(
-                "{} {}",
-                humanize_item_type(item_type),
-                summarize_tool_item(item_type, item, cli.verbose_events || cli.raw_json)
-            )));
+            state.last_status_line = wait_dependency_summary(state).or_else(|| {
+                Some(summarize_text(&format!(
+                    "{} {}",
+                    humanize_item_type(item_type),
+                    summarize_tool_item(item_type, item, cli.verbose_events || cli.raw_json)
+                )))
+            });
         }
         _ => {}
     }

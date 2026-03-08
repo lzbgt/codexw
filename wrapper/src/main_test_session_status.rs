@@ -434,12 +434,111 @@ fn status_overview_reports_orchestration_breakdown() {
         .expect("start background shell");
 
     let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
-    assert!(rendered.contains("orchestration   main=1 agents_live=1 agents_cached=2"));
+    assert!(rendered.contains("orchestration   main=1 waits=0 agents_live=1 agents_cached=2"));
     assert!(rendered.contains("active=1"));
     assert!(rendered.contains("idle=1"));
     assert!(rendered.contains("bg_shells=1"));
     assert!(rendered.contains("thread_terms=1"));
     let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn collab_wait_item_sets_waiting_on_agent_status() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+
+    handle_status_update(
+        "item/started",
+        &json!({
+            "item": {
+                "type": "collabAgentToolCall",
+                "id": "wait-1",
+                "tool": "wait",
+                "status": "inProgress",
+                "senderThreadId": "thread-main",
+                "receiverThreadIds": ["thread-agent-1"],
+                "agentsStates": {
+                    "thread-agent-1": {
+                        "status": "running"
+                    }
+                }
+            }
+        }),
+        &cli,
+        &mut state,
+        &mut output,
+    )
+    .expect("handle wait start");
+
+    assert_eq!(
+        state.last_status_line.as_deref(),
+        Some("waiting on agent thread-agent-1")
+    );
+}
+
+#[test]
+fn completing_one_wait_task_keeps_status_for_remaining_waits() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    for (call_id, agent_id) in [("wait-1", "thread-agent-1"), ("wait-2", "thread-agent-2")] {
+        handle_status_update(
+            "item/started",
+            &json!({
+                "item": {
+                    "type": "collabAgentToolCall",
+                    "id": call_id,
+                    "tool": "wait",
+                    "status": "inProgress",
+                    "senderThreadId": "thread-main",
+                    "receiverThreadIds": [agent_id],
+                    "agentsStates": {
+                        agent_id: {
+                            "status": "running"
+                        }
+                    }
+                }
+            }),
+            &cli,
+            &mut state,
+            &mut output,
+        )
+        .expect("start wait task");
+    }
+
+    assert_eq!(
+        state.last_status_line.as_deref(),
+        Some("waiting on agents thread-agent-1, thread-agent-2")
+    );
+
+    render_item_completed(
+        &cli,
+        &json!({
+            "item": {
+                "type": "collabAgentToolCall",
+                "id": "wait-1",
+                "tool": "wait",
+                "status": "completed",
+                "senderThreadId": "thread-main",
+                "receiverThreadIds": ["thread-agent-1"],
+                "agentsStates": {
+                    "thread-agent-1": {
+                        "status": "completed",
+                        "message": "done"
+                    }
+                }
+            }
+        }),
+        &mut state,
+        &mut output,
+    )
+    .expect("complete first wait");
+
+    assert_eq!(
+        state.last_status_line.as_deref(),
+        Some("waiting on agent thread-agent-2")
+    );
 }
 
 #[test]

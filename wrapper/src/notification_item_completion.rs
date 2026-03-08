@@ -4,6 +4,7 @@ use serde_json::Value;
 use crate::Cli;
 use crate::background_terminals::clear_completed_command_item;
 use crate::orchestration_registry::track_collab_agent_task_completed;
+use crate::orchestration_registry::wait_dependency_summary;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -25,6 +26,10 @@ pub(crate) fn render_item_completed(
         return Ok(());
     };
     let item_type = get_string(item, &["type"]).unwrap_or("unknown");
+    if item_type == "collabAgentToolCall" {
+        track_collab_agent_task_completed(state, item);
+        reconcile_collab_wait_status_line(state);
+    }
     clear_completed_item_status(item_type, item, cli, state);
     match item_type {
         "agentMessage" => {
@@ -95,9 +100,6 @@ pub(crate) fn render_item_completed(
             }
         }
         "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" => {
-            if item_type == "collabAgentToolCall" {
-                track_collab_agent_task_completed(state, item);
-            }
             output.finish_stream()?;
             output.block_stdout(
                 &format!("{} complete", humanize_item_type(item_type)),
@@ -126,5 +128,14 @@ fn clear_completed_item_status(item_type: &str, item: &Value, cli: &Cli, state: 
 
     if expected.as_deref() == state.last_status_line.as_deref() {
         state.last_status_line = None;
+    }
+}
+
+fn reconcile_collab_wait_status_line(state: &mut AppState) {
+    if matches!(
+        state.last_status_line.as_deref(),
+        Some(line) if line.starts_with("waiting on agent")
+    ) {
+        state.last_status_line = wait_dependency_summary(state);
     }
 }

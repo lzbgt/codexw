@@ -196,9 +196,11 @@ The current `codexw` implementation now reflects that model partially:
 - live `collabAgentToolCall` items are now tracked as in-turn cognitive work:
   - active collab-agent calls are kept in a live registry while the turn is running
   - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
+  - `wait` calls are tracked separately as main-agent dependencies, so the wrapper can tell the difference between "subagents are running" and "the foreground agent is actually blocked waiting on them"
 - `/ps` renders the tracked worker snapshot: cached cognitive workers from `/agent` or `/multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
 - `/status` now reports an orchestration breakdown with:
   - `main=1`
+  - live wait count from in-progress `wait` collab calls
   - live collab-agent task count from the current turn
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
   - wrapper-owned background shell count
