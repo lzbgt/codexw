@@ -377,7 +377,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)
@@ -635,13 +635,14 @@ pub(crate) fn parse_clean_selection(
     args: &[&str],
     context: &str,
 ) -> Result<CleanSelection, String> {
-    let usage = format!("{context} [blockers|shells|services [@capability]|terminals]");
+    let usage =
+        format!("{context} [blockers [@capability]|shells|services [@capability]|terminals]");
     let Some(target) = parse_clean_target(args.first().copied()) else {
         return Err(format!("usage: {usage}"));
     };
     let capability = match args.get(1).copied() {
         None => None,
-        Some(raw_capability) if matches!(target, CleanTarget::Services) => {
+        Some(raw_capability) if matches!(target, CleanTarget::Blockers | CleanTarget::Services) => {
             let Some(raw_capability) = raw_capability.strip_prefix('@') else {
                 return Err(format!("usage: {usage}"));
             };
@@ -672,10 +673,26 @@ pub(crate) fn execute_clean_target(
             .orchestration
             .background_shells
             .terminate_all_running(),
-        CleanTarget::Blockers => state
-            .orchestration
-            .background_shells
-            .terminate_running_by_intent(BackgroundShellIntent::Prerequisite),
+        CleanTarget::Blockers => {
+            if let Some(capability) = selection.capability.as_deref() {
+                match state
+                    .orchestration
+                    .background_shells
+                    .terminate_running_blockers_by_capability(capability)
+                {
+                    Ok(cleaned_local) => cleaned_local,
+                    Err(err) => {
+                        output.line_stderr(format!("[session] {err}"))?;
+                        return Ok(());
+                    }
+                }
+            } else {
+                state
+                    .orchestration
+                    .background_shells
+                    .terminate_running_by_intent(BackgroundShellIntent::Prerequisite)
+            }
+        }
         CleanTarget::Services => {
             if let Some(capability) = selection.capability.as_deref() {
                 match state
@@ -707,9 +724,12 @@ pub(crate) fn execute_clean_target(
         CleanTarget::Terminals => "server background terminals",
     };
     if let Some(capability) = selection.capability.as_deref() {
-        output.line_stderr(format!(
-            "[thread] cleaning service shells for @{capability}"
-        ))?;
+        let scope_label = match selection.target {
+            CleanTarget::Blockers => "blocking prerequisite shells",
+            CleanTarget::Services => "service shells",
+            _ => unreachable!(),
+        };
+        output.line_stderr(format!("[thread] cleaning {scope_label} for @{capability}"))?;
     } else {
         output.line_stderr(format!("[thread] cleaning {target_label}"))?;
     }

@@ -795,6 +795,14 @@ fn clean_target_parser_accepts_scoped_cleanup_aliases() {
     assert_eq!(parse_clean_target(Some("unknown")), None);
 
     assert_eq!(
+        parse_clean_selection(&["blockers", "@api.http"], ":clean")
+            .expect("parse blocker clean selector"),
+        CleanSelection {
+            target: CleanTarget::Blockers,
+            capability: Some("api.http".to_string())
+        }
+    );
+    assert_eq!(
         parse_clean_selection(&["services", "@api.http"], ":clean").expect("parse clean selector"),
         CleanSelection {
             target: CleanTarget::Services,
@@ -981,6 +989,58 @@ fn ps_clean_services_can_target_one_capability() {
     assert!(!rendered.contains("api a"));
     assert!(!rendered.contains("api b"));
     assert!(rendered.contains("db"));
+}
+
+#[test]
+fn ps_clean_blockers_can_target_one_capability() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "prerequisite",
+                "label": "api wait",
+                "dependsOnCapabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start api blocker");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "prerequisite",
+                "label": "db wait",
+                "dependsOnCapabilities": ["db.redis"]
+            }),
+            "/tmp",
+        )
+        .expect("start db blocker");
+
+    handle_ps_command(
+        "clean blockers @api.http",
+        &["clean", "blockers", "@api.http"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("clean blockers by capability");
+
+    let rendered = state
+        .background_shells
+        .capability_dependency_summaries()
+        .into_iter()
+        .map(|summary| format!("{} -> {}", summary.job_id, summary.capability))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(!rendered.contains("api.http"));
+    assert!(rendered.contains("db.redis"));
 }
 
 #[test]

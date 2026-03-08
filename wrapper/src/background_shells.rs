@@ -662,25 +662,20 @@ impl BackgroundShellManager {
             "all" => {
                 if capability.is_some() {
                     return Err(
-                        "background_shell_clean `capability` is only valid with `scope=services`"
+                        "background_shell_clean `capability` is only valid with `scope=blockers` or `scope=services`"
                             .to_string(),
                     );
                 }
                 self.terminate_all_running()
             }
-            "blockers" => {
-                if capability.is_some() {
-                    return Err(
-                        "background_shell_clean `capability` is only valid with `scope=services`"
-                            .to_string(),
-                    );
-                }
-                self.terminate_running_by_intent(BackgroundShellIntent::Prerequisite)
-            }
+            "blockers" => match capability {
+                Some(capability) => self.terminate_running_blockers_by_capability(capability)?,
+                None => self.terminate_running_by_intent(BackgroundShellIntent::Prerequisite),
+            },
             "shells" => {
                 if capability.is_some() {
                     return Err(
-                        "background_shell_clean `capability` is only valid with `scope=services`"
+                        "background_shell_clean `capability` is only valid with `scope=blockers` or `scope=services`"
                             .to_string(),
                     );
                 }
@@ -697,6 +692,11 @@ impl BackgroundShellManager {
             }
         };
         let summary = match (scope, capability) {
+            ("blockers", Some(capability)) => format!(
+                "Terminated {terminated} blocking prerequisite background shell job{} for reusable capability dependency @{}.",
+                if terminated == 1 { "" } else { "s" },
+                capability.trim_start_matches('@')
+            ),
             ("services", Some(capability)) => format!(
                 "Terminated {terminated} background shell job{} for reusable service capability @{}.",
                 if terminated == 1 { "" } else { "s" },

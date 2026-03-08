@@ -349,7 +349,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_clean",
-            "description": "Terminate local background shell jobs by scope. Supports all, blockers, shells, or services, and service cleanup can optionally target one @capability to resolve ambiguous reusable roles.",
+            "description": "Terminate local background shell jobs by scope. Supports all, blockers, shells, or services. Blocker cleanup can optionally target one @capability to clear only prerequisite shells gated on that reusable role, and service cleanup can optionally target one @capability to resolve ambiguous reusable roles.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

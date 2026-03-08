@@ -318,6 +318,49 @@ fn terminate_running_services_by_capability_terminates_all_matching_providers() 
 }
 
 #[test]
+fn terminate_running_blockers_by_capability_terminates_only_matching_prereqs() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "prerequisite",
+                "label": "api blocker",
+                "dependsOnCapabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start api blocker");
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "prerequisite",
+                "label": "db blocker",
+                "dependsOnCapabilities": ["db.redis"]
+            }),
+            "/tmp",
+        )
+        .expect("start db blocker");
+
+    let terminated = manager
+        .terminate_running_blockers_by_capability("@api.http")
+        .expect("terminate api blockers");
+    assert_eq!(terminated, 1);
+
+    let rendered = manager
+        .capability_dependency_summaries()
+        .into_iter()
+        .map(|summary| format!("{} -> {}", summary.job_id, summary.capability))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(!rendered.contains("api.http"));
+    assert!(rendered.contains("db.redis"));
+
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn background_shell_origin_intent_and_label_are_preserved_in_snapshots_and_poll() {
     let manager = BackgroundShellManager::default();
     manager
