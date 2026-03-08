@@ -1296,6 +1296,40 @@ mod tests {
     }
 
     #[test]
+    fn focused_actions_for_untracked_capability_render_contract_fixes() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start untracked service");
+
+        let rendered = render_orchestration_actions_for_capability(&services, "@api.http")
+            .expect("focused operator actions");
+        assert!(rendered.contains("Suggested actions (@api.http):"));
+        assert!(rendered.contains(":ps services untracked @api.http"));
+        assert!(rendered.contains(":ps contract <jobId|alias|@capability|n> <json-object>"));
+
+        let tool_rendered =
+            render_orchestration_actions_for_tool_capability(&services, "@api.http")
+                .expect("focused tool actions");
+        assert!(tool_rendered.contains("Suggested actions (@api.http):"));
+        assert!(tool_rendered.contains(
+            "background_shell_list_services {\"status\":\"untracked\",\"capability\":\"@api.http\"}"
+        ));
+        assert!(tool_rendered.contains(
+            "background_shell_update_service {\"jobId\":\"@api.http\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+        ));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
     fn focused_guidance_and_actions_can_target_one_capability() {
         let services = crate::state::AppState::new(true, false);
         services
@@ -1313,17 +1347,20 @@ mod tests {
         let guidance = render_orchestration_guidance_for_capability(&services, "@api.http")
             .expect("focused guidance");
         assert!(guidance.contains("Next action (@api.http):"));
-        assert!(guidance.contains("ready for reuse"));
+        assert!(guidance.contains("untracked service"));
+        assert!(guidance.contains("/ps services untracked @api.http"));
 
         let operator_actions = render_orchestration_actions_for_capability(&services, "@api.http")
             .expect("focused operator actions");
         assert!(operator_actions.contains("Suggested actions (@api.http):"));
-        assert!(operator_actions.contains(":ps attach @api.http"));
+        assert!(operator_actions.contains(":ps services untracked @api.http"));
 
         let tool_actions = render_orchestration_actions_for_tool_capability(&services, "@api.http")
             .expect("focused tool actions");
         assert!(tool_actions.contains("Suggested actions (@api.http):"));
-        assert!(tool_actions.contains("background_shell_attach {\"jobId\":\"@api.http\"}"));
+        assert!(tool_actions.contains(
+            "background_shell_list_services {\"status\":\"untracked\",\"capability\":\"@api.http\"}"
+        ));
         let _ = services.background_shells.terminate_all_running();
     }
 

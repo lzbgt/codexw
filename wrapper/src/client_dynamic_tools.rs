@@ -263,13 +263,13 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_list_capabilities",
-            "description": "List the reusable service capability registry, optionally filtered to healthy, missing, booting, or ambiguous capability states.",
+            "description": "List the reusable service capability registry, optionally filtered to healthy, missing, booting, untracked, or ambiguous capability states.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "status": {
                         "type": "string",
-                        "enum": ["all", "healthy", "missing", "booting", "ambiguous"]
+                        "enum": ["all", "healthy", "missing", "booting", "untracked", "ambiguous"]
                     }
                 }
             }

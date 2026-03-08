@@ -335,6 +335,17 @@ fn guidance_lines_for_capability(
                 format!("Use /ps services booting @{capability} to inspect provider readiness."),
                 format!("Use :ps wait @{capability} 5000 when later work depends on readiness."),
             ],
+            BackgroundShellCapabilityIssueClass::Untracked => vec![
+                format!(
+                    "Reusable service capability @{capability} is provided by an untracked service."
+                ),
+                format!(
+                    "Use /ps services untracked @{capability} to inspect the provider missing readiness or attachment metadata."
+                ),
+                format!(
+                    "Use :ps contract <jobId|alias|@capability|n> <json-object> to add readyPattern or attachment metadata in place."
+                ),
+            ],
             BackgroundShellCapabilityIssueClass::Healthy => vec![
                 format!("Reusable service capability @{capability} is ready for reuse."),
                 format!("Use /ps attach @{capability} to inspect endpoint and recipe details."),
@@ -795,6 +806,28 @@ fn action_lines_for_capability(
                 "Use `background_shell_wait_ready {{\"jobId\":\"@{capability}\",\"timeoutMs\":5000}}` for the booting service you need."
             ),
             "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
+        ],
+        (BackgroundShellCapabilityIssueClass::Untracked, ActionAudience::Operator) => vec![
+            format!(
+                "Run `:ps services untracked @{capability}` to inspect the provider missing readiness or attachment metadata."
+            ),
+            format!(
+                "Run `:ps contract <jobId|alias|@capability|n> <json-object>` to add `readyPattern`, `protocol`, `endpoint`, or recipes in place for @{capability}."
+            ),
+            format!(
+                "Run `:ps relabel <jobId|alias|@capability|n> <label|none>` if the reusable service needs a clearer operator label."
+            ),
+        ],
+        (BackgroundShellCapabilityIssueClass::Untracked, ActionAudience::Tool) => vec![
+            format!(
+                "Use `background_shell_list_services {{\"status\":\"untracked\",\"capability\":\"@{capability}\"}}` to inspect the provider missing readiness or attachment metadata."
+            ),
+            format!(
+                "Use `background_shell_update_service {{\"jobId\":\"@{capability}\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}}` to add a live readiness or attachment contract for @{capability}."
+            ),
+            format!(
+                "Use `background_shell_update_service {{\"jobId\":\"@{capability}\",\"label\":\"service-label\"}}` if the reusable service needs a clearer operator label."
+            ),
         ],
         (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Operator) => vec![
             format!("Run `:ps attach @{capability}` to inspect endpoint and recipe details."),

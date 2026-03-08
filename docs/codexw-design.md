@@ -230,7 +230,7 @@ The current `codexw` implementation now reflects that model partially:
     - `:ps services ready|booting|untracked|conflicts [@capability]` filters the service-shell registry to one service-health class and can narrow it to one reusable role
   - `:ps capabilities` for the live capability-to-service index across reusable service shells
     - `:ps capabilities @api.http` drills into one capability directly and shows providers plus current consumers
-    - `:ps capabilities healthy|missing|booting|ambiguous` filters the capability index to one health/issue class
+    - `:ps capabilities healthy|missing|booting|untracked|ambiguous` filters the capability index to one health/issue class
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
   - `:ps attach <jobId|alias|@capability|n>` renders the structured attachment metadata for one service shell job
@@ -328,8 +328,8 @@ The current `codexw` implementation now reflects that model partially:
   - the full worker view remains the default
   - filtered `/ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
   - `/ps blockers @capability` narrows the blocking view to one reusable dependency role instead of forcing the operator to scan every prerequisite and wait edge
-  - `/ps guidance` now uses the same graph to emit a highest-priority next-step hint instead of only another raw worker listing, and `/ps guidance @capability` narrows that hint to one reusable role
-  - `/ps actions` is the operator-facing remediation companion: it renders concrete follow-up commands inferred from the current state, such as `:ps capabilities @api.http`, `:ps provide <job> <@capability...|none>`, `:ps depend <job> <@capability...|none>`, `:ps contract <job> <json-object>`, `:clean services @api.http`, or `:ps wait @api.http 5000`, and untracked reusable services now surface explicit contract-fix suggestions instead of falling through as generic sidecars; `/ps actions @capability` narrows those suggestions to one reusable role
+  - `/ps guidance` now uses the same graph to emit a highest-priority next-step hint instead of only another raw worker listing, and `/ps guidance @capability` narrows that hint to one reusable role; if the focused role is currently backed by an untracked service provider, the hint now stays in contract-fix mode instead of collapsing to generic healthy reuse
+  - `/ps actions` is the operator-facing remediation companion: it renders concrete follow-up commands inferred from the current state, such as `:ps capabilities @api.http`, `:ps provide <job> <@capability...|none>`, `:ps depend <job> <@capability...|none>`, `:ps contract <job> <json-object>`, `:clean services @api.http`, or `:ps wait @api.http 5000`, and untracked reusable services now surface explicit contract-fix suggestions instead of falling through as generic sidecars; `/ps actions @capability` narrows those suggestions to one reusable role and now surfaces the same focused contract-fix guidance when the provider for that role is still untracked
 - `/status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
 - that compact summary now also carries capability-dependency issue counts (`cap_deps_missing`, `cap_deps_booting`, `cap_deps_ambiguous`), so durable service dependency health is visible without opening the detailed capability registry
 - that compact summary now also carries conflicted-service counts, so capability-collision health is visible without opening the detailed service registry

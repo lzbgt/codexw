@@ -1334,6 +1334,45 @@ fn ps_command_can_filter_capability_index_by_issue_class() {
 }
 
 #[test]
+fn ps_command_can_filter_capability_index_by_untracked_issue_class() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+
+    handle_ps_command(
+        "capabilities untracked",
+        &["capabilities", "untracked"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render filtered untracked capability index");
+
+    let rendered = state
+        .background_shells
+        .render_service_capabilities_for_ps_filtered(Some(
+            crate::background_shells::BackgroundShellCapabilityIssueClass::Untracked,
+        ))
+        .expect("capability filter")
+        .join("\n");
+    assert!(rendered.contains("@api.http -> bg-1 [untracked]"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
 fn ps_command_can_filter_dependencies_by_capability() {
     let cli = test_cli();
     let mut state = crate::state::AppState::new(true, false);

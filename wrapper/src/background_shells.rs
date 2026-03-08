@@ -245,6 +245,7 @@ pub(crate) enum BackgroundShellCapabilityIssueClass {
     Healthy,
     Missing,
     Booting,
+    Untracked,
     Ambiguous,
 }
 

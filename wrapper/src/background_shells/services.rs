@@ -843,6 +843,7 @@ impl BackgroundShellManager {
                 BackgroundShellCapabilityIssueClass::Healthy => "",
                 BackgroundShellCapabilityIssueClass::Missing => " [missing]",
                 BackgroundShellCapabilityIssueClass::Booting => " [booting]",
+                BackgroundShellCapabilityIssueClass::Untracked => " [untracked]",
                 BackgroundShellCapabilityIssueClass::Ambiguous => " [conflict]",
             };
             lines.push(format!(
@@ -997,6 +998,9 @@ impl BackgroundShellManager {
         if providers[0].service_readiness == Some(BackgroundShellServiceReadiness::Booting) {
             return BackgroundShellCapabilityIssueClass::Booting;
         }
+        if providers[0].service_readiness == Some(BackgroundShellServiceReadiness::Untracked) {
+            return BackgroundShellCapabilityIssueClass::Untracked;
+        }
         BackgroundShellCapabilityIssueClass::Healthy
     }
 
@@ -1023,6 +1027,7 @@ impl BackgroundShellManager {
                     BackgroundShellCapabilityIssueClass::Healthy => "",
                     BackgroundShellCapabilityIssueClass::Missing => " [missing]",
                     BackgroundShellCapabilityIssueClass::Booting => " [booting]",
+                    BackgroundShellCapabilityIssueClass::Untracked => " [untracked]",
                     BackgroundShellCapabilityIssueClass::Ambiguous => " [conflict]",
                 },
             ));
@@ -1227,11 +1232,12 @@ pub(super) fn parse_capability_issue_filter(
         Some("healthy") | Some("ok") => Ok(Some(BackgroundShellCapabilityIssueClass::Healthy)),
         Some("missing") => Ok(Some(BackgroundShellCapabilityIssueClass::Missing)),
         Some("booting") => Ok(Some(BackgroundShellCapabilityIssueClass::Booting)),
+        Some("untracked") => Ok(Some(BackgroundShellCapabilityIssueClass::Untracked)),
         Some("ambiguous") | Some("conflicts") | Some("conflict") => {
             Ok(Some(BackgroundShellCapabilityIssueClass::Ambiguous))
         }
         Some(other) => Err(format!(
-            "{context} `status` must be one of `all`, `healthy`, `missing`, `booting`, or `ambiguous`, got `{other}`"
+            "{context} `status` must be one of `all`, `healthy`, `missing`, `booting`, `untracked`, or `ambiguous`, got `{other}`"
         )),
     }
 }
