@@ -3,8 +3,14 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::catalog_views::render_apps_list;
+use crate::catalog_views::render_skills_list;
+use crate::collaboration::CollaborationModeAction;
 use crate::dispatch_command_utils::parse_feedback_args;
 use crate::editor::LineEditor;
+use crate::model_session::ModelsAction;
+use crate::model_session::apply_personality_selection;
+use crate::model_session::render_personality_options;
 use crate::output::Output;
 use crate::requests::send_clean_background_terminals;
 use crate::requests::send_feedback_upload;
@@ -17,19 +23,13 @@ use crate::requests::send_logout_account;
 use crate::requests::send_thread_realtime_append_text;
 use crate::requests::send_thread_realtime_start;
 use crate::requests::send_thread_realtime_stop;
-use crate::session::CollaborationModeAction;
-use crate::session::ModelsAction;
-use crate::session::apply_personality_selection;
-use crate::session::render_personality_options;
-use crate::session::render_realtime_status;
-use crate::session::render_status_snapshot;
+use crate::session_realtime::render_realtime_status;
+use crate::session_snapshot::render_status_snapshot;
 use crate::state::AppState;
 use crate::state::summarize_text;
 use crate::state::thread_id;
-use crate::views::render_apps_list;
-use crate::views::render_pending_attachments;
-use crate::views::render_permissions_snapshot;
-use crate::views::render_skills_list;
+use crate::status_views::render_permissions_snapshot;
+use crate::transcript_render::render_pending_attachments;
 
 pub(crate) fn try_handle_session_command(
     command: &str,

@@ -7,10 +7,10 @@ use serde_json::json;
 use super::PendingRequest;
 use super::send_json;
 use crate::Cli;
+use crate::collaboration::CollaborationModeAction;
+use crate::model_session::ModelsAction;
 use crate::rpc::OutgoingNotification;
 use crate::rpc::OutgoingRequest;
-use crate::session::CollaborationModeAction;
-use crate::session::ModelsAction;
 use crate::state::AppState;
 
 pub(crate) fn send_initialize(

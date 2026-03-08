@@ -18,17 +18,17 @@ use crate::state::buffer_process_delta;
 use crate::state::get_string;
 use crate::state::summarize_text;
 use crate::state::thread_id;
-use crate::views::format_plan;
-use crate::views::humanize_item_type;
-use crate::views::render_command_completion;
-use crate::views::render_file_change_completion;
-use crate::views::render_reasoning_item;
-use crate::views::summarize_file_change_paths;
-use crate::views::summarize_model_reroute;
-use crate::views::summarize_server_request_resolved;
-use crate::views::summarize_terminal_interaction;
-use crate::views::summarize_tool_item;
-use crate::views::summarize_value;
+use crate::status_views::summarize_value;
+use crate::transcript_render::format_plan;
+use crate::transcript_render::render_command_completion;
+use crate::transcript_render::render_file_change_completion;
+use crate::transcript_render::render_reasoning_item;
+use crate::transcript_summary::humanize_item_type;
+use crate::transcript_summary::summarize_file_change_paths;
+use crate::transcript_summary::summarize_model_reroute;
+use crate::transcript_summary::summarize_server_request_resolved;
+use crate::transcript_summary::summarize_terminal_interaction;
+use crate::transcript_summary::summarize_tool_item;
 
 pub(crate) fn handle_turn_notification(
     notification: RpcNotification,

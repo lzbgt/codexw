@@ -6,14 +6,14 @@ use anyhow::Result;
 use base64::Engine;
 use serde_json::Value;
 
+use crate::collaboration::CollaborationModePreset;
 use crate::input::AppCatalogEntry;
 use crate::input::PluginCatalogEntry;
 use crate::input::SkillCatalogEntry;
+use crate::model_session::ModelCatalogEntry;
 use crate::output::Output;
 use crate::requests::PendingRequest;
 use crate::rpc::RequestId;
-use crate::session::CollaborationModePreset;
-use crate::session::ModelCatalogEntry;
 
 #[derive(Default)]
 pub(crate) struct ProcessOutputBuffer {

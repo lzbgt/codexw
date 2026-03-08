@@ -8,7 +8,7 @@ use crate::commands::longest_common_prefix;
 use crate::commands::try_complete_slash_command;
 use crate::editor::LineEditor;
 use crate::output::Output;
-use crate::session::render_prompt_status;
+use crate::session_prompt_status::render_prompt_status;
 use crate::state::AppState;
 
 pub(crate) fn update_prompt(

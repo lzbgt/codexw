@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::input::AppCatalogEntry;
 use crate::input::SkillCatalogEntry;
-use crate::session::extract_models;
+use crate::model_session::extract_models;
 use crate::state::get_string;
 use crate::state::summarize_text;
 

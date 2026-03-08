@@ -2,10 +2,10 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
+use crate::catalog_views::render_models_list;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
-use crate::views::render_models_list;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ModelCatalogEntry {

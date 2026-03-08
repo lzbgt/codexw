@@ -18,11 +18,11 @@ use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcRequest;
 use crate::runtime::StartMode;
 use crate::state::AppState;
-use crate::views::build_tool_user_input_response;
-use crate::views::summarize_command_approval_request;
-use crate::views::summarize_generic_approval_request;
-use crate::views::summarize_tool_request;
-use crate::views::summarize_value;
+use crate::status_views::summarize_value;
+use crate::transcript_render::build_tool_user_input_response;
+use crate::transcript_summary::summarize_command_approval_request;
+use crate::transcript_summary::summarize_generic_approval_request;
+use crate::transcript_summary::summarize_tool_request;
 
 pub(crate) fn process_server_line(
     line: String,

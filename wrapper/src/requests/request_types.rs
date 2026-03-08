@@ -1,5 +1,5 @@
-use crate::session::CollaborationModeAction;
-use crate::session::ModelsAction;
+use crate::collaboration::CollaborationModeAction;
+use crate::model_session::ModelsAction;
 
 #[derive(Debug)]
 pub(crate) enum PendingRequest {

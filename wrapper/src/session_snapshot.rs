@@ -8,10 +8,10 @@ use crate::policy::turn_sandbox_policy;
 use crate::session_prompt_status::format_elapsed;
 use crate::state::AppState;
 use crate::state::summarize_text;
-use crate::views::render_account_summary;
-use crate::views::render_rate_limit_lines;
-use crate::views::render_token_usage_summary;
-use crate::views::summarize_sandbox_policy;
+use crate::status_views::render_account_summary;
+use crate::status_views::render_rate_limit_lines;
+use crate::status_views::render_token_usage_summary;
+use crate::status_views::summarize_sandbox_policy;
 
 pub(crate) fn render_status_snapshot(cli: &Cli, resolved_cwd: &str, state: &AppState) -> String {
     let effective_model_summary = match effective_model_entry(state, cli) {

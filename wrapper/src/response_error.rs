@@ -1,9 +1,9 @@
 use anyhow::Result;
 use serde_json::Value;
 
+use crate::collaboration::CollaborationModeAction;
 use crate::output::Output;
 use crate::requests::PendingRequest;
-use crate::session::CollaborationModeAction;
 use crate::state::AppState;
 use crate::state::summarize_text;
 

@@ -6,11 +6,11 @@ use crate::Cli;
 use crate::catalog::parse_apps_list;
 use crate::output::Output;
 use crate::rpc::RpcNotification;
-use crate::session::render_realtime_item;
+use crate::session_realtime::render_realtime_item;
 use crate::state::AppState;
 use crate::state::emit_status_line;
 use crate::state::get_string;
-use crate::views::summarize_thread_status_for_display;
+use crate::transcript_summary::summarize_thread_status_for_display;
 
 pub(crate) fn handle_realtime_notification(
     notification: &RpcNotification,

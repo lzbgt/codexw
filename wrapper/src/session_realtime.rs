@@ -4,7 +4,7 @@ use crate::session_prompt_status::format_elapsed;
 use crate::state::AppState;
 use crate::state::get_string;
 use crate::state::summarize_text;
-use crate::views::summarize_value;
+use crate::status_views::summarize_value;
 
 pub(crate) fn render_realtime_status(state: &AppState) -> String {
     let mut lines = vec![format!("active          {}", state.realtime_active)];
