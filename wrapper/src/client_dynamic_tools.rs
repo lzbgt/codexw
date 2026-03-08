@@ -14,6 +14,7 @@ use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::orchestration_guidance_summary;
 use crate::orchestration_view::orchestration_overview_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
+use crate::orchestration_view::render_orchestration_actions;
 use crate::orchestration_view::render_orchestration_dependencies;
 use crate::orchestration_view::render_orchestration_workers;
 use crate::orchestration_view::render_orchestration_workers_with_filter;
@@ -40,15 +41,23 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "orchestration_list_workers",
-            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, dependencies, agents, shells, services, capabilities, terminals, or guidance.",
+            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, dependencies, agents, shells, services, capabilities, terminals, guidance, or actions.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "filter": {
                         "type": "string",
-                        "enum": ["all", "blockers", "dependencies", "agents", "shells", "services", "capabilities", "terminals", "guidance"]
+                        "enum": ["all", "blockers", "dependencies", "agents", "shells", "services", "capabilities", "terminals", "guidance", "actions"]
                     }
                 }
+            }
+        }),
+        json!({
+            "name": "orchestration_suggest_actions",
+            "description": "Render concrete next-step commands for the current orchestration state, such as blocker inspection, service attach, readiness waits, or cleanup actions.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
             }
         }),
         json!({
@@ -374,6 +383,7 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
     let result = match tool {
         "orchestration_status" => Ok(render_orchestration_status_for_tool(state)),
         "orchestration_list_workers" => render_orchestration_workers_for_tool(arguments, state),
+        "orchestration_suggest_actions" => Ok(render_orchestration_actions(state)),
         "orchestration_list_dependencies" => {
             render_orchestration_dependencies_for_tool(arguments, state)
         }
@@ -505,8 +515,9 @@ fn parse_worker_filter_for_tool(raw: Option<&str>) -> Result<WorkerFilter, Strin
         "capabilities" | "caps" | "cap" => Ok(WorkerFilter::Capabilities),
         "terminals" => Ok(WorkerFilter::Terminals),
         "guidance" | "guide" | "next" => Ok(WorkerFilter::Guidance),
+        "actions" | "action" | "suggest" | "suggestions" => Ok(WorkerFilter::Actions),
         other => Err(format!(
-            "orchestration_list_workers `filter` must be one of `all`, `blockers`, `dependencies`, `agents`, `shells`, `services`, `capabilities`, `terminals`, or `guidance`, got `{other}`"
+            "orchestration_list_workers `filter` must be one of `all`, `blockers`, `dependencies`, `agents`, `shells`, `services`, `capabilities`, `terminals`, `guidance`, or `actions`, got `{other}`"
         )),
     }
 }

@@ -323,13 +323,15 @@ The current `codexw` implementation now reflects that model partially:
   - the full worker view remains the default
   - filtered `/ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
   - `/ps guidance` now uses the same graph to emit a highest-priority next-step hint instead of only another raw worker listing
+  - `/ps actions` is the operator-facing remediation companion: it renders concrete follow-up commands inferred from the current state, such as `:ps capabilities @api.http`, `:clean services @api.http`, or `:ps wait @api.http 5000`
 - `/status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
 - that compact summary now also carries capability-dependency issue counts (`cap_deps_missing`, `cap_deps_booting`, `cap_deps_ambiguous`), so durable service dependency health is visible without opening the detailed capability registry
 - that compact summary now also carries conflicted-service counts, so capability-collision health is visible without opening the detailed service registry
 - `/status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives operator guidance as well as raw counts and dependency edges
 - the same orchestration graph is now available to the model-side dynamic tool layer too:
   - `orchestration_status` mirrors the compact orchestration summary plus next-action hint
-  - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, or `guidance`
+  - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, `guidance`, or `actions`
+  - `orchestration_suggest_actions` mirrors `/ps actions` and returns only the concrete remediation commands suggested by the current orchestration state
   - `orchestration_list_dependencies` mirrors the focused dependency-edge view with optional filters such as `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`, plus an optional `capability` selector for one reusable role
   - `background_shell_list_services` mirrors the focused reusable-service registry with optional filters such as `ready`, `booting`, `untracked`, or `conflicts`, plus an optional `capability` selector for one reusable role
   - `background_shell_clean` mirrors the local cleanup control surface with `scope=all|blockers|shells|services`, and `scope=services` can optionally target one reusable role with `capability=@...` so model-side orchestration can resolve ambiguous service providers instead of only reporting the conflict

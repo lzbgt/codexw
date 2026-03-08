@@ -581,6 +581,14 @@ fn ps_filter_parser_accepts_worker_class_aliases() {
         parse_ps_filter(Some("terminals")),
         Some(WorkerFilter::Terminals)
     );
+    assert_eq!(
+        parse_ps_filter(Some("actions")),
+        Some(WorkerFilter::Actions)
+    );
+    assert_eq!(
+        parse_ps_filter(Some("suggestions")),
+        Some(WorkerFilter::Actions)
+    );
     assert_eq!(parse_ps_filter(Some("clean")), None);
     assert_eq!(parse_ps_filter(Some("unknown")), None);
 }

@@ -30,6 +30,7 @@ pub(crate) enum WorkerFilter {
     Capabilities,
     Terminals,
     Guidance,
+    Actions,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -378,6 +379,13 @@ pub(crate) fn render_orchestration_workers_with_filter(
         }
         return guidance;
     }
+    if matches!(filter, WorkerFilter::Actions) {
+        let actions = render_orchestration_actions(state);
+        if actions.is_empty() {
+            return empty_filter_message(filter).to_string();
+        }
+        return actions;
+    }
     let mut lines = Vec::new();
     if matches!(
         filter,
@@ -461,6 +469,19 @@ pub(crate) fn render_orchestration_guidance(state: &AppState) -> String {
         String::new()
     } else {
         let mut rendered = vec!["Next action:".to_string()];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        rendered.join("\n")
+    }
+}
+
+pub(crate) fn render_orchestration_actions(state: &AppState) -> String {
+    let lines = action_lines(state);
+    if lines.is_empty() {
+        String::new()
+    } else {
+        let mut rendered = vec!["Suggested actions:".to_string()];
         for (index, line) in lines.iter().enumerate() {
             rendered.push(format!("{:>2}. {}", index + 1, line));
         }
@@ -682,6 +703,7 @@ fn empty_filter_message(filter: WorkerFilter) -> &'static str {
         WorkerFilter::Capabilities => "No reusable service capabilities tracked right now.",
         WorkerFilter::Terminals => "No server-observed background terminals tracked right now.",
         WorkerFilter::Guidance => "No orchestration guidance right now.",
+        WorkerFilter::Actions => "No orchestration actions suggested right now.",
     }
 }
 
@@ -839,6 +861,135 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
     Vec::new()
 }
 
+fn action_lines(state: &AppState) -> Vec<String> {
+    let waits = active_wait_task_count(state);
+    let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
+    let sidecar_agents = active_sidecar_agent_task_count(state);
+    let shell_sidecars = running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
+    let blocking_capability_issues = state
+        .orchestration
+        .background_shells
+        .blocking_capability_dependency_issues();
+    let capability_conflicts = state
+        .orchestration
+        .background_shells
+        .service_capability_conflicts();
+    let ready_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+    let booting_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+    let terminals = server_background_terminal_count(state);
+
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Missing)
+    {
+        return vec![
+            format!(
+                "Run `:ps capabilities @{}` to inspect the missing provider map.",
+                issue.capability
+            ),
+            format!(
+                "Run `:ps dependencies missing @{}` to inspect the blocked dependency edges.",
+                issue.capability
+            ),
+            "If the blocked shell is no longer needed, run `:clean blockers`.".to_string(),
+        ];
+    }
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Ambiguous)
+    {
+        return vec![
+            format!(
+                "Run `:ps capabilities @{}` to inspect the ambiguous provider set.",
+                issue.capability
+            ),
+            format!(
+                "Run `:clean services @{}` to clear the conflicting reusable role in one step.",
+                issue.capability
+            ),
+            format!(
+                "Run `:ps services @{}` to inspect the remaining providers.",
+                issue.capability
+            ),
+        ];
+    }
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Booting)
+    {
+        return vec![
+            format!(
+                "Run `:ps services @{}` to inspect the booting provider state.",
+                issue.capability
+            ),
+            format!(
+                "Run `:ps wait @{} 5000` to wait on the capability provider.",
+                issue.capability
+            ),
+            format!(
+                "Run `:ps dependencies booting @{}` to keep the dependency view focused.",
+                issue.capability
+            ),
+        ];
+    }
+    if prereqs > 0 {
+        return vec![
+            "Run `:ps blockers` to inspect the gating shell or wait dependency.".to_string(),
+            "Run `:ps poll <job>` or `:ps wait <job> [timeoutMs]` on the blocker you care about."
+                .to_string(),
+            "Run `:clean blockers` to abandon the current blocking prerequisite work.".to_string(),
+        ];
+    }
+    if waits > 0 {
+        return vec![
+            "Run `:ps blockers` to inspect the active wait dependencies.".to_string(),
+            "Run `:multi-agents` to refresh spawned agent threads.".to_string(),
+            "Run `:resume <n>` to switch into the agent thread that matters.".to_string(),
+        ];
+    }
+    if let Some((capability, _)) = capability_conflicts.first() {
+        return vec![
+            format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
+            format!("Run `:clean services @{capability}` to clear the ambiguous reusable role."),
+            format!("Run `:ps services @{capability}` to verify the surviving providers."),
+        ];
+    }
+    if ready_services > 0 {
+        return vec![
+            "Run `:ps services ready` to inspect reusable service metadata.".to_string(),
+            "Run `:ps attach <job|@capability>` to inspect endpoint and recipe details.".to_string(),
+            "Run `:ps run <job|@capability> <recipe> [json-args]` to reuse the ready service directly."
+                .to_string(),
+        ];
+    }
+    if booting_services > 0 {
+        return vec![
+            "Run `:ps services booting` to inspect readiness state and startup metadata."
+                .to_string(),
+            "Run `:ps wait <job|@capability> [timeoutMs]` for the booting service you need."
+                .to_string(),
+            "Run `:ps capabilities booting` to keep the capability view focused.".to_string(),
+        ];
+    }
+    if sidecar_agents + shell_sidecars > 0 {
+        return vec![
+            "Run `:ps agents` to inspect sidecar agent progress.".to_string(),
+            "Run `:ps shells` to inspect non-blocking shell jobs.".to_string(),
+            "Continue foreground work until one of those results becomes relevant.".to_string(),
+        ];
+    }
+    if terminals > 0 {
+        return vec![
+            "Run `:ps terminals` to inspect server-observed background terminals.".to_string(),
+            "Run `:clean terminals` to close them if they are no longer needed.".to_string(),
+        ];
+    }
+
+    Vec::new()
+}
+
 fn pluralize(count: usize, singular: &str, plural: &str) -> String {
     format!("{count} {}", if count == 1 { singular } else { plural })
 }
@@ -860,6 +1011,7 @@ mod tests {
     use super::orchestration_overview_summary;
     use super::orchestration_prompt_suffix;
     use super::orchestration_runtime_summary;
+    use super::render_orchestration_actions;
     use super::render_orchestration_guidance;
     use super::render_orchestration_workers;
     use super::render_orchestration_workers_with_filter;
@@ -1336,5 +1488,41 @@ mod tests {
         assert!(rendered.contains("Next action:"));
         assert!(rendered.contains("blocked on 1 agent wait"));
         assert!(rendered.contains("/multi-agents"));
+    }
+
+    #[test]
+    fn actions_filter_renders_suggested_commands_for_conflicted_services() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start first service");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start second service");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains("Suggested actions:"));
+        assert!(rendered.contains(":ps capabilities @api.http"));
+        assert!(rendered.contains(":clean services @api.http"));
+
+        let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
+        assert!(filtered.contains("Suggested actions:"));
+        let _ = services.background_shells.terminate_all_running();
     }
 }

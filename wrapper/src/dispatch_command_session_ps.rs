@@ -339,7 +339,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance|actions|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)
@@ -424,6 +424,9 @@ pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {
     match action {
         None | Some("all") => Some(WorkerFilter::All),
         Some("guidance") | Some("guide") | Some("next") => Some(WorkerFilter::Guidance),
+        Some("actions") | Some("action") | Some("suggest") | Some("suggestions") => {
+            Some(WorkerFilter::Actions)
+        }
         Some("blockers") | Some("blocking") | Some("prereqs") => Some(WorkerFilter::Blockers),
         Some("dependencies") | Some("deps") => Some(WorkerFilter::Dependencies),
         Some("agents") => Some(WorkerFilter::Agents),

@@ -19,6 +19,7 @@ fn dynamic_tool_specs_include_workspace_tools() {
         vec![
             "orchestration_status",
             "orchestration_list_workers",
+            "orchestration_suggest_actions",
             "orchestration_list_dependencies",
             "workspace_list_dir",
             "workspace_stat_path",
@@ -145,6 +146,71 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
         .as_str()
         .expect("guidance text");
     assert!(guidance_text.contains("missing service capability @api.http"));
+
+    let actions = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_list_workers",
+            "arguments": {
+                "filter": "actions"
+            }
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(actions["success"], true);
+    let actions_text = actions["contentItems"][0]["text"]
+        .as_str()
+        .expect("actions text");
+    assert!(actions_text.contains("Suggested actions:"));
+    assert!(actions_text.contains(":ps capabilities @api.http"));
+    let _ = state
+        .orchestration
+        .background_shells
+        .terminate_all_running();
+}
+
+#[test]
+fn orchestration_suggest_actions_returns_concrete_operator_steps() {
+    let state = AppState::new(true, false);
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start first provider");
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start second provider");
+
+    let result = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_suggest_actions"
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("actions text");
+    assert!(text.contains("Suggested actions:"));
+    assert!(text.contains(":ps capabilities @api.http"));
+    assert!(text.contains(":clean services @api.http"));
     let _ = state
         .orchestration
         .background_shells
