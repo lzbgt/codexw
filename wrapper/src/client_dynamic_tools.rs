@@ -76,7 +76,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_start",
-            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `readyPattern`, `protocol`, `endpoint`, `attachHint`, and structured `recipes` so the wrapper can distinguish booting versus ready services, expose a reusable attach surface, and invoke typed service recipes later.",
+            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `capabilities`, `readyPattern`, `protocol`, `endpoint`, `attachHint`, and structured `recipes` so the wrapper can distinguish booting versus ready services, expose a reusable attach surface, and invoke typed service recipes later.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -87,6 +87,10 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                         "enum": ["prerequisite", "observation", "service"]
                     },
                     "label": {"type": "string"},
+                    "capabilities": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
                     "readyPattern": {"type": "string"},
                     "protocol": {"type": "string"},
                     "endpoint": {"type": "string"},
@@ -152,7 +156,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_poll",
-            "description": "Inspect a background shell job by jobId or alias and fetch new output lines since an optional afterLine cursor.",
+            "description": "Inspect a background shell job by jobId, alias, or @capability and fetch new output lines since an optional afterLine cursor.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -165,7 +169,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_send",
-            "description": "Send stdin text to a running background shell job by jobId or alias. Defaults to appending a trailing newline.",
+            "description": "Send stdin text to a running background shell job by jobId, alias, or @capability. Defaults to appending a trailing newline.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -178,7 +182,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_attach",
-            "description": "Show structured attachment metadata for a service background shell job by jobId or alias, including endpoint and attach hints when declared.",
+            "description": "Show structured attachment metadata for a service background shell job by jobId, alias, or @capability, including endpoint, capabilities, and attach hints when declared.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -189,7 +193,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_wait_ready",
-            "description": "Wait for a service background shell job with a declared readyPattern to become ready.",
+            "description": "Wait for a service background shell job with a declared readyPattern to become ready. Supports jobId, alias, or @capability references.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -201,7 +205,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_invoke_recipe",
-            "description": "Invoke a structured recipe declared by a service background shell job. Supports jobId or alias references.",
+            "description": "Invoke a structured recipe declared by a service background shell job. Supports jobId, alias, or @capability references.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -228,7 +232,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_terminate",
-            "description": "Terminate a running background shell job by jobId or alias.",
+            "description": "Terminate a running background shell job by jobId, alias, or @capability.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -776,6 +780,7 @@ mod tests {
                     "command": "sleep 0.4",
                     "intent": "service",
                     "label": "dev api",
+                    "capabilities": ["api.http"],
                     "protocol": "http",
                     "endpoint": "http://127.0.0.1:4000",
                     "attachHint": "Send HTTP requests to /health",
@@ -802,7 +807,7 @@ mod tests {
             &json!({
                 "tool": "background_shell_attach",
                 "arguments": {
-                    "jobId": "dev.api"
+                    "jobId": "@api.http"
                 }
             }),
             "/tmp",
@@ -814,6 +819,7 @@ mod tests {
             .as_str()
             .expect("attach text");
         assert!(rendered.contains("Service job: bg-1"));
+        assert!(rendered.contains("Capabilities: api.http"));
         assert!(rendered.contains("Protocol: http"));
         assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
         assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
@@ -845,6 +851,7 @@ mod tests {
                 "arguments": {
                     "command": "sleep 0.4",
                     "intent": "service",
+                    "capabilities": ["api.health"],
                     "protocol": "http",
                     "endpoint": format!("http://{addr}"),
                     "recipes": [
@@ -869,7 +876,7 @@ mod tests {
             &json!({
                 "tool": "background_shell_invoke_recipe",
                 "arguments": {
-                    "jobId": "dev.api",
+                    "jobId": "@api.health",
                     "recipe": "health"
                 }
             }),

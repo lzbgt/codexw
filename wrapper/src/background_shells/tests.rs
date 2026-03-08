@@ -163,6 +163,7 @@ fn background_shell_origin_intent_and_label_are_preserved_in_snapshots_and_poll(
                 "command": "sleep 0.4",
                 "intent": "service",
                 "label": "webpack dev server",
+                "capabilities": ["web.dev", "frontend"],
                 "protocol": "http",
                 "endpoint": "http://127.0.0.1:3000",
                 "attachHint": "Open the dev server in a browser",
@@ -195,6 +196,10 @@ fn background_shell_origin_intent_and_label_are_preserved_in_snapshots_and_poll(
     );
     assert_eq!(snapshots[0].intent, BackgroundShellIntent::Service);
     assert_eq!(snapshots[0].label.as_deref(), Some("webpack dev server"));
+    assert_eq!(
+        snapshots[0].service_capabilities,
+        vec!["frontend".to_string(), "web.dev".to_string()]
+    );
     assert_eq!(snapshots[0].service_protocol.as_deref(), Some("http"));
     assert_eq!(
         snapshots[0].service_endpoint.as_deref(),
@@ -209,6 +214,7 @@ fn background_shell_origin_intent_and_label_are_preserved_in_snapshots_and_poll(
         .expect("poll background shell");
     assert!(rendered.contains("Intent: service"));
     assert!(rendered.contains("Label: webpack dev server"));
+    assert!(rendered.contains("Capabilities: frontend, web.dev"));
     assert!(rendered.contains("Protocol: http"));
     assert!(rendered.contains("Endpoint: http://127.0.0.1:3000"));
     assert!(rendered.contains("Attach hint: Open the dev server in a browser"));
@@ -216,6 +222,67 @@ fn background_shell_origin_intent_and_label_are_preserved_in_snapshots_and_poll(
     assert!(rendered.contains("health [http GET /health]: Check health"));
     assert!(rendered.contains("Source thread: thread-agent-1"));
     assert!(rendered.contains("Source call: call-77"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn service_capability_reference_resolves_unique_service_job() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api"]
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+    assert_eq!(
+        manager
+            .resolve_job_reference("@api")
+            .expect("resolve capability"),
+        "bg-1"
+    );
+    let resolved = manager
+        .resolve_job_reference("@api")
+        .expect("resolve capability");
+    let attachment = manager
+        .attach_for_operator(&resolved)
+        .expect("attach by capability");
+    assert!(attachment.contains("Capabilities: api"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn service_capability_reference_errors_when_ambiguous() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api"]
+            }),
+            "/tmp",
+        )
+        .expect("start first service shell");
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api"]
+            }),
+            "/tmp",
+        )
+        .expect("start second service shell");
+    let err = manager
+        .resolve_job_reference("@api")
+        .expect_err("capability should be ambiguous");
+    assert!(err.contains("ambiguous"));
+    assert!(err.contains("bg-1"));
+    assert!(err.contains("bg-2"));
     let _ = manager.terminate_all_running();
 }
 

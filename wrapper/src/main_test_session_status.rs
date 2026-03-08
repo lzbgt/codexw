@@ -763,6 +763,52 @@ fn ps_command_can_send_input_to_aliased_background_shell_job() {
 }
 
 #[test]
+fn service_capability_reference_can_drive_ps_attach() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+                "protocol": "http",
+                "endpoint": "http://127.0.0.1:4000"
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+
+    assert_eq!(
+        state
+            .background_shells
+            .resolve_job_reference("@api.http")
+            .expect("resolve service capability"),
+        "bg-1"
+    );
+
+    handle_ps_command(
+        "attach @api.http",
+        &["attach", "@api.http"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("attach service by capability");
+
+    let attached = state
+        .background_shells
+        .attach_for_operator("bg-1")
+        .expect("attach directly");
+    assert!(attached.contains("Capabilities: api.http"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
 fn ps_command_can_render_service_attachment_metadata_for_aliased_job() {
     let cli = test_cli();
     let mut state = crate::state::AppState::new(true, false);

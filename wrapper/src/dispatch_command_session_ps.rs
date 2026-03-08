@@ -39,7 +39,7 @@ pub(crate) fn handle_ps_command(
         }
     } else if matches!(action, Some("send" | "write" | "stdin")) {
         let Some((reference, text)) = parse_ps_send_args(raw_args) else {
-            output.line_stderr("[session] usage: :ps send <jobId|alias|n> <text>")?;
+            output.line_stderr("[session] usage: :ps send <jobId|alias|@capability|n> <text>")?;
             return Ok(true);
         };
         let job_id = match state
@@ -66,7 +66,7 @@ pub(crate) fn handle_ps_command(
         }
     } else if matches!(action, Some("attach")) {
         let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps attach <jobId|alias|n>")?;
+            output.line_stderr("[session] usage: :ps attach <jobId|alias|@capability|n>")?;
             return Ok(true);
         };
         let job_id = match state
@@ -94,7 +94,8 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Service Attachment", &rendered)?;
     } else if matches!(action, Some("wait")) {
         let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps wait <jobId|alias|n> [timeoutMs]")?;
+            output
+                .line_stderr("[session] usage: :ps wait <jobId|alias|@capability|n> [timeoutMs]")?;
             return Ok(true);
         };
         let job_id = match state
@@ -129,7 +130,9 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Service Ready", &rendered)?;
     } else if matches!(action, Some("run" | "invoke")) {
         let Some((reference, recipe, invoke_args)) = parse_ps_run_args(raw_args) else {
-            output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe> [json-args]")?;
+            output.line_stderr(
+                "[session] usage: :ps run <jobId|alias|@capability|n> <recipe> [json-args]",
+            )?;
             return Ok(true);
         };
         let job_id = match state
@@ -164,7 +167,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Service Recipe", &rendered)?;
     } else if matches!(action, Some("poll" | "show" | "inspect")) {
         let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps poll <jobId|alias|n>")?;
+            output.line_stderr("[session] usage: :ps poll <jobId|alias|@capability|n>")?;
             return Ok(true);
         };
         let job_id = match state
@@ -233,7 +236,7 @@ pub(crate) fn handle_ps_command(
         }
     } else if matches!(action, Some("terminate" | "stop" | "kill")) {
         let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps terminate <jobId|alias|n>")?;
+            output.line_stderr("[session] usage: :ps terminate <jobId|alias|@capability|n>")?;
             return Ok(true);
         };
         let job_id = match state

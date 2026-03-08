@@ -202,6 +202,7 @@ The current `codexw` implementation now reflects that model partially:
   - `observation` for non-blocking sidecar execution such as tests, searches, or crawls
   - `service` for reusable long-lived helpers such as dev servers
   - optional `label` text for operator-facing status and `/ps` output
+  - optional `capabilities` array for service jobs, so later turns can resolve helpers by role such as `@api.http` or `@frontend`
   - optional `readyPattern` text for service jobs, so the wrapper can promote them from `booting` to `ready` when logs match a concrete milestone
   - optional `protocol`, `endpoint`, and `attachHint` text for service jobs, so the wrapper can expose structured attachment metadata for later turns and worker tasks
   - optional `recipes` array for service jobs, so the wrapper can expose named interaction verbs such as `health`, `metrics`, `query`, or `seed`
@@ -222,18 +223,19 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps services` for reusable service shells only
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
-  - `:ps attach <jobId|alias|n>` renders the structured attachment metadata for one service shell job
-  - `:ps wait <jobId|alias|n> [timeoutMs]` blocks until one service shell reaches its declared `readyPattern`
-  - `:ps run <jobId|alias|n> <recipe> [json-args]` invokes one declared service recipe through the wrapper-owned typed action layer, with optional per-invocation arguments
-  - `:ps poll <jobId|n>` renders the full current poll snapshot for one wrapper-owned shell job
-  - `:ps send <jobId|alias|n> <text>` sends targeted stdin back into one wrapper-owned shell job without blocking the turn
-  - `:ps terminate <jobId|n>` stops one wrapper-owned shell job without touching the others
-  - job references accept either stable ids like `bg-2`, session-local aliases, or the current 1-based sorted shell index
+  - `:ps attach <jobId|alias|@capability|n>` renders the structured attachment metadata for one service shell job
+  - `:ps wait <jobId|alias|@capability|n> [timeoutMs]` blocks until one service shell reaches its declared `readyPattern`
+  - `:ps run <jobId|alias|@capability|n> <recipe> [json-args]` invokes one declared service recipe through the wrapper-owned typed action layer, with optional per-invocation arguments
+  - `:ps poll <jobId|alias|@capability|n>` renders the full current poll snapshot for one wrapper-owned shell job
+  - `:ps send <jobId|alias|@capability|n> <text>` sends targeted stdin back into one wrapper-owned shell job without blocking the turn
+  - `:ps terminate <jobId|alias|@capability|n>` stops one wrapper-owned shell job without touching the others
+  - job references accept either stable ids like `bg-2`, session-local aliases, declared service capabilities prefixed with `@`, or the current 1-based sorted shell index
 - service shells now have explicit readiness state when the job declared `readyPattern`:
   - `booting` while the process is running but the ready pattern has not been observed yet
   - `ready` once output matches the declared pattern
   - `untracked` when the job is a service shell but no readiness contract was declared
 - service shells can also declare explicit attachment metadata:
+  - `capabilities` for role-based reuse, so later workers can target one service by what it provides instead of whichever concrete shell id owns it
   - `protocol` for the interaction family, such as `http`, `postgres`, `redis`, or another repo-specific label
   - `endpoint` for the canonical URL/socket/target that later work should use
   - `attachHint` for the operator or agent-facing next-step instruction, such as “send HTTP requests to /health” or “attach with psql”

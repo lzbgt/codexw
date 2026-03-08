@@ -120,6 +120,7 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) intent: BackgroundShellIntent,
     pub(crate) label: Option<String>,
     pub(crate) alias: Option<String>,
+    pub(crate) service_capabilities: Vec<String>,
     pub(crate) service_protocol: Option<String>,
     pub(crate) service_endpoint: Option<String>,
     pub(crate) attach_hint: Option<String>,
@@ -142,6 +143,7 @@ struct BackgroundShellJobState {
     intent: BackgroundShellIntent,
     label: Option<String>,
     alias: Option<String>,
+    service_capabilities: Vec<String>,
     service_protocol: Option<String>,
     service_endpoint: Option<String>,
     attach_hint: Option<String>,
@@ -244,6 +246,7 @@ impl BackgroundShellManager {
         )?;
         let intent = parse_background_shell_intent(object.get("intent"))?;
         let label = parse_background_shell_label(object.get("label"));
+        let service_capabilities = parse_background_shell_capabilities(object.get("capabilities"))?;
         let service_protocol =
             parse_background_shell_optional_string(object.get("protocol"), "protocol")?;
         let service_endpoint =
@@ -254,13 +257,14 @@ impl BackgroundShellManager {
             parse_background_shell_interaction_recipes(object.get("recipes"))?;
         let ready_pattern = parse_background_shell_ready_pattern(object.get("readyPattern"))?;
         let has_service_contract = ready_pattern.is_some()
+            || !service_capabilities.is_empty()
             || service_protocol.is_some()
             || service_endpoint.is_some()
             || attach_hint.is_some()
             || !interaction_recipes.is_empty();
         if has_service_contract && intent != BackgroundShellIntent::Service {
             return Err(
-                "background_shell_start service contract fields (`readyPattern`, `protocol`, `endpoint`, `attachHint`, `recipes`) are only supported when `intent=service`".to_string(),
+                "background_shell_start service contract fields (`readyPattern`, `capabilities`, `protocol`, `endpoint`, `attachHint`, `recipes`) are only supported when `intent=service`".to_string(),
             );
         }
         let job_id = format!(
@@ -289,6 +293,7 @@ impl BackgroundShellManager {
             intent,
             label: label.clone(),
             alias: None,
+            service_capabilities: service_capabilities.clone(),
             service_protocol: service_protocol.clone(),
             service_endpoint: service_endpoint.clone(),
             attach_hint: attach_hint.clone(),
@@ -336,6 +341,9 @@ impl BackgroundShellManager {
         ];
         if let Some(label) = label {
             lines.insert(4, format!("Label: {label}"));
+        }
+        if !service_capabilities.is_empty() {
+            lines.push(format!("Capabilities: {}", service_capabilities.join(", ")));
         }
         if let Some(service_protocol) = service_protocol.as_deref() {
             lines.push(format!("Protocol: {service_protocol}"));
@@ -404,6 +412,12 @@ impl BackgroundShellManager {
         }
         if let Some(alias) = state.alias.as_deref() {
             lines.push(format!("Alias: {alias}"));
+        }
+        if !state.service_capabilities.is_empty() {
+            lines.push(format!(
+                "Capabilities: {}",
+                state.service_capabilities.join(", ")
+            ));
         }
         if let Some(service_protocol) = state.service_protocol.as_deref() {
             lines.push(format!("Protocol: {service_protocol}"));
@@ -486,6 +500,12 @@ impl BackgroundShellManager {
             }
             if let Some(alias) = snapshot.alias.as_deref() {
                 line.push_str(&format!("  alias={alias}"));
+            }
+            if !snapshot.service_capabilities.is_empty() {
+                line.push_str(&format!(
+                    "  caps={}",
+                    snapshot.service_capabilities.join(",")
+                ));
             }
             if let Some(protocol) = snapshot.service_protocol.as_deref() {
                 line.push_str(&format!("  protocol={protocol}"));
@@ -626,6 +646,9 @@ impl BackgroundShellManager {
         if reference.starts_with("bg-") {
             self.lookup_job(reference)?;
             return Ok(reference.to_string());
+        }
+        if let Some(capability) = reference.strip_prefix('@') {
+            return self.resolve_service_capability_reference(capability);
         }
         if let Some(job_id) = self
             .snapshots()
@@ -865,6 +888,12 @@ impl BackgroundShellManager {
             if let Some(alias) = snapshot.alias.as_deref() {
                 lines.push(format!("    alias    {alias}"));
             }
+            if !snapshot.service_capabilities.is_empty() {
+                lines.push(format!(
+                    "    caps     {}",
+                    snapshot.service_capabilities.join(", ")
+                ));
+            }
             if let Some(protocol) = snapshot.service_protocol.as_deref() {
                 lines.push(format!("    protocol {protocol}"));
             }
@@ -981,6 +1010,12 @@ impl BackgroundShellManager {
         if let Some(alias) = state.alias.as_deref() {
             lines.push(format!("Alias: {alias}"));
         }
+        if !state.service_capabilities.is_empty() {
+            lines.push(format!(
+                "Capabilities: {}",
+                state.service_capabilities.join(", ")
+            ));
+        }
         if let Some(protocol) = state.service_protocol.as_deref() {
             lines.push(format!("Protocol: {protocol}"));
         }
@@ -1016,7 +1051,8 @@ impl BackgroundShellManager {
         if let Some(ready_pattern) = state.ready_pattern.as_deref() {
             lines.push(format!("Ready pattern: {ready_pattern}"));
         }
-        if state.service_protocol.is_none()
+        if state.service_capabilities.is_empty()
+            && state.service_protocol.is_none()
             && state.service_endpoint.is_none()
             && state.attach_hint.is_none()
             && state.interaction_recipes.is_empty()
@@ -1356,6 +1392,27 @@ fn parse_background_shell_ready_pattern(
     parse_background_shell_optional_string(value, "readyPattern")
 }
 
+fn parse_background_shell_capabilities(
+    value: Option<&serde_json::Value>,
+) -> Result<Vec<String>, String> {
+    let Some(value) = value else {
+        return Ok(Vec::new());
+    };
+    let array = value
+        .as_array()
+        .ok_or_else(|| "background_shell_start `capabilities` must be an array".to_string())?;
+    let mut capabilities = Vec::with_capacity(array.len());
+    for (index, item) in array.iter().enumerate() {
+        let raw = item.as_str().ok_or_else(|| {
+            format!("background_shell_start `capabilities[{index}]` must be a string")
+        })?;
+        capabilities.push(validate_service_capability(raw)?);
+    }
+    capabilities.sort();
+    capabilities.dedup();
+    Ok(capabilities)
+}
+
 fn parse_background_shell_timeout_ms(
     value: Option<&serde_json::Value>,
     context: &str,
@@ -1381,6 +1438,60 @@ fn validate_alias(alias: &str) -> Result<String, String> {
         Ok(alias.to_string())
     } else {
         Err("background shell alias must use only letters, digits, '.', '-' or '_'".to_string())
+    }
+}
+
+fn validate_service_capability(capability: &str) -> Result<String, String> {
+    let capability = capability.trim();
+    if capability.is_empty() {
+        return Err("background shell capability cannot be empty".to_string());
+    }
+    if capability
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_' | '/'))
+    {
+        Ok(capability.to_string())
+    } else {
+        Err(
+            "background shell capability must use only letters, digits, '.', '-', '_' or '/'"
+                .to_string(),
+        )
+    }
+}
+
+impl BackgroundShellManager {
+    fn resolve_service_capability_reference(&self, capability: &str) -> Result<String, String> {
+        let capability = validate_service_capability(capability)?;
+        let matches = self
+            .snapshots()
+            .into_iter()
+            .filter(|job| {
+                job.intent == BackgroundShellIntent::Service
+                    && job
+                        .service_capabilities
+                        .iter()
+                        .any(|entry| entry == &capability)
+            })
+            .collect::<Vec<_>>();
+        match matches.as_slice() {
+            [] => Err(format!(
+                "unknown background shell capability `@{capability}`"
+            )),
+            [job] => Ok(job.id.clone()),
+            jobs => {
+                let refs = jobs
+                    .iter()
+                    .map(|job| match job.alias.as_deref() {
+                        Some(alias) => format!("{} ({alias})", job.id),
+                        None => job.id.clone(),
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                Err(format!(
+                    "background shell capability `@{capability}` is ambiguous across multiple service jobs: {refs}"
+                ))
+            }
+        }
     }
 }
 
@@ -1482,6 +1593,7 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         intent: state.intent,
         label: state.label.clone(),
         alias: state.alias.clone(),
+        service_capabilities: state.service_capabilities.clone(),
         service_protocol: state.service_protocol.clone(),
         service_endpoint: state.service_endpoint.clone(),
         attach_hint: state.attach_hint.clone(),
