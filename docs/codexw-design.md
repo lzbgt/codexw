@@ -39,7 +39,7 @@ The runtime has thirteen main layers.
    `requests.rs` owns JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions.
 
 4. Inbound event handling
-   `events.rs` owns inbound JSON-RPC line routing plus response, notification, approval-request, and item-completion handling.
+   `events.rs`, `responses.rs`, and `notifications.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, and item-completion rendering.
 
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
@@ -78,6 +78,8 @@ Catalog helpers live in `catalog.rs`: app and skill list extraction for the curr
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
 Command-dispatch helpers live in `dispatch.rs`: slash-command routing, local-command launch, feedback parsing, and thread/session command workflows.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
+Response helpers live in `responses.rs`: JSON-RPC success/error handling for pending outbound requests.
+Notification helpers live in `notifications.rs`: realtime, turn, item, and status notifications plus auto-continue turn chaining.
 
 ## Process Model
 
@@ -356,7 +358,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/runtime.rs`
   Backend process startup, raw-mode lifecycle, keyboard mapping, and stdin/stdout/tick event threads.
 - `wrapper/src/events.rs`
-  Inbound JSON-RPC line routing, response handling, notification handling, approval-request handling, and item completion rendering.
+  Inbound JSON-RPC routing plus server-request handling and approval helpers.
+- `wrapper/src/responses.rs`
+  JSON-RPC response handling and pending-request success/error resolution.
+- `wrapper/src/notifications.rs`
+  JSON-RPC notification handling, realtime lifecycle updates, turn completion, and item-completion rendering.
 - `wrapper/src/catalog.rs`
   App and skill catalog parsing for app-server payloads.
 - `wrapper/src/history.rs`
