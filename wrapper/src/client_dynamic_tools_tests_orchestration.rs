@@ -163,6 +163,9 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
     assert!(
         actions_text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
     );
+    assert!(actions_text.contains(
+        "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
+    ));
     let _ = state
         .orchestration
         .background_shells

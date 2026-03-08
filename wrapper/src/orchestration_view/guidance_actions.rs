@@ -374,6 +374,10 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     issue.capability
                 ),
                 format!(
+                    "Run `:ps provide <jobId|alias|@capability|n> @{}` to retarget an existing running service, or start a new provider for that role.",
+                    issue.capability
+                ),
+                format!(
                     "Run `:ps dependencies missing @{}` to inspect the blocked dependency edges.",
                     issue.capability
                 ),
@@ -385,6 +389,10 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
             ActionAudience::Tool => vec![
                 format!(
                     "Use `background_shell_inspect_capability {{\"capability\":\"@{}\"}}` to inspect the missing provider map.",
+                    issue.capability
+                ),
+                format!(
+                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@{}\"]}}` to retarget an existing running service, or start a new provider for that capability.",
                     issue.capability
                 ),
                 format!(
@@ -605,6 +613,9 @@ fn action_lines_for_capability(
                     "Run `:ps capabilities @{capability}` to inspect the missing provider map."
                 ),
                 format!(
+                    "Run `:ps provide <jobId|alias|@capability|n> @{capability}` to retarget an existing running service, or start a new provider for that role."
+                ),
+                format!(
                     "Run `:ps dependencies missing @{capability}` to inspect the blocked dependency edges."
                 ),
                 format!(
@@ -614,6 +625,9 @@ fn action_lines_for_capability(
             (BackgroundShellCapabilityDependencyState::Missing, ActionAudience::Tool) => vec![
                 format!(
                     "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the missing provider map."
+                ),
+                format!(
+                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
                 ),
                 format!(
                     "Use `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{capability}\"}}` to inspect the blocked dependency edges."
