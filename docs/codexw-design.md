@@ -167,6 +167,9 @@ Supported forms include:
 
 - `codexw --resume <thread-id>`
 - `codexw resume <thread-id>`
+- `codexw resume`
+
+When startup resume is invoked without a thread id, `codexw` does not create a new thread. It loads the recent thread list for the resolved cwd, sorts it newest-first by `updatedAt`, and exposes a prompt-local picker that accepts `/resume <n>`, a raw thread id, or a bare numeric selection.
 
 On successful `thread/resume`, `codexw`:
 

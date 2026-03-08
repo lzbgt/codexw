@@ -55,5 +55,28 @@ pub(crate) fn try_handle_prefixed_submission(
         return Ok(Some(true));
     }
 
+    if state.startup_resume_picker && state.thread_id.is_none() {
+        if is_builtin_command(trimmed) {
+            return handle_command(trimmed, cli, resolved_cwd, state, editor, output, writer)
+                .map(Some);
+        }
+        if !trimmed.contains(char::is_whitespace) {
+            return handle_command(
+                &format!("resume {trimmed}"),
+                cli,
+                resolved_cwd,
+                state,
+                editor,
+                output,
+                writer,
+            )
+            .map(Some);
+        }
+        output.line_stderr(
+            "[session] enter a listed number or thread id, or use /resume <n> or /new",
+        )?;
+        return Ok(Some(true));
+    }
+
     Ok(None)
 }

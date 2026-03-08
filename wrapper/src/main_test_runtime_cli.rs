@@ -11,6 +11,7 @@ fn normalize_cli_supports_codex_style_resume_startup() {
         enable_features: Vec::new(),
         disable_features: Vec::new(),
         resume: None,
+        resume_picker: false,
         cwd: None,
         model: None,
         model_provider: None,
@@ -28,7 +29,33 @@ fn normalize_cli_supports_codex_style_resume_startup() {
         ],
     });
     assert_eq!(cli.resume.as_deref(), Some("thread-123"));
+    assert!(!cli.resume_picker);
     assert_eq!(cli.prompt, vec!["continue".to_string(), "work".to_string()]);
+}
+
+#[test]
+fn normalize_cli_supports_codex_style_resume_picker_startup() {
+    let cli = normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: false,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        prompt: vec!["resume".to_string()],
+    });
+    assert_eq!(cli.resume, None);
+    assert!(cli.resume_picker);
+    assert!(cli.prompt.is_empty());
 }
 
 #[test]

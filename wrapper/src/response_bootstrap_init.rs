@@ -8,6 +8,7 @@ use crate::collaboration_apply::CollaborationModeAction;
 use crate::model_personality_actions::ModelsAction;
 use crate::output::Output;
 use crate::requests::send_initialized;
+use crate::requests::send_list_threads;
 use crate::requests::send_load_account;
 use crate::requests::send_load_apps;
 use crate::requests::send_load_collaboration_modes;
@@ -15,6 +16,7 @@ use crate::requests::send_load_models;
 use crate::requests::send_load_rate_limits;
 use crate::requests::send_load_skills;
 use crate::runtime_process::StartMode;
+use crate::runtime_process::StartupThreadAction;
 use crate::state::AppState;
 use crate::state::get_string;
 use crate::state::summarize_text;
@@ -30,8 +32,8 @@ pub(crate) fn handle_initialize_success(
     send_initialized(writer)?;
     output.line_stderr("[session] connected")?;
     if let Some(start_mode) = start_after_initialize.take() {
-        match start_mode.resume_thread_id {
-            Some(thread_id) => {
+        match start_mode.thread_action {
+            StartupThreadAction::Resume(thread_id) => {
                 output.line_stderr(format!("[thread] resume {thread_id}"))?;
                 crate::requests::send_thread_resume(
                     writer,
@@ -42,7 +44,15 @@ pub(crate) fn handle_initialize_success(
                     start_mode.initial_prompt,
                 )?
             }
-            None => {
+            StartupThreadAction::ResumePicker => {
+                state.startup_resume_picker = true;
+                output.line_stderr("[thread] list recent threads for resume")?;
+                output.line_stderr(
+                    "[session] enter a listed number or thread id to resume, or use /new for a fresh thread",
+                )?;
+                send_list_threads(writer, state, resolved_cwd, None)?
+            }
+            StartupThreadAction::Create => {
                 output.line_stderr("[thread] create")?;
                 crate::requests::send_thread_start(
                     writer,

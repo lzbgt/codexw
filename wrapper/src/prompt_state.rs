@@ -12,7 +12,13 @@ pub(crate) fn update_prompt(
     state: &AppState,
     editor: &LineEditor,
 ) -> Result<()> {
-    let prompt = prompt_is_visible(state).then(String::new);
+    let prompt = prompt_is_visible(state).then(|| {
+        if state.startup_resume_picker && state.thread_id.is_none() {
+            "resume".to_string()
+        } else {
+            String::new()
+        }
+    });
     let status = prompt_is_visible(state).then(|| render_prompt_status(state));
     output.set_prompt(prompt);
     output.set_status(status);
@@ -22,7 +28,9 @@ pub(crate) fn update_prompt(
 }
 
 pub(crate) fn render_prompt_status(state: &AppState) -> String {
-    if state.active_exec_process_id.is_some() {
+    if state.startup_resume_picker && state.thread_id.is_none() {
+        "resume picker · enter a number or thread id · /new for a fresh thread".to_string()
+    } else if state.active_exec_process_id.is_some() {
         session_prompt_status_active::render_exec_status(state)
     } else if state.turn_running {
         session_prompt_status_active::render_turn_status(state)
@@ -34,7 +42,7 @@ pub(crate) fn render_prompt_status(state: &AppState) -> String {
 }
 
 pub(crate) fn prompt_is_visible(state: &AppState) -> bool {
-    state.thread_id.is_some() && !state.pending_thread_switch
+    (state.thread_id.is_some() || state.startup_resume_picker) && !state.pending_thread_switch
 }
 
 pub(crate) fn prompt_accepts_input(state: &AppState) -> bool {

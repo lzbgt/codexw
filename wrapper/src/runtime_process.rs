@@ -8,20 +8,45 @@ use anyhow::Result;
 
 use super::Cli;
 
+pub(crate) enum StartupThreadAction {
+    Create,
+    Resume(String),
+    ResumePicker,
+}
+
 pub(crate) struct StartMode {
-    pub(crate) resume_thread_id: Option<String>,
+    pub(crate) thread_action: StartupThreadAction,
     pub(crate) initial_prompt: Option<String>,
 }
 
 pub(crate) fn normalize_cli(mut cli: Cli) -> Cli {
     if cli.resume.is_none()
+        && !cli.resume_picker
         && matches!(cli.prompt.first().map(String::as_str), Some("resume"))
-        && let Some(thread_id) = cli.prompt.get(1).cloned()
     {
-        cli.resume = Some(thread_id);
-        cli.prompt.drain(0..2);
+        if let Some(thread_id) = cli.prompt.get(1).cloned() {
+            cli.resume = Some(thread_id);
+            cli.prompt.drain(0..2);
+        } else {
+            cli.resume_picker = true;
+            cli.prompt.drain(0..1);
+        }
     }
     cli
+}
+
+pub(crate) fn build_start_mode(cli: &Cli, initial_prompt: Option<String>) -> StartMode {
+    let thread_action = if cli.resume_picker {
+        StartupThreadAction::ResumePicker
+    } else if let Some(thread_id) = cli.resume.clone() {
+        StartupThreadAction::Resume(thread_id)
+    } else {
+        StartupThreadAction::Create
+    };
+    StartMode {
+        thread_action,
+        initial_prompt,
+    }
 }
 
 pub(crate) fn spawn_server(cli: &Cli, resolved_cwd: &str) -> Result<Child> {

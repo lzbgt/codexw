@@ -3,10 +3,12 @@ use crate::app_input_editor::handle_submit;
 use crate::app_input_editor::try_complete_file_token;
 use crate::app_input_interrupt::handle_ctrl_c;
 use crate::app_input_interrupt::handle_escape;
+use crate::dispatch_submit_commands::try_handle_prefixed_submission;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::prompt_state::prompt_accepts_input;
 use crate::prompt_state::prompt_is_visible;
+use crate::requests::PendingRequest;
 use crate::state::AppState;
 use std::process::Command;
 use std::process::Stdio;
@@ -72,6 +74,16 @@ fn prompt_visibility_and_input_follow_runtime_state() {
     assert!(!prompt_is_visible(&state));
     assert!(!prompt_accepts_input(&state));
 
+    state.startup_resume_picker = true;
+    assert!(prompt_is_visible(&state));
+    assert!(prompt_accepts_input(&state));
+
+    state.pending_thread_switch = true;
+    assert!(!prompt_is_visible(&state));
+    assert!(!prompt_accepts_input(&state));
+
+    state.pending_thread_switch = false;
+    state.startup_resume_picker = false;
     state.thread_id = Some("thread-1".to_string());
     assert!(prompt_is_visible(&state));
     assert!(prompt_accepts_input(&state));
@@ -147,6 +159,7 @@ fn submit_is_ignored_while_local_command_is_active() {
         enable_features: Vec::new(),
         disable_features: Vec::new(),
         resume: None,
+        resume_picker: false,
         cwd: None,
         model: None,
         model_provider: None,
@@ -177,4 +190,52 @@ fn submit_is_ignored_while_local_command_is_active() {
     assert!(continue_running);
     assert_eq!(editor.buffer(), "should stay buffered");
     assert_eq!(editor.history.len(), 0);
+}
+
+#[test]
+fn startup_resume_picker_accepts_bare_numeric_selection() {
+    let cli = crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: true,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        prompt: Vec::new(),
+    });
+    let mut state = AppState::new(true, false);
+    state.startup_resume_picker = true;
+    state.last_listed_thread_ids = vec!["thread-99".to_string()];
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    let handled = try_handle_prefixed_submission(
+        "1",
+        &cli,
+        "/tmp",
+        &mut state,
+        &mut editor,
+        &mut output,
+        &mut writer,
+    )
+    .expect("submission");
+
+    assert_eq!(handled, Some(true));
+    assert!(state.pending_thread_switch);
+    assert!(state.pending.values().any(|pending| matches!(
+        pending,
+        PendingRequest::ResumeThread {
+            initial_prompt: None
+        }
+    )));
 }

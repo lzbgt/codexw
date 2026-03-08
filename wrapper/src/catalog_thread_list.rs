@@ -3,12 +3,32 @@ use serde_json::Value;
 use crate::state::get_string;
 use crate::state::summarize_text;
 
-pub(crate) fn render_thread_list(result: &Value, search_term: Option<&str>) -> String {
-    let threads = result
+fn sorted_threads(result: &Value) -> Vec<Value> {
+    let mut threads = result
         .get("data")
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
+    threads.sort_by(|left, right| {
+        let left_updated = left
+            .get("updatedAt")
+            .and_then(Value::as_i64)
+            .unwrap_or(i64::MIN);
+        let right_updated = right
+            .get("updatedAt")
+            .and_then(Value::as_i64)
+            .unwrap_or(i64::MIN);
+        right_updated.cmp(&left_updated).then_with(|| {
+            get_string(left, &["id"])
+                .unwrap_or("")
+                .cmp(get_string(right, &["id"]).unwrap_or(""))
+        })
+    });
+    threads
+}
+
+pub(crate) fn render_thread_list(result: &Value, search_term: Option<&str>) -> String {
+    let threads = sorted_threads(result);
     if threads.is_empty() {
         return match search_term {
             Some(search_term) => format!("No threads matched \"{search_term}\"."),
@@ -39,14 +59,8 @@ pub(crate) fn render_thread_list(result: &Value, search_term: Option<&str>) -> S
 }
 
 pub(crate) fn extract_thread_ids(result: &Value) -> Vec<String> {
-    result
-        .get("data")
-        .and_then(Value::as_array)
-        .map(|threads| {
-            threads
-                .iter()
-                .filter_map(|thread| get_string(thread, &["id"]).map(ToOwned::to_owned))
-                .collect()
-        })
-        .unwrap_or_default()
+    sorted_threads(result)
+        .iter()
+        .filter_map(|thread| get_string(thread, &["id"]).map(ToOwned::to_owned))
+        .collect()
 }

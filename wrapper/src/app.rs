@@ -19,7 +19,7 @@ use crate::runtime_event_sources::start_stdin_thread;
 use crate::runtime_event_sources::start_stdout_thread;
 use crate::runtime_event_sources::start_tick_thread;
 use crate::runtime_keys::InputKey;
-use crate::runtime_process::StartMode;
+use crate::runtime_process::build_start_mode;
 use crate::runtime_process::effective_cwd;
 use crate::runtime_process::shutdown_child;
 use crate::runtime_process::spawn_server;
@@ -53,10 +53,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     output.line_stderr("[session] connecting to codex app-server")?;
     send_initialize(&mut writer, &mut state, &cli, !cli.no_experimental_api)?;
 
-    let mut start_after_initialize = Some(StartMode {
-        resume_thread_id: cli.resume.clone(),
-        initial_prompt,
-    });
+    let mut start_after_initialize = Some(build_start_mode(&cli, initial_prompt));
 
     loop {
         update_prompt(&mut output, &state, &editor)?;

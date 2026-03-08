@@ -40,6 +40,15 @@ fn prompt_status_mentions_realtime_when_active() {
 }
 
 #[test]
+fn prompt_status_mentions_startup_resume_picker() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.startup_resume_picker = true;
+    let rendered = render_prompt_status(&state);
+    assert!(rendered.contains("resume picker"));
+    assert!(rendered.contains("/new"));
+}
+
+#[test]
 fn prompt_status_ready_includes_collaboration_and_personality() {
     let mut state = crate::state::AppState::new(true, false);
     state.completed_turn_count = 3;
@@ -70,6 +79,7 @@ fn status_snapshot_includes_realtime_fields() {
         enable_features: Vec::new(),
         disable_features: Vec::new(),
         resume: None,
+        resume_picker: false,
         cwd: None,
         model: None,
         model_provider: None,
@@ -93,8 +103,12 @@ fn status_snapshot_includes_realtime_fields() {
 #[test]
 fn resetting_thread_context_clears_stream_buffers() {
     let mut state = crate::state::AppState::new(true, false);
-    state.command_output_buffers.insert("cmd-1".to_string(), "out".to_string());
-    state.file_output_buffers.insert("file-1".to_string(), "diff".to_string());
+    state
+        .command_output_buffers
+        .insert("cmd-1".to_string(), "out".to_string());
+    state
+        .file_output_buffers
+        .insert("file-1".to_string(), "diff".to_string());
     state.process_output_buffers.insert(
         "proc-1".to_string(),
         crate::state::ProcessOutputBuffer {
@@ -114,4 +128,5 @@ fn resetting_thread_context_clears_stream_buffers() {
     assert!(state.last_agent_message.is_none());
     assert!(state.last_turn_diff.is_none());
     assert!(state.last_status_line.is_none());
+    assert!(!state.startup_resume_picker);
 }

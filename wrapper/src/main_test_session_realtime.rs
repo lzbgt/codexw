@@ -18,6 +18,7 @@ fn test_cli() -> Cli {
         enable_features: Vec::new(),
         disable_features: Vec::new(),
         resume: None,
+        resume_picker: false,
         cwd: None,
         model: None,
         model_provider: None,

@@ -9,23 +9,24 @@ fn thread_list_is_numbered_and_extractable() {
     let result = json!({
         "data": [
             {
-                "id": "thr_1",
-                "preview": "first thread",
+                "id": "thr_older",
+                "preview": "older thread",
                 "status": {"type": "idle"},
                 "updatedAt": 1
             },
             {
-                "id": "thr_2",
-                "preview": "second thread",
+                "id": "thr_newer",
+                "preview": "newer thread",
                 "status": {"type": "active"},
                 "updatedAt": 2
             }
         ]
     });
     let rendered = render_thread_list(&result, None);
-    assert!(rendered.contains(" 1. thr_1"));
+    assert!(rendered.contains(" 1. thr_newer"));
+    assert!(rendered.contains(" 2. thr_older"));
     assert!(rendered.contains("Use /resume <n>"));
-    assert_eq!(extract_thread_ids(&result), vec!["thr_1", "thr_2"]);
+    assert_eq!(extract_thread_ids(&result), vec!["thr_newer", "thr_older"]);
 }
 
 #[test]

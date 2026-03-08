@@ -37,6 +37,7 @@ pub(crate) struct AppState {
     pub(crate) started_turn_count: u64,
     pub(crate) completed_turn_count: u64,
     pub(crate) auto_continue: bool,
+    pub(crate) startup_resume_picker: bool,
     pub(crate) objective: Option<String>,
     pub(crate) last_agent_message: Option<String>,
     pub(crate) last_turn_diff: Option<String>,
@@ -80,6 +81,7 @@ impl AppState {
             started_turn_count: 0,
             completed_turn_count: 0,
             auto_continue,
+            startup_resume_picker: false,
             objective: None,
             last_agent_message: None,
             last_turn_diff: None,
@@ -135,6 +137,7 @@ impl AppState {
         self.activity_started_at = None;
         self.started_turn_count = 0;
         self.completed_turn_count = 0;
+        self.startup_resume_picker = false;
         self.objective = None;
         self.last_token_usage = None;
         self.active_personality = None;

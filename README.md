@@ -99,6 +99,12 @@ Codex-style startup resume is also accepted:
 /Users/zongbaolu/work/codexw/bin/codexw resume <thread-id>
 ```
 
+If you omit the thread id, `codexw` now opens a startup resume picker for the current working directory, lists the most recently updated threads first, and lets you enter either the displayed number or a raw thread id:
+
+```bash
+/Users/zongbaolu/work/codexw/bin/codexw resume
+```
+
 On resume, `codexw` now renders the latest 10 conversation messages from the stored thread so you get immediate context before entering a new prompt, without replaying the full internal reasoning/tool trace.
 Resume startup is also faster now: `codexw` sends the thread create or resume request before non-critical catalog and account lookups, and it only scans the minimum recent conversation history needed for the preview and continuation state.
 

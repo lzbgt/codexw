@@ -171,6 +171,9 @@ struct Cli {
     #[arg(long)]
     resume: Option<String>,
 
+    #[arg(skip = false)]
+    resume_picker: bool,
+
     #[arg(long)]
     cwd: Option<String>,
 
