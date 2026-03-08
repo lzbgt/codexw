@@ -133,6 +133,81 @@ This keeps all user-visible state transitions serialized through one place.
 - the last status line
 - pending JSON-RPC requests keyed by request id
 - streamed command/file/process output buffers used to coalesce incremental backend events into completed render blocks
+- cached agent-thread ids from the most recent `/agent` or `/multi-agents` listing
+
+## Orchestration Model
+
+`codexw` should be understood as a control plane around Codex, not as an extra reasoning agent.
+
+The intended runtime roles are:
+
+- main agent
+  - the foreground Codex thread created or resumed through app-server
+  - owns the user conversation and the critical path
+- cognitive workers
+  - spawned sub-agent threads created by Codex's collaboration tools such as `spawn_agent`
+  - used for bounded investigation, decomposition, alternative approaches, or disjoint code work
+- execution workers
+  - wrapper-owned background shell jobs started through client dynamic tools
+  - used for long-running shell work that would otherwise block the main turn on IO or elapsed time
+- observed backend terminals
+  - thread-scoped background terminals surfaced by app-server notifications
+  - visible to the wrapper, but not directly controlled with native unified-exec semantics
+
+This is deliberately close to upstream Codex's split:
+
+- `/agent` and `/multi-agents` are thread-selection UI, not the orchestration engine
+- the real multi-agent workflow in upstream Codex is the collaboration tool surface:
+  - `spawn_agent`
+  - `send_input`
+  - `resume_agent`
+  - `wait`
+  - `close_agent`
+- app-server does not currently expose a public client request that can write to or poll model-owned `item/commandExecution` sessions directly
+
+Because of that protocol boundary, `codexw` uses wrapper-owned background shell tools as the execution-worker workaround for same-turn async shell behavior.
+
+### Scheduling policy
+
+The intended orchestration policy in `codexw` is:
+
+- keep the immediate blocking task on the main agent
+- use sub-agents for self-contained cognitive sidecar work that can run in parallel
+- use background shell jobs for long IO-bound or external-wait tasks such as builds, tests, servers, crawls, downloads, or large searches
+- avoid waiting by reflex; only wait when a result becomes a critical-path dependency
+- only parallelize code edits when write scopes are disjoint
+- prefer reusing an existing sub-agent with `send_input` when context continuity matters
+
+In practical terms:
+
+- `/agent` and `/multi-agents` should expose and switch cognitive workers
+- `/ps` should expose execution workers and observed backend terminals
+- `/status` should summarize the orchestration state explicitly instead of collapsing it into a generic background counter
+
+### Current implementation state
+
+The current `codexw` implementation now reflects that model partially:
+
+- new threads advertise client dynamic tools for wrapper-owned background shells:
+  - `background_shell_start`
+  - `background_shell_poll`
+  - `background_shell_list`
+  - `background_shell_terminate`
+- `/ps` renders both backend-observed background terminals and wrapper-owned background shell jobs
+- `/status` now reports an orchestration breakdown with:
+  - `main=1`
+  - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
+  - wrapper-owned background shell count
+  - backend thread-terminal count
+
+The next architectural step, if deeper orchestration is needed, is a unified worker/task registry that gives the wrapper one internal model for:
+
+- main-agent work
+- sub-agent thread lifecycle
+- background shell lifecycle
+- dependency and wait state
+
+That registry would let `/multi-agents`, `/ps`, ready status, and transcript summaries read from one orchestration state model rather than several feature-specific trackers.
 
 Two design choices matter here:
 

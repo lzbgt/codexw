@@ -241,6 +241,14 @@ impl BackgroundShellManager {
             .count()
     }
 
+    pub(crate) fn job_count(&self) -> usize {
+        self.inner
+            .jobs
+            .lock()
+            .expect("background shell jobs lock")
+            .len()
+    }
+
     pub(crate) fn snapshots(&self) -> Vec<BackgroundShellJobSnapshot> {
         let mut jobs = self
             .inner

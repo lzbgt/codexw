@@ -1,5 +1,6 @@
 use crate::Cli;
 use crate::background_terminals::background_terminal_count;
+use crate::background_terminals::server_background_terminal_count;
 use crate::session_prompt_status_active::format_elapsed;
 use crate::state::AppState;
 use crate::state::summarize_text;
@@ -32,6 +33,14 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         lines.push(format!(
             "background      {}",
             background_terminal_count(state)
+        ));
+    }
+    if state.background_shells.job_count() > 0 || server_background_terminal_count(state) > 0 {
+        lines.push(format!(
+            "workers         shells={} thread_terms={} agents_cached={}",
+            state.background_shells.job_count(),
+            server_background_terminal_count(state),
+            state.last_listed_agent_thread_ids.len()
         ));
     }
 

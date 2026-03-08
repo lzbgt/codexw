@@ -37,7 +37,11 @@ pub(crate) fn handle_threads_listed(
     state: &mut AppState,
     output: &mut Output,
 ) -> Result<()> {
-    state.last_listed_thread_ids = extract_thread_ids(result);
+    let extracted = extract_thread_ids(result);
+    state.last_listed_thread_ids = extracted.clone();
+    if matches!(view, ThreadListView::Agents) {
+        state.last_listed_agent_thread_ids = extracted;
+    }
     let title = match view {
         ThreadListView::Threads => "Threads",
         ThreadListView::Agents => "Multi-agents",

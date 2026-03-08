@@ -366,3 +366,30 @@ fn background_task_rendering_includes_local_background_shell_jobs() {
     assert!(rendered.contains("sleep 0.4"));
     let _ = state.background_shells.terminate_all_running();
 }
+
+#[test]
+fn status_overview_reports_orchestration_breakdown() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.last_listed_agent_thread_ids = vec!["agent-1".to_string(), "agent-2".to_string()];
+    state.background_terminals.insert(
+        "proc-1".to_string(),
+        crate::background_terminals::BackgroundTerminalSummary {
+            item_id: "cmd-1".to_string(),
+            process_id: "proc-1".to_string(),
+            command_display: "python worker.py".to_string(),
+            waiting: true,
+            recent_inputs: Vec::new(),
+            recent_output: vec!["ready".to_string()],
+        },
+    );
+    state
+        .background_shells
+        .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+        .expect("start background shell");
+
+    let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
+    assert!(rendered.contains("orchestration   main=1 agents_cached=2"));
+    assert!(rendered.contains("bg_shells=1"));
+    assert!(rendered.contains("thread_terms=1"));
+    let _ = state.background_shells.terminate_all_running();
+}

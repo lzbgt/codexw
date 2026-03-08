@@ -105,8 +105,12 @@ pub(crate) fn clear_all_background_terminals(state: &mut AppState) {
     state.background_terminals.clear();
 }
 
+pub(crate) fn server_background_terminal_count(state: &AppState) -> usize {
+    state.background_terminals.len()
+}
+
 pub(crate) fn background_terminal_count(state: &AppState) -> usize {
-    state.background_terminals.len() + state.background_shells.running_count()
+    server_background_terminal_count(state) + state.background_shells.running_count()
 }
 
 pub(crate) fn render_background_terminals(state: &AppState) -> String {

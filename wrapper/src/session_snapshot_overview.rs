@@ -1,4 +1,5 @@
 use crate::Cli;
+use crate::background_terminals::server_background_terminal_count;
 use crate::collaboration_view::summarize_active_collaboration_mode;
 use crate::model_catalog::effective_model_entry;
 use crate::model_personality_view::summarize_active_personality;
@@ -80,6 +81,12 @@ pub(crate) fn render_status_overview(
             state.collaboration_modes.len()
         ));
     }
+    lines.push(format!(
+        "orchestration   main=1 agents_cached={} bg_shells={} thread_terms={}",
+        state.last_listed_agent_thread_ids.len(),
+        state.background_shells.job_count(),
+        server_background_terminal_count(state),
+    ));
     if !state.models.is_empty() {
         lines.push(format!("models cached   {}", state.models.len()));
     }
