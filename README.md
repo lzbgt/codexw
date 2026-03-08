@@ -57,7 +57,8 @@ To reduce transcript duplication, codexw now prefers that transient status line 
   - legacy `applyPatchApproval`
 - for command approvals, if the server exposes `availableDecisions`, `codexw` prefers allow decisions such as `acceptForSession`, `acceptWithExecpolicyAmendment`, `applyNetworkPolicyAmendment`, and `accept`
 - best-effort auto-answer for `item/tool/requestUserInput` using the first offered option per question
-- fail-safe cancellation for MCP elicitations and a non-hanging failure response for unsupported dynamic tool calls
+- schema-driven auto-answer for MCP form elicitations, with URL-mode elicitations cancelled safely for unattended runs
+- non-hanging dynamic-tool fallback responses so the backend request lifecycle resolves cleanly
 
 `--yolo` is still accepted as a compatibility flag, but the client already behaves in the fully automated mode by default.
 
@@ -209,7 +210,7 @@ Submission features:
 - The official `codex app-server` websocket transport exists, but upstream marks it experimental. `codexw` uses the default `stdio` transport.
 - The client defaults to detailed reasoning summaries when available, but presents them as completed blocks instead of token-by-token output.
 - `:status` now renders a richer session snapshot including cwd, thread/turn ids, started/completed turn counts, active request time, effective model capability state, personality, collaboration mode, realtime session state, automation mode, sandbox/approval posture, attachment counts, catalog counts, account/auth state, per-window remaining rate-limit capacity with reset times, token usage totals, and the last ready/working status line when available.
-- Active turn and realtime prompt status now use the native Codex-style bullet spinner cadence (`•` / `◦`) instead of the older ASCII spinner.
+- Active turn and realtime prompt status now use the native Codex-style rolling braille spinner cadence (`⠋ … ⠏`) instead of the older ASCII spinner.
 - Unknown app-server requests now receive an explicit JSON-RPC "method not implemented" error instead of being ignored, which avoids hangs from unanswered server requests.
 - Full file contents are not always available from the app-server protocol. The client shows full command lines, command output, diffs, and file-change payloads that Codex emits.
 - `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn or terminates an active `!command` without discarding the current draft, and only exits when the client is idle with no active draft or background work. On exit, `codexw` now prints a copy-pasteable full resume command, including cwd and thread id, when one is available.
