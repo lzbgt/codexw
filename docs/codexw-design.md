@@ -209,6 +209,12 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps shells` for wrapper-owned local shell jobs only
   - `:ps services` for reusable service shells only
   - `:ps terminals` for backend-observed terminals only
+- cleanup is now scoped along the same control boundary:
+  - `:clean blockers` and `:ps clean blockers` terminate only wrapper-owned prerequisite shells
+  - `:clean shells` terminates all wrapper-owned local shell jobs
+  - `:clean services` terminates only wrapper-owned service shells
+  - `:clean terminals` uses the backend `thread/backgroundTerminals/clean` API without touching local shell jobs
+  - agent waits remain inspectable but are not directly terminable from the wrapper, so blocker cleanup is honest about targeting only controllable prerequisite shells
 - `/status` now reports an orchestration breakdown with:
   - `main=1`
   - blocking and sidecar dependency-edge counts derived from the live orchestration graph
@@ -436,7 +442,7 @@ Current user-facing capabilities include:
 - client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_list`, `background_shell_terminate`)
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
-- live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with `/ps clean` cleaning both the local jobs and backend-tracked terminals
+- live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with scoped cleanup for local shell classes and backend-tracked terminals
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns

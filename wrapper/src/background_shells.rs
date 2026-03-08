@@ -374,13 +374,17 @@ impl BackgroundShellManager {
             .filter(|job| job.status == "running")
             .map(|job| job.id)
             .collect::<Vec<_>>();
-        let mut terminated = 0;
-        for job_id in job_ids {
-            if self.terminate_job(&job_id).is_ok() {
-                terminated += 1;
-            }
-        }
-        terminated
+        terminate_jobs(self, job_ids)
+    }
+
+    pub(crate) fn terminate_running_by_intent(&self, intent: BackgroundShellIntent) -> usize {
+        let job_ids = self
+            .snapshots()
+            .into_iter()
+            .filter(|job| job.status == "running" && job.intent == intent)
+            .map(|job| job.id)
+            .collect::<Vec<_>>();
+        terminate_jobs(self, job_ids)
     }
 
     pub(crate) fn render_for_ps(&self) -> Option<Vec<String>> {
@@ -583,6 +587,16 @@ fn append_output_line(
     }
 }
 
+fn terminate_jobs(manager: &BackgroundShellManager, job_ids: Vec<String>) -> usize {
+    let mut terminated = 0;
+    for job_id in job_ids {
+        if manager.terminate_job(&job_id).is_ok() {
+            terminated += 1;
+        }
+    }
+    terminated
+}
+
 fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShellJobSnapshot {
     let state = job.lock().expect("background shell job lock");
     BackgroundShellJobSnapshot {
@@ -772,6 +786,44 @@ mod tests {
         );
         assert_eq!(
             manager.running_count_by_intent(BackgroundShellIntent::Service),
+            1
+        );
+        assert_eq!(
+            manager.running_count_by_intent(BackgroundShellIntent::Observation),
+            1
+        );
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_manager_can_terminate_only_selected_intent() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+                "/tmp",
+            )
+            .expect("start prerequisite background shell");
+        manager
+            .start_from_tool(
+                &json!({"command": "sleep 0.4", "intent": "service"}),
+                "/tmp",
+            )
+            .expect("start service background shell");
+        manager
+            .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+            .expect("start observation background shell");
+
+        assert_eq!(
+            manager.terminate_running_by_intent(BackgroundShellIntent::Service),
+            1
+        );
+        assert_eq!(
+            manager.running_count_by_intent(BackgroundShellIntent::Service),
+            0
+        );
+        assert_eq!(
+            manager.running_count_by_intent(BackgroundShellIntent::Prerequisite),
             1
         );
         assert_eq!(

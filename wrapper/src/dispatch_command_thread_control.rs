@@ -3,10 +3,11 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::dispatch_command_session_ps::execute_clean_target;
+use crate::dispatch_command_session_ps::parse_clean_target;
 use crate::dispatch_command_thread_common::require_idle_turn;
 use crate::editor::LineEditor;
 use crate::output::Output;
-use crate::requests::send_clean_background_terminals;
 use crate::requests::send_command_exec_terminate;
 use crate::requests::send_thread_compact;
 use crate::requests::send_turn_interrupt;
@@ -16,7 +17,7 @@ use crate::state::thread_id;
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn try_handle_thread_control_command(
     command: &str,
-    _args: &[&str],
+    args: &[&str],
     cli: &Cli,
     _resolved_cwd: &str,
     state: &mut AppState,
@@ -34,27 +35,11 @@ pub(crate) fn try_handle_thread_control_command(
             true
         }
         "clean" => {
-            let cleaned_local = state.background_shells.terminate_all_running();
-            if cli.no_experimental_api {
-                output.line_stderr(
-                    "[thread] server background terminal cleanup requires experimental API support; restart without --no-experimental-api",
-                )?;
-                if cleaned_local > 0 {
-                    output.line_stderr(format!(
-                        "[thread] terminated {cleaned_local} local background shell job{}",
-                        if cleaned_local == 1 { "" } else { "s" }
-                    ))?;
-                }
+            if let Some(target) = parse_clean_target(args.first().copied()) {
+                execute_clean_target(target, cli, state, output, writer)?;
             } else {
-                let current_thread_id = thread_id(state)?.to_string();
-                output.line_stderr("[thread] cleaning background tasks")?;
-                if cleaned_local > 0 {
-                    output.line_stderr(format!(
-                        "[thread] terminated {cleaned_local} local background shell job{}",
-                        if cleaned_local == 1 { "" } else { "s" }
-                    ))?;
-                }
-                send_clean_background_terminals(writer, state, current_thread_id)?;
+                output
+                    .line_stderr("[session] usage: :clean [blockers|shells|services|terminals]")?;
             }
             true
         }

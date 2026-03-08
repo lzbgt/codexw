@@ -48,12 +48,12 @@ pub(crate) const RUNTIME_COMMAND_ENTRIES: &[BuiltinCommandEntry] = &[
     },
     BuiltinCommandEntry {
         name: "ps",
-        help_syntax: "ps [blockers|agents|shells|services|terminals|clean]",
+        help_syntax: "ps [blockers|agents|shells|services|terminals|clean [blockers|shells|services|terminals]]",
         description: "list or stop tracked workers and background tasks",
     },
     BuiltinCommandEntry {
         name: "clean",
-        help_syntax: "clean",
+        help_syntax: "clean [blockers|shells|services|terminals]",
         description: "stop background tasks for the thread",
     },
     BuiltinCommandEntry {

@@ -3,6 +3,7 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::background_shells::BackgroundShellIntent;
 use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::render_orchestration_workers;
 use crate::orchestration_view::render_orchestration_workers_with_filter;
@@ -10,6 +11,15 @@ use crate::output::Output;
 use crate::requests::send_clean_background_terminals;
 use crate::state::AppState;
 use crate::state::thread_id;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CleanTarget {
+    All,
+    Blockers,
+    Shells,
+    Services,
+    Terminals,
+}
 
 pub(crate) fn handle_ps_command(
     args: &[&str],
@@ -20,27 +30,11 @@ pub(crate) fn handle_ps_command(
 ) -> Result<bool> {
     let action = args.first().copied();
     if matches!(action, Some("clean")) {
-        let cleaned_local = state.background_shells.terminate_all_running();
-        if cli.no_experimental_api {
-            output.line_stderr(
-                "[thread] server background terminal cleanup requires experimental API support; restart without --no-experimental-api",
-            )?;
-            if cleaned_local > 0 {
-                output.line_stderr(format!(
-                    "[thread] terminated {cleaned_local} local background shell job{}",
-                    if cleaned_local == 1 { "" } else { "s" }
-                ))?;
-            }
+        if let Some(target) = parse_clean_target(args.get(1).copied()) {
+            execute_clean_target(target, cli, state, output, writer)?;
         } else {
-            let current_thread_id = thread_id(state)?.to_string();
-            output.line_stderr("[thread] cleaning background tasks")?;
-            if cleaned_local > 0 {
-                output.line_stderr(format!(
-                    "[thread] terminated {cleaned_local} local background shell job{}",
-                    if cleaned_local == 1 { "" } else { "s" }
-                ))?;
-            }
-            send_clean_background_terminals(writer, state, current_thread_id)?;
+            output
+                .line_stderr("[session] usage: :ps clean [blockers|shells|services|terminals]")?;
         }
     } else if let Some(filter) = parse_ps_filter(action) {
         let rendered = if matches!(filter, WorkerFilter::All) {
@@ -68,4 +62,73 @@ pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {
         Some("clean") => None,
         Some(_) => None,
     }
+}
+
+pub(crate) fn parse_clean_target(action: Option<&str>) -> Option<CleanTarget> {
+    match action {
+        None | Some("all") => Some(CleanTarget::All),
+        Some("blockers") | Some("blocking") | Some("prereqs") => Some(CleanTarget::Blockers),
+        Some("shells") => Some(CleanTarget::Shells),
+        Some("services") => Some(CleanTarget::Services),
+        Some("terminals") => Some(CleanTarget::Terminals),
+        Some(_) => None,
+    }
+}
+
+pub(crate) fn execute_clean_target(
+    target: CleanTarget,
+    cli: &Cli,
+    state: &mut AppState,
+    output: &mut Output,
+    writer: &mut ChildStdin,
+) -> Result<()> {
+    let cleaned_local = match target {
+        CleanTarget::All | CleanTarget::Shells => state.background_shells.terminate_all_running(),
+        CleanTarget::Blockers => state
+            .background_shells
+            .terminate_running_by_intent(BackgroundShellIntent::Prerequisite),
+        CleanTarget::Services => state
+            .background_shells
+            .terminate_running_by_intent(BackgroundShellIntent::Service),
+        CleanTarget::Terminals => 0,
+    };
+
+    let target_label = match target {
+        CleanTarget::All => "background tasks",
+        CleanTarget::Blockers => "blocking prerequisite shells",
+        CleanTarget::Shells => "local background shell jobs",
+        CleanTarget::Services => "service shells",
+        CleanTarget::Terminals => "server background terminals",
+    };
+    output.line_stderr(format!("[thread] cleaning {target_label}"))?;
+
+    if cleaned_local > 0 {
+        output.line_stderr(format!(
+            "[thread] terminated {cleaned_local} local background shell job{}",
+            if cleaned_local == 1 { "" } else { "s" }
+        ))?;
+    }
+
+    match target {
+        CleanTarget::All | CleanTarget::Terminals => {
+            if cli.no_experimental_api {
+                output.line_stderr(
+                    "[thread] server background terminal cleanup requires experimental API support; restart without --no-experimental-api",
+                )?;
+            } else {
+                let current_thread_id = thread_id(state)?.to_string();
+                send_clean_background_terminals(writer, state, current_thread_id)?;
+            }
+        }
+        CleanTarget::Blockers => {
+            if !state.live_agent_tasks.is_empty() {
+                output.line_stderr(
+                    "[thread] active agent waits are visible in /ps blockers but are not terminable from the wrapper",
+                )?;
+            }
+        }
+        CleanTarget::Shells | CleanTarget::Services => {}
+    }
+
+    Ok(())
 }

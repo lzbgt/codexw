@@ -1,6 +1,7 @@
 use crate::Cli;
 use crate::background_terminals::background_terminal_count;
 use crate::background_terminals::render_background_terminals;
+use crate::dispatch_command_session_ps::parse_clean_target;
 use crate::dispatch_command_session_ps::parse_ps_filter;
 use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
@@ -532,6 +533,40 @@ fn ps_filter_parser_accepts_worker_class_aliases() {
     );
     assert_eq!(parse_ps_filter(Some("clean")), None);
     assert_eq!(parse_ps_filter(Some("unknown")), None);
+}
+
+#[test]
+fn clean_target_parser_accepts_scoped_cleanup_aliases() {
+    use crate::dispatch_command_session_ps::CleanTarget;
+
+    assert_eq!(parse_clean_target(None), Some(CleanTarget::All));
+    assert_eq!(parse_clean_target(Some("all")), Some(CleanTarget::All));
+    assert_eq!(
+        parse_clean_target(Some("blockers")),
+        Some(CleanTarget::Blockers)
+    );
+    assert_eq!(
+        parse_clean_target(Some("blocking")),
+        Some(CleanTarget::Blockers)
+    );
+    assert_eq!(
+        parse_clean_target(Some("prereqs")),
+        Some(CleanTarget::Blockers)
+    );
+    assert_eq!(
+        parse_clean_target(Some("shells")),
+        Some(CleanTarget::Shells)
+    );
+    assert_eq!(
+        parse_clean_target(Some("services")),
+        Some(CleanTarget::Services)
+    );
+    assert_eq!(
+        parse_clean_target(Some("terminals")),
+        Some(CleanTarget::Terminals)
+    );
+    assert_eq!(parse_clean_target(Some("agents")), None);
+    assert_eq!(parse_clean_target(Some("unknown")), None);
 }
 
 #[test]
