@@ -63,7 +63,7 @@ The runtime has thirteen main layers.
    `views.rs`, `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
 12. Human input handling
-   `editor.rs`, `input.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, prompt visibility rules, and structured app-server user input construction. `dispatch.rs` is the compatibility facade over the split command layer.
+   `editor.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs` and `dispatch.rs` are compatibility facades over those splits.
 
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` is the compatibility facade over that split.
@@ -80,6 +80,7 @@ Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
 Command-dispatch helpers are split across `dispatch_submit.rs` and `dispatch_commands.rs`, with `dispatch.rs` kept as a thin compatibility facade for imports and tests.
+Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and tests.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers live in `responses.rs`: JSON-RPC success/error handling for pending outbound requests.
 Notification helpers live in `notifications.rs`: realtime, turn, item, and status notifications plus auto-continue turn chaining.
@@ -240,7 +241,7 @@ Long drafts are visually elided to the current terminal width so redraw does not
 
 ## Input Construction
 
-`input.rs` builds the structured `UserInput` payloads expected by app-server.
+`input.rs` is the compatibility surface for the structured `UserInput` builder split. `input/input_build.rs` constructs app-server payload items, `input/input_decode.rs` owns linked-mention and inline-file decoding, `input/input_resolve.rs` owns catalog-based mention resolution, and `input/input_types.rs` owns the input-layer data types.
 
 It supports:
 
@@ -389,7 +390,15 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/rpc.rs`
   JSON-RPC wire types and line parsing.
 - `wrapper/src/input.rs`
-  Input preprocessing, mentions, attachments, file-path expansion, structured turn payload construction.
+  Compatibility facade for the split input layer.
+- `wrapper/src/input/input_types.rs`
+  Input-layer data types such as parsed payloads and catalog entries.
+- `wrapper/src/input/input_decode.rs`
+  Linked-mention decoding, inline `@file` expansion, and low-level token parsing.
+- `wrapper/src/input/input_resolve.rs`
+  Catalog-driven app/plugin/skill mention resolution.
+- `wrapper/src/input/input_build.rs`
+  Structured turn payload construction for app-server `UserInput`.
 - `wrapper/src/dispatch.rs`
   Compatibility facade for the split dispatch layer.
 - `wrapper/src/dispatch_submit.rs`
