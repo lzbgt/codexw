@@ -63,7 +63,7 @@ The runtime has thirteen main layers.
    `views.rs`, `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
 12. Human input handling
-   `editor.rs`, `input.rs`, `dispatch.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, prompt visibility rules, and structured app-server user input construction.
+   `editor.rs`, `input.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, prompt visibility rules, and structured app-server user input construction. `dispatch.rs` is the compatibility facade over the split command layer.
 
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` is the compatibility facade over that split.
@@ -79,7 +79,7 @@ Compatibility re-exports live in `views.rs`: stable import surface over the spli
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
-Command-dispatch helpers live in `dispatch.rs`: slash-command routing, local-command launch, feedback parsing, and thread/session command workflows.
+Command-dispatch helpers are split across `dispatch_submit.rs` and `dispatch_commands.rs`, with `dispatch.rs` kept as a thin compatibility facade for imports and tests.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers live in `responses.rs`: JSON-RPC success/error handling for pending outbound requests.
 Notification helpers live in `notifications.rs`: realtime, turn, item, and status notifications plus auto-continue turn chaining.
@@ -391,7 +391,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/input.rs`
   Input preprocessing, mentions, attachments, file-path expansion, structured turn payload construction.
 - `wrapper/src/dispatch.rs`
-  Built-in slash-command routing, local-command dispatch, feedback parsing, and normal turn submission handoff.
+  Compatibility facade for the split dispatch layer.
+- `wrapper/src/dispatch_submit.rs`
+  Normal prompt submission, slash-command detection, local `!command` launch, and turn/steer handoff.
+- `wrapper/src/dispatch_commands.rs`
+  Built-in slash-command workflows, feedback parsing, clipboard handling, and thread/session command routing.
 - `wrapper/src/prompting.rs`
   Prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion helpers.
 - `wrapper/src/editor.rs`

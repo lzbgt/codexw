@@ -4,6 +4,8 @@ mod catalog_views;
 mod collaboration;
 mod commands;
 mod dispatch;
+mod dispatch_commands;
+mod dispatch_submit;
 mod editor;
 mod events;
 mod history;
@@ -104,7 +106,7 @@ mod tests {
     use crate::commands::render_slash_completion_candidates;
     use crate::commands::try_complete_slash_command;
     use crate::dispatch::is_builtin_command;
-    use crate::dispatch::parse_feedback_args;
+    use crate::dispatch_commands::parse_feedback_args;
     use crate::editor::LineEditor;
     use crate::events::params_auto_approval_result;
     use crate::history::latest_conversation_history_items;
