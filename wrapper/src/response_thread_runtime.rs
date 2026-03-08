@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde_json::Value;
 
+use crate::Cli;
 use crate::output::Output;
 use crate::response_local_command::handle_exec_command;
 use crate::response_local_command::handle_terminate_exec_command;
@@ -16,6 +17,7 @@ use crate::state::AppState;
 pub(crate) fn handle_thread_runtime_response(
     pending: &crate::requests::PendingRequest,
     result: &Value,
+    cli: &Cli,
     state: &mut AppState,
     output: &mut Output,
 ) -> Result<bool> {
@@ -45,7 +47,7 @@ pub(crate) fn handle_thread_runtime_response(
             process_id,
             command,
         } => {
-            handle_exec_command(result, state, output, process_id, command)?;
+            handle_exec_command(result, cli, state, output, process_id, command)?;
         }
         crate::requests::PendingRequest::TerminateExecCommand { process_id } => {
             handle_terminate_exec_command(state, output, process_id)?;

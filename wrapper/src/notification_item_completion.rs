@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde_json::Value;
 
+use crate::Cli;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -11,6 +12,7 @@ use crate::transcript_item_summary::summarize_tool_item;
 use crate::transcript_plan_render::render_reasoning_item;
 
 pub(crate) fn render_item_completed(
+    cli: &Cli,
     params: &Value,
     state: &mut AppState,
     output: &mut Output,
@@ -47,8 +49,13 @@ pub(crate) fn render_item_completed(
                         .map(ToOwned::to_owned)
                         .filter(|text| !text.trim().is_empty())
                 });
-            let rendered =
-                render_command_completion(command, status, &exit_code, full_output.as_deref());
+            let rendered = render_command_completion(
+                command,
+                status,
+                &exit_code,
+                full_output.as_deref(),
+                cli.verbose_events || cli.raw_json,
+            );
             output.block_stdout("Command complete", &rendered)?;
         }
         "fileChange" => {
@@ -59,7 +66,12 @@ pub(crate) fn render_item_completed(
                 .file_output_buffers
                 .remove(item_id)
                 .filter(|text| !text.trim().is_empty());
-            let rendered = render_file_change_completion(item, status, delta_output.as_deref());
+            let rendered = render_file_change_completion(
+                item,
+                status,
+                delta_output.as_deref(),
+                cli.verbose_events || cli.raw_json,
+            );
             output.block_stdout("File changes complete", &rendered)?;
         }
         "reasoning" => {
@@ -80,7 +92,7 @@ pub(crate) fn render_item_completed(
             output.finish_stream()?;
             output.block_stdout(
                 &format!("{} complete", humanize_item_type(item_type)),
-                &summarize_tool_item(item_type, item),
+                &summarize_tool_item(item_type, item, cli.verbose_events || cli.raw_json),
             )?;
         }
         _ => {}

@@ -166,7 +166,7 @@ fn handle_response_success(
         return Ok(());
     }
 
-    if handle_thread_runtime_response(&pending, &result, state, output)? {
+    if handle_thread_runtime_response(&pending, &result, cli, state, output)? {
         return Ok(());
     }
 
@@ -410,7 +410,7 @@ fn handle_notification(
             return Ok(());
         }
         "item/completed" => {
-            render_item_completed(&notification.params, state, output)?;
+            render_item_completed(cli, &notification.params, state, output)?;
             return Ok(());
         }
         _ => {}

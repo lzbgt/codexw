@@ -3,9 +3,11 @@ use crate::output::render_line_to_ansi;
 use crate::render_prompt::fit_status_line;
 use crate::render_prompt::render_committed_prompt;
 use crate::render_prompt::render_prompt_lines;
+use crate::transcript_completion_render::abbreviate_long_result_text;
 use crate::transcript_completion_render::render_command_completion;
 use crate::transcript_completion_render::render_file_change_completion;
 use crate::transcript_completion_render::render_local_command_completion;
+use crate::transcript_item_summary::summarize_tool_item;
 
 fn strip_ansi(text: &str) -> String {
     let mut out = String::new();
@@ -64,6 +66,7 @@ fn successful_command_completion_hides_status_and_exit_metadata() {
         "completed",
         "0",
         None,
+        false,
     );
     assert!(body.contains("$ /bin/zsh -lc \"sed -n '96,116p' README.md\""));
     assert!(!body.contains("\nstatus  completed\nexit    0"));
@@ -81,19 +84,19 @@ fn successful_command_completion_hides_status_and_exit_metadata() {
 
 #[test]
 fn failed_command_completion_keeps_status_and_exit_metadata() {
-    let body = render_command_completion("/bin/zsh -lc false", "failed", "1", None);
+    let body = render_command_completion("/bin/zsh -lc false", "failed", "1", None, false);
     assert!(body.contains("\nstatus  failed\nexit    1"));
 }
 
 #[test]
 fn successful_local_command_hides_exit_and_stdout_label_when_unneeded() {
-    let body = render_local_command_completion("sed -n '1,5p' file", "0", "hello\n", "");
+    let body = render_local_command_completion("sed -n '1,5p' file", "0", "hello\n", "", false);
     assert_eq!(body, "$ sed -n '1,5p' file\n\nhello");
 }
 
 #[test]
 fn failed_local_command_keeps_exit_and_stream_labels_when_needed() {
-    let body = render_local_command_completion("false", "1", "out\n", "err\n");
+    let body = render_local_command_completion("false", "1", "out\n", "err\n", false);
     assert!(body.contains("\nexit    1"));
     assert!(body.contains("[stdout]\nout"));
     assert!(body.contains("[stderr]\nerr"));
@@ -109,6 +112,7 @@ fn completed_file_change_hides_redundant_status_and_summary_when_structured() {
         }),
         "completed",
         None,
+        false,
     );
     assert_eq!(body, "update docs/FOLLOW_TRADING.md");
 }
@@ -123,9 +127,71 @@ fn failed_file_change_keeps_status_context() {
         }),
         "failed",
         None,
+        false,
     );
     assert!(body.contains("status  failed"));
     assert!(body.contains("update docs/FOLLOW_TRADING.md"));
+}
+
+#[test]
+fn long_result_text_is_abbreviated_to_head_and_tail() {
+    let body = (1..=81)
+        .map(|index| format!("line {index}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let abbreviated = abbreviate_long_result_text(&body, false);
+    assert!(abbreviated.contains("line 1"));
+    assert!(abbreviated.contains("line 20"));
+    assert!(abbreviated.contains("\n...\n"));
+    assert!(abbreviated.contains("line 62"));
+    assert!(abbreviated.contains("line 81"));
+    assert!(!abbreviated.contains("line 21"));
+}
+
+#[test]
+fn long_command_output_is_abbreviated() {
+    let long_output = (1..=81)
+        .map(|index| format!("line {index}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let body =
+        render_command_completion("cat long.log", "completed", "0", Some(&long_output), false);
+    assert!(body.contains("\n...\n"));
+    assert!(!body.contains("line 21"));
+    assert!(body.contains("line 62"));
+}
+
+#[test]
+fn long_tool_text_result_is_abbreviated() {
+    let long_text = (1..=81)
+        .map(|index| format!("line {index}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let rendered = summarize_tool_item(
+        "dynamicToolCall",
+        &serde_json::json!({
+            "tool": "workspace_read_file",
+            "contentItems": [
+                {"text": long_text}
+            ]
+        }),
+        false,
+    );
+    assert!(rendered.contains("workspace_read_file"));
+    assert!(rendered.contains("\n...\n"));
+    assert!(!rendered.contains("line 21"));
+    assert!(rendered.contains("line 62"));
+}
+
+#[test]
+fn verbose_mode_preserves_full_long_result_text() {
+    let body = (1..=81)
+        .map(|index| format!("line {index}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let abbreviated = abbreviate_long_result_text(&body, true);
+    assert!(abbreviated.contains("line 21"));
+    assert!(!abbreviated.contains("\n...\n"));
 }
 
 #[test]

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde_json::Value;
 
+use crate::Cli;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -8,6 +9,7 @@ use crate::transcript_completion_render::render_local_command_completion;
 
 pub(crate) fn handle_exec_command(
     result: &Value,
+    cli: &Cli,
     state: &mut AppState,
     output: &mut Output,
     process_id: &str,
@@ -37,7 +39,13 @@ pub(crate) fn handle_exec_command(
     state.last_status_line = None;
     output.block_stdout(
         "Local command",
-        &render_local_command_completion(command, &exit_code, &stdout, &stderr),
+        &render_local_command_completion(
+            command,
+            &exit_code,
+            &stdout,
+            &stderr,
+            cli.verbose_events || cli.raw_json,
+        ),
     )?;
     Ok(())
 }

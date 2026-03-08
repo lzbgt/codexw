@@ -23,7 +23,7 @@ pub(crate) fn handle_status_update(
         "model/rerouted" => {
             output.line_stderr(format!("[model] {}", summarize_model_reroute(params)))?;
         }
-        "item/started" => render_item_started(params, state)?,
+        "item/started" => render_item_started(params, cli, state)?,
         "item/agentMessage/delta"
         | "item/reasoning/summaryTextDelta"
         | "item/reasoning/textDelta"
@@ -41,7 +41,7 @@ pub(crate) fn handle_status_update(
     Ok(true)
 }
 
-fn render_item_started(params: &Value, state: &mut AppState) -> Result<()> {
+fn render_item_started(params: &Value, cli: &Cli, state: &mut AppState) -> Result<()> {
     let Some(item) = params.get("item") else {
         return Ok(());
     };
@@ -59,7 +59,7 @@ fn render_item_started(params: &Value, state: &mut AppState) -> Result<()> {
             state.last_status_line = Some(summarize_text(&format!(
                 "{} {}",
                 humanize_item_type(item_type),
-                summarize_tool_item(item_type, item)
+                summarize_tool_item(item_type, item, cli.verbose_events || cli.raw_json)
             )));
         }
         _ => {}
