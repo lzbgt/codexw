@@ -572,6 +572,7 @@ fn new_thread_requests_advertise_client_dynamic_tools() {
         vec![
             "orchestration_status",
             "orchestration_list_workers",
+            "orchestration_list_dependencies",
             "workspace_list_dir",
             "workspace_stat_path",
             "workspace_read_file",

@@ -32,6 +32,17 @@ pub(crate) enum WorkerFilter {
     Guidance,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DependencyFilter {
+    All,
+    Blocking,
+    Sidecars,
+    Missing,
+    Booting,
+    Ambiguous,
+    Satisfied,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct CachedAgentThreadSummary {
     pub(crate) id: String,
@@ -401,6 +412,17 @@ pub(crate) fn render_orchestration_workers_with_filter(
     lines.join("\n")
 }
 
+pub(crate) fn render_orchestration_dependencies(
+    state: &AppState,
+    filter: DependencyFilter,
+) -> String {
+    let lines = render_dependency_section(state, filter);
+    if lines.is_empty() {
+        return empty_dependency_filter_message(filter).to_string();
+    }
+    lines.join("\n")
+}
+
 pub(crate) fn render_orchestration_guidance(state: &AppState) -> String {
     let lines = guidance_lines(state);
     if lines.is_empty() {
@@ -461,27 +483,56 @@ fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<Stri
         ));
         lines.push(main_line);
     }
-    let dependencies = orchestration_dependency_edges(state)
-        .into_iter()
-        .filter(|edge| !matches!(filter, WorkerFilter::Blockers) || edge.blocking)
-        .collect::<Vec<_>>();
-    if !dependencies.is_empty() {
+    let dependency_filter = if matches!(filter, WorkerFilter::Blockers) {
+        DependencyFilter::Blocking
+    } else {
+        DependencyFilter::All
+    };
+    let dependency_lines = render_dependency_section(state, dependency_filter);
+    if !dependency_lines.is_empty() {
         if !lines.is_empty() {
             lines.push(String::new());
         }
-        lines.push("Dependencies:".to_string());
-        for (index, edge) in dependencies.iter().enumerate() {
-            lines.push(format!(
-                "{:>2}. {} -> {}  [{}{}]",
-                index + 1,
-                edge.from,
-                edge.to,
-                edge.kind,
-                if edge.blocking { ", blocking" } else { "" }
-            ));
-        }
+        lines.extend(dependency_lines);
     }
     lines
+}
+
+fn render_dependency_section(state: &AppState, filter: DependencyFilter) -> Vec<String> {
+    let dependencies = orchestration_dependency_edges(state)
+        .into_iter()
+        .filter(|edge| dependency_matches_filter(edge, filter))
+        .collect::<Vec<_>>();
+    if dependencies.is_empty() {
+        return Vec::new();
+    }
+    let mut lines = vec!["Dependencies:".to_string()];
+    for (index, edge) in dependencies.iter().enumerate() {
+        lines.push(format!(
+            "{:>2}. {} -> {}  [{}{}]",
+            index + 1,
+            edge.from,
+            edge.to,
+            edge.kind,
+            if edge.blocking { ", blocking" } else { "" }
+        ));
+    }
+    lines
+}
+
+fn dependency_matches_filter(
+    edge: &crate::orchestration_registry::OrchestrationDependencyEdge,
+    filter: DependencyFilter,
+) -> bool {
+    match filter {
+        DependencyFilter::All => true,
+        DependencyFilter::Blocking => edge.blocking,
+        DependencyFilter::Sidecars => !edge.blocking,
+        DependencyFilter::Missing => edge.kind == "dependsOnCapability:missing",
+        DependencyFilter::Booting => edge.kind == "dependsOnCapability:booting",
+        DependencyFilter::Ambiguous => edge.kind == "dependsOnCapability:ambiguous",
+        DependencyFilter::Satisfied => edge.kind == "dependsOnCapability:satisfied",
+    }
 }
 
 fn render_live_agent_tasks_section(tasks: &[LiveAgentTaskSummary]) -> Vec<String> {
@@ -579,6 +630,18 @@ fn empty_filter_message(filter: WorkerFilter) -> &'static str {
         WorkerFilter::Capabilities => "No reusable service capabilities tracked right now.",
         WorkerFilter::Terminals => "No server-observed background terminals tracked right now.",
         WorkerFilter::Guidance => "No orchestration guidance right now.",
+    }
+}
+
+fn empty_dependency_filter_message(filter: DependencyFilter) -> &'static str {
+    match filter {
+        DependencyFilter::All => "No dependency edges tracked right now.",
+        DependencyFilter::Blocking => "No blocking dependency edges tracked right now.",
+        DependencyFilter::Sidecars => "No sidecar dependency edges tracked right now.",
+        DependencyFilter::Missing => "No missing capability dependencies tracked right now.",
+        DependencyFilter::Booting => "No booting capability dependencies tracked right now.",
+        DependencyFilter::Ambiguous => "No ambiguous capability dependencies tracked right now.",
+        DependencyFilter::Satisfied => "No satisfied capability dependencies tracked right now.",
     }
 }
 

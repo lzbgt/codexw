@@ -4,6 +4,7 @@ use crate::background_terminals::render_background_terminals;
 use crate::dispatch_command_session_ps::handle_ps_command;
 use crate::dispatch_command_session_ps::parse_clean_target;
 use crate::dispatch_command_session_ps::parse_ps_capability_issue_filter;
+use crate::dispatch_command_session_ps::parse_ps_dependency_filter;
 use crate::dispatch_command_session_ps::parse_ps_filter;
 use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
@@ -578,6 +579,53 @@ fn ps_filter_parser_accepts_worker_class_aliases() {
     );
     assert_eq!(parse_ps_filter(Some("clean")), None);
     assert_eq!(parse_ps_filter(Some("unknown")), None);
+}
+
+#[test]
+fn ps_dependency_filter_parser_accepts_dependency_issue_aliases() {
+    use crate::orchestration_view::DependencyFilter;
+
+    assert_eq!(
+        parse_ps_dependency_filter(None),
+        Some(DependencyFilter::All)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("blocking")),
+        Some(DependencyFilter::Blocking)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("blockers")),
+        Some(DependencyFilter::Blocking)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("sidecars")),
+        Some(DependencyFilter::Sidecars)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("missing")),
+        Some(DependencyFilter::Missing)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("booting")),
+        Some(DependencyFilter::Booting)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("ambiguous")),
+        Some(DependencyFilter::Ambiguous)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("conflicts")),
+        Some(DependencyFilter::Ambiguous)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("satisfied")),
+        Some(DependencyFilter::Satisfied)
+    );
+    assert_eq!(
+        parse_ps_dependency_filter(Some("ready")),
+        Some(DependencyFilter::Satisfied)
+    );
+    assert_eq!(parse_ps_dependency_filter(Some("weird")), None);
 }
 
 #[test]

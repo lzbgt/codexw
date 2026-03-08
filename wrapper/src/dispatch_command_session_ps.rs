@@ -4,7 +4,9 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::background_shells::BackgroundShellIntent;
+use crate::orchestration_view::DependencyFilter;
 use crate::orchestration_view::WorkerFilter;
+use crate::orchestration_view::render_orchestration_dependencies;
 use crate::orchestration_view::render_orchestration_workers;
 use crate::orchestration_view::render_orchestration_workers_with_filter;
 use crate::output::Output;
@@ -265,6 +267,18 @@ pub(crate) fn handle_ps_command(
             };
             output.block_stdout("Service Capabilities", &rendered)?;
         }
+    } else if matches!(action, Some("dependencies" | "deps")) && args.len() > 1 {
+        let dependency_filter = match parse_ps_dependency_filter(args.get(1).copied()) {
+            Some(filter) => filter,
+            None => {
+                output.line_stderr(
+                    "[session] usage: :ps dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied]",
+                )?;
+                return Ok(true);
+            }
+        };
+        let rendered = render_orchestration_dependencies(state, dependency_filter);
+        output.block_stdout("Dependencies", &rendered)?;
     } else if matches!(action, Some("terminate" | "stop" | "kill")) {
         let Some(reference) = args.get(1).copied() else {
             output.line_stderr("[session] usage: :ps terminate <jobId|alias|@capability|n>")?;
@@ -393,6 +407,21 @@ pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {
         Some("capabilities") | Some("caps") | Some("cap") => Some(WorkerFilter::Capabilities),
         Some("terminals") => Some(WorkerFilter::Terminals),
         Some("clean") => None,
+        Some(_) => None,
+    }
+}
+
+pub(crate) fn parse_ps_dependency_filter(action: Option<&str>) -> Option<DependencyFilter> {
+    match action {
+        None | Some("all") => Some(DependencyFilter::All),
+        Some("blocking") | Some("blockers") => Some(DependencyFilter::Blocking),
+        Some("sidecars") | Some("sidecar") => Some(DependencyFilter::Sidecars),
+        Some("missing") => Some(DependencyFilter::Missing),
+        Some("booting") => Some(DependencyFilter::Booting),
+        Some("ambiguous") | Some("conflicts") | Some("conflict") => {
+            Some(DependencyFilter::Ambiguous)
+        }
+        Some("satisfied") | Some("ready") => Some(DependencyFilter::Satisfied),
         Some(_) => None,
     }
 }

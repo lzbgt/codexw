@@ -8,10 +8,12 @@ use serde_json::json;
 #[cfg(test)]
 use crate::background_shells::BackgroundShellManager;
 use crate::background_shells::BackgroundShellOrigin;
+use crate::orchestration_view::DependencyFilter;
 use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::orchestration_guidance_summary;
 use crate::orchestration_view::orchestration_overview_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
+use crate::orchestration_view::render_orchestration_dependencies;
 use crate::orchestration_view::render_orchestration_workers;
 use crate::orchestration_view::render_orchestration_workers_with_filter;
 use crate::state::AppState;
@@ -40,6 +42,19 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                     "filter": {
                         "type": "string",
                         "enum": ["all", "blockers", "dependencies", "agents", "shells", "services", "capabilities", "terminals", "guidance"]
+                    }
+                }
+            }
+        }),
+        json!({
+            "name": "orchestration_list_dependencies",
+            "description": "Render the current orchestration dependency graph, optionally filtered to all, blocking, sidecars, missing, booting, ambiguous, or satisfied dependency states.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "filter": {
+                        "type": "string",
+                        "enum": ["all", "blocking", "sidecars", "missing", "booting", "ambiguous", "satisfied"]
                     }
                 }
             }
@@ -325,6 +340,9 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
     let result = match tool {
         "orchestration_status" => Ok(render_orchestration_status_for_tool(state)),
         "orchestration_list_workers" => render_orchestration_workers_for_tool(arguments, state),
+        "orchestration_list_dependencies" => {
+            render_orchestration_dependencies_for_tool(arguments, state)
+        }
         "workspace_list_dir" => workspace_list_dir(arguments, resolved_cwd),
         "workspace_stat_path" => workspace_stat_path(arguments, resolved_cwd),
         "workspace_read_file" => workspace_read_file(arguments, resolved_cwd),
@@ -413,6 +431,19 @@ fn render_orchestration_workers_for_tool(
     })
 }
 
+fn render_orchestration_dependencies_for_tool(
+    arguments: &Value,
+    state: &AppState,
+) -> Result<String, String> {
+    let object = arguments.as_object();
+    let filter = parse_dependency_filter_for_tool(
+        object
+            .and_then(|object| object.get("filter"))
+            .and_then(Value::as_str),
+    )?;
+    Ok(render_orchestration_dependencies(state, filter))
+}
+
 fn parse_worker_filter_for_tool(raw: Option<&str>) -> Result<WorkerFilter, String> {
     match raw.unwrap_or("all") {
         "all" => Ok(WorkerFilter::All),
@@ -426,6 +457,21 @@ fn parse_worker_filter_for_tool(raw: Option<&str>) -> Result<WorkerFilter, Strin
         "guidance" | "guide" | "next" => Ok(WorkerFilter::Guidance),
         other => Err(format!(
             "orchestration_list_workers `filter` must be one of `all`, `blockers`, `dependencies`, `agents`, `shells`, `services`, `capabilities`, `terminals`, or `guidance`, got `{other}`"
+        )),
+    }
+}
+
+fn parse_dependency_filter_for_tool(raw: Option<&str>) -> Result<DependencyFilter, String> {
+    match raw.unwrap_or("all") {
+        "all" => Ok(DependencyFilter::All),
+        "blocking" | "blockers" => Ok(DependencyFilter::Blocking),
+        "sidecars" | "sidecar" => Ok(DependencyFilter::Sidecars),
+        "missing" => Ok(DependencyFilter::Missing),
+        "booting" => Ok(DependencyFilter::Booting),
+        "ambiguous" | "conflicts" | "conflict" => Ok(DependencyFilter::Ambiguous),
+        "satisfied" | "ready" => Ok(DependencyFilter::Satisfied),
+        other => Err(format!(
+            "orchestration_list_dependencies `filter` must be one of `all`, `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`, got `{other}`"
         )),
     }
 }
@@ -783,6 +829,7 @@ mod tests {
             vec![
                 "orchestration_status",
                 "orchestration_list_workers",
+                "orchestration_list_dependencies",
                 "workspace_list_dir",
                 "workspace_stat_path",
                 "workspace_read_file",
@@ -913,6 +960,62 @@ mod tests {
     }
 
     #[test]
+    fn orchestration_list_dependencies_supports_issue_filters() {
+        let mut state = AppState::new(true, false);
+        state
+            .orchestration
+            .background_shells
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start dependent shell");
+
+        let missing = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_list_dependencies",
+                "arguments": {
+                    "filter": "missing"
+                }
+            }),
+            "/tmp",
+            &state,
+        );
+        assert_eq!(missing["success"], true);
+        let missing_text = missing["contentItems"][0]["text"]
+            .as_str()
+            .expect("missing dependency text");
+        assert!(missing_text.contains("Dependencies:"));
+        assert!(missing_text.contains(
+            "shell:bg-1 -> capability:@api.http  [dependsOnCapability:missing, blocking]"
+        ));
+
+        let sidecars = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_list_dependencies",
+                "arguments": {
+                    "filter": "sidecars"
+                }
+            }),
+            "/tmp",
+            &state,
+        );
+        assert_eq!(sidecars["success"], true);
+        let sidecar_text = sidecars["contentItems"][0]["text"]
+            .as_str()
+            .expect("sidecar dependency text");
+        assert!(sidecar_text.contains("No sidecar dependency edges tracked right now."));
+        let _ = state
+            .orchestration
+            .background_shells
+            .terminate_all_running();
+    }
+
+    #[test]
     fn orchestration_list_workers_rejects_unknown_filters() {
         let state = AppState::new(true, false);
         let result = execute_dynamic_tool_call_with_state(
@@ -931,6 +1034,28 @@ mod tests {
                 .as_str()
                 .expect("error")
                 .contains("orchestration_list_workers `filter`")
+        );
+    }
+
+    #[test]
+    fn orchestration_list_dependencies_rejects_unknown_filters() {
+        let state = AppState::new(true, false);
+        let result = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_list_dependencies",
+                "arguments": {
+                    "filter": "weird"
+                }
+            }),
+            "/tmp",
+            &state,
+        );
+        assert_eq!(result["success"], false);
+        assert!(
+            result["contentItems"][0]["text"]
+                .as_str()
+                .expect("error")
+                .contains("orchestration_list_dependencies `filter`")
         );
     }
 
