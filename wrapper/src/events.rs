@@ -3,6 +3,8 @@ use serde_json::Value;
 use std::process::ChildStdin;
 
 use crate::Cli;
+use crate::event_request_approvals::handle_approval_request;
+use crate::event_request_tools::handle_tool_request;
 use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
 use crate::notification_item_status::handle_status_update;
@@ -26,8 +28,11 @@ use crate::response_bootstrap_init::handle_initialize_success;
 use crate::response_bootstrap_init::handle_logout_success;
 use crate::response_error_runtime::handle_runtime_error;
 use crate::response_error_session::handle_session_error;
+use crate::response_thread_loaded::handle_forked_thread;
+use crate::response_thread_loaded::handle_resumed_thread;
+use crate::response_thread_loaded::handle_started_thread;
+use crate::response_thread_maintenance::handle_thread_maintenance_response;
 use crate::response_thread_runtime::handle_thread_runtime_response;
-use crate::response_thread_session::handle_thread_session_response;
 use crate::rpc;
 use crate::rpc::IncomingMessage;
 use crate::rpc::RpcNotification;
@@ -35,14 +40,11 @@ use crate::rpc::RpcResponse;
 use crate::runtime_process::StartMode;
 use crate::state::AppState;
 
-#[path = "event_requests.rs"]
-mod event_requests;
 #[path = "notification_realtime.rs"]
 mod notification_realtime;
 
-use event_requests::handle_server_request;
 #[cfg(test)]
-pub(crate) use event_requests::params_auto_approval_result;
+pub(crate) use crate::event_request_approvals::params_auto_approval_result;
 
 pub(crate) fn process_server_line(
     line: String,
@@ -224,6 +226,91 @@ fn handle_bootstrap_response_success(
             handle_fuzzy_file_search(result, query, state, output)?;
         }
         _ => return Ok(false),
+    }
+    Ok(true)
+}
+
+fn handle_server_request(
+    request: crate::rpc::RpcRequest,
+    cli: &Cli,
+    output: &mut Output,
+    writer: &mut ChildStdin,
+) -> Result<()> {
+    if handle_approval_request(&request, cli, output, writer)? {
+        return Ok(());
+    }
+    if handle_tool_request(&request, output, writer)? {
+        return Ok(());
+    }
+    if cli.verbose_events || cli.raw_json {
+        output.line_stderr(format!(
+            "[server-request] {}: {}",
+            request.method,
+            if cli.raw_json {
+                serde_json::to_string_pretty(&request.params)?
+            } else {
+                crate::status_value::summarize_value(&request.params)
+            }
+        ))?;
+    }
+    crate::requests::send_json(
+        writer,
+        &crate::rpc::OutgoingErrorResponse {
+            id: request.id,
+            error: crate::rpc::OutgoingErrorObject {
+                code: -32601,
+                message: format!("codexw does not implement {}", request.method),
+                data: None,
+            },
+        },
+    )?;
+    Ok(())
+}
+
+fn handle_thread_session_response(
+    pending: &crate::requests::PendingRequest,
+    result: &Value,
+    cli: &Cli,
+    resolved_cwd: &str,
+    state: &mut AppState,
+    output: &mut Output,
+    writer: &mut ChildStdin,
+) -> Result<bool> {
+    match pending {
+        crate::requests::PendingRequest::StartThread { initial_prompt } => {
+            handle_started_thread(
+                result,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+                initial_prompt.as_deref(),
+            )?;
+        }
+        crate::requests::PendingRequest::ResumeThread { initial_prompt } => {
+            handle_resumed_thread(
+                result,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+                initial_prompt.as_deref(),
+            )?;
+        }
+        crate::requests::PendingRequest::ForkThread { initial_prompt } => {
+            handle_forked_thread(
+                result,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+                initial_prompt.as_deref(),
+            )?;
+        }
+        _ => return handle_thread_maintenance_response(pending, output),
     }
     Ok(true)
 }
