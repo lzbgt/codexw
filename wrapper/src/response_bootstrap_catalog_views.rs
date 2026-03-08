@@ -1,12 +1,12 @@
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::catalog_views::extract_file_search_paths;
-use crate::catalog_views::extract_thread_ids;
-use crate::catalog_views::render_experimental_features_list;
-use crate::catalog_views::render_fuzzy_file_search_results;
-use crate::catalog_views::render_mcp_server_list;
-use crate::catalog_views::render_thread_list;
+use crate::catalog_lists::render_experimental_features_list;
+use crate::catalog_lists::render_mcp_server_list;
+use crate::catalog_threads::extract_file_search_paths;
+use crate::catalog_threads::extract_thread_ids;
+use crate::catalog_threads::render_fuzzy_file_search_results;
+use crate::catalog_threads::render_thread_list;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::status_views::render_config_snapshot;

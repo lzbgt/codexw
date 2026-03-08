@@ -3,8 +3,8 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::dispatch::handle_command;
-use crate::dispatch::is_builtin_command;
+use crate::dispatch_commands::handle_command;
+use crate::dispatch_commands::is_builtin_command;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_command_exec;

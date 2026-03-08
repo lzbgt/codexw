@@ -2,9 +2,9 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::editor::LineEditor;
-use crate::interaction::prompt_accepts_input;
 use crate::output::Output;
-use crate::runtime::InputKey;
+use crate::prompt_state::prompt_accepts_input;
+use crate::runtime_input::InputKey;
 use crate::state::AppState;
 
 #[path = "app_input_controls.rs"]

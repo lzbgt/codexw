@@ -7,7 +7,7 @@ use crate::output::Output;
 use crate::responses::handle_response;
 use crate::rpc;
 use crate::rpc::IncomingMessage;
-use crate::runtime::StartMode;
+use crate::runtime_process::StartMode;
 use crate::state::AppState;
 
 #[path = "event_requests.rs"]

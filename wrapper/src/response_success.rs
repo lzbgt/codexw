@@ -3,7 +3,7 @@ use anyhow::Result;
 use crate::Cli;
 use crate::output::Output;
 use crate::requests::PendingRequest;
-use crate::runtime::StartMode;
+use crate::runtime_process::StartMode;
 use crate::state::AppState;
 use serde_json::Value;
 use std::process::ChildStdin;

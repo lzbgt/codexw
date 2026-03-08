@@ -1,7 +1,7 @@
 use crate::Cli;
 use crate::commands::quote_if_needed;
 use crate::dispatch_command_utils::parse_feedback_args;
-use crate::runtime::normalize_cli;
+use crate::runtime_process::normalize_cli;
 
 #[test]
 fn normalize_cli_supports_codex_style_resume_startup() {

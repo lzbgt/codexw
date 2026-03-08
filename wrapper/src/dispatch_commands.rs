@@ -12,7 +12,6 @@ use crate::output::Output;
 use crate::state::AppState;
 
 pub(crate) use dispatch_command_utils::is_builtin_command;
-pub(crate) use dispatch_command_utils::join_prompt;
 
 pub(crate) fn handle_command(
     command_line: &str,

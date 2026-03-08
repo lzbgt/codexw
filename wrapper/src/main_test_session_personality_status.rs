@@ -55,7 +55,7 @@ fn status_snapshot_surfaces_effective_model_personality_support() {
             }
         ]
     }));
-    let cli = crate::runtime::normalize_cli(Cli {
+    let cli = crate::runtime_process::normalize_cli(Cli {
         codex_bin: "codex".to_string(),
         config_overrides: Vec::new(),
         enable_features: Vec::new(),

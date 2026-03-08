@@ -8,7 +8,6 @@ use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::state::AppState;
 
-pub(crate) use prompt_file_completions::FileCompletionResult;
 pub(crate) use prompt_file_completions::try_complete_file_token;
 
 pub(crate) fn handle_tab_completion(

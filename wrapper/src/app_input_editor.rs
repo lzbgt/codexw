@@ -3,12 +3,12 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::dispatch_submit::handle_user_input;
 use crate::editor::EditorEvent;
 use crate::editor::LineEditor;
-use crate::interaction::handle_tab_completion;
-use crate::interaction::handle_user_input;
 use crate::output::Output;
-use crate::runtime::InputKey;
+use crate::prompt_completion::handle_tab_completion;
+use crate::runtime_input::InputKey;
 use crate::state::AppState;
 
 pub(crate) fn handle_editor_key(

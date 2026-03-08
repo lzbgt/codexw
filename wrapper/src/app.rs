@@ -5,21 +5,21 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::app_input::handle_input_key;
+use crate::dispatch_command_utils::join_prompt;
 use crate::editor::LineEditor;
 use crate::events::process_server_line;
-use crate::interaction::join_prompt;
-use crate::interaction::update_prompt;
 use crate::output::Output;
+use crate::prompt_state::update_prompt;
 use crate::requests::send_initialize;
-use crate::runtime::AppEvent;
-use crate::runtime::RawModeGuard;
-use crate::runtime::StartMode;
-use crate::runtime::effective_cwd;
-use crate::runtime::shutdown_child;
-use crate::runtime::spawn_server;
-use crate::runtime::start_stdin_thread;
-use crate::runtime::start_stdout_thread;
-use crate::runtime::start_tick_thread;
+use crate::runtime_input::AppEvent;
+use crate::runtime_input::RawModeGuard;
+use crate::runtime_input::start_stdin_thread;
+use crate::runtime_input::start_stdout_thread;
+use crate::runtime_input::start_tick_thread;
+use crate::runtime_process::StartMode;
+use crate::runtime_process::effective_cwd;
+use crate::runtime_process::shutdown_child;
+use crate::runtime_process::spawn_server;
 use crate::state::AppState;
 
 pub(crate) fn run(cli: Cli) -> Result<()> {

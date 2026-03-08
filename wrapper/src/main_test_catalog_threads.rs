@@ -1,7 +1,7 @@
-use crate::catalog_views::extract_file_search_paths;
-use crate::catalog_views::extract_thread_ids;
-use crate::catalog_views::render_fuzzy_file_search_results;
-use crate::catalog_views::render_thread_list;
+use crate::catalog_threads::extract_file_search_paths;
+use crate::catalog_threads::extract_thread_ids;
+use crate::catalog_threads::render_fuzzy_file_search_results;
+use crate::catalog_threads::render_thread_list;
 use serde_json::json;
 
 #[test]

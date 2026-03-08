@@ -63,7 +63,7 @@ fn status_snapshot_includes_realtime_fields() {
     state.realtime_session_id = Some("rt-1".to_string());
     state.realtime_prompt = Some("hello world".to_string());
     state.realtime_last_error = Some("bad gateway".to_string());
-    let cli = crate::runtime::normalize_cli(Cli {
+    let cli = crate::runtime_process::normalize_cli(Cli {
         codex_bin: "codex".to_string(),
         config_overrides: Vec::new(),
         enable_features: Vec::new(),

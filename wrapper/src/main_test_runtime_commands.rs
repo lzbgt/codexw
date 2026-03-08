@@ -1,5 +1,5 @@
 use crate::commands::try_complete_slash_command;
-use crate::dispatch::is_builtin_command;
+use crate::dispatch_commands::is_builtin_command;
 use crate::editor::LineEditor;
 
 #[test]

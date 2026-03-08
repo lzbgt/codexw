@@ -7,7 +7,7 @@ use crate::Cli;
 use crate::output::Output;
 use crate::requests::PendingRequest;
 use crate::rpc::RpcResponse;
-use crate::runtime::StartMode;
+use crate::runtime_process::StartMode;
 use crate::state::AppState;
 
 #[path = "response_error.rs"]

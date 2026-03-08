@@ -2,8 +2,8 @@ use std::process::ChildStdin;
 
 use anyhow::Result;
 
-use crate::catalog_views::render_apps_list;
-use crate::catalog_views::render_skills_list;
+use crate::catalog_lists::render_apps_list;
+use crate::catalog_lists::render_skills_list;
 use crate::output::Output;
 use crate::requests::send_load_experimental_features;
 use crate::requests::send_load_mcp_servers;
