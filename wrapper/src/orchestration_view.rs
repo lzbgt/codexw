@@ -1261,6 +1261,41 @@ mod tests {
     }
 
     #[test]
+    fn actions_filter_renders_contract_suggestions_for_untracked_services() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start untracked service");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains("Suggested actions:"));
+        assert!(rendered.contains(":ps services untracked"));
+        assert!(rendered.contains(":ps contract <jobId|alias|@capability|n> <json-object>"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains("Suggested actions:"));
+        assert!(
+            tool_rendered.contains("background_shell_list_services {\"status\":\"untracked\"}")
+        );
+        assert!(tool_rendered.contains(
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+        ));
+
+        let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
+        assert!(filtered.contains("Suggested actions:"));
+        assert!(filtered.contains(":ps services untracked"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
     fn focused_guidance_and_actions_can_target_one_capability() {
         let services = crate::state::AppState::new(true, false);
         services

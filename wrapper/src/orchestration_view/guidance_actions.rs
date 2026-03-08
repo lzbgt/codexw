@@ -361,6 +361,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
     let booting_services =
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+    let untracked_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
     let terminals = server_background_terminal_count(state);
 
     if let Some(issue) = blocking_capability_issues
@@ -580,6 +582,26 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                 "Use `background_shell_list_services {\"status\":\"booting\"}` to inspect readiness state and startup metadata.".to_string(),
                 "Use `background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}` for the booting service you need.".to_string(),
                 "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
+            ],
+        };
+    }
+    if untracked_services > 0 {
+        return match audience {
+            ActionAudience::Operator => vec![
+                "Run `:ps services untracked` to inspect reusable services that still lack readiness or attachment contract metadata."
+                    .to_string(),
+                "Run `:ps contract <jobId|alias|@capability|n> <json-object>` to add fields such as `readyPattern`, `protocol`, `endpoint`, `attachHint`, or `recipes`."
+                    .to_string(),
+                "Run `:ps relabel <jobId|alias|@capability|n> <label|none>` if the service also needs a clearer operator-facing identity."
+                    .to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                "Use `background_shell_list_services {\"status\":\"untracked\"}` to inspect reusable services that still lack readiness or attachment contract metadata."
+                    .to_string(),
+                "Use `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}` to add reusable contract metadata in place."
+                    .to_string(),
+                "Use `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"label\":\"service-label\"}` if the service also needs a clearer operator-facing identity."
+                    .to_string(),
             ],
         };
     }
