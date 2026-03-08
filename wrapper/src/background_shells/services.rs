@@ -191,6 +191,26 @@ impl BackgroundShellManager {
         self.service_capability_conflicts().len()
     }
 
+    pub(crate) fn service_capability_issue_for_ref(
+        &self,
+        capability_ref: &str,
+    ) -> Result<BackgroundShellCapabilityIssueClass, String> {
+        let capability = if let Some(raw) = capability_ref.strip_prefix('@') {
+            validate_service_capability(raw)?
+        } else {
+            validate_service_capability(capability_ref)?
+        };
+        let providers = self.running_service_providers_for_capability(&capability);
+        let has_consumers = self
+            .capability_dependency_summaries()
+            .into_iter()
+            .any(|summary| summary.capability == capability);
+        if providers.is_empty() && !has_consumers {
+            return Err(format!("unknown service capability `@{capability}`"));
+        }
+        Ok(self.capability_issue_class(&capability))
+    }
+
     pub(crate) fn service_conflicting_job_count(&self) -> usize {
         self.service_conflicting_job_ids().len()
     }

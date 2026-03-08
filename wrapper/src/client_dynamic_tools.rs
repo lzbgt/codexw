@@ -15,7 +15,9 @@ use crate::orchestration_view::orchestration_guidance_summary;
 use crate::orchestration_view::orchestration_overview_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
 use crate::orchestration_view::render_orchestration_actions_for_tool;
+use crate::orchestration_view::render_orchestration_actions_for_tool_capability;
 use crate::orchestration_view::render_orchestration_dependencies;
+use crate::orchestration_view::render_orchestration_guidance_for_capability;
 use crate::orchestration_view::render_orchestration_workers;
 use crate::orchestration_view::render_orchestration_workers_with_filter;
 use crate::state::AppState;
@@ -41,14 +43,15 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "orchestration_list_workers",
-            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, dependencies, agents, shells, services, capabilities, terminals, guidance, or actions.",
+            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, dependencies, agents, shells, services, capabilities, terminals, guidance, or actions. Guidance and actions may also be narrowed to one @capability.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "filter": {
                         "type": "string",
                         "enum": ["all", "blockers", "dependencies", "agents", "shells", "services", "capabilities", "terminals", "guidance", "actions"]
-                    }
+                    },
+                    "capability": {"type": "string"}
                 }
             }
         }),
@@ -57,7 +60,9 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             "description": "Render concrete next-step dynamic tool suggestions for the current orchestration state, such as capability inspection, readiness waits, service attach, or scoped cleanup actions.",
             "inputSchema": {
                 "type": "object",
-                "properties": {}
+                "properties": {
+                    "capability": {"type": "string"}
+                }
             }
         }),
         json!({
@@ -383,7 +388,9 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
     let result = match tool {
         "orchestration_status" => Ok(render_orchestration_status_for_tool(state)),
         "orchestration_list_workers" => render_orchestration_workers_for_tool(arguments, state),
-        "orchestration_suggest_actions" => Ok(render_orchestration_actions_for_tool(state)),
+        "orchestration_suggest_actions" => {
+            render_orchestration_actions_for_tool_from_args(arguments, state)
+        }
         "orchestration_list_dependencies" => {
             render_orchestration_dependencies_for_tool(arguments, state)
         }
@@ -476,13 +483,58 @@ fn render_orchestration_workers_for_tool(
             .and_then(|object| object.get("filter"))
             .and_then(Value::as_str),
     )?;
+    let capability = parse_optional_capability_for_tool(
+        object
+            .and_then(|object| object.get("capability"))
+            .and_then(Value::as_str),
+        "orchestration_list_workers",
+    )?;
     Ok(if matches!(filter, WorkerFilter::All) {
+        if capability.is_some() {
+            return Err(
+                "orchestration_list_workers `capability` is only supported with `filter=guidance` or `filter=actions`"
+                    .to_string(),
+            );
+        }
         render_orchestration_workers(state)
+    } else if matches!(filter, WorkerFilter::Guidance) {
+        match capability.as_deref() {
+            Some(capability) => render_orchestration_guidance_for_capability(state, capability)?,
+            None => render_orchestration_workers_with_filter(state, filter),
+        }
     } else if matches!(filter, WorkerFilter::Actions) {
-        render_orchestration_actions_for_tool(state)
+        match capability.as_deref() {
+            Some(capability) => {
+                render_orchestration_actions_for_tool_capability(state, capability)?
+            }
+            None => render_orchestration_actions_for_tool(state),
+        }
     } else {
+        if capability.is_some() {
+            return Err(
+                "orchestration_list_workers `capability` is only supported with `filter=guidance` or `filter=actions`"
+                    .to_string(),
+            );
+        }
         render_orchestration_workers_with_filter(state, filter)
     })
+}
+
+fn render_orchestration_actions_for_tool_from_args(
+    arguments: &Value,
+    state: &AppState,
+) -> Result<String, String> {
+    let capability = parse_optional_capability_for_tool(
+        arguments
+            .as_object()
+            .and_then(|object| object.get("capability"))
+            .and_then(Value::as_str),
+        "orchestration_suggest_actions",
+    )?;
+    match capability.as_deref() {
+        Some(capability) => render_orchestration_actions_for_tool_capability(state, capability),
+        None => Ok(render_orchestration_actions_for_tool(state)),
+    }
 }
 
 fn render_orchestration_dependencies_for_tool(
@@ -549,6 +601,22 @@ fn parse_dependency_capability_for_tool(raw: Option<&str>) -> Result<Option<Stri
             "orchestration_list_dependencies `capability` must be a non-empty capability name"
                 .to_string(),
         );
+    }
+    Ok(Some(normalized.to_string()))
+}
+
+fn parse_optional_capability_for_tool(
+    raw: Option<&str>,
+    context: &str,
+) -> Result<Option<String>, String> {
+    let Some(raw) = raw else {
+        return Ok(None);
+    };
+    let normalized = raw.trim().trim_start_matches('@');
+    if normalized.is_empty() {
+        return Err(format!(
+            "{context} `capability` must be a non-empty capability name"
+        ));
     }
     Ok(Some(normalized.to_string()))
 }

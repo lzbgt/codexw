@@ -8,6 +8,7 @@ use crate::dispatch_command_session_ps::parse_ps_capability_issue_filter;
 use crate::dispatch_command_session_ps::parse_ps_dependency_filter;
 use crate::dispatch_command_session_ps::parse_ps_dependency_selector;
 use crate::dispatch_command_session_ps::parse_ps_filter;
+use crate::dispatch_command_session_ps::parse_ps_focus_capability;
 use crate::dispatch_command_session_ps::parse_ps_service_issue_filter;
 use crate::dispatch_command_session_ps::parse_ps_service_selector;
 use crate::events::handle_realtime_notification;
@@ -591,6 +592,16 @@ fn ps_filter_parser_accepts_worker_class_aliases() {
     );
     assert_eq!(parse_ps_filter(Some("clean")), None);
     assert_eq!(parse_ps_filter(Some("unknown")), None);
+}
+
+#[test]
+fn ps_focus_capability_parser_accepts_capability_selector() {
+    assert_eq!(
+        parse_ps_focus_capability(&["@api.http"], ":ps actions").expect("parse capability"),
+        "api.http"
+    );
+    assert!(parse_ps_focus_capability(&["api.http"], ":ps actions").is_err());
+    assert!(parse_ps_focus_capability(&["@api.http", "@db.redis"], ":ps actions").is_err());
 }
 
 #[test]

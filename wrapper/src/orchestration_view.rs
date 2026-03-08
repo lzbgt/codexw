@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::background_shells::BackgroundShellCapabilityDependencyState;
+use crate::background_shells::BackgroundShellCapabilityIssueClass;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellServiceReadiness;
 use crate::background_terminals::render_background_terminals;
@@ -476,6 +477,23 @@ pub(crate) fn render_orchestration_guidance(state: &AppState) -> String {
     }
 }
 
+pub(crate) fn render_orchestration_guidance_for_capability(
+    state: &AppState,
+    capability_ref: &str,
+) -> Result<String, String> {
+    let capability = normalize_capability_ref(capability_ref)?;
+    let lines = guidance_lines_for_capability(state, &capability)?;
+    if lines.is_empty() {
+        Ok(String::new())
+    } else {
+        let mut rendered = vec![format!("Next action (@{capability}):")];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        Ok(rendered.join("\n"))
+    }
+}
+
 pub(crate) fn render_orchestration_actions(state: &AppState) -> String {
     let lines = action_lines(state, ActionAudience::Operator);
     if lines.is_empty() {
@@ -489,6 +507,23 @@ pub(crate) fn render_orchestration_actions(state: &AppState) -> String {
     }
 }
 
+pub(crate) fn render_orchestration_actions_for_capability(
+    state: &AppState,
+    capability_ref: &str,
+) -> Result<String, String> {
+    let capability = normalize_capability_ref(capability_ref)?;
+    let lines = action_lines_for_capability(state, ActionAudience::Operator, &capability)?;
+    if lines.is_empty() {
+        Ok(String::new())
+    } else {
+        let mut rendered = vec![format!("Suggested actions (@{capability}):")];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        Ok(rendered.join("\n"))
+    }
+}
+
 pub(crate) fn render_orchestration_actions_for_tool(state: &AppState) -> String {
     let lines = action_lines(state, ActionAudience::Tool);
     if lines.is_empty() {
@@ -499,6 +534,23 @@ pub(crate) fn render_orchestration_actions_for_tool(state: &AppState) -> String 
             rendered.push(format!("{:>2}. {}", index + 1, line));
         }
         rendered.join("\n")
+    }
+}
+
+pub(crate) fn render_orchestration_actions_for_tool_capability(
+    state: &AppState,
+    capability_ref: &str,
+) -> Result<String, String> {
+    let capability = normalize_capability_ref(capability_ref)?;
+    let lines = action_lines_for_capability(state, ActionAudience::Tool, &capability)?;
+    if lines.is_empty() {
+        Ok(String::new())
+    } else {
+        let mut rendered = vec![format!("Suggested actions (@{capability}):")];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        Ok(rendered.join("\n"))
     }
 }
 
@@ -880,6 +932,76 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
     Vec::new()
 }
 
+fn guidance_lines_for_capability(
+    state: &AppState,
+    capability: &str,
+) -> Result<Vec<String>, String> {
+    if let Some(issue) = state
+        .orchestration
+        .background_shells
+        .blocking_capability_dependency_issues()
+        .into_iter()
+        .find(|issue| issue.capability == capability)
+    {
+        return Ok(match issue.status {
+            BackgroundShellCapabilityDependencyState::Missing => vec![
+                format!("A blocking shell depends on missing service capability @{capability}."),
+                "Start or relabel the missing reusable service before waiting on the shell result."
+                    .to_string(),
+                format!(
+                    "Use /ps capabilities @{capability} and /ps dependencies missing @{capability} to inspect the exact blocker."
+                ),
+            ],
+            BackgroundShellCapabilityDependencyState::Ambiguous => vec![
+                format!("A blocking shell depends on ambiguous service capability @{capability}."),
+                "Resolve the conflicting reusable service role before relying on capability-based attachment.".to_string(),
+                format!(
+                    "Use /ps capabilities @{capability} and /ps services @{capability} to inspect the conflicting providers."
+                ),
+            ],
+            BackgroundShellCapabilityDependencyState::Booting => vec![
+                format!("A blocking shell is waiting on booting service capability @{capability}."),
+                format!("Use /ps services booting @{capability} to inspect the provider and readiness state."),
+                format!("Use :ps wait @{capability} 5000 when later work depends on readiness."),
+            ],
+            BackgroundShellCapabilityDependencyState::Satisfied => vec![],
+        });
+    }
+
+    Ok(
+        match state
+            .orchestration
+            .background_shells
+            .service_capability_issue_for_ref(capability)?
+        {
+            BackgroundShellCapabilityIssueClass::Missing => {
+                vec![
+            format!("Reusable service capability @{capability} has no running provider."),
+            "Start or relabel a service shell so later work can attach to that reusable role."
+                .to_string(),
+            format!("Use /ps capabilities @{capability} to confirm the missing-provider state."),
+        ]
+            }
+            BackgroundShellCapabilityIssueClass::Ambiguous => vec![
+                format!("Reusable service capability @{capability} is ambiguous."),
+                "Resolve the conflicting providers before relying on capability-based reuse."
+                    .to_string(),
+                format!("Use /ps capabilities @{capability} to inspect providers and consumers."),
+            ],
+            BackgroundShellCapabilityIssueClass::Booting => vec![
+                format!("Reusable service capability @{capability} is still booting."),
+                format!("Use /ps services booting @{capability} to inspect provider readiness."),
+                format!("Use :ps wait @{capability} 5000 when later work depends on readiness."),
+            ],
+            BackgroundShellCapabilityIssueClass::Healthy => vec![
+                format!("Reusable service capability @{capability} is ready for reuse."),
+                format!("Use /ps attach @{capability} to inspect endpoint and recipe details."),
+                format!("Use :ps run @{capability} <recipe> [json-args] to reuse it directly."),
+            ],
+        },
+    )
+}
+
 fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
     let waits = active_wait_task_count(state);
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
@@ -1111,6 +1233,142 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
     Vec::new()
 }
 
+fn action_lines_for_capability(
+    state: &AppState,
+    audience: ActionAudience,
+    capability: &str,
+) -> Result<Vec<String>, String> {
+    if let Some(issue) = state
+        .orchestration
+        .background_shells
+        .blocking_capability_dependency_issues()
+        .into_iter()
+        .find(|issue| issue.capability == capability)
+    {
+        return Ok(match (issue.status, audience) {
+            (BackgroundShellCapabilityDependencyState::Missing, ActionAudience::Operator) => vec![
+                format!("Run `:ps capabilities @{capability}` to inspect the missing provider map."),
+                format!(
+                    "Run `:ps dependencies missing @{capability}` to inspect the blocked dependency edges."
+                ),
+                "If the blocked shell is no longer needed, run `:clean blockers`.".to_string(),
+            ],
+            (BackgroundShellCapabilityDependencyState::Missing, ActionAudience::Tool) => vec![
+                format!(
+                    "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the missing provider map."
+                ),
+                format!(
+                    "Use `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{capability}\"}}` to inspect the blocked dependency edges."
+                ),
+                "Use `background_shell_clean {\"scope\":\"blockers\"}` to abandon the blocking prerequisite shells if they are no longer needed.".to_string(),
+            ],
+            (BackgroundShellCapabilityDependencyState::Ambiguous, ActionAudience::Operator) => vec![
+                format!("Run `:ps capabilities @{capability}` to inspect the ambiguous provider set."),
+                format!(
+                    "Run `:clean services @{capability}` to clear the conflicting reusable role in one step."
+                ),
+                format!("Run `:ps services @{capability}` to inspect the remaining providers."),
+            ],
+            (BackgroundShellCapabilityDependencyState::Ambiguous, ActionAudience::Tool) => vec![
+                format!(
+                    "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the ambiguous provider set."
+                ),
+                format!(
+                    "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the conflicting reusable role in one step."
+                ),
+                format!(
+                    "Use `background_shell_list_services {{\"capability\":\"@{capability}\"}}` to inspect the remaining providers."
+                ),
+            ],
+            (BackgroundShellCapabilityDependencyState::Booting, ActionAudience::Operator) => vec![
+                format!("Run `:ps services booting @{capability}` to inspect the booting provider state."),
+                format!("Run `:ps wait @{capability} 5000` to wait on the capability provider."),
+                format!(
+                    "Run `:ps dependencies booting @{capability}` to keep the dependency view focused."
+                ),
+            ],
+            (BackgroundShellCapabilityDependencyState::Booting, ActionAudience::Tool) => vec![
+                format!(
+                    "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect the booting provider state."
+                ),
+                format!(
+                    "Use `background_shell_wait_ready {{\"jobId\":\"@{capability}\",\"timeoutMs\":5000}}` to wait on the capability provider."
+                ),
+                format!(
+                    "Use `orchestration_list_dependencies {{\"filter\":\"booting\",\"capability\":\"@{capability}\"}}` to keep the dependency view focused."
+                ),
+            ],
+            (BackgroundShellCapabilityDependencyState::Satisfied, _) => vec![],
+        });
+    }
+
+    Ok(match (
+        state.orchestration.background_shells.service_capability_issue_for_ref(capability)?,
+        audience,
+    ) {
+        (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Operator) => vec![
+            format!("Run `:ps capabilities @{capability}` to confirm there is no running provider."),
+            format!("Start or relabel a service shell so it provides `@{capability}`."),
+        ],
+        (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Tool) => vec![
+            format!(
+                "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to confirm there is no running provider."
+            ),
+            "Start or relabel a reusable service so it provides that capability before attaching future work to it.".to_string(),
+        ],
+        (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Operator) => vec![
+            format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
+            format!("Run `:clean services @{capability}` to clear the ambiguous reusable role."),
+            format!("Run `:ps services @{capability}` to verify the surviving providers."),
+        ],
+        (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Tool) => vec![
+            format!(
+                "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect providers and consumers."
+            ),
+            format!(
+                "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the ambiguous reusable role."
+            ),
+            format!(
+                "Use `background_shell_list_services {{\"capability\":\"@{capability}\"}}` to verify the surviving providers."
+            ),
+        ],
+        (BackgroundShellCapabilityIssueClass::Booting, ActionAudience::Operator) => vec![
+            format!("Run `:ps services booting @{capability}` to inspect provider readiness."),
+            format!("Run `:ps wait @{capability} 5000` for the booting service you need."),
+            "Run `:ps capabilities booting` to keep the capability view focused.".to_string(),
+        ],
+        (BackgroundShellCapabilityIssueClass::Booting, ActionAudience::Tool) => vec![
+            format!(
+                "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect provider readiness."
+            ),
+            format!(
+                "Use `background_shell_wait_ready {{\"jobId\":\"@{capability}\",\"timeoutMs\":5000}}` for the booting service you need."
+            ),
+            "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
+        ],
+        (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Operator) => vec![
+            format!("Run `:ps attach @{capability}` to inspect endpoint and recipe details."),
+            format!("Run `:ps run @{capability} <recipe> [json-args]` to reuse the ready service directly."),
+        ],
+        (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Tool) => vec![
+            format!(
+                "Use `background_shell_attach {{\"jobId\":\"@{capability}\"}}` to inspect endpoint and recipe details."
+            ),
+            format!(
+                "Use `background_shell_invoke_recipe {{\"jobId\":\"@{capability}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
+            ),
+        ],
+    })
+}
+
+fn normalize_capability_ref(raw: &str) -> Result<String, String> {
+    let normalized = raw.trim().trim_start_matches('@');
+    if normalized.is_empty() {
+        return Err("capability selector must be a non-empty capability name".to_string());
+    }
+    Ok(normalized.to_string())
+}
+
 fn pluralize(count: usize, singular: &str, plural: &str) -> String {
     format!("{count} {}", if count == 1 { singular } else { plural })
 }
@@ -1133,8 +1391,11 @@ mod tests {
     use super::orchestration_prompt_suffix;
     use super::orchestration_runtime_summary;
     use super::render_orchestration_actions;
+    use super::render_orchestration_actions_for_capability;
     use super::render_orchestration_actions_for_tool;
+    use super::render_orchestration_actions_for_tool_capability;
     use super::render_orchestration_guidance;
+    use super::render_orchestration_guidance_for_capability;
     use super::render_orchestration_workers;
     use super::render_orchestration_workers_with_filter;
 
@@ -1656,6 +1917,38 @@ mod tests {
         let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
         assert!(filtered.contains("Suggested actions:"));
         assert!(filtered.contains(":ps capabilities @api.http"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn focused_guidance_and_actions_can_target_one_capability() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start service");
+
+        let guidance = render_orchestration_guidance_for_capability(&services, "@api.http")
+            .expect("focused guidance");
+        assert!(guidance.contains("Next action (@api.http):"));
+        assert!(guidance.contains("ready for reuse"));
+
+        let operator_actions = render_orchestration_actions_for_capability(&services, "@api.http")
+            .expect("focused operator actions");
+        assert!(operator_actions.contains("Suggested actions (@api.http):"));
+        assert!(operator_actions.contains(":ps attach @api.http"));
+
+        let tool_actions = render_orchestration_actions_for_tool_capability(&services, "@api.http")
+            .expect("focused tool actions");
+        assert!(tool_actions.contains("Suggested actions (@api.http):"));
+        assert!(tool_actions.contains("background_shell_attach {\"jobId\":\"@api.http\"}"));
         let _ = services.background_shells.terminate_all_running();
     }
 }
