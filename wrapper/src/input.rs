@@ -13,3 +13,5 @@ pub use input_types::SkillCatalogEntry;
 
 #[cfg(test)]
 pub(crate) use input_decode::decode_linked_mentions;
+#[cfg(test)]
+pub(crate) use input_decode::resolve_file_mention_path;
