@@ -6,8 +6,8 @@ use base64::Engine;
 use serde_json::Value;
 
 use crate::output::Output;
-use crate::state_core::AppState;
-use crate::state_core::ProcessOutputBuffer;
+use crate::state::AppState;
+use crate::state::ProcessOutputBuffer;
 
 pub(crate) fn thread_id(state: &AppState) -> Result<&str> {
     state

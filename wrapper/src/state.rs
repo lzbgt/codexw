@@ -1,4 +1,5 @@
 pub(crate) use crate::state_core::AppState;
+pub(crate) use crate::state_core::ProcessOutputBuffer;
 pub(crate) use crate::state_helpers::buffer_item_delta;
 pub(crate) use crate::state_helpers::buffer_process_delta;
 pub(crate) use crate::state_helpers::canonicalize_or_keep;
