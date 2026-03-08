@@ -39,7 +39,7 @@ The runtime has thirteen main layers.
    `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions. `requests.rs` is the compatibility facade over that split.
 
 4. Inbound event handling
-   `events.rs`, `responses.rs`, and `notifications.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, and item-completion rendering.
+   `events.rs`, `responses.rs`, `notifications.rs`, `notification_realtime.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, and item-completion rendering. `notifications.rs` is the compatibility facade over the split notification handlers.
 
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
@@ -85,7 +85,7 @@ Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_comman
 Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers live in `responses.rs`: JSON-RPC success/error handling for pending outbound requests.
-Notification helpers live in `notifications.rs`: realtime, turn, item, and status notifications plus auto-continue turn chaining.
+Notification helpers are split across `notification_realtime.rs` and `notification_turns.rs`, with `notifications.rs` kept as a thin compatibility facade over realtime, turn, item, and status notifications plus auto-continue turn chaining.
 
 ## Process Model
 
@@ -358,7 +358,15 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main.rs`
   Thin entrypoint, module wiring, CLI flag definitions, and `main()`.
 - `wrapper/src/main_tests.rs`
-  Crate-level regression tests for CLI normalization, completions, rendering summaries, and cross-module behaviors.
+  Crate-level regression test hub for the split test modules.
+- `wrapper/src/main_test_approvals.rs`
+  Approval-decision and auto-approval regression tests.
+- `wrapper/src/main_test_catalog.rs`
+  Catalog/help/completion, thread-list, rate-limit, and resume-preview regression tests.
+- `wrapper/src/main_test_runtime.rs`
+  Runtime/editor/completion normalization and feedback-argument regression tests.
+- `wrapper/src/main_test_session.rs`
+  Session status, collaboration, personality, realtime-item, and tool-summary regression tests.
 - `wrapper/src/app.rs`
   Top-level runtime loop, backend wiring, and input-key dispatch.
 - `wrapper/src/policy.rs`
@@ -370,7 +378,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/responses.rs`
   JSON-RPC response handling and pending-request success/error resolution.
 - `wrapper/src/notifications.rs`
-  JSON-RPC notification handling, realtime lifecycle updates, turn completion, and item-completion rendering.
+  Compatibility facade for the split notification handlers.
+- `wrapper/src/notification_realtime.rs`
+  Realtime, account, app-list, and thread-status notification handling.
+- `wrapper/src/notification_turns.rs`
+  Turn, item, diff/plan, and auto-continue notification handling.
 - `wrapper/src/catalog.rs`
   App and skill catalog parsing for app-server payloads.
 - `wrapper/src/history.rs`
