@@ -543,6 +543,14 @@ fn ps_filter_parser_accepts_worker_class_aliases() {
         Some(WorkerFilter::Blockers)
     );
     assert_eq!(
+        parse_ps_filter(Some("dependencies")),
+        Some(WorkerFilter::Dependencies)
+    );
+    assert_eq!(
+        parse_ps_filter(Some("deps")),
+        Some(WorkerFilter::Dependencies)
+    );
+    assert_eq!(
         parse_ps_filter(Some("blocking")),
         Some(WorkerFilter::Blockers)
     );

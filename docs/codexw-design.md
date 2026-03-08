@@ -221,6 +221,7 @@ The current `codexw` implementation now reflects that model partially:
 - `/ps` renders the tracked worker snapshot: cached cognitive workers from `/agent` or `/multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
 - `/ps` now also supports worker-class filters:
   - `:ps blockers` for blocking waits and prerequisite shells
+  - `:ps dependencies` for the current dependency-edge graph without the rest of the worker snapshot
   - `:ps agents` for cognitive workers only
   - `:ps shells` for wrapper-owned local shell jobs only
   - `:ps services` for reusable service shells only
@@ -320,7 +321,7 @@ The current `codexw` implementation now reflects that model partially:
 - `/status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives operator guidance as well as raw counts and dependency edges
 - the same orchestration graph is now available to the model-side dynamic tool layer too:
   - `orchestration_status` mirrors the compact orchestration summary plus next-action hint
-  - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `agents`, `services`, `capabilities`, `terminals`, or `guidance`
+  - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, or `guidance`
 
 That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `/multi-agents`, `/ps`, ready status, and transcript summaries all read from that same model.
 `codexw` also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.

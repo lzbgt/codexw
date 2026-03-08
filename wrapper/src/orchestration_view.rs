@@ -23,6 +23,7 @@ use crate::state::summarize_text;
 pub(crate) enum WorkerFilter {
     All,
     Blockers,
+    Dependencies,
     Agents,
     Shells,
     Services,
@@ -335,7 +336,10 @@ pub(crate) fn render_orchestration_workers_with_filter(
         return guidance;
     }
     let mut lines = Vec::new();
-    if matches!(filter, WorkerFilter::All | WorkerFilter::Blockers) {
+    if matches!(
+        filter,
+        WorkerFilter::All | WorkerFilter::Blockers | WorkerFilter::Dependencies
+    ) {
         lines.extend(render_main_agent_section(state, filter));
     }
     if matches!(
@@ -438,29 +442,33 @@ fn summarize_agent_status_counts(agent_threads: &[CachedAgentThreadSummary]) -> 
 
 fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<String> {
     let mut lines = Vec::new();
-    let mut main_line = format!("Main agent state: {}", main_agent_state_label(state));
-    if let Some(waiting_on) = wait_dependency_summary(state) {
-        main_line.push_str(&format!(" | {waiting_on}"));
+    if !matches!(filter, WorkerFilter::Dependencies) {
+        let mut main_line = format!("Main agent state: {}", main_agent_state_label(state));
+        if let Some(waiting_on) = wait_dependency_summary(state) {
+            main_line.push_str(&format!(" | {waiting_on}"));
+        }
+        main_line.push_str(&format!(
+            " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} (ready={} booting={} untracked={}) | deps blocking={} sidecar={}",
+            active_sidecar_agent_task_count(state),
+            running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
+            running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
+            running_shell_count_by_intent(state, BackgroundShellIntent::Service),
+            running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
+            running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
+            running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+            blocking_dependency_count(state),
+            sidecar_dependency_count(state)
+        ));
+        lines.push(main_line);
     }
-    main_line.push_str(&format!(
-        " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} (ready={} booting={} untracked={}) | deps blocking={} sidecar={}",
-        active_sidecar_agent_task_count(state),
-        running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
-        running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
-        running_shell_count_by_intent(state, BackgroundShellIntent::Service),
-        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
-        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
-        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
-        blocking_dependency_count(state),
-        sidecar_dependency_count(state)
-    ));
-    lines.push(main_line);
     let dependencies = orchestration_dependency_edges(state)
         .into_iter()
         .filter(|edge| !matches!(filter, WorkerFilter::Blockers) || edge.blocking)
         .collect::<Vec<_>>();
     if !dependencies.is_empty() {
-        lines.push(String::new());
+        if !lines.is_empty() {
+            lines.push(String::new());
+        }
         lines.push("Dependencies:".to_string());
         for (index, edge) in dependencies.iter().enumerate() {
             lines.push(format!(
@@ -564,6 +572,7 @@ fn empty_filter_message(filter: WorkerFilter) -> &'static str {
             "No workers tracked yet. Use /multi-agents to cache agent threads or start a background task."
         }
         WorkerFilter::Blockers => "No blocking workers tracked right now.",
+        WorkerFilter::Dependencies => "No dependency edges tracked right now.",
         WorkerFilter::Agents => "No agent workers tracked right now.",
         WorkerFilter::Shells => "No local background shell jobs tracked right now.",
         WorkerFilter::Services => "No service shells tracked right now.",
@@ -973,6 +982,15 @@ mod tests {
         assert!(blockers.contains("backgroundShell:prerequisite, blocking"));
         assert!(!blockers.contains("Cached agent threads:"));
         assert!(!blockers.contains("Server-observed background terminals:"));
+
+        let dependencies =
+            render_orchestration_workers_with_filter(&state, WorkerFilter::Dependencies);
+        assert!(dependencies.contains("Dependencies:"));
+        assert!(!dependencies.contains("Main agent state:"));
+        assert!(dependencies.contains("main -> agent:agent-1  [wait, blocking]"));
+        assert!(
+            dependencies.contains("main -> shell:bg-1  [backgroundShell:prerequisite, blocking]")
+        );
 
         let services = render_orchestration_workers_with_filter(&state, WorkerFilter::Services);
         assert!(services.contains("Local background shell jobs:"));

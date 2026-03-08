@@ -33,13 +33,13 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "orchestration_list_workers",
-            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, agents, shells, services, capabilities, terminals, or guidance.",
+            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, dependencies, agents, shells, services, capabilities, terminals, or guidance.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "filter": {
                         "type": "string",
-                        "enum": ["all", "blockers", "agents", "shells", "services", "capabilities", "terminals", "guidance"]
+                        "enum": ["all", "blockers", "dependencies", "agents", "shells", "services", "capabilities", "terminals", "guidance"]
                     }
                 }
             }
@@ -417,6 +417,7 @@ fn parse_worker_filter_for_tool(raw: Option<&str>) -> Result<WorkerFilter, Strin
     match raw.unwrap_or("all") {
         "all" => Ok(WorkerFilter::All),
         "blockers" | "blocking" | "prereqs" => Ok(WorkerFilter::Blockers),
+        "dependencies" | "deps" => Ok(WorkerFilter::Dependencies),
         "agents" => Ok(WorkerFilter::Agents),
         "shells" => Ok(WorkerFilter::Shells),
         "services" => Ok(WorkerFilter::Services),
@@ -424,7 +425,7 @@ fn parse_worker_filter_for_tool(raw: Option<&str>) -> Result<WorkerFilter, Strin
         "terminals" => Ok(WorkerFilter::Terminals),
         "guidance" | "guide" | "next" => Ok(WorkerFilter::Guidance),
         other => Err(format!(
-            "orchestration_list_workers `filter` must be one of `all`, `blockers`, `agents`, `shells`, `services`, `capabilities`, `terminals`, or `guidance`, got `{other}`"
+            "orchestration_list_workers `filter` must be one of `all`, `blockers`, `dependencies`, `agents`, `shells`, `services`, `capabilities`, `terminals`, or `guidance`, got `{other}`"
         )),
     }
 }
@@ -871,6 +872,24 @@ mod tests {
             .expect("capabilities text");
         assert!(caps_text.contains("Service capability index:"));
         assert!(caps_text.contains("@api.http -> <missing provider> [missing]"));
+
+        let deps = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_list_workers",
+                "arguments": {
+                    "filter": "dependencies"
+                }
+            }),
+            "/tmp",
+            &state,
+        );
+        assert_eq!(deps["success"], true);
+        let deps_text = deps["contentItems"][0]["text"]
+            .as_str()
+            .expect("dependency text");
+        assert!(deps_text.contains("Dependencies:"));
+        assert!(!deps_text.contains("Main agent state:"));
+        assert!(deps_text.contains("shell:bg-1 -> capability:@api.http"));
 
         let guidance = execute_dynamic_tool_call_with_state(
             &json!({
