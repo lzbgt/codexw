@@ -63,7 +63,7 @@ The runtime has thirteen main layers.
    `catalog_views.rs`, `catalog_lists.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` remain narrow compatibility facades over the split helpers.
 
 12. Human input handling
-   `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `prompting.rs` are compatibility facades over those splits.
+   `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_tokens.rs`, `input/input_resolve.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, `prompt_file_completions.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `prompting.rs` are compatibility facades over those splits.
 
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
@@ -82,8 +82,8 @@ Command catalog helpers are split across `commands_entries.rs` and `commands_cat
 Command metadata helpers live in `commands_metadata.rs`: command descriptions and help-line generation over the shared command catalog.
 Command completion helpers live in `commands_completion.rs` and `commands_match.rs`: slash completion rendering stays in the facade while cursor parsing, fuzzy scoring, and prefix logic live in the extracted matcher module.
 Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_session.rs`, and `dispatch_command_session_control.rs` kept as thin compatibility facades for imports and tests.
-Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` and `input/input_decode.rs` kept as thin compatibility facades for imports and `input_tests.rs` holding the crate-level regression suite.
-Prompt helpers live across `prompt_state.rs` and `prompt_completion.rs`, with `prompting.rs` kept as the thin facade over prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
+Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_tokens.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, and `input/input_build.rs`, with `input.rs`, `input/input_decode.rs`, and `input/input_resolve.rs` kept as thin compatibility facades for imports and `input_tests.rs` holding the crate-level regression suite.
+Prompt helpers live across `prompt_state.rs`, `prompt_completion.rs`, and `prompt_file_completions.rs`, with `prompting.rs` kept as the thin facade over prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers are split across `response_success.rs` and `response_error.rs`, with `responses.rs` kept as a thin compatibility facade for JSON-RPC success/error handling of pending outbound requests.
 Notification helpers are split across `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, and `notification_item_completion.rs`, with `notifications.rs` and `notification_turns.rs` kept as thin compatibility facades over realtime, turn, item, and status notifications plus auto-continue turn chaining.
 
@@ -243,7 +243,7 @@ Long drafts are visually elided to the current terminal width so redraw does not
 
 ## Input Construction
 
-`input.rs` is the compatibility surface for the structured `UserInput` builder split. `input/input_build.rs` constructs app-server payload items, `input/input_decode_mentions.rs` owns linked-tool mention decoding, `input/input_decode_inline.rs` owns inline-file and token decoding helpers, `input/input_decode.rs` is the compatibility facade over those decode helpers, `input/input_resolve.rs` owns catalog-based mention resolution, and `input/input_types.rs` owns the input-layer data types.
+`input.rs` is the compatibility surface for the structured `UserInput` builder split. `input/input_build.rs` constructs app-server payload items, `input/input_decode_mentions.rs` owns linked-tool mention decoding, `input/input_decode_inline_mentions.rs` owns inline `@file` expansion, `input/input_decode_tokens.rs` owns token/env-var scanning helpers, `input/input_decode_inline.rs` and `input/input_decode.rs` are the compatibility facades over those decode helpers, `input/input_resolve_tools.rs` owns tool-mention extraction, `input/input_resolve_catalog.rs` owns catalog-based mention selection, `input/input_resolve.rs` is the compatibility facade over those resolution helpers, and `input/input_types.rs` owns the input-layer data types.
 
 It supports:
 
@@ -487,9 +487,17 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/input/input_decode_mentions.rs`
   Linked-tool mention decoding and tool-path parsing helpers.
 - `wrapper/src/input/input_decode_inline.rs`
-  Inline `@file` expansion, prefixed-token collection, and low-level token/path helpers.
+  Compatibility facade for the split inline decode helpers.
+- `wrapper/src/input/input_decode_inline_mentions.rs`
+  Inline `@file` expansion and file-mention path rendering helpers.
+- `wrapper/src/input/input_decode_tokens.rs`
+  Prefixed-token collection plus low-level token/env-var classification helpers.
 - `wrapper/src/input/input_resolve.rs`
-  Catalog-driven app/plugin/skill mention resolution.
+  Compatibility facade for the split mention-resolution helpers.
+- `wrapper/src/input/input_resolve_tools.rs`
+  Tool-mention extraction from text and linked mentions.
+- `wrapper/src/input/input_resolve_catalog.rs`
+  Catalog-driven app/plugin/skill mention selection.
 - `wrapper/src/input/input_build.rs`
   Structured turn payload construction for app-server `UserInput`.
 - `wrapper/src/dispatch.rs`
@@ -522,6 +530,9 @@ The biggest known limits are architectural, not accidental.
   Shared slash-command helpers such as built-in detection, feedback parsing, prompt joining, and clipboard handling.
 - `wrapper/src/prompt_state.rs`
 - `wrapper/src/prompt_completion.rs`
+  Prompt completion facade and tab-completion entrypoint.
+- `wrapper/src/prompt_file_completions.rs`
+  `@file` token parsing, filesystem completion, and candidate rendering.
 - `wrapper/src/prompting.rs`
   Prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion helpers.
 - `wrapper/src/model_catalog.rs`
