@@ -36,10 +36,10 @@ The runtime has thirteen main layers.
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
 3. Outbound request construction
-   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_requests.rs`, `requests/thread_requests.rs`, `requests/turn_requests.rs`, `requests/command_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions. `requests.rs` is the compatibility facade over that split, and `session_requests.rs` is now a small legacy facade over the thread/turn/command request helpers.
+   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_load.rs`, `requests/bootstrap_requests.rs`, `requests/thread_requests.rs`, `requests/turn_requests.rs`, `requests/command_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions. `requests.rs`, `bootstrap_requests.rs`, and `session_requests.rs` are now compatibility facades over the split bootstrap/thread/turn/command request helpers.
 
 4. Inbound event handling
-   `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, and `response_success.rs` are compatibility/router facades over the split inbound handlers.
+   `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, and `notification_turns.rs` are compatibility/router facades over the split inbound handlers.
 
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
@@ -85,7 +85,7 @@ Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_comman
 Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers are split across `response_success.rs` and `response_error.rs`, with `responses.rs` kept as a thin compatibility facade for JSON-RPC success/error handling of pending outbound requests.
-Notification helpers are split across `notification_realtime.rs` and `notification_turns.rs`, with `notifications.rs` kept as a thin compatibility facade over realtime, turn, item, and status notifications plus auto-continue turn chaining.
+Notification helpers are split across `notification_realtime.rs`, `notification_turn_lifecycle.rs`, and `notification_turn_items.rs`, with `notifications.rs` and `notification_turns.rs` kept as thin compatibility facades over realtime, turn, item, and status notifications plus auto-continue turn chaining.
 
 ## Process Model
 
@@ -385,8 +385,12 @@ The biggest known limits are architectural, not accidental.
   Compatibility facade for the split notification handlers.
 - `wrapper/src/notification_realtime.rs`
   Realtime, account, app-list, and thread-status notification handling.
+- `wrapper/src/notification_turn_lifecycle.rs`
+  Skill-change, turn lifecycle, and auto-continue notification handling.
+- `wrapper/src/notification_turn_items.rs`
+  Turn item, diff/plan, process-delta, and completion rendering notification handling.
 - `wrapper/src/notification_turns.rs`
-  Turn, item, diff/plan, and auto-continue notification handling.
+  Compatibility facade routing turn notifications to lifecycle and item handlers.
 - `wrapper/src/catalog.rs`
   App and skill catalog parsing for app-server payloads.
 - `wrapper/src/history.rs`
@@ -415,8 +419,12 @@ The biggest known limits are architectural, not accidental.
   Compatibility facade for the split outbound-request layer.
 - `wrapper/src/requests/request_types.rs`
   `PendingRequest` variants used to track in-flight JSON-RPC work.
+- `wrapper/src/requests/bootstrap_init.rs`
+  Initialize request and initialized notification builders.
+- `wrapper/src/requests/bootstrap_load.rs`
+  Catalog, account, config, model, collaboration-mode, thread-list, feedback, logout, and file-search request builders.
 - `wrapper/src/requests/bootstrap_requests.rs`
-  Initialize, catalog, account, config, model, collaboration-mode, thread-list, and file-search request builders.
+  Compatibility facade for the split bootstrap request layer.
 - `wrapper/src/requests/thread_requests.rs`
   Thread lifecycle, realtime, and review request builders.
 - `wrapper/src/requests/turn_requests.rs`
