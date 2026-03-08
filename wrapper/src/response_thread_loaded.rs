@@ -5,7 +5,7 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
-use crate::history::render_resumed_history;
+use crate::history_render::render_resumed_history;
 use crate::input::build_turn_input;
 use crate::output::Output;
 use crate::requests::send_turn_start;

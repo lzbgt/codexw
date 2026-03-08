@@ -6,7 +6,7 @@ use crate::Cli;
 use crate::catalog::parse_apps_list;
 use crate::output::Output;
 use crate::rpc::RpcNotification;
-use crate::session_realtime::render_realtime_item;
+use crate::session_realtime_item::render_realtime_item;
 use crate::state::AppState;
 use crate::state::emit_status_line;
 use crate::state::get_string;

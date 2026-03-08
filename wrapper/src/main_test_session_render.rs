@@ -1,4 +1,4 @@
-use crate::session_realtime::render_realtime_item;
+use crate::session_realtime_item::render_realtime_item;
 use crate::transcript_render::build_tool_user_input_response;
 use crate::transcript_render::render_reasoning_item;
 use crate::transcript_summary::summarize_terminal_interaction;

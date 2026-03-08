@@ -14,9 +14,9 @@ mod response_bootstrap_catalog_state;
 mod response_bootstrap_catalog_views;
 #[path = "response_bootstrap_init.rs"]
 mod response_bootstrap_init;
-#[path = "response_threads.rs"]
-mod response_threads;
 
+use crate::response_thread_runtime::handle_thread_runtime_response;
+use crate::response_thread_session::handle_thread_session_response;
 use response_bootstrap_catalog_state::handle_account_loaded;
 use response_bootstrap_catalog_state::handle_apps_loaded;
 use response_bootstrap_catalog_state::handle_collaboration_modes_loaded;
@@ -31,7 +31,6 @@ use response_bootstrap_catalog_views::handle_threads_listed;
 use response_bootstrap_init::handle_feedback_success;
 use response_bootstrap_init::handle_initialize_success;
 use response_bootstrap_init::handle_logout_success;
-use response_threads::handle_thread_response_success;
 
 pub(crate) fn handle_response_success(
     result: Value,
@@ -56,8 +55,12 @@ pub(crate) fn handle_response_success(
         return Ok(());
     }
 
-    if handle_thread_response_success(&result, &pending, cli, resolved_cwd, state, output, writer)?
+    if handle_thread_session_response(&pending, &result, cli, resolved_cwd, state, output, writer)?
     {
+        return Ok(());
+    }
+
+    if handle_thread_runtime_response(&pending, &result, state, output)? {
         return Ok(());
     }
 

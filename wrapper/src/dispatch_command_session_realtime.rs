@@ -7,6 +7,7 @@ use crate::output::Output;
 use crate::requests::send_thread_realtime_append_text;
 use crate::requests::send_thread_realtime_start;
 use crate::requests::send_thread_realtime_stop;
+use crate::session_realtime_status::render_realtime_status;
 use crate::state::AppState;
 
 pub(crate) fn handle_realtime_command(
@@ -37,10 +38,7 @@ pub(crate) fn handle_realtime_command(
                 output.line_stderr(
                     "[session] realtime is already active; use /realtime stop first",
                 )?;
-                output.block_stdout(
-                    "Realtime",
-                    &crate::session_realtime::render_realtime_status(state),
-                )?;
+                output.block_stdout("Realtime", &render_realtime_status(state))?;
             } else {
                 let prompt = if args.len() > 1 {
                     args[1..].join(" ")
@@ -69,10 +67,7 @@ pub(crate) fn handle_realtime_command(
         }
         other => {
             output.line_stderr(format!("[session] unknown realtime action: {other}"))?;
-            output.block_stdout(
-                "Realtime",
-                &crate::session_realtime::render_realtime_status(state),
-            )?;
+            output.block_stdout("Realtime", &render_realtime_status(state))?;
         }
     }
     Ok(Some(true))

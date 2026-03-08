@@ -6,7 +6,7 @@ use crate::Cli;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_load_config;
-use crate::session_realtime::render_realtime_status;
+use crate::session_realtime_status::render_realtime_status;
 use crate::session_snapshot::render_status_snapshot;
 use crate::state::AppState;
 use crate::status_views::render_permissions_snapshot;
