@@ -82,7 +82,7 @@ Command catalog helpers are split across `commands_entry_session_catalog.rs`, `c
 Command metadata helpers now live directly in `commands_catalog.rs`: command descriptions, help-line generation, and stable command-name ordering over the shared command catalog.
 Command completion helpers live in `commands_completion_apply.rs`, `commands_completion_render.rs`, and `commands_match.rs`: completion application stays in the extracted apply helper, rendering and quoting stay in the render helper, and cursor parsing, fuzzy scoring, and prefix logic live in the matcher module.
 Command-dispatch helpers are split across `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation_session.rs`, `dispatch_command_thread_navigation_identity.rs`, `dispatch_command_thread_review.rs`, `dispatch_command_thread_control.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_thread_view.rs`, `dispatch_command_thread_draft.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_ps.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch_commands.rs` kept as the remaining thin compatibility facade for imports and tests.
-Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_mention_links.rs`, `input/input_decode_mention_paths.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_inline_paths.rs`, `input/input_decode_inline_skills.rs`, `input/input_decode_tokens.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `input/input_build_items.rs`, and `input/input_build_mentions.rs`, with `input.rs` kept as the thin compatibility facade for imports and `input_tests.rs` holding the crate-level regression suite.
+Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_mention_links.rs`, `input/input_decode_mention_paths.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_inline_paths.rs`, `input/input_decode_inline_skills.rs`, `input/input_decode_tokens.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `input/input_build_items.rs`, and `input/input_build_mentions.rs`, with `input.rs` kept as the thin compatibility facade for imports and the crate-level regression coverage now wired directly to the concrete `input_test_*` modules.
 Prompt helpers live across `prompt_state.rs`, `prompt_file_completions.rs`, `prompt_file_completions_token.rs`, and `prompt_file_completions_search.rs`, with prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion now imported directly from the concrete helper modules.
 Render helpers live across `render_prompt.rs`, `render_markdown_block_structures.rs`, `render_markdown_links.rs`, and `render_markdown_styles.rs`, with `render_prompt.rs` owning prompt-layout and committed-prompt behavior directly while `render_block_markdown.rs` and `render_markdown_inline.rs` still wrap the markdown subhelpers.
 Response helpers are split across `response_bootstrap_init.rs`, `response_bootstrap_catalog_state.rs`, `response_bootstrap_catalog_views.rs`, `response_thread_session.rs`, `response_thread_maintenance.rs`, `response_thread_runtime.rs`, `response_thread_loaded.rs`, `response_error_session.rs`, `response_error_runtime.rs`, `response_realtime_activity.rs`, `response_turn_activity.rs`, and `response_local_command.rs`, with `events.rs` routing directly to those concrete success and error handlers for pending outbound requests.
@@ -358,50 +358,32 @@ The biggest known limits are architectural, not accidental.
 
 - `wrapper/src/main.rs`
   Thin entrypoint, module wiring, CLI flag definitions, and `main()`.
-- `wrapper/src/main_tests.rs`
-  Crate-level regression test hub for the split test modules.
 - `wrapper/src/main_test_approvals.rs`
   Approval-decision and auto-approval regression tests.
 - `wrapper/src/main_test_catalog.rs`
   Resume-preview and rate-limit regression tests.
-- `wrapper/src/main_test_catalog_views.rs`
-  Compatibility hub for the split catalog rendering and thread/search regression tests.
 - `wrapper/src/main_test_catalog_render.rs`
   Catalog rendering regression tests for apps, experimental features, and models.
 - `wrapper/src/main_test_catalog_threads.rs`
   Thread-list, file-search extraction, and fuzzy file-search regression tests.
 - `wrapper/src/main_test_commands.rs`
   Slash-command completion, ordering, help-line, and quoting regression tests.
-- `wrapper/src/main_test_runtime.rs`
-  Compatibility hub for split runtime/editor/completion regression tests.
-- `wrapper/src/main_test_runtime_completion.rs`
-  Compatibility hub for split runtime command/prompt regression tests.
 - `wrapper/src/main_test_runtime_commands.rs`
   Builtin-command detection and slash-completion regression tests.
 - `wrapper/src/main_test_runtime_prompt.rs`
   File-completion and prompt visibility/input gating regression tests.
 - `wrapper/src/main_test_runtime_cli.rs`
   CLI normalization, feedback parsing, and quoting regression tests.
-- `wrapper/src/input_tests.rs`
-  Compatibility hub for split input-layer regression tests.
 - `wrapper/src/input_test_mentions.rs`
   Linked-mention decoding regression tests.
-- `wrapper/src/input_test_build.rs`
-  Compatibility hub for split structured turn-input regression tests.
 - `wrapper/src/input_test_build_items.rs`
   Structured turn-input item construction and inline file-mention expansion regression tests.
 - `wrapper/src/input_test_build_mentions.rs`
   Catalog-driven mention construction regression tests.
-- `wrapper/src/main_test_session.rs`
-  Compatibility hub for the split session-oriented regression tests.
 - `wrapper/src/main_test_session_render.rs`
   Tool-user-input, reasoning, terminal-interaction, and realtime-item rendering regression tests.
-- `wrapper/src/main_test_session_state.rs`
-  Compatibility hub for split session-state/status regression tests.
 - `wrapper/src/main_test_session_collaboration.rs`
   Collaboration preset extraction, rendering, and prompt-status regression tests.
-- `wrapper/src/main_test_session_models.rs`
-  Compatibility hub for split model catalog and personality/status regression tests.
 - `wrapper/src/main_test_session_model_catalog.rs`
   Model catalog extraction regression tests.
 - `wrapper/src/main_test_session_personality_status.rs`
@@ -654,8 +636,6 @@ The biggest known limits are architectural, not accidental.
   ANSI serialization helpers for `ratatui` text structures and styles.
 - `wrapper/src/prompt.rs`
   Auto-continue prompt synthesis and stop-marker parsing.
-- `wrapper/src/input_tests.rs`
-  Crate-level regression tests for the split input layer facade and helpers.
 - `skills/session-autopilot/`
   Companion cooperative skill for end-of-turn continuation policy.
 

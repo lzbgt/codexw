@@ -108,13 +108,37 @@ mod transcript_status_summary;
 #[cfg(test)]
 mod editor_tests;
 #[cfg(test)]
-mod input_test_build;
+mod input_test_build_items;
+#[cfg(test)]
+mod input_test_build_mentions;
 #[cfg(test)]
 mod input_test_mentions;
 #[cfg(test)]
-mod input_tests;
+mod main_test_approvals;
 #[cfg(test)]
-mod main_tests;
+mod main_test_catalog;
+#[cfg(test)]
+mod main_test_catalog_render;
+#[cfg(test)]
+mod main_test_catalog_threads;
+#[cfg(test)]
+mod main_test_commands;
+#[cfg(test)]
+mod main_test_runtime_cli;
+#[cfg(test)]
+mod main_test_runtime_commands;
+#[cfg(test)]
+mod main_test_runtime_prompt;
+#[cfg(test)]
+mod main_test_session_collaboration;
+#[cfg(test)]
+mod main_test_session_model_catalog;
+#[cfg(test)]
+mod main_test_session_personality_status;
+#[cfg(test)]
+mod main_test_session_render;
+#[cfg(test)]
+mod main_test_session_status;
 #[cfg(test)]
 mod render_tests;
 
