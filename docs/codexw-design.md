@@ -334,7 +334,7 @@ Current user-facing capabilities include:
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns
 
-Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but the remaining command-level example is now mostly the Windows sandbox read-root workflow. Model selection, permissions presets, theme selection, fast-mode toggling, collaboration-mode switching, agent-thread switching, experimental-feature discovery, personality selection, Windows sandbox setup, background-terminal cleanup, client-side dynamic workspace tools, and a text-only realtime flow are no longer in that category. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
+`codexw` no longer leaves any of the user-facing slash-command side effects in a generic placeholder state. The Windows-only `:sandbox-add-read-dir` path is now handled client-side like upstream: it validates the requested absolute directory and refreshes sandbox read grants locally rather than going through app-server. The main remaining gaps are architectural or UX-level instead of command dispatch parity. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
 
 ## Approval and Automation Posture
 

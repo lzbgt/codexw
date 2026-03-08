@@ -4,11 +4,13 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::config_persistence::resolve_codex_home;
 use crate::dispatch_command_thread_common::require_idle_turn;
 use crate::dispatch_command_utils::parse_feedback_args;
 use crate::editor::LineEditor;
 use crate::input::build_turn_input;
 use crate::output::Output;
+use crate::policy::thread_sandbox_mode;
 use crate::requests::send_feedback_upload;
 use crate::requests::send_list_agent_threads;
 use crate::requests::send_logout_account;
@@ -20,6 +22,9 @@ use crate::selection_flow::open_theme_picker;
 use crate::selection_flow::toggle_fast_mode;
 use crate::state::AppState;
 use crate::state::summarize_text;
+use crate::windows_sandbox_read_grants::WINDOWS_SANDBOX_READ_ROOT_USAGE;
+use crate::windows_sandbox_read_grants::grant_read_root_non_elevated;
+use crate::windows_sandbox_read_grants::parse_windows_sandbox_read_root_arg;
 
 pub(crate) const INIT_PROMPT: &str = include_str!("prompt_for_init_command.md");
 
@@ -27,6 +32,7 @@ pub(crate) const INIT_PROMPT: &str = include_str!("prompt_for_init_command.md");
 pub(crate) fn try_handle_session_meta_command(
     command: &str,
     args: &[&str],
+    raw_args: &str,
     cli: &Cli,
     resolved_cwd: &str,
     state: &mut AppState,
@@ -114,9 +120,34 @@ pub(crate) fn try_handle_session_meta_command(
             true
         }
         "sandbox-add-read-dir" => {
+            let Some(read_root) = parse_windows_sandbox_read_root_arg(raw_args) else {
+                output.line_stderr(WINDOWS_SANDBOX_READ_ROOT_USAGE)?;
+                return Ok(Some(true));
+            };
+            if !cfg!(target_os = "windows") {
+                output
+                    .line_stderr("[session] /sandbox-add-read-dir is only available on Windows")?;
+                return Ok(Some(true));
+            }
+            let codex_home = resolve_codex_home(state.codex_home_override.as_deref())?;
             output.line_stderr(format!(
-                "[session] /{command} is Windows-only and app-server does not expose the additional read-root grant workflow used by the native TUI"
+                "[session] granting sandbox read access to {} ...",
+                summarize_text(&read_root)
             ))?;
+            match grant_read_root_non_elevated(
+                &thread_sandbox_mode(cli, state),
+                Path::new(resolved_cwd),
+                codex_home.as_path(),
+                Path::new(&read_root),
+            ) {
+                Ok(path) => output.line_stderr(format!(
+                    "[session] sandbox read access granted for {}",
+                    path.display()
+                ))?,
+                Err(err) => output.line_stderr(format!(
+                    "[session] failed to grant sandbox read access: {err}"
+                ))?,
+            }
             true
         }
         _ => return Ok(None),

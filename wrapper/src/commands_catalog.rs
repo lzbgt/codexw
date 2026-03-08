@@ -121,5 +121,8 @@ fn builtin_command_rank(name: &str) -> usize {
 }
 
 fn is_hidden_builtin_command(name: &str) -> bool {
-    matches!(name, "sandbox-add-read-dir" | "setup-default-sandbox")
+    match name {
+        "sandbox-add-read-dir" | "setup-default-sandbox" => !cfg!(target_os = "windows"),
+        _ => false,
+    }
 }

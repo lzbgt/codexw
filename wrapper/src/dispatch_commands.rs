@@ -38,12 +38,16 @@ pub(crate) fn handle_command(
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<bool> {
-    let mut parts = command_line.split_whitespace();
-    let Some(command) = parts.next() else {
+    let trimmed = command_line.trim();
+    let Some(command) = trimmed.split_whitespace().next() else {
         output.line_stderr("[session] empty command")?;
         return Ok(true);
     };
-    let args = parts.collect::<Vec<_>>();
+    let raw_args = trimmed
+        .strip_prefix(command)
+        .map(str::trim_start)
+        .unwrap_or_default();
+    let args = raw_args.split_whitespace().collect::<Vec<_>>();
 
     match command {
         "help" | "h" => {
@@ -172,6 +176,7 @@ pub(crate) fn handle_command(
             if let Some(result) = try_handle_session_meta_command(
                 command,
                 &args,
+                raw_args,
                 cli,
                 resolved_cwd,
                 state,

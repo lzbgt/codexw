@@ -114,7 +114,7 @@ where
         .with_context(|| format!("failed to write {}", config_path.display()))
 }
 
-fn resolve_codex_home(codex_home_override: Option<&Path>) -> Result<PathBuf> {
+pub(crate) fn resolve_codex_home(codex_home_override: Option<&Path>) -> Result<PathBuf> {
     if let Some(codex_home) = codex_home_override {
         return Ok(codex_home.to_path_buf());
     }

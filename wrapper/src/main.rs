@@ -107,6 +107,7 @@ mod transcript_completion_render;
 mod transcript_item_summary;
 mod transcript_plan_render;
 mod transcript_status_summary;
+mod windows_sandbox_read_grants;
 
 #[cfg(test)]
 mod editor_tests;
