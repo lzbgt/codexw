@@ -1,5 +1,6 @@
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::Write;
 use std::process::ChildStdout;
 use std::sync::mpsc;
 use std::thread;
@@ -83,6 +84,7 @@ pub(crate) struct RawModeGuard;
 
 impl RawModeGuard {
     pub(crate) fn new() -> Result<Self> {
+        reset_terminal_charset()?;
         terminal::enable_raw_mode().context("enable raw terminal mode")?;
         Ok(Self)
     }
@@ -90,6 +92,14 @@ impl RawModeGuard {
 
 impl Drop for RawModeGuard {
     fn drop(&mut self) {
+        let _ = reset_terminal_charset();
         let _ = terminal::disable_raw_mode();
     }
+}
+
+fn reset_terminal_charset() -> Result<()> {
+    const TEXT_CHARSET_RESET: &str = "\x0f\x1b(B\x1b)B";
+    let mut stderr = std::io::stderr();
+    write!(stderr, "{TEXT_CHARSET_RESET}").context("reset terminal character set")?;
+    stderr.flush().context("flush terminal character set reset")
 }
