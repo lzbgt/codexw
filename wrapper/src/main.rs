@@ -36,9 +36,14 @@ mod responses;
 mod rpc;
 mod runtime;
 mod session;
+mod session_prompt_status;
+mod session_realtime;
+mod session_snapshot;
 mod session_status;
 mod state;
 mod status_views;
+mod transcript_render;
+mod transcript_summary;
 mod transcript_views;
 mod views;
 

@@ -51,7 +51,7 @@ The runtime has thirteen main layers.
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
 
 8. Session and turn orchestration
-   `model_session.rs`, `collaboration.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, realtime state rendering, and status snapshot generation. `session.rs` is the compatibility facade over that split.
+   `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, `session_snapshot.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, and status snapshot generation. `session.rs` and `session_status.rs` are compatibility facades over that split.
 
 9. App runtime loop
    `app.rs` owns process wiring, the main event loop, and keyboard-event dispatch for the live interactive session.
@@ -60,7 +60,7 @@ The runtime has thirteen main layers.
    `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
 
 11. View and transcript rendering helpers
-   `views.rs`, `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
+   `views.rs`, `catalog_views.rs`, `status_views.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
 12. Human input handling
    `editor.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `dispatch.rs`, and `dispatch_commands.rs` are compatibility facades over those splits.
@@ -68,13 +68,13 @@ The runtime has thirteen main layers.
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
 
-Session feature helpers are split across `model_session.rs`, `collaboration.rs`, and `session_status.rs`, with `session.rs` kept as a thin compatibility facade for imports and tests.
+Session feature helpers are split across `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `session.rs` and `session_status.rs` kept as thin compatibility facades for imports and tests.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers live in `app.rs`: backend/session startup, the top-level runtime loop, and input-key dispatch.
 Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
 Catalog display helpers live in `catalog_views.rs`: app/skill/model/MCP/thread listings and search-result rendering.
 Status display helpers live in `status_views.rs`: permission/config/account/rate-limit/token formatting plus generic value summarization.
-Transcript display helpers live in `transcript_views.rs`: item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
+Transcript display helpers are split across `transcript_render.rs` and `transcript_summary.rs`, with `transcript_views.rs` kept as a thin compatibility facade over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
 Compatibility re-exports live in `views.rs`: stable import surface over the split display modules.
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
@@ -398,7 +398,19 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/status_views.rs`
   Permission/config/account/rate-limit/token formatting plus generic JSON value summarization.
 - `wrapper/src/transcript_views.rs`
-  Item completion blocks, plan/reasoning rendering, and approval/request/status summarizers.
+  Compatibility facade re-exporting the split transcript render and summary helpers.
+- `wrapper/src/transcript_render.rs`
+  Item completion blocks, plan/reasoning rendering, and structured tool-user-input response building.
+- `wrapper/src/transcript_summary.rs`
+  Approval/request/status summarizers, item-type humanization, and file-change/tool summary helpers.
+- `wrapper/src/session_status.rs`
+  Compatibility facade re-exporting split session prompt/realtime/snapshot helpers.
+- `wrapper/src/session_prompt_status.rs`
+  Prompt status rendering, spinner selection, and elapsed-time formatting.
+- `wrapper/src/session_realtime.rs`
+  Realtime session status and realtime item rendering helpers.
+- `wrapper/src/session_snapshot.rs`
+  Full `/status` session snapshot rendering.
 - `wrapper/src/requests.rs`
   Compatibility facade for the split outbound-request layer.
 - `wrapper/src/requests/request_types.rs`
