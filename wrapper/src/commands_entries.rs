@@ -13,7 +13,7 @@ pub(crate) fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
     ENTRIES
         .get_or_init(|| {
             let mut entries = Vec::new();
-            entries.extend_from_slice(commands_entry_session::SESSION_COMMAND_ENTRIES);
+            entries.extend(commands_entry_session::session_command_entries().copied());
             entries.extend_from_slice(commands_entry_thread::THREAD_COMMAND_ENTRIES);
             entries.extend_from_slice(commands_entry_runtime::RUNTIME_COMMAND_ENTRIES);
             entries.sort_by_key(|entry| builtin_command_rank(entry.name));

@@ -9,7 +9,9 @@ mod thread_lifecycle;
 mod thread_maintenance;
 mod thread_switch;
 mod thread_switch_common;
+mod turn_control;
 mod turn_requests;
+mod turn_start;
 
 use std::io::Write;
 use std::process::ChildStdin;
