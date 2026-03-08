@@ -275,6 +275,7 @@ The current `codexw` implementation now reflects that model partially:
     - `background_shell_invoke_recipe.waitForReadyMs` can lengthen or disable that auto-wait (`0` disables it)
   - capability conflicts are surfaced proactively in service listings, the dedicated capability index, and orchestration guidance, so the wrapper shows `@capability` ambiguity before later reuse fails at resolution time
   - the capability index also shows current consumers of each capability when running jobs declare `dependsOnCapabilities`, so provider and consumer sides of reusable service roles are visible in one place
+  - the model-facing dynamic tool layer now includes capability inspection too, so orchestration can inspect one reusable service role directly without scraping the whole shell list
   - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job

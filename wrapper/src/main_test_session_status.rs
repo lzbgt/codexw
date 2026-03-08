@@ -900,7 +900,8 @@ fn ps_command_can_render_single_service_capability_detail() {
         .expect("capability detail")
         .join("\n");
     assert!(rendered.contains("Service capability: @api.http"));
-    assert!(rendered.contains("Providers: bg-1"));
+    assert!(rendered.contains("Providers:"));
+    assert!(rendered.contains("bg-1  [untracked]"));
     assert!(rendered.contains("bg-2  [satisfied]  blocking=yes"));
     let _ = state.background_shells.terminate_all_running();
 }

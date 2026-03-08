@@ -670,6 +670,24 @@ impl BackgroundShellManager {
         self.service_attachment_summary(&resolved_job_id)
     }
 
+    pub(crate) fn inspect_capability_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments.as_object().ok_or_else(|| {
+            "background_shell_inspect_capability expects an object argument".to_string()
+        })?;
+        let capability = object
+            .get("capability")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                "background_shell_inspect_capability requires `capability`".to_string()
+            })?;
+        Ok(self
+            .render_single_service_capability_for_ps(capability)?
+            .join("\n"))
+    }
+
     pub(crate) fn wait_ready_from_tool(
         &self,
         arguments: &serde_json::Value,
@@ -1220,24 +1238,43 @@ impl BackgroundShellManager {
         } else {
             validate_service_capability(capability_ref)?
         };
-        let provider_entry = self
-            .service_capability_index()
-            .into_iter()
-            .find(|(entry, _)| entry == &capability);
+        let providers = self.running_service_providers_for_capability(&capability);
         let consumers = self
             .capability_dependency_summaries()
             .into_iter()
             .filter(|summary| summary.capability == capability)
             .collect::<Vec<_>>();
-        if provider_entry.is_none() && consumers.is_empty() {
+        if providers.is_empty() && consumers.is_empty() {
             return Err(format!("unknown service capability `@{capability}`"));
         }
-        let providers = provider_entry.map(|(_, jobs)| jobs).unwrap_or_default();
         let mut lines = vec![format!("Service capability: @{capability}")];
         if providers.is_empty() {
             lines.push("Providers: <missing provider>".to_string());
         } else {
-            lines.push(format!("Providers: {}", providers.join(", ")));
+            lines.push("Providers:".to_string());
+            for (index, provider) in providers.iter().enumerate() {
+                lines.push(format!(
+                    "{:>2}. {}  [{}]",
+                    index + 1,
+                    provider_display(provider),
+                    provider
+                        .service_readiness
+                        .map(BackgroundShellServiceReadiness::as_str)
+                        .unwrap_or("-")
+                ));
+                if let Some(protocol) = provider.service_protocol.as_deref() {
+                    lines.push(format!("    protocol {protocol}"));
+                }
+                if let Some(endpoint) = provider.service_endpoint.as_deref() {
+                    lines.push(format!("    endpoint {endpoint}"));
+                }
+                if !provider.interaction_recipes.is_empty() {
+                    lines.push(format!(
+                        "    recipes  {}",
+                        provider.interaction_recipes.len()
+                    ));
+                }
+            }
             if providers.len() > 1 {
                 lines.push("Conflict: ambiguous capability provider set".to_string());
             }
@@ -1321,6 +1358,20 @@ impl BackgroundShellManager {
                 job.intent == BackgroundShellIntent::Service
                     && job.exit_code.is_none()
                     && job.status == "running"
+            })
+            .collect()
+    }
+
+    fn running_service_providers_for_capability(
+        &self,
+        capability: &str,
+    ) -> Vec<BackgroundShellJobSnapshot> {
+        self.running_service_snapshots()
+            .into_iter()
+            .filter(|job| {
+                job.service_capabilities
+                    .iter()
+                    .any(|entry| entry == capability)
             })
             .collect()
     }
@@ -1704,6 +1755,16 @@ fn dependency_consumer_display(summary: &BackgroundShellCapabilityDependencySumm
         format!("{} ({label})", summary.job_id)
     } else {
         summary.job_id.clone()
+    }
+}
+
+fn provider_display(snapshot: &BackgroundShellJobSnapshot) -> String {
+    if let Some(alias) = snapshot.alias.as_deref() {
+        format!("{} ({alias})", snapshot.id)
+    } else if let Some(label) = snapshot.label.as_deref() {
+        format!("{} ({label})", snapshot.id)
+    } else {
+        snapshot.id.clone()
     }
 }
 

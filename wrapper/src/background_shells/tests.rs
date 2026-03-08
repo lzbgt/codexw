@@ -456,7 +456,8 @@ fn single_capability_view_renders_providers_and_consumers() {
         .expect("render capability detail")
         .join("\n");
     assert!(rendered.contains("Service capability: @api.http"));
-    assert!(rendered.contains("Providers: bg-1"));
+    assert!(rendered.contains("Providers:"));
+    assert!(rendered.contains("bg-1  [untracked]"));
     assert!(rendered.contains("bg-2 (integration test)  [satisfied]  blocking=yes"));
     let _ = manager.terminate_all_running();
 }
