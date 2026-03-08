@@ -3,7 +3,7 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::commands::quote_if_needed;
+use crate::commands_completion_render::quote_if_needed;
 use crate::dispatch_command_thread_common::require_idle_turn;
 use crate::dispatch_command_thread_draft::handle_thread_draft_command;
 use crate::dispatch_command_thread_view::handle_thread_view_command;

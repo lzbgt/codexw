@@ -11,8 +11,8 @@ use crossterm::event::Event;
 use crossterm::event::KeyEventKind;
 use crossterm::terminal;
 
-use crate::runtime_input::InputKey;
-use crate::runtime_input::map_key_event;
+use crate::runtime_keys::InputKey;
+use crate::runtime_keys::map_key_event;
 
 pub(crate) enum AppEvent {
     ServerLine(String),

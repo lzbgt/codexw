@@ -6,9 +6,9 @@ use crossterm::terminal;
 use crate::output::CLEAR_LINE;
 use crate::output::Output;
 use crate::output::write_crlf;
-use crate::render::render_committed_prompt;
-use crate::render::render_line_to_ansi;
-use crate::render::render_prompt_line;
+use crate::render_blocks::render_line_to_ansi;
+use crate::render_prompt::render_committed_prompt;
+use crate::render_prompt::render_prompt_line;
 
 impl Output {
     pub fn show_prompt(&mut self, buffer: &str, cursor_chars: usize) -> io::Result<()> {

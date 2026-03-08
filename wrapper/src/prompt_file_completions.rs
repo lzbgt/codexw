@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::commands::longest_common_prefix;
+use crate::commands_match::longest_common_prefix;
 use crate::editor::LineEditor;
 use crate::prompt_file_completions_search::file_completions;
 use crate::prompt_file_completions_token::current_at_token;

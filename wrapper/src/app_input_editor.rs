@@ -9,7 +9,7 @@ use crate::editor::EditorEvent;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::prompt_completion::handle_tab_completion;
-use crate::runtime_input::InputKey;
+use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 
 pub(crate) fn handle_editor_key(

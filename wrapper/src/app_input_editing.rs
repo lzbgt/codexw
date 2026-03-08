@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::editor::LineEditor;
 use crate::output::Output;
-use crate::runtime_input::InputKey;
+use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 
 use super::app_input_editor::handle_editor_key;

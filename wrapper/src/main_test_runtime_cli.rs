@@ -1,5 +1,5 @@
 use crate::Cli;
-use crate::commands::quote_if_needed;
+use crate::commands_completion_render::quote_if_needed;
 use crate::dispatch_command_utils::parse_feedback_args;
 use crate::runtime_process::normalize_cli;
 

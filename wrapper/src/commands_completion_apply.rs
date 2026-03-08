@@ -4,8 +4,11 @@ use crate::commands_match::slash_command_at_cursor;
 use crate::commands_metadata::builtin_command_names;
 use crate::editor::LineEditor;
 
-use super::SlashCompletionResult;
-use super::commands_completion_render::render_slash_completion_candidates;
+use crate::commands_completion_render::render_slash_completion_candidates;
+
+pub(crate) struct SlashCompletionResult {
+    pub(crate) rendered_candidates: Option<String>,
+}
 
 pub(crate) fn try_complete_slash_command(
     editor: &mut LineEditor,

@@ -1,4 +1,4 @@
-use crate::commands::try_complete_slash_command;
+use crate::commands_completion_apply::try_complete_slash_command;
 use crate::dispatch_commands::is_builtin_command;
 use crate::editor::LineEditor;
 

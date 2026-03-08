@@ -4,7 +4,7 @@ use crate::Cli;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::prompt_state::prompt_accepts_input;
-use crate::runtime_input::InputKey;
+use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 
 #[path = "app_input_controls.rs"]

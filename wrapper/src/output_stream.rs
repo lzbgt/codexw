@@ -2,8 +2,8 @@ use std::io;
 use std::io::Write;
 
 use crate::output::Output;
-use crate::render::render_block_lines_to_ansi;
-use crate::render::render_line_to_ansi;
+use crate::render_blocks::render_block_lines_to_ansi;
+use crate::render_blocks::render_line_to_ansi;
 
 impl Output {
     pub fn line_stdout(&mut self, line: impl AsRef<str>) -> io::Result<()> {

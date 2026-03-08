@@ -3,7 +3,7 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::commands::builtin_help_lines;
+use crate::commands_metadata::builtin_help_lines;
 use crate::dispatch_command_session_catalog_lists::try_handle_session_catalog_list_command;
 use crate::dispatch_command_session_catalog_models::try_handle_session_catalog_model_command;
 use crate::dispatch_command_session_collab::handle_collab_command;

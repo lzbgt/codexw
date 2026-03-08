@@ -3,7 +3,7 @@ mod prompt_file_completions;
 
 use anyhow::Result;
 
-use crate::commands::try_complete_slash_command;
+use crate::commands_completion_apply::try_complete_slash_command;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::state::AppState;

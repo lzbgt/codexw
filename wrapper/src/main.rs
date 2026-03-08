@@ -10,9 +10,9 @@ mod catalog_thread_list;
 mod collaboration;
 mod collaboration_actions;
 mod collaboration_preset;
-mod commands;
 mod commands_catalog;
-mod commands_completion;
+mod commands_completion_apply;
+mod commands_completion_render;
 mod commands_entry_session_catalog;
 mod commands_entry_session_modes;
 mod commands_match;
@@ -52,7 +52,6 @@ mod prompt_completion;
 mod prompt_file_completions_search;
 mod prompt_file_completions_token;
 mod prompt_state;
-mod render;
 mod render_ansi;
 mod render_block_common;
 mod render_block_markdown;
@@ -75,7 +74,8 @@ mod response_thread_session;
 mod response_turn_activity;
 mod responses;
 mod rpc;
-mod runtime_input;
+mod runtime_event_sources;
+mod runtime_keys;
 mod runtime_process;
 mod session_prompt_status;
 mod session_realtime_item;
@@ -105,6 +105,8 @@ mod input_test_mentions;
 mod input_tests;
 #[cfg(test)]
 mod main_tests;
+#[cfg(test)]
+mod render_tests;
 
 use anyhow::Result;
 use clap::ArgAction;
