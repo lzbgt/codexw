@@ -5,9 +5,11 @@ use crate::Cli;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
+use crate::state::summarize_text;
 use crate::transcript_completion_render::render_command_completion;
 use crate::transcript_completion_render::render_file_change_completion;
 use crate::transcript_item_summary::humanize_item_type;
+use crate::transcript_item_summary::summarize_file_change_paths;
 use crate::transcript_item_summary::summarize_tool_item;
 use crate::transcript_plan_render::render_reasoning_item;
 
@@ -21,6 +23,7 @@ pub(crate) fn render_item_completed(
         return Ok(());
     };
     let item_type = get_string(item, &["type"]).unwrap_or("unknown");
+    clear_completed_item_status(item_type, item, cli, state);
     match item_type {
         "agentMessage" => {
             let text = get_string(item, &["text"]).unwrap_or("").to_string();
@@ -98,4 +101,24 @@ pub(crate) fn render_item_completed(
         _ => {}
     }
     Ok(())
+}
+
+fn clear_completed_item_status(item_type: &str, item: &Value, cli: &Cli, state: &mut AppState) {
+    let expected = match item_type {
+        "commandExecution" => get_string(item, &["command"])
+            .map(|command| format!("running {}", summarize_text(command))),
+        "fileChange" => Some(summarize_file_change_paths(item)),
+        "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" | "plan" => {
+            Some(summarize_text(&format!(
+                "{} {}",
+                humanize_item_type(item_type),
+                summarize_tool_item(item_type, item, cli.verbose_events || cli.raw_json)
+            )))
+        }
+        _ => None,
+    };
+
+    if expected.as_deref() == state.last_status_line.as_deref() {
+        state.last_status_line = None;
+    }
 }

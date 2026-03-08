@@ -1,4 +1,6 @@
 use crate::Cli;
+use crate::notification_item_completion::render_item_completed;
+use crate::output::Output;
 use crate::prompt_state::render_prompt_status;
 use crate::session_prompt_status_active::spinner_frame;
 use crate::session_snapshot_overview::render_status_overview;
@@ -142,4 +144,86 @@ fn resetting_thread_context_clears_stream_buffers() {
     assert!(state.last_turn_diff.is_none());
     assert!(state.last_status_line.is_none());
     assert!(!state.startup_resume_picker);
+}
+
+fn test_cli() -> Cli {
+    crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: false,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        prompt: Vec::new(),
+    })
+}
+
+#[test]
+fn completed_command_execution_clears_matching_running_status() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    state.last_status_line =
+        Some("running find frontend/src/components -maxdepth 2 -type f | sort".to_string());
+    state.command_output_buffers.insert(
+        "cmd-1".to_string(),
+        "frontend/src/components/A.tsx\n".to_string(),
+    );
+    let mut output = Output::default();
+
+    render_item_completed(
+        &cli,
+        &serde_json::json!({
+            "item": {
+                "type": "commandExecution",
+                "id": "cmd-1",
+                "command": "find frontend/src/components -maxdepth 2 -type f | sort",
+                "status": "completed",
+                "exitCode": 0
+            }
+        }),
+        &mut state,
+        &mut output,
+    )
+    .expect("render completed command");
+
+    assert!(state.last_status_line.is_none());
+}
+
+#[test]
+fn completed_command_execution_keeps_newer_status_line() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    state.last_status_line = Some("waiting on approval".to_string());
+    let mut output = Output::default();
+
+    render_item_completed(
+        &cli,
+        &serde_json::json!({
+            "item": {
+                "type": "commandExecution",
+                "id": "cmd-1",
+                "command": "find frontend/src/components -maxdepth 2 -type f | sort",
+                "status": "completed",
+                "exitCode": 0,
+                "aggregatedOutput": ""
+            }
+        }),
+        &mut state,
+        &mut output,
+    )
+    .expect("render completed command");
+
+    assert_eq!(
+        state.last_status_line.as_deref(),
+        Some("waiting on approval")
+    );
 }
