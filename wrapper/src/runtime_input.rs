@@ -1,0 +1,157 @@
+use std::io::BufRead;
+use std::io::BufReader;
+use std::process::ChildStdout;
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+use anyhow::Context;
+use anyhow::Result;
+use crossterm::event::Event;
+use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
+use crossterm::event::KeyEventKind;
+use crossterm::event::KeyModifiers;
+use crossterm::terminal;
+
+pub(crate) enum AppEvent {
+    ServerLine(String),
+    InputKey(InputKey),
+    Tick,
+    StdinClosed,
+    ServerClosed,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum InputKey {
+    Char(char),
+    Esc,
+    Backspace,
+    Delete,
+    Left,
+    Right,
+    Home,
+    End,
+    Up,
+    Down,
+    Tab,
+    Enter,
+    CtrlJ,
+    CtrlC,
+    CtrlA,
+    CtrlE,
+    CtrlU,
+    CtrlW,
+}
+
+pub(crate) fn start_stdout_thread(stdout: ChildStdout, tx: mpsc::Sender<AppEvent>) {
+    thread::spawn(move || {
+        let mut reader = BufReader::new(stdout);
+        let mut line = String::new();
+        loop {
+            line.clear();
+            match reader.read_line(&mut line) {
+                Ok(0) => {
+                    let _ = tx.send(AppEvent::ServerClosed);
+                    break;
+                }
+                Ok(_) => {
+                    let trimmed = line.trim_end_matches(['\n', '\r']).to_string();
+                    let _ = tx.send(AppEvent::ServerLine(trimmed));
+                }
+                Err(_) => {
+                    let _ = tx.send(AppEvent::ServerClosed);
+                    break;
+                }
+            }
+        }
+    });
+}
+
+pub(crate) fn start_stdin_thread(tx: mpsc::Sender<AppEvent>) {
+    thread::spawn(move || {
+        loop {
+            match crossterm::event::read() {
+                Ok(Event::Key(key_event)) => {
+                    if !matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
+                        continue;
+                    }
+                    if let Some(key) = map_key_event(key_event) {
+                        let _ = tx.send(AppEvent::InputKey(key));
+                    }
+                }
+                Ok(_) => {}
+                Err(_) => {
+                    let _ = tx.send(AppEvent::StdinClosed);
+                    break;
+                }
+            }
+        }
+    });
+}
+
+pub(crate) fn start_tick_thread(tx: mpsc::Sender<AppEvent>) {
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(200));
+            if tx.send(AppEvent::Tick).is_err() {
+                break;
+            }
+        }
+    });
+}
+
+fn map_key_event(key_event: KeyEvent) -> Option<InputKey> {
+    match (key_event.code, key_event.modifiers) {
+        (KeyCode::Esc, _) => Some(InputKey::Esc),
+        (KeyCode::Char('c'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
+            Some(InputKey::CtrlC)
+        }
+        (KeyCode::Char('j'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
+            Some(InputKey::CtrlJ)
+        }
+        (KeyCode::Char('a'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
+            Some(InputKey::CtrlA)
+        }
+        (KeyCode::Char('e'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
+            Some(InputKey::CtrlE)
+        }
+        (KeyCode::Char('u'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
+            Some(InputKey::CtrlU)
+        }
+        (KeyCode::Char('w'), modifiers) if modifiers.contains(KeyModifiers::CONTROL) => {
+            Some(InputKey::CtrlW)
+        }
+        (KeyCode::Enter, _) => Some(InputKey::Enter),
+        (KeyCode::Backspace, _) => Some(InputKey::Backspace),
+        (KeyCode::Delete, _) => Some(InputKey::Delete),
+        (KeyCode::Left, _) => Some(InputKey::Left),
+        (KeyCode::Right, _) => Some(InputKey::Right),
+        (KeyCode::Home, _) => Some(InputKey::Home),
+        (KeyCode::End, _) => Some(InputKey::End),
+        (KeyCode::Up, _) => Some(InputKey::Up),
+        (KeyCode::Down, _) => Some(InputKey::Down),
+        (KeyCode::Tab, _) => Some(InputKey::Tab),
+        (KeyCode::Char(ch), modifiers)
+            if modifiers.is_empty() || modifiers == KeyModifiers::SHIFT =>
+        {
+            Some(InputKey::Char(ch))
+        }
+        _ => None,
+    }
+}
+
+pub(crate) struct RawModeGuard;
+
+impl RawModeGuard {
+    pub(crate) fn new() -> Result<Self> {
+        terminal::enable_raw_mode().context("enable raw terminal mode")?;
+        Ok(Self)
+    }
+}
+
+impl Drop for RawModeGuard {
+    fn drop(&mut self) {
+        let _ = terminal::disable_raw_mode();
+    }
+}

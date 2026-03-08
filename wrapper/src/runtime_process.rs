@@ -1,0 +1,87 @@
+use std::process::Child;
+use std::process::ChildStdin;
+use std::process::Command;
+use std::process::Stdio;
+
+use anyhow::Context;
+use anyhow::Result;
+
+use super::Cli;
+
+pub(crate) struct StartMode {
+    pub(crate) resume_thread_id: Option<String>,
+    pub(crate) initial_prompt: Option<String>,
+}
+
+pub(crate) fn normalize_cli(mut cli: Cli) -> Cli {
+    if cli.resume.is_none() && matches!(cli.prompt.first().map(String::as_str), Some("resume")) {
+        if let Some(thread_id) = cli.prompt.get(1).cloned() {
+            cli.resume = Some(thread_id);
+            cli.prompt.drain(0..2);
+        }
+    }
+    cli
+}
+
+pub(crate) fn spawn_server(cli: &Cli, resolved_cwd: &str) -> Result<Child> {
+    let mut cmd = Command::new(&cli.codex_bin);
+    for kv in &cli.config_overrides {
+        cmd.arg("--config").arg(kv);
+    }
+    for feature in &cli.enable_features {
+        cmd.arg("--enable").arg(feature);
+    }
+    for feature in &cli.disable_features {
+        cmd.arg("--disable").arg(feature);
+    }
+    cmd.arg("app-server")
+        .arg("--listen")
+        .arg("stdio://")
+        .current_dir(resolved_cwd)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit());
+    inherit_proxy_env(&mut cmd);
+    cmd.spawn()
+        .with_context(|| format!("failed to start `{}` app-server", cli.codex_bin))
+}
+
+fn inherit_proxy_env(cmd: &mut Command) {
+    for key in [
+        "HTTPS_PROXY",
+        "https_proxy",
+        "HTTP_PROXY",
+        "http_proxy",
+        "ALL_PROXY",
+        "all_proxy",
+        "NO_PROXY",
+        "no_proxy",
+    ] {
+        if let Some(value) = std::env::var_os(key) {
+            cmd.env(key, value);
+        }
+    }
+}
+
+pub(crate) fn shutdown_child(writer: ChildStdin, mut child: Child) -> Result<()> {
+    drop(writer);
+    let status = child.wait().context("wait for codex app-server exit")?;
+    if !status.success() {
+        eprintln!("[session] codex app-server exited with {status}");
+    }
+    Ok(())
+}
+
+pub(crate) fn effective_cwd(cli: &Cli) -> Result<String> {
+    cli.cwd
+        .as_deref()
+        .map(|path| {
+            std::fs::canonicalize(path)
+                .with_context(|| format!("canonicalize cwd `{path}`"))
+                .map(|value| value.to_string_lossy().to_string())
+        })
+        .transpose()?
+        .map(Ok)
+        .unwrap_or_else(|| std::env::current_dir().map(|p| p.to_string_lossy().to_string()))
+        .context("resolve current working directory")
+}
