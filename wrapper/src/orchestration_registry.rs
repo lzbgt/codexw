@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 
 use serde_json::Value;
 
+use crate::background_shells::BackgroundShellCapabilityDependencyState;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellJobSnapshot;
 use crate::background_shells::BackgroundShellServiceReadiness;
@@ -160,6 +161,31 @@ pub(crate) fn orchestration_dependency_edges(state: &AppState) -> Vec<Orchestrat
             to: format!("shell:{}", shell.id),
             kind,
             blocking: shell.intent.is_blocking(),
+        };
+        let dedupe = (
+            edge.from.clone(),
+            edge.to.clone(),
+            edge.kind.clone(),
+            edge.blocking,
+        );
+        if seen.insert(dedupe) {
+            edges.push(edge);
+        }
+    }
+    for dependency in state
+        .orchestration
+        .background_shells
+        .capability_dependency_summaries()
+    {
+        let edge = OrchestrationDependencyEdge {
+            from: format!("shell:{}", dependency.job_id),
+            to: format!("capability:@{}", dependency.capability),
+            kind: format!("dependsOnCapability:{}", dependency.status.as_str()),
+            blocking: dependency.blocking
+                && !matches!(
+                    dependency.status,
+                    BackgroundShellCapabilityDependencyState::Satisfied
+                ),
         };
         let dedupe = (
             edge.from.clone(),
@@ -564,6 +590,53 @@ mod tests {
             ),
             1
         );
+        let _ = state.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn dependency_edges_include_declared_shell_capability_dependencies() {
+        let mut state = crate::state::AppState::new(true, false);
+        state.thread_id = Some("thread-main".to_string());
+        state
+            .background_shells
+            .start_from_tool_with_context(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+                crate::background_shells::BackgroundShellOrigin {
+                    source_thread_id: Some("thread-main".to_string()),
+                    source_call_id: Some("call-10".to_string()),
+                    source_tool: Some("background_shell_start".to_string()),
+                },
+            )
+            .expect("start service");
+        state
+            .background_shells
+            .start_from_tool_with_context(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+                crate::background_shells::BackgroundShellOrigin {
+                    source_thread_id: Some("thread-main".to_string()),
+                    source_call_id: Some("call-11".to_string()),
+                    source_tool: Some("background_shell_start".to_string()),
+                },
+            )
+            .expect("start dependent shell");
+
+        let edges = orchestration_dependency_edges(&state);
+        assert!(edges.iter().any(|edge| {
+            edge.from == "shell:bg-2"
+                && edge.to == "capability:@api.http"
+                && edge.kind == "dependsOnCapability:satisfied"
+                && !edge.blocking
+        }));
         let _ = state.background_shells.terminate_all_running();
     }
 

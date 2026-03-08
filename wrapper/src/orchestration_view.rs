@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::background_shells::BackgroundShellCapabilityDependencyState;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellServiceReadiness;
 use crate::background_terminals::render_background_terminals;
@@ -504,6 +505,10 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
     let sidecar_agents = active_sidecar_agent_task_count(state);
     let shell_sidecars = running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
+    let blocking_capability_issues = state
+        .orchestration
+        .background_shells
+        .blocking_capability_dependency_issues();
     let capability_conflicts = state
         .orchestration
         .background_shells
@@ -514,6 +519,46 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
     let terminals = server_background_terminal_count(state);
 
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Missing)
+    {
+        return vec![
+            format!(
+                "A blocking shell depends on missing service capability @{}.",
+                issue.capability
+            ),
+            "Start or relabel the missing reusable service before waiting on the shell result.".to_string(),
+            "Use /ps capabilities to inspect the live provider map and /ps blockers to inspect the blocked shell.".to_string(),
+        ];
+    }
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Ambiguous)
+    {
+        return vec![
+            format!(
+                "A blocking shell depends on ambiguous service capability @{}.",
+                issue.capability
+            ),
+            "Resolve the conflicting reusable service role before relying on capability-based attachment.".to_string(),
+            "Use /ps capabilities to inspect providers and consumers for that capability.".to_string(),
+        ];
+    }
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Booting)
+    {
+        return vec![
+            format!(
+                "A blocking shell is waiting on booting service capability @{}.",
+                issue.capability
+            ),
+            "Use /ps capabilities or /ps services to inspect the provider and readiness state."
+                .to_string(),
+            "Use :ps wait <job> when the booting service has a readiness contract.".to_string(),
+        ];
+    }
     if prereqs > 0 {
         return vec![
             format!(
@@ -1032,6 +1077,32 @@ mod tests {
         assert!(rendered.contains("@api.http"));
         assert!(rendered.contains("/ps capabilities"));
         let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn orchestration_guidance_prioritizes_missing_blocking_service_dependencies() {
+        let blocked = crate::state::AppState::new(true, false);
+        blocked
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start dependent shell");
+        let hint = orchestration_guidance_summary(&blocked).expect("dependency guidance");
+        assert!(hint.contains("missing service capability @api.http"));
+        let rendered = render_orchestration_guidance(&blocked);
+        assert!(rendered.contains("/ps capabilities"));
+        assert!(rendered.contains("/ps blockers"));
+        let blockers = render_orchestration_workers_with_filter(&blocked, WorkerFilter::Blockers);
+        assert!(blockers.contains(
+            "shell:bg-1 -> capability:@api.http  [dependsOnCapability:missing, blocking]"
+        ));
+        let _ = blocked.background_shells.terminate_all_running();
     }
 
     #[test]

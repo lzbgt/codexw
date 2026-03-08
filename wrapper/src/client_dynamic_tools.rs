@@ -76,7 +76,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_start",
-            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `capabilities`, `readyPattern`, `protocol`, `endpoint`, `attachHint`, and structured `recipes` so the wrapper can distinguish booting versus ready services, expose a reusable attach surface, and invoke typed service recipes later.",
+            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Jobs may also declare `dependsOnCapabilities` so the orchestration graph can model durable dependencies on reusable services, and service jobs may additionally declare `capabilities`, `readyPattern`, `protocol`, `endpoint`, `attachHint`, and structured `recipes` so the wrapper can distinguish booting versus ready services, expose a reusable attach surface, and invoke typed service recipes later.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -88,6 +88,10 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                     },
                     "label": {"type": "string"},
                     "capabilities": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "dependsOnCapabilities": {
                         "type": "array",
                         "items": {"type": "string"}
                     },
@@ -691,7 +695,8 @@ mod tests {
                 "arguments": {
                     "command": "sleep 0.4",
                     "intent": "prerequisite",
-                    "label": "repo build"
+                    "label": "repo build",
+                    "dependsOnCapabilities": ["api.http"]
                 }
             }),
             "/tmp",
@@ -711,6 +716,10 @@ mod tests {
         );
         assert_eq!(snapshots[0].intent.as_str(), "prerequisite");
         assert_eq!(snapshots[0].label.as_deref(), Some("repo build"));
+        assert_eq!(
+            snapshots[0].dependency_capabilities,
+            vec!["api.http".to_string()]
+        );
         let _ = manager.terminate_all_running();
     }
 

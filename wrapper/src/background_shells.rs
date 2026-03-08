@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::io::BufRead;
@@ -122,6 +123,7 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) label: Option<String>,
     pub(crate) alias: Option<String>,
     pub(crate) service_capabilities: Vec<String>,
+    pub(crate) dependency_capabilities: Vec<String>,
     pub(crate) service_protocol: Option<String>,
     pub(crate) service_endpoint: Option<String>,
     pub(crate) attach_hint: Option<String>,
@@ -145,6 +147,7 @@ struct BackgroundShellJobState {
     label: Option<String>,
     alias: Option<String>,
     service_capabilities: Vec<String>,
+    dependency_capabilities: Vec<String>,
     service_protocol: Option<String>,
     service_endpoint: Option<String>,
     attach_hint: Option<String>,
@@ -216,6 +219,35 @@ pub(crate) enum BackgroundShellInteractionAction {
     },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BackgroundShellCapabilityDependencyState {
+    Satisfied,
+    Booting,
+    Missing,
+    Ambiguous,
+}
+
+impl BackgroundShellCapabilityDependencyState {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Satisfied => "satisfied",
+            Self::Booting => "booting",
+            Self::Missing => "missing",
+            Self::Ambiguous => "ambiguous",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BackgroundShellCapabilityDependencySummary {
+    pub(crate) job_id: String,
+    pub(crate) job_alias: Option<String>,
+    pub(crate) capability: String,
+    pub(crate) blocking: bool,
+    pub(crate) status: BackgroundShellCapabilityDependencyState,
+    pub(crate) providers: Vec<String>,
+}
+
 impl BackgroundShellManager {
     #[cfg(test)]
     pub(crate) fn start_from_tool(
@@ -248,6 +280,8 @@ impl BackgroundShellManager {
         let intent = parse_background_shell_intent(object.get("intent"))?;
         let label = parse_background_shell_label(object.get("label"));
         let service_capabilities = parse_background_shell_capabilities(object.get("capabilities"))?;
+        let dependency_capabilities =
+            parse_background_shell_capabilities(object.get("dependsOnCapabilities"))?;
         let service_protocol =
             parse_background_shell_optional_string(object.get("protocol"), "protocol")?;
         let service_endpoint =
@@ -295,6 +329,7 @@ impl BackgroundShellManager {
             label: label.clone(),
             alias: None,
             service_capabilities: service_capabilities.clone(),
+            dependency_capabilities: dependency_capabilities.clone(),
             service_protocol: service_protocol.clone(),
             service_endpoint: service_endpoint.clone(),
             attach_hint: attach_hint.clone(),
@@ -345,6 +380,16 @@ impl BackgroundShellManager {
         }
         if !service_capabilities.is_empty() {
             lines.push(format!("Capabilities: {}", service_capabilities.join(", ")));
+        }
+        if !dependency_capabilities.is_empty() {
+            lines.push(format!(
+                "Depends on capabilities: {}",
+                dependency_capabilities
+                    .iter()
+                    .map(|capability| format!("@{capability}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
         }
         if let Some(service_protocol) = service_protocol.as_deref() {
             lines.push(format!("Protocol: {service_protocol}"));
@@ -418,6 +463,17 @@ impl BackgroundShellManager {
             lines.push(format!(
                 "Capabilities: {}",
                 state.service_capabilities.join(", ")
+            ));
+        }
+        if !state.dependency_capabilities.is_empty() {
+            lines.push(format!(
+                "Depends on capabilities: {}",
+                state
+                    .dependency_capabilities
+                    .iter()
+                    .map(|capability| format!("@{capability}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ));
         }
         if let Some(service_protocol) = state.service_protocol.as_deref() {
@@ -506,6 +562,17 @@ impl BackgroundShellManager {
                 line.push_str(&format!(
                     "  caps={}",
                     snapshot.service_capabilities.join(",")
+                ));
+            }
+            if !snapshot.dependency_capabilities.is_empty() {
+                line.push_str(&format!(
+                    "  depends={}",
+                    snapshot
+                        .dependency_capabilities
+                        .iter()
+                        .map(|capability| format!("@{capability}"))
+                        .collect::<Vec<_>>()
+                        .join(",")
                 ));
             }
             if let Some(protocol) = snapshot.service_protocol.as_deref() {
@@ -856,6 +923,84 @@ impl BackgroundShellManager {
         index.into_iter().collect()
     }
 
+    pub(crate) fn capability_dependency_summaries(
+        &self,
+    ) -> Vec<BackgroundShellCapabilityDependencySummary> {
+        let services = self.running_service_snapshots();
+        let mut summaries = Vec::new();
+        for snapshot in self
+            .snapshots()
+            .into_iter()
+            .filter(|job| job.exit_code.is_none() && job.status == "running")
+        {
+            for capability in &snapshot.dependency_capabilities {
+                let providers = services
+                    .iter()
+                    .filter(|service| {
+                        service
+                            .service_capabilities
+                            .iter()
+                            .any(|entry| entry == capability)
+                    })
+                    .map(|service| {
+                        service
+                            .alias
+                            .as_deref()
+                            .map(|alias| format!("{} ({alias})", service.id))
+                            .unwrap_or_else(|| service.id.clone())
+                    })
+                    .collect::<Vec<_>>();
+                let status = if providers.is_empty() {
+                    BackgroundShellCapabilityDependencyState::Missing
+                } else if providers.len() > 1 {
+                    BackgroundShellCapabilityDependencyState::Ambiguous
+                } else if services.iter().any(|service| {
+                    service
+                        .service_capabilities
+                        .iter()
+                        .any(|entry| entry == capability)
+                        && service.service_readiness
+                            == Some(BackgroundShellServiceReadiness::Booting)
+                }) {
+                    BackgroundShellCapabilityDependencyState::Booting
+                } else {
+                    BackgroundShellCapabilityDependencyState::Satisfied
+                };
+                summaries.push(BackgroundShellCapabilityDependencySummary {
+                    job_id: snapshot.id.clone(),
+                    job_alias: snapshot.alias.clone(),
+                    capability: capability.clone(),
+                    blocking: snapshot.intent.is_blocking(),
+                    status,
+                    providers,
+                });
+            }
+        }
+        summaries.sort_by(|left, right| {
+            left.blocking
+                .cmp(&right.blocking)
+                .reverse()
+                .then_with(|| left.job_id.cmp(&right.job_id))
+                .then_with(|| left.capability.cmp(&right.capability))
+        });
+        summaries
+    }
+
+    pub(crate) fn blocking_capability_dependency_issues(
+        &self,
+    ) -> Vec<BackgroundShellCapabilityDependencySummary> {
+        self.capability_dependency_summaries()
+            .into_iter()
+            .filter(|summary| {
+                summary.blocking
+                    && !matches!(
+                        summary.status,
+                        BackgroundShellCapabilityDependencyState::Satisfied
+                    )
+            })
+            .collect()
+    }
+
     pub(crate) fn service_capability_conflict_count(&self) -> usize {
         self.service_capability_conflicts().len()
     }
@@ -945,6 +1090,17 @@ impl BackgroundShellManager {
                     snapshot.service_capabilities.join(", ")
                 ));
             }
+            if !snapshot.dependency_capabilities.is_empty() {
+                lines.push(format!(
+                    "    depends  {}",
+                    snapshot
+                        .dependency_capabilities
+                        .iter()
+                        .map(|capability| format!("@{capability}"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
+            }
             if let Some(protocol) = snapshot.service_protocol.as_deref() {
                 lines.push(format!("    protocol {protocol}"));
             }
@@ -997,19 +1153,48 @@ impl BackgroundShellManager {
 
     pub(crate) fn render_service_capabilities_for_ps(&self) -> Option<Vec<String>> {
         let capability_index = self.service_capability_index();
-        if capability_index.is_empty() {
+        let mut consumer_index = BTreeMap::<String, Vec<String>>::new();
+        for dependency in self.capability_dependency_summaries() {
+            let consumer = dependency
+                .job_alias
+                .as_deref()
+                .map(|alias| format!("{} ({alias})", dependency.job_id))
+                .unwrap_or_else(|| dependency.job_id.clone());
+            consumer_index
+                .entry(dependency.capability)
+                .or_default()
+                .push(format!("{consumer} [{}]", dependency.status.as_str()));
+        }
+        let mut capabilities = capability_index
+            .iter()
+            .map(|(capability, _)| capability.clone())
+            .collect::<BTreeSet<_>>();
+        capabilities.extend(consumer_index.keys().cloned());
+        if capabilities.is_empty() {
             return None;
         }
         let mut lines = vec!["Service capability index:".to_string()];
-        for (index, (capability, jobs)) in capability_index.iter().enumerate() {
+        for (index, capability) in capabilities.iter().enumerate() {
+            let jobs = capability_index
+                .iter()
+                .find(|(entry, _)| entry == capability)
+                .map(|(_, jobs)| jobs.clone())
+                .unwrap_or_default();
             let qualifier = if jobs.len() > 1 { "  [conflict]" } else { "" };
             lines.push(format!(
                 "{:>2}. @{} -> {}{}",
                 index + 1,
                 capability,
-                jobs.join(", "),
+                if jobs.is_empty() {
+                    "<missing provider>".to_string()
+                } else {
+                    jobs.join(", ")
+                },
                 qualifier
             ));
+            if let Some(consumers) = consumer_index.get(capability) {
+                lines.push(format!("    used by {}", consumers.join(", ")));
+            }
         }
         lines.push(
             "Use @capability with :ps poll|send|attach|wait|run|terminate to target a reusable service."
@@ -1085,12 +1270,44 @@ impl BackgroundShellManager {
 
     fn render_service_capability_index_lines(&self) -> Option<Vec<String>> {
         let capability_index = self.service_capability_index();
-        if capability_index.is_empty() {
+        let mut consumer_index = BTreeMap::<String, Vec<String>>::new();
+        for dependency in self.capability_dependency_summaries() {
+            let consumer = dependency
+                .job_alias
+                .as_deref()
+                .map(|alias| format!("{} ({alias})", dependency.job_id))
+                .unwrap_or_else(|| dependency.job_id.clone());
+            consumer_index
+                .entry(dependency.capability)
+                .or_default()
+                .push(format!("{consumer} [{}]", dependency.status.as_str()));
+        }
+        let mut capabilities = capability_index
+            .iter()
+            .map(|(capability, _)| capability.clone())
+            .collect::<BTreeSet<_>>();
+        capabilities.extend(consumer_index.keys().cloned());
+        if capabilities.is_empty() {
             return None;
         }
         let mut lines = vec!["Capability index:".to_string()];
-        for (capability, jobs) in capability_index {
-            lines.push(format!("    @{capability} -> {}", jobs.join(", ")));
+        for capability in capabilities {
+            let jobs = capability_index
+                .iter()
+                .find(|(entry, _)| *entry == capability)
+                .map(|(_, jobs)| jobs.clone())
+                .unwrap_or_default();
+            lines.push(format!(
+                "    @{capability} -> {}",
+                if jobs.is_empty() {
+                    "<missing provider>".to_string()
+                } else {
+                    jobs.join(", ")
+                }
+            ));
+            if let Some(consumers) = consumer_index.get(&capability) {
+                lines.push(format!("      used by {}", consumers.join(", ")));
+            }
         }
         Some(lines)
     }
@@ -1701,6 +1918,7 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         label: state.label.clone(),
         alias: state.alias.clone(),
         service_capabilities: state.service_capabilities.clone(),
+        dependency_capabilities: state.dependency_capabilities.clone(),
         service_protocol: state.service_protocol.clone(),
         service_endpoint: state.service_endpoint.clone(),
         attach_hint: state.attach_hint.clone(),

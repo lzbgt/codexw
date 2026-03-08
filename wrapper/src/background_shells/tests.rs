@@ -366,6 +366,67 @@ fn service_capability_index_lists_running_service_roles() {
 }
 
 #[test]
+fn capability_index_can_render_consumers_of_reusable_services() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start service provider");
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "label": "integration test",
+                "dependsOnCapabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start dependent shell");
+
+    let rendered = manager
+        .render_service_capabilities_for_ps()
+        .expect("render capability index")
+        .join("\n");
+    assert!(rendered.contains("@api.http -> bg-1"));
+    assert!(rendered.contains("used by bg-2 [satisfied]"));
+    let polled = manager
+        .poll_job("bg-2", 0, 20)
+        .expect("poll dependent shell");
+    assert!(polled.contains("Depends on capabilities: @api.http"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn capability_index_can_render_missing_providers_for_declared_dependencies() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "dependsOnCapabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start dependent shell");
+
+    let rendered = manager
+        .render_service_capabilities_for_ps()
+        .expect("render capability index")
+        .join("\n");
+    assert!(rendered.contains("@api.http -> <missing provider>"));
+    assert!(rendered.contains("used by bg-1 [missing]"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn service_shell_ready_pattern_transitions_from_booting_to_ready() {
     let manager = BackgroundShellManager::default();
     manager
