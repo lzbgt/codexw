@@ -60,13 +60,13 @@ The runtime has thirteen main layers.
    `history.rs`, `history_render.rs`, and `history_state.rs` own resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering. `history.rs` is the thin facade over the split render/state helpers.
 
 11. View and transcript rendering helpers
-   `catalog_views.rs`, `catalog_lists.rs`, `catalog_app_views.rs`, `catalog_backend_views.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `status_rate_limits.rs`, `status_token_usage.rs`, `transcript_views.rs`, `transcript_render.rs`, `transcript_completion_render.rs`, `transcript_plan_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `catalog_lists.rs`, `status_views.rs`, `status_limits.rs`, `transcript_views.rs`, and `transcript_render.rs` remain narrow compatibility facades over the split helpers.
+   `catalog_views.rs`, `catalog_lists.rs`, `catalog_app_views.rs`, `catalog_backend_views.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `status_rate_limits.rs`, `status_token_usage.rs`, `transcript_views.rs`, `transcript_render.rs`, `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_summary.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `catalog_lists.rs`, `status_views.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` remain narrow compatibility facades over the split helpers.
 
 12. Human input handling
-   `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_tokens.rs`, `input/input_resolve.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, `prompt_file_completions.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `prompting.rs` are compatibility facades over those splits.
+   `editor.rs`, `editor_buffer.rs`, `editor_history.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_tokens.rs`, `input/input_resolve.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, `prompt_file_completions.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `editor.rs`, `input.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `prompting.rs` are compatibility facades over those splits.
 
 13. Human output handling
-   `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
+   `output.rs`, `output_prompt.rs`, `output_stream.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `output.rs`, `render.rs`, and `render_blocks.rs` are compatibility facades over that split.
 
 Session feature helpers are split across `model_catalog.rs`, `model_personality.rs`, `collaboration_preset.rs`, `collaboration_actions.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `model_session.rs`, `collaboration.rs`, and `session_status.rs` kept as thin facades.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
@@ -74,7 +74,7 @@ App loop helpers are split across `app.rs`, `app_input.rs`, `app_input_editor.rs
 Resume-preview helpers live across `history_render.rs` and `history_state.rs`, with `history.rs` kept as the thin facade for recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
 Catalog display helpers are split across `catalog_app_views.rs`, `catalog_backend_views.rs`, and `catalog_threads.rs`, with `catalog_lists.rs` and `catalog_views.rs` kept as thin facades over app/skill/model/MCP display plus thread/search rendering.
 Status display helpers are split across `status_config.rs`, `status_account.rs`, `status_rate_limits.rs`, and `status_token_usage.rs`, with `status_views.rs` and `status_limits.rs` kept as thin facades plus the generic value summarizer.
-Transcript display helpers are split across `transcript_completion_render.rs`, `transcript_plan_render.rs`, and `transcript_summary.rs`, with `transcript_render.rs` and `transcript_views.rs` kept as thin compatibility facades over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
+Transcript display helpers are split across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, with `transcript_render.rs`, `transcript_summary.rs`, and `transcript_views.rs` kept as thin compatibility facades over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
 Runtime helpers live across `runtime_process.rs`, `runtime_input.rs`, `runtime_event_sources.rs`, and `runtime_keys.rs`, with `runtime.rs` kept as the thin facade over backend process startup, raw terminal mode, key mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers are split across `state_core.rs` and `state_helpers.rs`, with `state.rs` kept as the thin facade over `AppState`, buffer/state types, and common text/path helper functions used across modules.
@@ -223,7 +223,7 @@ The companion skill in `skills/session-autopilot/` provides the model-side polic
 
 ## Inline Editor and Prompt Model
 
-`editor.rs` implements an inline editor with:
+`editor.rs` implements the editor facade over `editor_buffer.rs` and `editor_history.rs`, and together they provide:
 
 - insertion
 - left and right navigation
@@ -237,7 +237,7 @@ The companion skill in `skills/session-autopilot/` provides the model-side polic
 
 The editor and prompt renderer now operate on grapheme boundaries and display width rather than raw Unicode scalar counts. That makes cursor movement, backspace, delete, and prompt cursor placement behave correctly for CJK text, emoji, and combining characters.
 
-The prompt stays scroll-native. Instead of owning a fixed alternate screen, `output.rs` redraws a single prompt line in place and commits submitted prompts into normal terminal history.
+The prompt stays scroll-native. Instead of owning a fixed alternate screen, `output.rs` plus `output_prompt.rs` redraw a single prompt line in place, while `output_stream.rs` handles committed transcript/status/block writes into normal terminal history.
 
 Long drafts are visually elided to the current terminal width so redraw does not wrap and corrupt the transcript.
 
@@ -271,7 +271,7 @@ That keeps command workflows separate from lower-level input item construction.
 
 ## Output and Rendering
 
-`output.rs` owns terminal writes and prompt redraw ordering.
+`output.rs` is the thin facade over `output_prompt.rs` and `output_stream.rs`, which together own terminal writes and prompt redraw ordering.
 
 Important properties:
 
