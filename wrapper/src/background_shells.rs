@@ -165,6 +165,8 @@ pub(crate) enum BackgroundShellInteractionAction {
         method: String,
         path: String,
         body: Option<String>,
+        headers: Vec<(String, String)>,
+        expected_status: Option<u16>,
     },
 }
 
@@ -963,19 +965,34 @@ impl BackgroundShellManager {
                     if bytes_written == 1 { "" } else { "s" }
                 ))
             }
-            BackgroundShellInteractionAction::Http { method, path, body } => {
+            BackgroundShellInteractionAction::Http {
+                method,
+                path,
+                body,
+                headers,
+                expected_status,
+            } => {
                 let endpoint = endpoint.ok_or_else(|| {
                     format!(
                         "recipe `{recipe_name}` on background shell job `{job_id}` requires a service `endpoint`"
                     )
                 })?;
-                let response = invoke_http_recipe(&endpoint, &method, &path, body.as_deref())?;
+                let response = invoke_http_recipe(
+                    &endpoint,
+                    &method,
+                    &path,
+                    body.as_deref(),
+                    &headers,
+                    expected_status,
+                )?;
                 Ok(format!(
                     "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nResponse:\n{}",
                     interaction_action_summary(&BackgroundShellInteractionAction::Http {
                         method,
                         path,
                         body,
+                        headers,
+                        expected_status,
                     }),
                     response
                 ))
@@ -1174,13 +1191,72 @@ fn parse_background_shell_interaction_action(
                         .to_string(),
                 ),
             };
-            Ok(BackgroundShellInteractionAction::Http { method, path, body })
+            let headers = parse_background_shell_http_headers(object.get("headers"), index)?;
+            let expected_status =
+                parse_background_shell_expected_status(object.get("expectedStatus"), index)?;
+            Ok(BackgroundShellInteractionAction::Http {
+                method,
+                path,
+                body,
+                headers,
+                expected_status,
+            })
         }
         "info" | "informational" => Ok(BackgroundShellInteractionAction::Informational),
         _ => Err(format!(
             "background_shell_start `recipes[{index}].action.type` must be one of `stdin`, `http`, or `informational`"
         )),
     }
+}
+
+fn parse_background_shell_http_headers(
+    value: Option<&serde_json::Value>,
+    index: usize,
+) -> Result<Vec<(String, String)>, String> {
+    let Some(value) = value else {
+        return Ok(Vec::new());
+    };
+    let object = value.as_object().ok_or_else(|| {
+        format!("background_shell_start `recipes[{index}].action.headers` must be an object")
+    })?;
+    let mut headers = Vec::with_capacity(object.len());
+    for (key, value) in object {
+        if key.trim().is_empty() {
+            return Err(format!(
+                "background_shell_start `recipes[{index}].action.headers` keys must be non-empty"
+            ));
+        }
+        let header_value = value.as_str().ok_or_else(|| {
+            format!(
+                "background_shell_start `recipes[{index}].action.headers.{key}` must be a string"
+            )
+        })?;
+        headers.push((key.clone(), header_value.to_string()));
+    }
+    Ok(headers)
+}
+
+fn parse_background_shell_expected_status(
+    value: Option<&serde_json::Value>,
+    index: usize,
+) -> Result<Option<u16>, String> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let status = value.as_u64().ok_or_else(|| {
+        format!(
+            "background_shell_start `recipes[{index}].action.expectedStatus` must be an integer"
+        )
+    })?;
+    let status = u16::try_from(status).map_err(|_| {
+        format!("background_shell_start `recipes[{index}].action.expectedStatus` must fit in u16")
+    })?;
+    if !(100..=599).contains(&status) {
+        return Err(format!(
+            "background_shell_start `recipes[{index}].action.expectedStatus` must be between 100 and 599"
+        ));
+    }
+    Ok(Some(status))
 }
 
 fn validate_alias(alias: &str) -> Result<String, String> {
@@ -1356,8 +1432,24 @@ fn interaction_action_summary(action: &BackgroundShellInteractionAction) -> Stri
             }
             summary
         }
-        BackgroundShellInteractionAction::Http { method, path, .. } => {
-            format!("http {method} {path}")
+        BackgroundShellInteractionAction::Http {
+            method,
+            path,
+            body,
+            headers,
+            expected_status,
+        } => {
+            let mut summary = format!("http {method} {path}");
+            if !headers.is_empty() {
+                summary.push_str(&format!(" headers={}", headers.len()));
+            }
+            if let Some(body) = body.as_deref() {
+                summary.push_str(&format!(" body={}b", body.len()));
+            }
+            if let Some(expected_status) = expected_status {
+                summary.push_str(&format!(" expect={expected_status}"));
+            }
+            summary
         }
     }
 }
@@ -1379,6 +1471,8 @@ fn invoke_http_recipe(
     method: &str,
     path: &str,
     body: Option<&str>,
+    headers: &[(String, String)],
+    expected_status: Option<u16>,
 ) -> Result<String, String> {
     let base = Url::parse(endpoint)
         .map_err(|err| format!("invalid background shell service endpoint `{endpoint}`: {err}"))?;
@@ -1413,11 +1507,17 @@ fn invoke_http_recipe(
     let payload = body.unwrap_or_default();
     let mut request =
         format!("{method} {request_path} HTTP/1.1\r\nHost: {host_header}\r\nConnection: close\r\n");
+    for (name, value) in headers {
+        request.push_str(&format!("{name}: {value}\r\n"));
+    }
     if body.is_some() {
-        request.push_str(&format!(
-            "Content-Length: {}\r\nContent-Type: text/plain; charset=utf-8\r\n",
-            payload.len()
-        ));
+        request.push_str(&format!("Content-Length: {}\r\n", payload.len()));
+        if !headers
+            .iter()
+            .any(|(name, _)| name.eq_ignore_ascii_case("Content-Type"))
+        {
+            request.push_str("Content-Type: text/plain; charset=utf-8\r\n");
+        }
     }
     request.push_str("\r\n");
     if body.is_some() {
@@ -1437,7 +1537,79 @@ fn invoke_http_recipe(
     stream
         .read_to_end(&mut response)
         .map_err(|err| format!("failed to read response from {host}:{port}: {err}"))?;
-    Ok(String::from_utf8_lossy(&response).into_owned())
+    let response = parse_http_response(&String::from_utf8_lossy(&response))?;
+    if let Some(expected_status) = expected_status
+        && response.status_code != expected_status
+    {
+        return Err(format!(
+            "http recipe expected status {expected_status} but received {}.\nResponse:\n{}",
+            response.status_code,
+            format_http_response(&response)
+        ));
+    }
+    Ok(format_http_response(&response))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ParsedHttpResponse {
+    status_line: String,
+    status_code: u16,
+    headers: Vec<(String, String)>,
+    body: String,
+}
+
+fn parse_http_response(response: &str) -> Result<ParsedHttpResponse, String> {
+    let (head, body) = response
+        .split_once("\r\n\r\n")
+        .or_else(|| response.split_once("\n\n"))
+        .ok_or_else(|| {
+            "http recipe returned a malformed response without header separator".to_string()
+        })?;
+    let mut lines = head.lines();
+    let status_line = lines
+        .next()
+        .ok_or_else(|| "http recipe returned an empty response".to_string())?
+        .trim_end_matches('\r')
+        .to_string();
+    let status_code = status_line
+        .split_whitespace()
+        .nth(1)
+        .ok_or_else(|| format!("unable to parse HTTP status line `{status_line}`"))?
+        .parse::<u16>()
+        .map_err(|err| format!("unable to parse HTTP status code from `{status_line}`: {err}"))?;
+    let headers = lines
+        .filter_map(|line| {
+            let line = line.trim_end_matches('\r');
+            let (name, value) = line.split_once(':')?;
+            Some((name.trim().to_string(), value.trim().to_string()))
+        })
+        .collect::<Vec<_>>();
+    Ok(ParsedHttpResponse {
+        status_line,
+        status_code,
+        headers,
+        body: body.to_string(),
+    })
+}
+
+fn format_http_response(response: &ParsedHttpResponse) -> String {
+    let mut lines = vec![
+        format!("Status: {}", response.status_line),
+        format!("Status code: {}", response.status_code),
+    ];
+    if !response.headers.is_empty() {
+        lines.push("Headers:".to_string());
+        for (name, value) in &response.headers {
+            lines.push(format!("- {name}: {value}"));
+        }
+    }
+    if response.body.is_empty() {
+        lines.push("Body: (empty)".to_string());
+    } else {
+        lines.push("Body:".to_string());
+        lines.extend(response.body.lines().map(ToOwned::to_owned));
+    }
+    lines.join("\n")
 }
 
 fn status_label(status: &BackgroundShellJobStatus) -> &str {
@@ -1539,6 +1711,26 @@ mod tests {
                 response_body.len(),
                 response_body
             );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+        format!("http://{addr}")
+    }
+
+    fn spawn_test_http_server_with_assertions(
+        assert_request: impl FnOnce(&str) + Send + 'static,
+        response: &'static str,
+    ) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("local addr");
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut request = [0_u8; 4096];
+            let bytes = stream.read(&mut request).expect("read request");
+            let request = String::from_utf8_lossy(&request[..bytes]).into_owned();
+            assert_request(&request);
             stream
                 .write_all(response.as_bytes())
                 .expect("write response");
@@ -1853,8 +2045,95 @@ mod tests {
             .invoke_recipe_for_operator("bg-1", "health")
             .expect("invoke http recipe");
         assert!(rendered.contains("Action: http GET /health"));
-        assert!(rendered.contains("HTTP/1.1 200 OK"));
+        assert!(rendered.contains("Status: HTTP/1.1 200 OK"));
         assert!(rendered.contains("ok"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_can_invoke_http_action_with_headers_body_and_expected_status() {
+        let endpoint = spawn_test_http_server_with_assertions(
+            |request| {
+                assert!(request.starts_with("POST /seed HTTP/1.1\r\n"));
+                assert!(request.contains("Authorization: Bearer demo\r\n"));
+                assert!(request.contains("Content-Type: application/x-www-form-urlencoded\r\n"));
+                assert!(request.contains("\r\n\r\nseed=true"));
+            },
+            "HTTP/1.1 202 Accepted\r\nContent-Length: 6\r\nConnection: close\r\n\r\nseeded",
+        );
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": endpoint,
+                    "recipes": [
+                        {
+                            "name": "seed",
+                            "description": "Seed data",
+                            "action": {
+                                "type": "http",
+                                "method": "POST",
+                                "path": "/seed",
+                                "body": "seed=true",
+                                "headers": {
+                                    "Authorization": "Bearer demo",
+                                    "Content-Type": "application/x-www-form-urlencoded"
+                                },
+                                "expectedStatus": 202
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let rendered = manager
+            .invoke_recipe_for_operator("bg-1", "seed")
+            .expect("invoke rich http recipe");
+        assert!(rendered.contains("Action: http POST /seed headers=2 body=9b expect=202"));
+        assert!(rendered.contains("Status: HTTP/1.1 202 Accepted"));
+        assert!(rendered.contains("Status code: 202"));
+        assert!(rendered.contains("seeded"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_http_expected_status_is_enforced() {
+        let endpoint = spawn_test_http_server("GET", "/health", "not-ready");
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": endpoint,
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check service health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health",
+                                "expectedStatus": 204
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let err = manager
+            .invoke_recipe_for_operator("bg-1", "health")
+            .expect_err("expected status mismatch should fail");
+        assert!(err.contains("expected status 204"));
+        assert!(err.contains("Status code: 200"));
         let _ = manager.terminate_all_running();
     }
 

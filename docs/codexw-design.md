@@ -205,6 +205,7 @@ The current `codexw` implementation now reflects that model partially:
   - optional `protocol`, `endpoint`, and `attachHint` text for service jobs, so the wrapper can expose structured attachment metadata for later turns and worker tasks
   - optional `recipes` array for service jobs, so the wrapper can expose named interaction verbs such as `health`, `metrics`, `query`, or `seed`
   - each recipe may remain descriptive-only or declare an executable `action`, currently `stdin` or plain `http`
+  - `http` actions may also declare request `headers`, request `body`, and `expectedStatus` validation so the recipe contract can describe authenticated or mutating service interactions, not just basic GETs
 - live `collabAgentToolCall` items are now tracked as in-turn cognitive work:
   - active collab-agent calls are kept in a live registry while the turn is running
   - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
@@ -235,6 +236,9 @@ The current `codexw` implementation now reflects that model partially:
   - recipe `action` for typed invocation when the service contract is executable instead of purely descriptive:
     - `stdin` for reusable command phrases that should be sent back to the service shell process
     - `http` for plain `http://` endpoint requests derived from the declared service endpoint
+      - optional request headers for auth or content negotiation
+      - optional request body for POST/PUT-style recipes
+      - optional expected status validation so the wrapper can fail fast when the service contract is violated
     - descriptive-only recipes are still valid and remain attach-only instead of invokable
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
