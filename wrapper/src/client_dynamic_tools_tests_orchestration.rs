@@ -166,6 +166,9 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
     assert!(actions_text.contains(
         "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
     ));
+    assert!(actions_text.contains(
+        "background_shell_update_dependencies {\"jobId\":\"<jobId|alias|@capability>\",\"dependsOnCapabilities\":[\"@other.role\"]}"
+    ));
     let _ = state
         .orchestration
         .background_shells

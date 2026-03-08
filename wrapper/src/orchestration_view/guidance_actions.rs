@@ -377,6 +377,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     "Run `:ps provide <jobId|alias|@capability|n> @{}` to retarget an existing running service, or start a new provider for that role.",
                     issue.capability
                 ),
+                "Run `:ps depend <jobId|alias|@capability|n> <@capability...|none>` to retarget the blocked shell if it should wait on a different reusable role."
+                    .to_string(),
                 format!(
                     "Run `:ps dependencies missing @{}` to inspect the blocked dependency edges.",
                     issue.capability
@@ -395,6 +397,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@{}\"]}}` to retarget an existing running service, or start a new provider for that capability.",
                     issue.capability
                 ),
+                "Use `background_shell_update_dependencies {\"jobId\":\"<jobId|alias|@capability>\",\"dependsOnCapabilities\":[\"@other.role\"]}` to retarget the blocked shell if it should depend on a different reusable role."
+                    .to_string(),
                 format!(
                     "Use `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{}\"}}` to inspect the blocked dependency edges.",
                     issue.capability
@@ -416,6 +420,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     "Run `:ps capabilities @{}` to inspect the ambiguous provider set.",
                     issue.capability
                 ),
+                "Run `:ps depend <jobId|alias|@capability|n> <@capability...|none>` if the blocked shell should be retargeted to a different dependency role."
+                    .to_string(),
                 format!(
                     "Run `:clean services @{}` to clear the conflicting reusable role in one step.",
                     issue.capability
@@ -430,6 +436,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     "Use `background_shell_inspect_capability {{\"capability\":\"@{}\"}}` to inspect the ambiguous provider set.",
                     issue.capability
                 ),
+                "Use `background_shell_update_dependencies {\"jobId\":\"<jobId|alias|@capability>\",\"dependsOnCapabilities\":[\"@other.role\"]}` if the blocked shell should be retargeted to a different dependency role."
+                    .to_string(),
                 format!(
                     "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{}\"}}` to clear the conflicting reusable role in one step.",
                     issue.capability
@@ -615,6 +623,8 @@ fn action_lines_for_capability(
                 format!(
                     "Run `:ps provide <jobId|alias|@capability|n> @{capability}` to retarget an existing running service, or start a new provider for that role."
                 ),
+                "Run `:ps depend <jobId|alias|@capability|n> <@capability...|none>` to retarget the blocked shell if it should wait on a different reusable role."
+                    .to_string(),
                 format!(
                     "Run `:ps dependencies missing @{capability}` to inspect the blocked dependency edges."
                 ),
@@ -629,6 +639,8 @@ fn action_lines_for_capability(
                 format!(
                     "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
                 ),
+                "Use `background_shell_update_dependencies {\"jobId\":\"<jobId|alias|@capability>\",\"dependsOnCapabilities\":[\"@other.role\"]}` to retarget the blocked shell if it should depend on a different reusable role."
+                    .to_string(),
                 format!(
                     "Use `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{capability}\"}}` to inspect the blocked dependency edges."
                 ),
@@ -641,6 +653,8 @@ fn action_lines_for_capability(
                     format!(
                         "Run `:ps capabilities @{capability}` to inspect the ambiguous provider set."
                     ),
+                    "Run `:ps depend <jobId|alias|@capability|n> <@capability...|none>` if the blocked shell should be retargeted to a different dependency role."
+                        .to_string(),
                     format!(
                         "Run `:clean services @{capability}` to clear the conflicting reusable role in one step."
                     ),
@@ -651,6 +665,8 @@ fn action_lines_for_capability(
                 format!(
                     "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the ambiguous provider set."
                 ),
+                "Use `background_shell_update_dependencies {\"jobId\":\"<jobId|alias|@capability>\",\"dependsOnCapabilities\":[\"@other.role\"]}` if the blocked shell should be retargeted to a different dependency role."
+                    .to_string(),
                 format!(
                     "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the conflicting reusable role in one step."
                 ),
