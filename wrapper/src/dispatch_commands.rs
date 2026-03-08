@@ -4,9 +4,13 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::commands::builtin_help_lines;
-use crate::dispatch_command_session_catalog::try_handle_session_catalog_command;
+use crate::dispatch_command_session_catalog_lists::try_handle_session_catalog_list_command;
+use crate::dispatch_command_session_catalog_models::try_handle_session_catalog_model_command;
+use crate::dispatch_command_session_collab::handle_collab_command;
+use crate::dispatch_command_session_collab::handle_plan_command;
 use crate::dispatch_command_session_meta::try_handle_session_meta_command;
-use crate::dispatch_command_session_modes::try_handle_session_mode_command;
+use crate::dispatch_command_session_ps::handle_ps_command;
+use crate::dispatch_command_session_realtime::handle_realtime_command;
 use crate::dispatch_command_session_status::try_handle_session_status_command;
 use crate::dispatch_command_thread_actions;
 use crate::dispatch_command_thread_navigation;
@@ -86,8 +90,13 @@ pub(crate) fn handle_command(
             {
                 return Ok(result);
             }
-            if let Some(result) = try_handle_session_catalog_command(
-                command, &args, cli, state, editor, output, writer,
+            if let Some(result) =
+                try_handle_session_catalog_list_command(command, state, output, writer)?
+            {
+                return Ok(result);
+            }
+            if let Some(result) = try_handle_session_catalog_model_command(
+                command, &args, cli, state, output, writer,
             )? {
                 return Ok(result);
             }
@@ -103,16 +112,36 @@ pub(crate) fn handle_command(
             )? {
                 return Ok(result);
             }
-            if let Some(result) = try_handle_session_mode_command(
-                command,
-                &args,
-                cli,
-                resolved_cwd,
-                state,
-                editor,
-                output,
-                writer,
-            )? {
+            if let Some(result) = match command {
+                "auto" => {
+                    let Some(mode) = args.first() else {
+                        output.line_stderr("[session] usage: :auto on|off")?;
+                        return Ok(true);
+                    };
+                    state.auto_continue = match *mode {
+                        "on" => true,
+                        "off" => false,
+                        _ => {
+                            output.line_stderr("[session] usage: :auto on|off")?;
+                            return Ok(true);
+                        }
+                    };
+                    output.line_stderr(format!(
+                        "[auto] {}",
+                        if state.auto_continue {
+                            "enabled"
+                        } else {
+                            "disabled"
+                        }
+                    ))?;
+                    Some(true)
+                }
+                "collab" => Some(handle_collab_command(&args, state, output, writer)?),
+                "plan" => Some(handle_plan_command(state, output, writer)?),
+                "realtime" => handle_realtime_command(&args, cli, state, output, writer)?,
+                "ps" => Some(handle_ps_command(&args, cli, state, output, writer)?),
+                _ => None,
+            } {
                 return Ok(result);
             }
             if let Some(result) = try_handle_session_meta_command(

@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
-use crate::catalog_lists::render_models_list;
+use crate::catalog_backend_views::render_models_list;
 use crate::model_catalog::effective_model_entry;
 use crate::model_catalog::extract_models;
 use crate::output::Output;

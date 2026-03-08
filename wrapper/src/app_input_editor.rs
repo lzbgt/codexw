@@ -3,7 +3,8 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::dispatch_submit::handle_user_input;
+use crate::dispatch_submit_commands::try_handle_prefixed_submission;
+use crate::dispatch_submit_turns::submit_turn_input;
 use crate::editor::EditorEvent;
 use crate::editor::LineEditor;
 use crate::output::Output;
@@ -48,7 +49,28 @@ pub(crate) fn handle_submit(
     match editor.submit() {
         EditorEvent::Submit(line) => {
             output.commit_prompt(&line)?;
-            handle_user_input(line, cli, resolved_cwd, state, editor, output, writer)
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                return Ok(true);
+            }
+
+            if let Some(result) = try_handle_prefixed_submission(
+                trimmed,
+                cli,
+                resolved_cwd,
+                state,
+                editor,
+                output,
+                writer,
+            )? {
+                return Ok(result);
+            }
+
+            if !submit_turn_input(trimmed, cli, resolved_cwd, state, writer)? {
+                output.line_stderr("[session] nothing to submit")?;
+                return Ok(true);
+            }
+            Ok(true)
         }
         EditorEvent::CtrlC | EditorEvent::Noop => Ok(true),
     }
