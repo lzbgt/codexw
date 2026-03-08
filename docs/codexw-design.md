@@ -213,6 +213,11 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps poll <jobId|n>` renders the full current poll snapshot for one wrapper-owned shell job
   - `:ps terminate <jobId|n>` stops one wrapper-owned shell job without touching the others
   - job references accept either stable ids like `bg-2` or the current 1-based sorted shell index
+- `/ps` also has in-session attachment naming now:
+  - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
+  - `:ps unalias <name>` removes that alias
+  - aliases are session-local, operator-visible in `/ps`, and reusable anywhere the existing `jobId` reference surface is accepted
+  - this gives long-lived service shells a first-class continuity handle without pretending they are repo-global or backend-native objects
 - cleanup is now scoped along the same control boundary:
   - `:clean blockers` and `:ps clean blockers` terminate only wrapper-owned prerequisite shells
   - `:clean shells` terminates all wrapper-owned local shell jobs

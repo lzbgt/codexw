@@ -74,6 +74,7 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) cwd: String,
     pub(crate) intent: BackgroundShellIntent,
     pub(crate) label: Option<String>,
+    pub(crate) alias: Option<String>,
     pub(crate) origin: BackgroundShellOrigin,
     pub(crate) status: String,
     pub(crate) exit_code: Option<i32>,
@@ -89,6 +90,7 @@ struct BackgroundShellJobState {
     cwd: String,
     intent: BackgroundShellIntent,
     label: Option<String>,
+    alias: Option<String>,
     origin: BackgroundShellOrigin,
     status: BackgroundShellJobStatus,
     total_lines: u64,
@@ -161,6 +163,7 @@ impl BackgroundShellManager {
             cwd: cwd.display().to_string(),
             intent,
             label: label.clone(),
+            alias: None,
             origin: origin.clone(),
             status: BackgroundShellJobStatus::Running,
             total_lines: 0,
@@ -247,6 +250,9 @@ impl BackgroundShellManager {
         if let Some(label) = state.label.as_deref() {
             lines.push(format!("Label: {label}"));
         }
+        if let Some(alias) = state.alias.as_deref() {
+            lines.push(format!("Alias: {alias}"));
+        }
         if let Some(source_thread_id) = state.origin.source_thread_id.as_deref() {
             lines.push(format!("Source thread: {source_thread_id}"));
         }
@@ -294,6 +300,9 @@ impl BackgroundShellManager {
             if let Some(label) = snapshot.label.as_deref() {
                 line.push_str(&format!("  label={label}"));
             }
+            if let Some(alias) = snapshot.alias.as_deref() {
+                line.push_str(&format!("  alias={alias}"));
+            }
             if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
                 line.push_str(&format!("  source={source_thread_id}"));
             }
@@ -335,6 +344,14 @@ impl BackgroundShellManager {
             self.lookup_job(reference)?;
             return Ok(reference.to_string());
         }
+        if let Some(job_id) = self
+            .snapshots()
+            .into_iter()
+            .find(|job| job.alias.as_deref() == Some(reference))
+            .map(|job| job.id)
+        {
+            return Ok(job_id);
+        }
         let index = reference
             .parse::<usize>()
             .map_err(|_| format!("unknown background shell job `{reference}`"))?;
@@ -346,6 +363,44 @@ impl BackgroundShellManager {
             .get(index - 1)
             .map(|job| job.id.clone())
             .ok_or_else(|| format!("unknown background shell job `{reference}`"))
+    }
+
+    pub(crate) fn set_job_alias(&self, job_id: &str, alias: &str) -> Result<(), String> {
+        let alias = validate_alias(alias)?;
+        let jobs = self.inner.jobs.lock().expect("background shell jobs lock");
+        for job in jobs.values() {
+            let state = job.lock().expect("background shell job lock");
+            if state.id != job_id && state.alias.as_deref() == Some(alias.as_str()) {
+                return Err(format!(
+                    "background shell alias `{alias}` is already in use"
+                ));
+            }
+        }
+        let job = jobs
+            .get(job_id)
+            .cloned()
+            .ok_or_else(|| format!("unknown background shell job `{job_id}`"))?;
+        drop(jobs);
+        let mut state = job.lock().expect("background shell job lock");
+        state.alias = Some(alias);
+        Ok(())
+    }
+
+    pub(crate) fn clear_job_alias(&self, alias: &str) -> Result<String, String> {
+        let alias = validate_alias(alias)?;
+        let jobs = self.inner.jobs.lock().expect("background shell jobs lock");
+        let job = jobs
+            .values()
+            .find_map(|job| {
+                let state = job.lock().expect("background shell job lock");
+                (state.alias.as_deref() == Some(alias.as_str())).then_some(job.clone())
+            })
+            .ok_or_else(|| format!("unknown background shell alias `{alias}`"))?;
+        drop(jobs);
+        let mut state = job.lock().expect("background shell job lock");
+        let job_id = state.id.clone();
+        state.alias = None;
+        Ok(job_id)
     }
 
     pub(crate) fn poll_job(
@@ -457,6 +512,9 @@ impl BackgroundShellManager {
             if let Some(label) = snapshot.label.as_deref() {
                 lines.push(format!("    label    {label}"));
             }
+            if let Some(alias) = snapshot.alias.as_deref() {
+                lines.push(format!("    alias    {alias}"));
+            }
             lines.push(format!("    lines    {}", snapshot.total_lines));
             if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
                 lines.push(format!("    origin   thread={source_thread_id}"));
@@ -554,6 +612,21 @@ fn parse_background_shell_label(value: Option<&serde_json::Value>) -> Option<Str
         .map(ToOwned::to_owned)
 }
 
+fn validate_alias(alias: &str) -> Result<String, String> {
+    let alias = alias.trim();
+    if alias.is_empty() {
+        return Err("background shell alias cannot be empty".to_string());
+    }
+    if alias
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.'))
+    {
+        Ok(alias.to_string())
+    } else {
+        Err("background shell alias must use only letters, digits, '.', '-' or '_'".to_string())
+    }
+}
+
 fn spawn_shell_process(command: &str, cwd: &Path) -> Result<std::process::Child, String> {
     let mut shell = shell_command(command);
     shell.current_dir(cwd);
@@ -645,6 +718,7 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         cwd: state.cwd.clone(),
         intent: state.intent,
         label: state.label.clone(),
+        alias: state.alias.clone(),
         origin: state.origin.clone(),
         status: status_label(&state.status).to_string(),
         exit_code: exit_code(&state.status),
@@ -897,8 +971,42 @@ mod tests {
                 .expect("resolve by index"),
             "bg-2"
         );
+        manager.set_job_alias("bg-2", "dev.api").expect("set alias");
+        assert_eq!(
+            manager
+                .resolve_job_reference("dev.api")
+                .expect("resolve by alias"),
+            "bg-2"
+        );
         assert!(manager.resolve_job_reference("0").is_err());
         assert!(manager.resolve_job_reference("bg-9").is_err());
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_manager_can_set_and_clear_aliases() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({"command": "sleep 0.4", "intent": "service", "label": "dev server"}),
+                "/tmp",
+            )
+            .expect("start shell");
+
+        manager
+            .set_job_alias("bg-1", "dev_server")
+            .expect("set alias");
+        let snapshots = manager.snapshots();
+        assert_eq!(snapshots[0].alias.as_deref(), Some("dev_server"));
+        let rendered = manager
+            .poll_from_tool(&json!({"jobId": "bg-1"}))
+            .expect("poll background shell");
+        assert!(rendered.contains("Alias: dev_server"));
+
+        let cleared = manager.clear_job_alias("dev_server").expect("clear alias");
+        assert_eq!(cleared, "bg-1");
+        let snapshots = manager.snapshots();
+        assert!(snapshots[0].alias.is_none());
         let _ = manager.terminate_all_running();
     }
 }

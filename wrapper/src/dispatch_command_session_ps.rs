@@ -56,6 +56,39 @@ pub(crate) fn handle_ps_command(
             }
         };
         output.block_stdout("Background Shell", &rendered)?;
+    } else if matches!(action, Some("alias")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps alias <jobId|n> <name>")?;
+            return Ok(true);
+        };
+        let Some(alias) = args.get(2).copied() else {
+            output.line_stderr("[session] usage: :ps alias <jobId|n> <name>")?;
+            return Ok(true);
+        };
+        let job_id = match state.background_shells.resolve_job_reference(reference) {
+            Ok(job_id) => job_id,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        match state.background_shells.set_job_alias(&job_id, alias) {
+            Ok(()) => output.line_stderr(format!(
+                "[thread] background shell job {job_id} aliased as {alias}"
+            ))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        }
+    } else if matches!(action, Some("unalias")) {
+        let Some(alias) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps unalias <name>")?;
+            return Ok(true);
+        };
+        match state.background_shells.clear_job_alias(alias) {
+            Ok(job_id) => output.line_stderr(format!(
+                "[thread] removed alias {alias} from background shell job {job_id}"
+            ))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        }
     } else if matches!(action, Some("terminate" | "stop" | "kill")) {
         let Some(reference) = args.get(1).copied() else {
             output.line_stderr("[session] usage: :ps terminate <jobId|n>")?;
@@ -83,7 +116,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [blockers|agents|shells|services|terminals|clean|poll|terminate]",
+            "[session] usage: :ps [blockers|agents|shells|services|terminals|poll|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)

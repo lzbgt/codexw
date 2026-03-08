@@ -93,7 +93,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_poll",
-            "description": "Inspect a background shell job by jobId and fetch new output lines since an optional afterLine cursor.",
+            "description": "Inspect a background shell job by jobId or alias and fetch new output lines since an optional afterLine cursor.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -114,7 +114,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_terminate",
-            "description": "Terminate a running background shell job by jobId.",
+            "description": "Terminate a running background shell job by jobId or alias.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

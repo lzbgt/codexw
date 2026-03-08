@@ -632,6 +632,68 @@ fn ps_command_can_poll_and_terminate_specific_background_shell_jobs() {
 }
 
 #[test]
+fn ps_command_can_alias_and_reuse_background_shell_job_references() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({"command": "printf 'alpha\\n'", "intent": "service", "label": "dev server"}),
+            "/tmp",
+        )
+        .expect("start aliasable shell");
+    std::thread::sleep(Duration::from_millis(50));
+
+    handle_ps_command(
+        &["alias", "1", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("alias background shell");
+    assert_eq!(
+        state
+            .background_shells
+            .resolve_job_reference("dev.api")
+            .expect("resolve alias"),
+        "bg-1"
+    );
+
+    handle_ps_command(
+        &["poll", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("poll aliased shell");
+    let polled = state
+        .background_shells
+        .poll_job("bg-1", 0, 200)
+        .expect("poll shell directly");
+    assert!(polled.contains("Alias: dev.api"));
+
+    handle_ps_command(
+        &["unalias", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("clear alias");
+    assert!(
+        state
+            .background_shells
+            .resolve_job_reference("dev.api")
+            .is_err()
+    );
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
 fn collab_wait_item_sets_waiting_on_agent_status() {
     let cli = test_cli();
     let mut state = crate::state::AppState::new(true, false);
