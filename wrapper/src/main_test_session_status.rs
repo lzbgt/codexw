@@ -769,8 +769,16 @@ fn ps_command_can_render_service_attachment_metadata_for_aliased_job() {
                 "command": "sleep 0.4",
                 "intent": "service",
                 "label": "dev api",
+                "protocol": "http",
                 "endpoint": "http://127.0.0.1:4000",
-                "attachHint": "Send HTTP requests to /health"
+                "attachHint": "Send HTTP requests to /health",
+                "recipes": [
+                    {
+                        "name": "health",
+                        "description": "Check health",
+                        "example": "curl http://127.0.0.1:4000/health"
+                    }
+                ]
             }),
             "/tmp",
         )
@@ -800,8 +808,10 @@ fn ps_command_can_render_service_attachment_metadata_for_aliased_job() {
         .background_shells
         .attach_for_operator("bg-1")
         .expect("attachment summary");
+    assert!(rendered.contains("Protocol: http"));
     assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
     assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
+    assert!(rendered.contains("health: Check health"));
     let _ = state.background_shells.terminate_all_running();
 }
 

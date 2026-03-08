@@ -94,8 +94,10 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) intent: BackgroundShellIntent,
     pub(crate) label: Option<String>,
     pub(crate) alias: Option<String>,
+    pub(crate) service_protocol: Option<String>,
     pub(crate) service_endpoint: Option<String>,
     pub(crate) attach_hint: Option<String>,
+    pub(crate) interaction_recipes: Vec<BackgroundShellInteractionRecipe>,
     pub(crate) ready_pattern: Option<String>,
     pub(crate) service_readiness: Option<BackgroundShellServiceReadiness>,
     pub(crate) origin: BackgroundShellOrigin,
@@ -114,8 +116,10 @@ struct BackgroundShellJobState {
     intent: BackgroundShellIntent,
     label: Option<String>,
     alias: Option<String>,
+    service_protocol: Option<String>,
     service_endpoint: Option<String>,
     attach_hint: Option<String>,
+    interaction_recipes: Vec<BackgroundShellInteractionRecipe>,
     ready_pattern: Option<String>,
     service_ready: bool,
     origin: BackgroundShellOrigin,
@@ -137,6 +141,13 @@ enum BackgroundShellJobStatus {
     Completed(i32),
     Failed(String),
     Terminated(Option<i32>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BackgroundShellInteractionRecipe {
+    pub(crate) name: String,
+    pub(crate) description: Option<String>,
+    pub(crate) example: Option<String>,
 }
 
 impl BackgroundShellManager {
@@ -170,16 +181,23 @@ impl BackgroundShellManager {
         )?;
         let intent = parse_background_shell_intent(object.get("intent"))?;
         let label = parse_background_shell_label(object.get("label"));
+        let service_protocol =
+            parse_background_shell_optional_string(object.get("protocol"), "protocol")?;
         let service_endpoint =
             parse_background_shell_optional_string(object.get("endpoint"), "endpoint")?;
         let attach_hint =
             parse_background_shell_optional_string(object.get("attachHint"), "attachHint")?;
+        let interaction_recipes =
+            parse_background_shell_interaction_recipes(object.get("recipes"))?;
         let ready_pattern = parse_background_shell_ready_pattern(object.get("readyPattern"))?;
-        if (ready_pattern.is_some() || service_endpoint.is_some() || attach_hint.is_some())
-            && intent != BackgroundShellIntent::Service
-        {
+        let has_service_contract = ready_pattern.is_some()
+            || service_protocol.is_some()
+            || service_endpoint.is_some()
+            || attach_hint.is_some()
+            || !interaction_recipes.is_empty();
+        if has_service_contract && intent != BackgroundShellIntent::Service {
             return Err(
-                "background_shell_start service attachment fields (`readyPattern`, `endpoint`, `attachHint`) are only supported when `intent=service`".to_string(),
+                "background_shell_start service contract fields (`readyPattern`, `protocol`, `endpoint`, `attachHint`, `recipes`) are only supported when `intent=service`".to_string(),
             );
         }
         let job_id = format!(
@@ -208,8 +226,10 @@ impl BackgroundShellManager {
             intent,
             label: label.clone(),
             alias: None,
+            service_protocol: service_protocol.clone(),
             service_endpoint: service_endpoint.clone(),
             attach_hint: attach_hint.clone(),
+            interaction_recipes: interaction_recipes.clone(),
             ready_pattern: ready_pattern.clone(),
             service_ready: false,
             origin: origin.clone(),
@@ -254,11 +274,17 @@ impl BackgroundShellManager {
         if let Some(label) = label {
             lines.insert(4, format!("Label: {label}"));
         }
+        if let Some(service_protocol) = service_protocol.as_deref() {
+            lines.push(format!("Protocol: {service_protocol}"));
+        }
         if let Some(service_endpoint) = service_endpoint.as_deref() {
             lines.push(format!("Endpoint: {service_endpoint}"));
         }
         if let Some(attach_hint) = attach_hint.as_deref() {
             lines.push(format!("Attach hint: {attach_hint}"));
+        }
+        if !interaction_recipes.is_empty() {
+            lines.push(format!("Recipes: {}", interaction_recipes.len()));
         }
         if let Some(ready_pattern) = ready_pattern.as_deref() {
             lines.push(format!("Ready pattern: {ready_pattern}"));
@@ -316,11 +342,27 @@ impl BackgroundShellManager {
         if let Some(alias) = state.alias.as_deref() {
             lines.push(format!("Alias: {alias}"));
         }
+        if let Some(service_protocol) = state.service_protocol.as_deref() {
+            lines.push(format!("Protocol: {service_protocol}"));
+        }
         if let Some(service_endpoint) = state.service_endpoint.as_deref() {
             lines.push(format!("Endpoint: {service_endpoint}"));
         }
         if let Some(attach_hint) = state.attach_hint.as_deref() {
             lines.push(format!("Attach hint: {attach_hint}"));
+        }
+        if !state.interaction_recipes.is_empty() {
+            lines.push("Recipes:".to_string());
+            for recipe in &state.interaction_recipes {
+                let mut line = format!("- {}", recipe.name);
+                if let Some(description) = recipe.description.as_deref() {
+                    line.push_str(&format!(": {description}"));
+                }
+                lines.push(line);
+                if let Some(example) = recipe.example.as_deref() {
+                    lines.push(format!("  example: {example}"));
+                }
+            }
         }
         if let Some(ready_pattern) = state.ready_pattern.as_deref() {
             lines.push(format!("Ready pattern: {ready_pattern}"));
@@ -378,8 +420,14 @@ impl BackgroundShellManager {
             if let Some(alias) = snapshot.alias.as_deref() {
                 line.push_str(&format!("  alias={alias}"));
             }
+            if let Some(protocol) = snapshot.service_protocol.as_deref() {
+                line.push_str(&format!("  protocol={protocol}"));
+            }
             if let Some(endpoint) = snapshot.service_endpoint.as_deref() {
                 line.push_str(&format!("  endpoint={endpoint}"));
+            }
+            if !snapshot.interaction_recipes.is_empty() {
+                line.push_str(&format!("  recipes={}", snapshot.interaction_recipes.len()));
             }
             if let Some(service_readiness) = snapshot.service_readiness {
                 line.push_str(&format!("  service={}", service_readiness.as_str()));
@@ -664,11 +712,20 @@ impl BackgroundShellManager {
             if let Some(alias) = snapshot.alias.as_deref() {
                 lines.push(format!("    alias    {alias}"));
             }
+            if let Some(protocol) = snapshot.service_protocol.as_deref() {
+                lines.push(format!("    protocol {protocol}"));
+            }
             if let Some(endpoint) = snapshot.service_endpoint.as_deref() {
                 lines.push(format!("    endpoint {endpoint}"));
             }
             if let Some(attach_hint) = snapshot.attach_hint.as_deref() {
                 lines.push(format!("    attach   {attach_hint}"));
+            }
+            if !snapshot.interaction_recipes.is_empty() {
+                lines.push(format!(
+                    "    recipes  {}",
+                    snapshot.interaction_recipes.len()
+                ));
             }
             if let Some(ready_pattern) = snapshot.ready_pattern.as_deref() {
                 lines.push(format!("    ready on {ready_pattern}"));
@@ -771,16 +828,36 @@ impl BackgroundShellManager {
         if let Some(alias) = state.alias.as_deref() {
             lines.push(format!("Alias: {alias}"));
         }
+        if let Some(protocol) = state.service_protocol.as_deref() {
+            lines.push(format!("Protocol: {protocol}"));
+        }
         if let Some(endpoint) = state.service_endpoint.as_deref() {
             lines.push(format!("Endpoint: {endpoint}"));
         }
         if let Some(attach_hint) = state.attach_hint.as_deref() {
             lines.push(format!("Attach hint: {attach_hint}"));
         }
+        if !state.interaction_recipes.is_empty() {
+            lines.push("Recipes:".to_string());
+            for recipe in &state.interaction_recipes {
+                let mut line = format!("- {}", recipe.name);
+                if let Some(description) = recipe.description.as_deref() {
+                    line.push_str(&format!(": {description}"));
+                }
+                lines.push(line);
+                if let Some(example) = recipe.example.as_deref() {
+                    lines.push(format!("  example: {example}"));
+                }
+            }
+        }
         if let Some(ready_pattern) = state.ready_pattern.as_deref() {
             lines.push(format!("Ready pattern: {ready_pattern}"));
         }
-        if state.service_endpoint.is_none() && state.attach_hint.is_none() {
+        if state.service_protocol.is_none()
+            && state.service_endpoint.is_none()
+            && state.attach_hint.is_none()
+            && state.interaction_recipes.is_empty()
+        {
             lines.push(
                 "No explicit service attachment metadata has been declared for this job."
                     .to_string(),
@@ -866,6 +943,46 @@ fn parse_background_shell_ready_pattern(
     value: Option<&serde_json::Value>,
 ) -> Result<Option<String>, String> {
     parse_background_shell_optional_string(value, "readyPattern")
+}
+
+fn parse_background_shell_interaction_recipes(
+    value: Option<&serde_json::Value>,
+) -> Result<Vec<BackgroundShellInteractionRecipe>, String> {
+    let Some(value) = value else {
+        return Ok(Vec::new());
+    };
+    let recipes = value
+        .as_array()
+        .ok_or_else(|| "background_shell_start `recipes` must be an array".to_string())?;
+    let mut parsed = Vec::with_capacity(recipes.len());
+    for (index, recipe) in recipes.iter().enumerate() {
+        let object = recipe.as_object().ok_or_else(|| {
+            format!("background_shell_start `recipes[{index}]` must be an object")
+        })?;
+        let name = object
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| {
+                format!("background_shell_start `recipes[{index}].name` must be a non-empty string")
+            })?
+            .to_string();
+        let description = parse_background_shell_optional_string(
+            object.get("description"),
+            &format!("recipes[{index}].description"),
+        )?;
+        let example = parse_background_shell_optional_string(
+            object.get("example"),
+            &format!("recipes[{index}].example"),
+        )?;
+        parsed.push(BackgroundShellInteractionRecipe {
+            name,
+            description,
+            example,
+        });
+    }
+    Ok(parsed)
 }
 
 fn validate_alias(alias: &str) -> Result<String, String> {
@@ -981,8 +1098,10 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         intent: state.intent,
         label: state.label.clone(),
         alias: state.alias.clone(),
+        service_protocol: state.service_protocol.clone(),
         service_endpoint: state.service_endpoint.clone(),
         attach_hint: state.attach_hint.clone(),
+        interaction_recipes: state.interaction_recipes.clone(),
         ready_pattern: state.ready_pattern.clone(),
         service_readiness: service_readiness_for_state(&state),
         origin: state.origin.clone(),
@@ -1173,8 +1292,16 @@ mod tests {
                     "command": "sleep 0.4",
                     "intent": "service",
                     "label": "webpack dev server",
+                    "protocol": "http",
                     "endpoint": "http://127.0.0.1:3000",
-                    "attachHint": "Open the dev server in a browser"
+                    "attachHint": "Open the dev server in a browser",
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check health",
+                            "example": "curl http://127.0.0.1:3000/health"
+                        }
+                    ]
                 }),
                 "/tmp",
                 BackgroundShellOrigin {
@@ -1192,6 +1319,7 @@ mod tests {
         );
         assert_eq!(snapshots[0].intent, BackgroundShellIntent::Service);
         assert_eq!(snapshots[0].label.as_deref(), Some("webpack dev server"));
+        assert_eq!(snapshots[0].service_protocol.as_deref(), Some("http"));
         assert_eq!(
             snapshots[0].service_endpoint.as_deref(),
             Some("http://127.0.0.1:3000")
@@ -1205,8 +1333,11 @@ mod tests {
             .expect("poll background shell");
         assert!(rendered.contains("Intent: service"));
         assert!(rendered.contains("Label: webpack dev server"));
+        assert!(rendered.contains("Protocol: http"));
         assert!(rendered.contains("Endpoint: http://127.0.0.1:3000"));
         assert!(rendered.contains("Attach hint: Open the dev server in a browser"));
+        assert!(rendered.contains("Recipes:"));
+        assert!(rendered.contains("health: Check health"));
         assert!(rendered.contains("Source thread: thread-agent-1"));
         assert!(rendered.contains("Source call: call-77"));
         let _ = manager.terminate_all_running();
@@ -1272,8 +1403,20 @@ mod tests {
                     "command": "sleep 0.4",
                     "intent": "service",
                     "label": "dev api",
+                    "protocol": "http",
                     "endpoint": "http://127.0.0.1:4000",
-                    "attachHint": "Send HTTP requests to /health"
+                    "attachHint": "Send HTTP requests to /health",
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check service health",
+                            "example": "curl http://127.0.0.1:4000/health"
+                        },
+                        {
+                            "name": "metrics",
+                            "description": "Fetch metrics"
+                        }
+                    ]
                 }),
                 "/tmp",
             )
@@ -1284,8 +1427,12 @@ mod tests {
             .expect("render attachment summary");
         assert!(rendered.contains("Service job: bg-1"));
         assert!(rendered.contains("Label: dev api"));
+        assert!(rendered.contains("Protocol: http"));
         assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
         assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
+        assert!(rendered.contains("health: Check service health"));
+        assert!(rendered.contains("example: curl http://127.0.0.1:4000/health"));
+        assert!(rendered.contains("metrics: Fetch metrics"));
         let _ = manager.terminate_all_running();
     }
 
@@ -1297,12 +1444,12 @@ mod tests {
                 &json!({
                     "command": "sleep 0.1",
                     "intent": "observation",
-                    "endpoint": "http://127.0.0.1:4000"
+                    "protocol": "http"
                 }),
                 "/tmp",
             )
             .expect_err("service attachment fields should require service intent");
-        assert!(err.contains("service attachment fields"));
+        assert!(err.contains("service contract fields"));
     }
 
     #[test]

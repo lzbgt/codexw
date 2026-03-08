@@ -201,7 +201,8 @@ The current `codexw` implementation now reflects that model partially:
   - `service` for reusable long-lived helpers such as dev servers
   - optional `label` text for operator-facing status and `/ps` output
   - optional `readyPattern` text for service jobs, so the wrapper can promote them from `booting` to `ready` when logs match a concrete milestone
-  - optional `endpoint` and `attachHint` text for service jobs, so the wrapper can expose structured attachment metadata for later turns and worker tasks
+  - optional `protocol`, `endpoint`, and `attachHint` text for service jobs, so the wrapper can expose structured attachment metadata for later turns and worker tasks
+  - optional `recipes` array for service jobs, so the wrapper can expose named interaction verbs such as `health`, `metrics`, `query`, or `seed`
 - live `collabAgentToolCall` items are now tracked as in-turn cognitive work:
   - active collab-agent calls are kept in a live registry while the turn is running
   - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
@@ -224,8 +225,10 @@ The current `codexw` implementation now reflects that model partially:
   - `ready` once output matches the declared pattern
   - `untracked` when the job is a service shell but no readiness contract was declared
 - service shells can also declare explicit attachment metadata:
+  - `protocol` for the interaction family, such as `http`, `postgres`, `redis`, or another repo-specific label
   - `endpoint` for the canonical URL/socket/target that later work should use
   - `attachHint` for the operator or agent-facing next-step instruction, such as “send HTTP requests to /health” or “attach with psql”
+  - `recipes` for structured interaction verbs with optional description/example text, so later work can ask “what can I do with this service?” without scraping raw logs
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
   - `:ps unalias <name>` removes that alias
@@ -463,7 +466,7 @@ Current user-facing capabilities include:
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
 - backend-backed `/agent` and `/multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
-- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_attach`, `background_shell_list`, `background_shell_terminate`), including service readiness contracts via `readyPattern` and service attachment metadata via `endpoint` / `attachHint`
+- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_attach`, `background_shell_list`, `background_shell_terminate`), including service readiness contracts via `readyPattern` and service attachment metadata via `protocol` / `endpoint` / `attachHint` / `recipes`
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
 - live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with scoped cleanup for local shell classes and backend-tracked terminals

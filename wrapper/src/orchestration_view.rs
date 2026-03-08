@@ -653,8 +653,15 @@ mod tests {
                     "command": "sleep 0.4",
                     "intent": "service",
                     "label": "dev server",
+                    "protocol": "http",
                     "endpoint": "http://127.0.0.1:3000",
-                    "attachHint": "Open the dev server in a browser"
+                    "attachHint": "Open the dev server in a browser",
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check health"
+                        }
+                    ]
                 }),
                 "/tmp",
             )
@@ -682,8 +689,10 @@ mod tests {
         assert!(services.contains("Local background shell jobs:"));
         assert!(services.contains("intent   service"));
         assert!(services.contains("label    dev server"));
+        assert!(services.contains("protocol http"));
         assert!(services.contains("endpoint http://127.0.0.1:3000"));
         assert!(services.contains("attach   Open the dev server in a browser"));
+        assert!(services.contains("recipes  1"));
         assert!(services.contains("service  untracked"));
         assert!(!services.contains("intent   prerequisite"));
 

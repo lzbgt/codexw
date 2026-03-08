@@ -76,7 +76,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_start",
-            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `readyPattern`, `endpoint`, and `attachHint` so the wrapper can distinguish booting versus ready services and expose a structured attach surface.",
+            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `readyPattern`, `protocol`, `endpoint`, `attachHint`, and structured `recipes` so the wrapper can distinguish booting versus ready services and expose a reusable attach surface.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -88,8 +88,21 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                     },
                     "label": {"type": "string"},
                     "readyPattern": {"type": "string"},
+                    "protocol": {"type": "string"},
                     "endpoint": {"type": "string"},
-                    "attachHint": {"type": "string"}
+                    "attachHint": {"type": "string"},
+                    "recipes": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "description": {"type": "string"},
+                                "example": {"type": "string"}
+                            },
+                            "required": ["name"]
+                        }
+                    }
                 },
                 "required": ["command"]
             }
@@ -685,8 +698,16 @@ mod tests {
                     "command": "sleep 0.4",
                     "intent": "service",
                     "label": "dev api",
+                    "protocol": "http",
                     "endpoint": "http://127.0.0.1:4000",
-                    "attachHint": "Send HTTP requests to /health"
+                    "attachHint": "Send HTTP requests to /health",
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check health",
+                            "example": "curl http://127.0.0.1:4000/health"
+                        }
+                    ]
                 }
             }),
             "/tmp",
@@ -710,8 +731,10 @@ mod tests {
             .as_str()
             .expect("attach text");
         assert!(rendered.contains("Service job: bg-1"));
+        assert!(rendered.contains("Protocol: http"));
         assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
         assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
+        assert!(rendered.contains("health: Check health"));
         let _ = manager.terminate_all_running();
     }
 
