@@ -4,11 +4,13 @@ use anyhow::Context;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::app_input::handle_input_key;
+use crate::app_input_controls::handle_control_key;
+use crate::app_input_editing::handle_editing_key;
 use crate::dispatch_command_utils::join_prompt;
 use crate::editor::LineEditor;
 use crate::events::process_server_line;
 use crate::output::Output;
+use crate::prompt_state::prompt_accepts_input;
 use crate::prompt_state::update_prompt;
 use crate::requests::send_initialize;
 use crate::runtime_event_sources::AppEvent;
@@ -16,6 +18,7 @@ use crate::runtime_event_sources::RawModeGuard;
 use crate::runtime_event_sources::start_stdin_thread;
 use crate::runtime_event_sources::start_stdout_thread;
 use crate::runtime_event_sources::start_tick_thread;
+use crate::runtime_keys::InputKey;
 use crate::runtime_process::StartMode;
 use crate::runtime_process::effective_cwd;
 use crate::runtime_process::shutdown_child;
@@ -97,4 +100,30 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
 
     shutdown_child(writer, child)?;
     Ok(())
+}
+
+fn handle_input_key(
+    key: InputKey,
+    cli: &Cli,
+    resolved_cwd: &str,
+    state: &mut AppState,
+    editor: &mut LineEditor,
+    output: &mut Output,
+    writer: &mut std::process::ChildStdin,
+) -> Result<bool> {
+    let accepts_input = prompt_accepts_input(state);
+    if let Some(continue_running) = handle_control_key(
+        key,
+        cli,
+        resolved_cwd,
+        state,
+        editor,
+        output,
+        writer,
+        accepts_input,
+    )? {
+        return Ok(continue_running);
+    }
+    handle_editing_key(key, resolved_cwd, state, editor, output, accepts_input)?;
+    Ok(true)
 }

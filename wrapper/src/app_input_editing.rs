@@ -5,7 +5,7 @@ use crate::output::Output;
 use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 
-use super::app_input_editor::handle_editor_key;
+use crate::app_input_editor::handle_editor_key;
 
 pub(crate) fn handle_editing_key(
     key: InputKey,

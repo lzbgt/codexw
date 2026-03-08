@@ -6,9 +6,9 @@ use crate::output::Output;
 use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 
-use super::app_input_editor::handle_submit;
-use super::app_input_interrupt::handle_ctrl_c;
-use super::app_input_interrupt::handle_escape;
+use crate::app_input_editor::handle_submit;
+use crate::app_input_interrupt::handle_ctrl_c;
+use crate::app_input_interrupt::handle_escape;
 
 pub(crate) fn handle_control_key(
     key: InputKey,
