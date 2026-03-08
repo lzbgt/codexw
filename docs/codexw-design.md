@@ -54,13 +54,13 @@ The runtime has thirteen main layers.
    `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, `session_snapshot.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, and status snapshot generation. `session_status.rs` remains the small status facade over the split session prompt/realtime/snapshot helpers.
 
 9. App runtime loop
-   `app.rs` owns process wiring, the main event loop, and keyboard-event dispatch for the live interactive session.
+   `app.rs` and `app_input.rs` own process wiring, the main event loop, and keyboard-event dispatch for the live interactive session. `app.rs` now holds the top-level loop, while `app_input.rs` owns the normalized input-key handler.
 
 10. Resume and history rendering
    `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
 
 11. View and transcript rendering helpers
-   `catalog_views.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `status_views.rs` and `transcript_views.rs` remain narrow compatibility facades over the split helpers.
+   `catalog_views.rs`, `catalog_lists.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` remain narrow compatibility facades over the split helpers.
 
 12. Human input handling
    `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, and `dispatch_command_session.rs` are compatibility facades over those splits.
@@ -70,9 +70,9 @@ The runtime has thirteen main layers.
 
 Session feature helpers are split across `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `session_status.rs` kept as the thin status facade.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
-App loop helpers live in `app.rs`: backend/session startup, the top-level runtime loop, and input-key dispatch.
+App loop helpers are split across `app.rs` and `app_input.rs`: `app.rs` owns backend/session startup and the top-level runtime loop, while `app_input.rs` owns input-key dispatch.
 Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
-Catalog display helpers live in `catalog_views.rs`: app/skill/model/MCP/thread listings and search-result rendering.
+Catalog display helpers are split across `catalog_lists.rs` and `catalog_threads.rs`, with `catalog_views.rs` kept as the thin facade over app/skill/model/MCP display plus thread/search rendering.
 Status display helpers are split across `status_config.rs`, `status_account.rs`, and `status_limits.rs`, with `status_views.rs` kept as the thin facade plus the generic value summarizer.
 Transcript display helpers are split across `transcript_render.rs` and `transcript_summary.rs`, with `transcript_views.rs` kept as a thin compatibility facade over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
@@ -368,7 +368,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session.rs`
   Session status, collaboration, personality, realtime-item, and tool-summary regression tests.
 - `wrapper/src/app.rs`
-  Top-level runtime loop, backend wiring, and input-key dispatch.
+  Top-level runtime loop and backend wiring.
+- `wrapper/src/app_input.rs`
+  Input-key dispatch for the live interactive session.
 - `wrapper/src/policy.rs`
   Approval/sandbox/reasoning policy helpers and approval decision preferences.
 - `wrapper/src/runtime.rs`
@@ -400,7 +402,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/history.rs`
   Resume-preview extraction, resumed objective/reply seeding, and resumed conversation rendering.
 - `wrapper/src/catalog_views.rs`
-  Catalog and list rendering for apps, skills, models, MCP servers, threads, and file-search results.
+  Compatibility facade for the split catalog display helpers.
+- `wrapper/src/catalog_lists.rs`
+  Apps, skills, models, MCP servers, and experimental-feature rendering.
+- `wrapper/src/catalog_threads.rs`
+  Thread list, file-search rendering, and extracted id/path helpers.
 - `wrapper/src/status_views.rs`
   Compatibility facade re-exporting the split status helpers plus generic JSON value summarization.
 - `wrapper/src/status_config.rs`

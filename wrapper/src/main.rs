@@ -1,5 +1,8 @@
 mod app;
+mod app_input;
 mod catalog;
+mod catalog_lists;
+mod catalog_threads;
 mod catalog_views;
 mod collaboration;
 mod commands;
