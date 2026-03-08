@@ -36,7 +36,7 @@ The runtime has thirteen main layers.
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
 3. Outbound request construction
-   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/bootstrap_search.rs`, `requests/thread_switch.rs`, `requests/thread_maintenance.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, and `requests/command_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. `bootstrap_catalog.rs` and `thread_lifecycle.rs` are now thin compatibility facades over the split concrete helpers, and production code imports the concrete request surface through `requests.rs`.
+   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/bootstrap_catalog_core.rs`, `requests/bootstrap_catalog_lists.rs`, `requests/bootstrap_search.rs`, `requests/thread_switch.rs`, `requests/thread_maintenance.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, and `requests/command_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. `bootstrap_catalog.rs` and `thread_lifecycle.rs` are now thin compatibility facades over the split concrete helpers, and production code imports the concrete request surface through `requests.rs`.
 
 4. Inbound event handling
    `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_thread_switch.rs`, `response_thread_activity.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, `notification_item_completion.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, delta/status buffering, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, `notification_turns.rs`, and `response_threads.rs` are compatibility/router facades over the split inbound handlers.
@@ -63,7 +63,7 @@ The runtime has thirteen main layers.
    `catalog_views.rs`, `catalog_lists.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` remain narrow compatibility facades over the split helpers.
 
 12. Human input handling
-   `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `prompting.rs` are compatibility facades over those splits.
+   `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `prompting.rs` are compatibility facades over those splits.
 
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
@@ -81,7 +81,7 @@ Shared state helpers are split across `state_core.rs` and `state_helpers.rs`, wi
 Command catalog helpers are split across `commands_entries.rs` and `commands_catalog.rs`: entry data now lives in `commands_entries.rs`, while `commands_catalog.rs` keeps the public entrypoint and stable command-name ordering.
 Command metadata helpers live in `commands_metadata.rs`: command descriptions and help-line generation over the shared command catalog.
 Command completion helpers live in `commands_completion.rs` and `commands_match.rs`: slash completion rendering stays in the facade while cursor parsing, fuzzy scoring, and prefix logic live in the extracted matcher module.
-Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, and `dispatch_command_session.rs` kept as thin compatibility facades for imports and tests.
+Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_session.rs`, and `dispatch_command_session_control.rs` kept as thin compatibility facades for imports and tests.
 Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` and `input/input_decode.rs` kept as thin compatibility facades for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live across `prompt_state.rs` and `prompt_completion.rs`, with `prompting.rs` kept as the thin facade over prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers are split across `response_success.rs` and `response_error.rs`, with `responses.rs` kept as a thin compatibility facade for JSON-RPC success/error handling of pending outbound requests.
@@ -442,6 +442,8 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/requests/bootstrap_account.rs`
   Account, logout, feedback-upload, and rate-limit request builders.
 - `wrapper/src/requests/bootstrap_catalog.rs`
+- `wrapper/src/requests/bootstrap_catalog_core.rs`
+- `wrapper/src/requests/bootstrap_catalog_lists.rs`
 - `wrapper/src/requests/bootstrap_search.rs`
   Catalog, config, model, collaboration-mode, thread-list, and file-search request builders.
 - `wrapper/src/requests/thread_lifecycle.rs`
@@ -499,7 +501,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_command_thread.rs`
   Compatibility facade for the split thread-oriented slash-command workflows.
 - `wrapper/src/dispatch_command_thread_flow.rs`
-  Thread lifecycle, review, interrupt, compact, rename, and recent-thread workflows.
+  Compatibility facade for the split thread-flow command helpers.
+- `wrapper/src/dispatch_command_thread_navigation.rs`
+  Thread lifecycle, rename, resume/new/fork, and recent-thread listing workflows.
+- `wrapper/src/dispatch_command_thread_actions.rs`
+  Thread action workflows such as review, interrupt, compact, and cleanup.
 - `wrapper/src/dispatch_command_thread_workspace.rs`
   Mention/diff/copy/clear and attachment-queue slash-command workflows.
 - `wrapper/src/dispatch_command_session.rs`
@@ -507,7 +513,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_command_session_info.rs`
   Session information and display slash-command workflows such as status, permissions, models, personality, apps, skills, MCP, and attachments.
 - `wrapper/src/dispatch_command_session_control.rs`
-  Session control slash-command workflows such as auto mode, feedback, logout, collaboration, realtime control, and placeholder native popup paths.
+  Compatibility facade for the split session-control command helpers.
+- `wrapper/src/dispatch_command_session_modes.rs`
+  Session mode and runtime-control workflows such as auto mode, collaboration, realtime control, and `/ps`.
+- `wrapper/src/dispatch_command_session_meta.rs`
+  Session meta workflows such as feedback, logout, and recognized-but-unported native popup paths.
 - `wrapper/src/dispatch_command_utils.rs`
   Shared slash-command helpers such as built-in detection, feedback parsing, prompt joining, and clipboard handling.
 - `wrapper/src/prompt_state.rs`
