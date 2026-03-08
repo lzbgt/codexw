@@ -42,6 +42,7 @@ pub(crate) fn track_terminal_interaction(state: &mut AppState, params: &Value) {
     let seeded_output = recent_output_lines(state, item_id);
 
     let entry = state
+        .orchestration
         .background_terminals
         .entry(process_id.to_string())
         .or_insert_with(|| BackgroundTerminalSummary {
@@ -80,6 +81,7 @@ pub(crate) fn track_command_output_delta(state: &mut AppState, params: &Value) {
         return;
     }
     for process in state
+        .orchestration
         .background_terminals
         .values_mut()
         .filter(|process| process.item_id == item_id)
@@ -97,24 +99,26 @@ pub(crate) fn clear_completed_command_item(state: &mut AppState, item: &Value) {
     };
     state.active_command_items.remove(item_id);
     state
+        .orchestration
         .background_terminals
         .retain(|_, process| process.item_id != item_id);
 }
 
 pub(crate) fn clear_all_background_terminals(state: &mut AppState) {
-    state.background_terminals.clear();
+    state.orchestration.background_terminals.clear();
 }
 
 pub(crate) fn server_background_terminal_count(state: &AppState) -> usize {
-    state.background_terminals.len()
+    state.orchestration.background_terminals.len()
 }
 
 pub(crate) fn background_terminal_count(state: &AppState) -> usize {
-    server_background_terminal_count(state) + state.background_shells.running_count()
+    server_background_terminal_count(state) + state.orchestration.background_shells.running_count()
 }
 
 pub(crate) fn render_background_terminals(state: &AppState) -> String {
     let mut processes = state
+        .orchestration
         .background_terminals
         .values()
         .cloned()
@@ -153,7 +157,7 @@ pub(crate) fn render_background_terminals(state: &AppState) -> String {
             }
         }
     }
-    if let Some(local_jobs) = state.background_shells.render_for_ps() {
+    if let Some(local_jobs) = state.orchestration.background_shells.render_for_ps() {
         if !lines.is_empty() {
             lines.push(String::new());
         }

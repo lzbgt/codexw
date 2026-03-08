@@ -42,7 +42,11 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps send <jobId|alias|n> <text>")?;
             return Ok(true);
         };
-        let job_id = match state.background_shells.resolve_job_reference(reference) {
+        let job_id = match state
+            .orchestration
+            .background_shells
+            .resolve_job_reference(reference)
+        {
             Ok(job_id) => job_id,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
@@ -50,6 +54,7 @@ pub(crate) fn handle_ps_command(
             }
         };
         match state
+            .orchestration
             .background_shells
             .send_input_for_operator(&job_id, text, true)
         {
@@ -64,14 +69,22 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps attach <jobId|alias|n>")?;
             return Ok(true);
         };
-        let job_id = match state.background_shells.resolve_job_reference(reference) {
+        let job_id = match state
+            .orchestration
+            .background_shells
+            .resolve_job_reference(reference)
+        {
             Ok(job_id) => job_id,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
                 return Ok(true);
             }
         };
-        let rendered = match state.background_shells.attach_for_operator(&job_id) {
+        let rendered = match state
+            .orchestration
+            .background_shells
+            .attach_for_operator(&job_id)
+        {
             Ok(rendered) => rendered,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
@@ -84,7 +97,11 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps wait <jobId|alias|n> [timeoutMs]")?;
             return Ok(true);
         };
-        let job_id = match state.background_shells.resolve_job_reference(reference) {
+        let job_id = match state
+            .orchestration
+            .background_shells
+            .resolve_job_reference(reference)
+        {
             Ok(job_id) => job_id,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
@@ -99,6 +116,7 @@ pub(crate) fn handle_ps_command(
             }
         };
         let rendered = match state
+            .orchestration
             .background_shells
             .wait_ready_for_operator(&job_id, timeout_ms)
         {
@@ -114,7 +132,11 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe> [json-args]")?;
             return Ok(true);
         };
-        let job_id = match state.background_shells.resolve_job_reference(reference) {
+        let job_id = match state
+            .orchestration
+            .background_shells
+            .resolve_job_reference(reference)
+        {
             Ok(job_id) => job_id,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
@@ -129,6 +151,7 @@ pub(crate) fn handle_ps_command(
             }
         };
         let rendered = match state
+            .orchestration
             .background_shells
             .invoke_recipe_for_operator_with_args(&job_id, recipe, &invoke_args)
         {
@@ -144,14 +167,22 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps poll <jobId|alias|n>")?;
             return Ok(true);
         };
-        let job_id = match state.background_shells.resolve_job_reference(reference) {
+        let job_id = match state
+            .orchestration
+            .background_shells
+            .resolve_job_reference(reference)
+        {
             Ok(job_id) => job_id,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
                 return Ok(true);
             }
         };
-        let rendered = match state.background_shells.poll_job(&job_id, 0, 200) {
+        let rendered = match state
+            .orchestration
+            .background_shells
+            .poll_job(&job_id, 0, 200)
+        {
             Ok(rendered) => rendered,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
@@ -168,14 +199,22 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps alias <jobId|n> <name>")?;
             return Ok(true);
         };
-        let job_id = match state.background_shells.resolve_job_reference(reference) {
+        let job_id = match state
+            .orchestration
+            .background_shells
+            .resolve_job_reference(reference)
+        {
             Ok(job_id) => job_id,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
                 return Ok(true);
             }
         };
-        match state.background_shells.set_job_alias(&job_id, alias) {
+        match state
+            .orchestration
+            .background_shells
+            .set_job_alias(&job_id, alias)
+        {
             Ok(()) => output.line_stderr(format!(
                 "[thread] background shell job {job_id} aliased as {alias}"
             ))?,
@@ -186,7 +225,7 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps unalias <name>")?;
             return Ok(true);
         };
-        match state.background_shells.clear_job_alias(alias) {
+        match state.orchestration.background_shells.clear_job_alias(alias) {
             Ok(job_id) => output.line_stderr(format!(
                 "[thread] removed alias {alias} from background shell job {job_id}"
             ))?,
@@ -197,14 +236,22 @@ pub(crate) fn handle_ps_command(
             output.line_stderr("[session] usage: :ps terminate <jobId|alias|n>")?;
             return Ok(true);
         };
-        let job_id = match state.background_shells.resolve_job_reference(reference) {
+        let job_id = match state
+            .orchestration
+            .background_shells
+            .resolve_job_reference(reference)
+        {
             Ok(job_id) => job_id,
             Err(err) => {
                 output.line_stderr(format!("[session] {err}"))?;
                 return Ok(true);
             }
         };
-        match state.background_shells.terminate_job_for_operator(&job_id) {
+        match state
+            .orchestration
+            .background_shells
+            .terminate_job_for_operator(&job_id)
+        {
             Ok(()) => output.line_stderr(format!(
                 "[thread] terminated local background shell job {job_id}"
             ))?,
@@ -332,11 +379,16 @@ pub(crate) fn execute_clean_target(
     writer: &mut ChildStdin,
 ) -> Result<()> {
     let cleaned_local = match target {
-        CleanTarget::All | CleanTarget::Shells => state.background_shells.terminate_all_running(),
+        CleanTarget::All | CleanTarget::Shells => state
+            .orchestration
+            .background_shells
+            .terminate_all_running(),
         CleanTarget::Blockers => state
+            .orchestration
             .background_shells
             .terminate_running_by_intent(BackgroundShellIntent::Prerequisite),
         CleanTarget::Services => state
+            .orchestration
             .background_shells
             .terminate_running_by_intent(BackgroundShellIntent::Service),
         CleanTarget::Terminals => 0,
@@ -370,7 +422,7 @@ pub(crate) fn execute_clean_target(
             }
         }
         CleanTarget::Blockers => {
-            if !state.live_agent_tasks.is_empty() {
+            if !state.orchestration.live_agent_tasks.is_empty() {
                 output.line_stderr(
                     "[thread] active agent waits are visible in /ps blockers but are not terminable from the wrapper",
                 )?;

@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::ops::Deref;
+use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -46,6 +48,22 @@ pub(crate) enum PendingSelection {
     Theme,
 }
 
+#[derive(Default)]
+pub(crate) struct OrchestrationState {
+    pub(crate) background_terminals: HashMap<String, BackgroundTerminalSummary>,
+    pub(crate) background_shells: BackgroundShellManager,
+    pub(crate) cached_agent_threads: Vec<CachedAgentThreadSummary>,
+    pub(crate) live_agent_tasks: HashMap<String, LiveAgentTaskSummary>,
+}
+
+impl OrchestrationState {
+    fn reset_thread_context(&mut self) {
+        self.background_terminals.clear();
+        self.cached_agent_threads.clear();
+        self.live_agent_tasks.clear();
+    }
+}
+
 pub(crate) struct AppState {
     pub(crate) thread_id: Option<String>,
     pub(crate) active_turn_id: Option<String>,
@@ -73,8 +91,7 @@ pub(crate) struct AppState {
     pub(crate) file_output_buffers: HashMap<String, String>,
     pub(crate) process_output_buffers: HashMap<String, ProcessOutputBuffer>,
     pub(crate) active_command_items: HashMap<String, String>,
-    pub(crate) background_terminals: HashMap<String, BackgroundTerminalSummary>,
-    pub(crate) background_shells: BackgroundShellManager,
+    pub(crate) orchestration: OrchestrationState,
     pub(crate) pending_local_images: Vec<String>,
     pub(crate) pending_remote_images: Vec<String>,
     pub(crate) active_personality: Option<String>,
@@ -85,8 +102,6 @@ pub(crate) struct AppState {
     pub(crate) collaboration_modes: Vec<CollaborationModePreset>,
     pub(crate) active_collaboration_mode: Option<CollaborationModePreset>,
     pub(crate) last_listed_thread_ids: Vec<String>,
-    pub(crate) cached_agent_threads: Vec<CachedAgentThreadSummary>,
-    pub(crate) live_agent_tasks: HashMap<String, LiveAgentTaskSummary>,
     pub(crate) last_file_search_paths: Vec<String>,
     pub(crate) last_status_line: Option<String>,
     pub(crate) codex_home_override: Option<PathBuf>,
@@ -127,8 +142,7 @@ impl AppState {
             file_output_buffers: HashMap::new(),
             process_output_buffers: HashMap::new(),
             active_command_items: HashMap::new(),
-            background_terminals: HashMap::new(),
-            background_shells: BackgroundShellManager::default(),
+            orchestration: OrchestrationState::default(),
             pending_local_images: Vec::new(),
             pending_remote_images: Vec::new(),
             active_personality: None,
@@ -139,8 +153,6 @@ impl AppState {
             collaboration_modes: Vec::new(),
             active_collaboration_mode: None,
             last_listed_thread_ids: Vec::new(),
-            cached_agent_threads: Vec::new(),
-            live_agent_tasks: HashMap::new(),
             last_file_search_paths: Vec::new(),
             last_status_line: None,
             codex_home_override: None,
@@ -170,7 +182,7 @@ impl AppState {
     pub(crate) fn reset_thread_context(&mut self) {
         self.reset_turn_stream_state();
         self.process_output_buffers.clear();
-        self.background_terminals.clear();
+        self.orchestration.reset_thread_context();
         self.active_turn_id = None;
         self.active_exec_process_id = None;
         self.current_rollout_path = None;
@@ -187,8 +199,6 @@ impl AppState {
         self.objective = None;
         self.last_token_usage = None;
         self.active_collaboration_mode = None;
-        self.cached_agent_threads.clear();
-        self.live_agent_tasks.clear();
         self.pending_selection = None;
     }
 
@@ -202,5 +212,19 @@ impl AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self::new(true, false)
+    }
+}
+
+impl Deref for AppState {
+    type Target = OrchestrationState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.orchestration
+    }
+}
+
+impl DerefMut for AppState {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.orchestration
     }
 }

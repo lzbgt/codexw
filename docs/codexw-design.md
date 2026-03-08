@@ -302,15 +302,14 @@ The current `codexw` implementation now reflects that model partially:
   - filtered `/ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
 - `/status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
 
-The next architectural step, if deeper orchestration is needed, is a unified worker/task registry that gives the wrapper one internal model for:
+That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `/multi-agents`, `/ps`, ready status, and transcript summaries all read from that same model.
+`codexw` also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.
 
-- main-agent work
-- sub-agent thread lifecycle and collab call state
-- background shell lifecycle
-- dependency and wait state
+The next architectural step, if deeper orchestration is needed, is not basic state unification anymore. It is richer policy and scheduling on top of the unified state, for example:
 
-That registry would let `/multi-agents`, `/ps`, ready status, and transcript summaries read from one orchestration state model rather than several feature-specific trackers.
-`codexw` now also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.
+- explicit task identities above raw live worker items
+- durable dependency intent between future work and running shells/services
+- reusable orchestration policies for when the main agent should wait, delegate, or attach
 
 Two design choices matter here:
 

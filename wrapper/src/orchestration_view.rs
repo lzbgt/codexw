@@ -48,9 +48,9 @@ pub(crate) struct OrchestrationSnapshot {
 pub(crate) fn orchestration_snapshot(state: &AppState) -> OrchestrationSnapshot {
     OrchestrationSnapshot {
         main_agents: 1,
-        cached_agent_threads: state.cached_agent_threads.clone(),
+        cached_agent_threads: state.orchestration.cached_agent_threads.clone(),
         live_agent_tasks: live_agent_tasks(state),
-        background_shell_jobs: state.background_shells.job_count(),
+        background_shell_jobs: state.orchestration.background_shells.job_count(),
         thread_background_terminals: server_background_terminal_count(state),
     }
 }
@@ -239,19 +239,23 @@ pub(crate) fn render_orchestration_workers_with_filter(
         }
     }
     if matches!(filter, WorkerFilter::All | WorkerFilter::Agents)
-        && !state.cached_agent_threads.is_empty()
+        && !state.orchestration.cached_agent_threads.is_empty()
     {
         push_section_gap(&mut lines);
         lines.extend(render_cached_agent_threads_section(
-            &state.cached_agent_threads,
+            &state.orchestration.cached_agent_threads,
         ));
     }
     let shell_lines = match filter {
-        WorkerFilter::All | WorkerFilter::Shells => state.background_shells.render_for_ps(),
+        WorkerFilter::All | WorkerFilter::Shells => {
+            state.orchestration.background_shells.render_for_ps()
+        }
         WorkerFilter::Services => state
+            .orchestration
             .background_shells
             .render_for_ps_filtered(Some(BackgroundShellIntent::Service)),
         WorkerFilter::Blockers => state
+            .orchestration
             .background_shells
             .render_for_ps_filtered(Some(BackgroundShellIntent::Prerequisite)),
         _ => None,
@@ -273,7 +277,12 @@ pub(crate) fn render_orchestration_workers_with_filter(
 }
 
 fn live_agent_tasks(state: &AppState) -> Vec<LiveAgentTaskSummary> {
-    let mut tasks = state.live_agent_tasks.values().cloned().collect::<Vec<_>>();
+    let mut tasks = state
+        .orchestration
+        .live_agent_tasks
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
     tasks.sort_by(|left, right| left.id.cmp(&right.id));
     tasks
 }

@@ -32,6 +32,7 @@ pub(crate) struct OrchestrationDependencyEdge {
 
 pub(crate) fn active_wait_task_count(state: &AppState) -> usize {
     state
+        .orchestration
         .live_agent_tasks
         .values()
         .filter(|task| is_active_wait_task(task))
@@ -40,6 +41,7 @@ pub(crate) fn active_wait_task_count(state: &AppState) -> usize {
 
 pub(crate) fn active_sidecar_agent_task_count(state: &AppState) -> usize {
     state
+        .orchestration
         .live_agent_tasks
         .values()
         .filter(|task| task_role(task) == "sidecar")
@@ -98,6 +100,7 @@ pub(crate) fn wait_dependency_summary(state: &AppState) -> Option<String> {
 
 pub(crate) fn wait_dependency_threads(state: &AppState) -> Vec<String> {
     let mut threads = state
+        .orchestration
         .live_agent_tasks
         .values()
         .filter(|task| is_active_wait_task(task))
@@ -126,7 +129,7 @@ pub(crate) fn task_role(task: &LiveAgentTaskSummary) -> &'static str {
 pub(crate) fn orchestration_dependency_edges(state: &AppState) -> Vec<OrchestrationDependencyEdge> {
     let mut seen = BTreeSet::new();
     let mut edges = Vec::new();
-    for task in state.live_agent_tasks.values() {
+    for task in state.orchestration.live_agent_tasks.values() {
         match task_role(task) {
             "blocked" | "sidecar" => {
                 for receiver in &task.receiver_thread_ids {
@@ -183,7 +186,10 @@ pub(crate) fn track_collab_agent_task_started(state: &mut AppState, item: &Value
         return;
     };
     merge_cached_agent_threads(state, &task, item);
-    state.live_agent_tasks.insert(task.id.clone(), task);
+    state
+        .orchestration
+        .live_agent_tasks
+        .insert(task.id.clone(), task);
 }
 
 pub(crate) fn track_collab_agent_task_completed(state: &mut AppState, item: &Value) {
@@ -191,7 +197,7 @@ pub(crate) fn track_collab_agent_task_completed(state: &mut AppState, item: &Val
         return;
     };
     merge_cached_agent_threads(state, &task, item);
-    state.live_agent_tasks.remove(&task.id);
+    state.orchestration.live_agent_tasks.remove(&task.id);
 }
 
 fn parse_live_agent_task(item: &Value) -> Option<LiveAgentTaskSummary> {
@@ -228,6 +234,7 @@ fn parse_live_agent_task(item: &Value) -> Option<LiveAgentTaskSummary> {
 
 fn running_background_shells(state: &AppState) -> Vec<BackgroundShellJobSnapshot> {
     state
+        .orchestration
         .background_shells
         .snapshots()
         .into_iter()
@@ -252,7 +259,10 @@ pub(crate) fn running_shell_count_by_intent(
     state: &AppState,
     intent: BackgroundShellIntent,
 ) -> usize {
-    state.background_shells.running_count_by_intent(intent)
+    state
+        .orchestration
+        .background_shells
+        .running_count_by_intent(intent)
 }
 
 pub(crate) fn running_service_count_by_readiness(
@@ -260,17 +270,19 @@ pub(crate) fn running_service_count_by_readiness(
     readiness: BackgroundShellServiceReadiness,
 ) -> usize {
     state
+        .orchestration
         .background_shells
         .running_service_count_by_readiness(readiness)
 }
 
 fn known_agent_thread_ids(state: &AppState) -> BTreeSet<String> {
     let mut ids = state
+        .orchestration
         .cached_agent_threads
         .iter()
         .map(|thread| thread.id.clone())
         .collect::<BTreeSet<_>>();
-    for task in state.live_agent_tasks.values() {
+    for task in state.orchestration.live_agent_tasks.values() {
         ids.extend(task.receiver_thread_ids.iter().cloned());
     }
     ids
@@ -310,7 +322,7 @@ fn merge_cached_agent_threads(state: &mut AppState, task: &LiveAgentTaskSummary,
             .or_else(|| task.prompt.clone())
             .unwrap_or_else(|| "-".to_string());
         upsert_cached_agent_thread(
-            &mut state.cached_agent_threads,
+            &mut state.orchestration.cached_agent_threads,
             CachedAgentThreadSummary {
                 id: thread_id.clone(),
                 status,

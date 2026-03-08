@@ -42,7 +42,7 @@ pub(crate) fn handle_threads_listed(
     state.last_listed_thread_ids = extracted.clone();
     if matches!(view, ThreadListView::Agents) {
         let _ = extracted;
-        state.cached_agent_threads = extract_agent_thread_summaries(result);
+        state.orchestration.cached_agent_threads = extract_agent_thread_summaries(result);
     }
     let title = match view {
         ThreadListView::Threads => "Threads",

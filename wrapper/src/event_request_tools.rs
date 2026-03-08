@@ -54,8 +54,11 @@ pub(crate) fn handle_tool_request(
             Ok(true)
         }
         "item/tool/call" => {
-            let result =
-                execute_dynamic_tool_call(&request.params, resolved_cwd, &state.background_shells);
+            let result = execute_dynamic_tool_call(
+                &request.params,
+                resolved_cwd,
+                &state.orchestration.background_shells,
+            );
             let success = result
                 .get("success")
                 .and_then(serde_json::Value::as_bool)
