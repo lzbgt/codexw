@@ -570,6 +570,8 @@ fn new_thread_requests_advertise_client_dynamic_tools() {
     assert_eq!(
         names,
         vec![
+            "orchestration_status",
+            "orchestration_list_workers",
             "workspace_list_dir",
             "workspace_stat_path",
             "workspace_read_file",

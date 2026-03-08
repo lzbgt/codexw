@@ -5,8 +5,16 @@ use std::path::PathBuf;
 use serde_json::Value;
 use serde_json::json;
 
+#[cfg(test)]
 use crate::background_shells::BackgroundShellManager;
 use crate::background_shells::BackgroundShellOrigin;
+use crate::orchestration_view::WorkerFilter;
+use crate::orchestration_view::orchestration_guidance_summary;
+use crate::orchestration_view::orchestration_overview_summary;
+use crate::orchestration_view::orchestration_runtime_summary;
+use crate::orchestration_view::render_orchestration_workers;
+use crate::orchestration_view::render_orchestration_workers_with_filter;
+use crate::state::AppState;
 
 const MAX_FILE_BYTES: u64 = 256 * 1024;
 const DEFAULT_LIMIT: usize = 20;
@@ -15,6 +23,27 @@ const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", ".next", "dist", 
 
 pub(crate) fn dynamic_tool_specs() -> Value {
     Value::Array(vec![
+        json!({
+            "name": "orchestration_status",
+            "description": "Summarize the current orchestration state, including worker counts, dependency health, and the highest-priority next action when one exists.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
+        }),
+        json!({
+            "name": "orchestration_list_workers",
+            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, agents, shells, services, capabilities, terminals, or guidance.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "filter": {
+                        "type": "string",
+                        "enum": ["all", "blockers", "agents", "shells", "services", "capabilities", "terminals", "guidance"]
+                    }
+                }
+            }
+        }),
         json!({
             "name": "workspace_list_dir",
             "description": "List files and directories under a workspace directory. Defaults to the workspace root.",
@@ -272,10 +301,21 @@ pub(crate) fn dynamic_tool_specs() -> Value {
     ])
 }
 
+#[cfg(test)]
 pub(crate) fn execute_dynamic_tool_call(
     params: &Value,
     resolved_cwd: &str,
     background_shells: &BackgroundShellManager,
+) -> Value {
+    let mut state = AppState::new(true, false);
+    state.orchestration.background_shells = background_shells.clone();
+    execute_dynamic_tool_call_with_state(params, resolved_cwd, &state)
+}
+
+pub(crate) fn execute_dynamic_tool_call_with_state(
+    params: &Value,
+    resolved_cwd: &str,
+    state: &AppState,
 ) -> Value {
     let tool = params
         .get("tool")
@@ -283,29 +323,50 @@ pub(crate) fn execute_dynamic_tool_call(
         .unwrap_or("dynamic tool");
     let arguments = params.get("arguments").unwrap_or(&Value::Null);
     let result = match tool {
+        "orchestration_status" => Ok(render_orchestration_status_for_tool(state)),
+        "orchestration_list_workers" => render_orchestration_workers_for_tool(arguments, state),
         "workspace_list_dir" => workspace_list_dir(arguments, resolved_cwd),
         "workspace_stat_path" => workspace_stat_path(arguments, resolved_cwd),
         "workspace_read_file" => workspace_read_file(arguments, resolved_cwd),
         "workspace_find_files" => workspace_find_files(arguments, resolved_cwd),
         "workspace_search_text" => workspace_search_text(arguments, resolved_cwd),
-        "background_shell_start" => background_shells.start_from_tool_with_context(
-            arguments,
-            resolved_cwd,
-            dynamic_tool_origin(params),
-        ),
-        "background_shell_poll" => background_shells.poll_from_tool(arguments),
-        "background_shell_send" => background_shells.send_input_from_tool(arguments),
-        "background_shell_list_capabilities" => {
-            background_shells.list_capabilities_from_tool(arguments)
-        }
-        "background_shell_inspect_capability" => {
-            background_shells.inspect_capability_from_tool(arguments)
-        }
-        "background_shell_attach" => background_shells.attach_from_tool(arguments),
-        "background_shell_wait_ready" => background_shells.wait_ready_from_tool(arguments),
-        "background_shell_invoke_recipe" => background_shells.invoke_recipe_from_tool(arguments),
-        "background_shell_list" => Ok(background_shells.list_from_tool()),
-        "background_shell_terminate" => background_shells.terminate_from_tool(arguments),
+        "background_shell_start" => state
+            .orchestration
+            .background_shells
+            .start_from_tool_with_context(arguments, resolved_cwd, dynamic_tool_origin(params)),
+        "background_shell_poll" => state
+            .orchestration
+            .background_shells
+            .poll_from_tool(arguments),
+        "background_shell_send" => state
+            .orchestration
+            .background_shells
+            .send_input_from_tool(arguments),
+        "background_shell_list_capabilities" => state
+            .orchestration
+            .background_shells
+            .list_capabilities_from_tool(arguments),
+        "background_shell_inspect_capability" => state
+            .orchestration
+            .background_shells
+            .inspect_capability_from_tool(arguments),
+        "background_shell_attach" => state
+            .orchestration
+            .background_shells
+            .attach_from_tool(arguments),
+        "background_shell_wait_ready" => state
+            .orchestration
+            .background_shells
+            .wait_ready_from_tool(arguments),
+        "background_shell_invoke_recipe" => state
+            .orchestration
+            .background_shells
+            .invoke_recipe_from_tool(arguments),
+        "background_shell_list" => Ok(state.orchestration.background_shells.list_from_tool()),
+        "background_shell_terminate" => state
+            .orchestration
+            .background_shells
+            .terminate_from_tool(arguments),
         _ => Err(format!("unsupported client dynamic tool `{tool}`")),
     };
 
@@ -318,6 +379,53 @@ pub(crate) fn execute_dynamic_tool_call(
             "contentItems": [{"type": "inputText", "text": err}],
             "success": false
         }),
+    }
+}
+
+fn render_orchestration_status_for_tool(state: &AppState) -> String {
+    let mut lines = vec![format!(
+        "orchestration   {}",
+        orchestration_overview_summary(state)
+    )];
+    if let Some(runtime) = orchestration_runtime_summary(state) {
+        lines.push(format!("runtime         {runtime}"));
+    }
+    if let Some(guidance) = orchestration_guidance_summary(state) {
+        lines.push(format!("next action     {guidance}"));
+    }
+    lines.join("\n")
+}
+
+fn render_orchestration_workers_for_tool(
+    arguments: &Value,
+    state: &AppState,
+) -> Result<String, String> {
+    let object = arguments.as_object();
+    let filter = parse_worker_filter_for_tool(
+        object
+            .and_then(|object| object.get("filter"))
+            .and_then(Value::as_str),
+    )?;
+    Ok(if matches!(filter, WorkerFilter::All) {
+        render_orchestration_workers(state)
+    } else {
+        render_orchestration_workers_with_filter(state, filter)
+    })
+}
+
+fn parse_worker_filter_for_tool(raw: Option<&str>) -> Result<WorkerFilter, String> {
+    match raw.unwrap_or("all") {
+        "all" => Ok(WorkerFilter::All),
+        "blockers" | "blocking" | "prereqs" => Ok(WorkerFilter::Blockers),
+        "agents" => Ok(WorkerFilter::Agents),
+        "shells" => Ok(WorkerFilter::Shells),
+        "services" => Ok(WorkerFilter::Services),
+        "capabilities" | "caps" | "cap" => Ok(WorkerFilter::Capabilities),
+        "terminals" => Ok(WorkerFilter::Terminals),
+        "guidance" | "guide" | "next" => Ok(WorkerFilter::Guidance),
+        other => Err(format!(
+            "orchestration_list_workers `filter` must be one of `all`, `blockers`, `agents`, `shells`, `services`, `capabilities`, `terminals`, or `guidance`, got `{other}`"
+        )),
     }
 }
 
@@ -655,7 +763,9 @@ fn extract_limit(limit: Option<&Value>) -> usize {
 mod tests {
     use super::dynamic_tool_specs;
     use super::execute_dynamic_tool_call;
+    use super::execute_dynamic_tool_call_with_state;
     use crate::background_shells::BackgroundShellManager;
+    use crate::state::AppState;
     use serde_json::json;
 
     #[test]
@@ -670,6 +780,8 @@ mod tests {
         assert_eq!(
             names,
             vec![
+                "orchestration_status",
+                "orchestration_list_workers",
                 "workspace_list_dir",
                 "workspace_stat_path",
                 "workspace_read_file",
@@ -686,6 +798,120 @@ mod tests {
                 "background_shell_list",
                 "background_shell_terminate"
             ]
+        );
+    }
+
+    #[test]
+    fn orchestration_status_reports_worker_and_guidance_summary() {
+        let mut state = AppState::new(true, false);
+        state
+            .orchestration
+            .background_shells
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start dependent shell");
+
+        let result = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_status"
+            }),
+            "/tmp",
+            &state,
+        );
+
+        assert_eq!(result["success"], true);
+        let rendered = result["contentItems"][0]["text"]
+            .as_str()
+            .expect("status text");
+        assert!(rendered.contains("orchestration   main=1"));
+        assert!(rendered.contains("cap_deps_missing=1"));
+        assert!(rendered.contains("next action"));
+        assert!(rendered.contains("missing service capability @api.http"));
+        let _ = state
+            .orchestration
+            .background_shells
+            .terminate_all_running();
+    }
+
+    #[test]
+    fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() {
+        let mut state = AppState::new(true, false);
+        state
+            .orchestration
+            .background_shells
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start dependent shell");
+
+        let caps = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_list_workers",
+                "arguments": {
+                    "filter": "capabilities"
+                }
+            }),
+            "/tmp",
+            &state,
+        );
+        assert_eq!(caps["success"], true);
+        let caps_text = caps["contentItems"][0]["text"]
+            .as_str()
+            .expect("capabilities text");
+        assert!(caps_text.contains("Service capability index:"));
+        assert!(caps_text.contains("@api.http -> <missing provider> [missing]"));
+
+        let guidance = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_list_workers",
+                "arguments": {
+                    "filter": "guidance"
+                }
+            }),
+            "/tmp",
+            &state,
+        );
+        assert_eq!(guidance["success"], true);
+        let guidance_text = guidance["contentItems"][0]["text"]
+            .as_str()
+            .expect("guidance text");
+        assert!(guidance_text.contains("missing service capability @api.http"));
+        let _ = state
+            .orchestration
+            .background_shells
+            .terminate_all_running();
+    }
+
+    #[test]
+    fn orchestration_list_workers_rejects_unknown_filters() {
+        let state = AppState::new(true, false);
+        let result = execute_dynamic_tool_call_with_state(
+            &json!({
+                "tool": "orchestration_list_workers",
+                "arguments": {
+                    "filter": "weird"
+                }
+            }),
+            "/tmp",
+            &state,
+        );
+        assert_eq!(result["success"], false);
+        assert!(
+            result["contentItems"][0]["text"]
+                .as_str()
+                .expect("error")
+                .contains("orchestration_list_workers `filter`")
         );
     }
 

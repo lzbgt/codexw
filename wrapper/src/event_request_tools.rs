@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::process::ChildStdin;
 
-use crate::client_dynamic_tools::execute_dynamic_tool_call;
+use crate::client_dynamic_tools::execute_dynamic_tool_call_with_state;
 use crate::output::Output;
 use crate::requests::send_json;
 use crate::rpc::OutgoingResponse;
@@ -54,11 +54,7 @@ pub(crate) fn handle_tool_request(
             Ok(true)
         }
         "item/tool/call" => {
-            let result = execute_dynamic_tool_call(
-                &request.params,
-                resolved_cwd,
-                &state.orchestration.background_shells,
-            );
+            let result = execute_dynamic_tool_call_with_state(&request.params, resolved_cwd, state);
             let success = result
                 .get("success")
                 .and_then(serde_json::Value::as_bool)
