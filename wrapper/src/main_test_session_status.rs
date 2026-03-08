@@ -476,7 +476,7 @@ fn status_overview_reports_orchestration_breakdown() {
 
     let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
     assert!(rendered.contains(
-        "orchestration   main=1 deps_blocking=0 deps_sidecar=2 waits=0 sidecar_agents=1 exec_prereqs=0 exec_sidecars=1 exec_services=0 services_ready=0 services_booting=0 services_untracked=0 service_caps=0 service_cap_conflicts=0 agents_live=1 agents_cached=2"
+        "orchestration   main=1 deps_blocking=0 deps_sidecar=2 waits=0 sidecar_agents=1 exec_prereqs=0 exec_sidecars=1 exec_services=0 services_ready=0 services_booting=0 services_untracked=0 service_caps=0 service_cap_conflicts=0 cap_deps_missing=0 cap_deps_booting=0 cap_deps_ambiguous=0 agents_live=1 agents_cached=2"
     ));
     assert!(rendered.contains("active=1"));
     assert!(rendered.contains("idle=1"));
@@ -522,7 +522,7 @@ fn status_runtime_reports_background_classes() {
     let rendered = render_status_runtime(&cli, &state).join("\n");
     assert!(rendered.contains("background      4"));
     assert!(rendered.contains(
-        "background cls  prereqs=1 shell_sidecars=1 services=1 services_ready=0 services_booting=0 services_untracked=1 terminals=1"
+        "background cls  prereqs=1 shell_sidecars=1 services=1 services_ready=0 services_booting=0 services_untracked=1 cap_deps_missing=0 cap_deps_booting=0 cap_deps_ambiguous=0 terminals=1"
     ));
     assert!(rendered.contains("next action     Main agent is blocked on 1 prerequisite shell."));
     let _ = state.background_shells.terminate_all_running();
@@ -852,6 +852,56 @@ fn ps_command_can_render_service_capability_index() {
     assert!(joined.contains("Service capability index:"));
     assert!(joined.contains("@api.http -> bg-1"));
     assert!(joined.contains("@frontend.dev -> bg-1"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_command_can_render_single_service_capability_detail() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "dependsOnCapabilities": ["api.http"],
+            }),
+            "/tmp",
+        )
+        .expect("start dependent shell");
+
+    handle_ps_command(
+        "capabilities @api.http",
+        &["capabilities", "@api.http"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render capability detail");
+
+    let rendered = state
+        .background_shells
+        .render_single_service_capability_for_ps("@api.http")
+        .expect("capability detail")
+        .join("\n");
+    assert!(rendered.contains("Service capability: @api.http"));
+    assert!(rendered.contains("Providers: bg-1"));
+    assert!(rendered.contains("bg-2  [satisfied]  blocking=yes"));
     let _ = state.background_shells.terminate_all_running();
 }
 

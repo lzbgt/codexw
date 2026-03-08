@@ -242,6 +242,7 @@ impl BackgroundShellCapabilityDependencyState {
 pub(crate) struct BackgroundShellCapabilityDependencySummary {
     pub(crate) job_id: String,
     pub(crate) job_alias: Option<String>,
+    pub(crate) job_label: Option<String>,
     pub(crate) capability: String,
     pub(crate) blocking: bool,
     pub(crate) status: BackgroundShellCapabilityDependencyState,
@@ -969,6 +970,7 @@ impl BackgroundShellManager {
                 summaries.push(BackgroundShellCapabilityDependencySummary {
                     job_id: snapshot.id.clone(),
                     job_alias: snapshot.alias.clone(),
+                    job_label: snapshot.label.clone(),
                     capability: capability.clone(),
                     blocking: snapshot.intent.is_blocking(),
                     status,
@@ -999,6 +1001,16 @@ impl BackgroundShellManager {
                     )
             })
             .collect()
+    }
+
+    pub(crate) fn capability_dependency_count_by_state(
+        &self,
+        status: BackgroundShellCapabilityDependencyState,
+    ) -> usize {
+        self.capability_dependency_summaries()
+            .into_iter()
+            .filter(|summary| summary.status == status)
+            .count()
     }
 
     pub(crate) fn service_capability_conflict_count(&self) -> usize {
@@ -1155,11 +1167,7 @@ impl BackgroundShellManager {
         let capability_index = self.service_capability_index();
         let mut consumer_index = BTreeMap::<String, Vec<String>>::new();
         for dependency in self.capability_dependency_summaries() {
-            let consumer = dependency
-                .job_alias
-                .as_deref()
-                .map(|alias| format!("{} ({alias})", dependency.job_id))
-                .unwrap_or_else(|| dependency.job_id.clone());
+            let consumer = dependency_consumer_display(&dependency);
             consumer_index
                 .entry(dependency.capability)
                 .or_default()
@@ -1201,6 +1209,55 @@ impl BackgroundShellManager {
                 .to_string(),
         );
         Some(lines)
+    }
+
+    pub(crate) fn render_single_service_capability_for_ps(
+        &self,
+        capability_ref: &str,
+    ) -> Result<Vec<String>, String> {
+        let capability = if let Some(raw) = capability_ref.strip_prefix('@') {
+            validate_service_capability(raw)?
+        } else {
+            validate_service_capability(capability_ref)?
+        };
+        let provider_entry = self
+            .service_capability_index()
+            .into_iter()
+            .find(|(entry, _)| entry == &capability);
+        let consumers = self
+            .capability_dependency_summaries()
+            .into_iter()
+            .filter(|summary| summary.capability == capability)
+            .collect::<Vec<_>>();
+        if provider_entry.is_none() && consumers.is_empty() {
+            return Err(format!("unknown service capability `@{capability}`"));
+        }
+        let providers = provider_entry.map(|(_, jobs)| jobs).unwrap_or_default();
+        let mut lines = vec![format!("Service capability: @{capability}")];
+        if providers.is_empty() {
+            lines.push("Providers: <missing provider>".to_string());
+        } else {
+            lines.push(format!("Providers: {}", providers.join(", ")));
+            if providers.len() > 1 {
+                lines.push("Conflict: ambiguous capability provider set".to_string());
+            }
+        }
+        if consumers.is_empty() {
+            lines.push("Consumers: none".to_string());
+        } else {
+            lines.push("Consumers:".to_string());
+            for (index, consumer) in consumers.iter().enumerate() {
+                let job_ref = dependency_consumer_display(consumer);
+                lines.push(format!(
+                    "{:>2}. {}  [{}]  blocking={}",
+                    index + 1,
+                    job_ref,
+                    consumer.status.as_str(),
+                    if consumer.blocking { "yes" } else { "no" }
+                ));
+            }
+        }
+        Ok(lines)
     }
 
     fn lookup_job(&self, job_id: &str) -> Result<Arc<Mutex<BackgroundShellJobState>>, String> {
@@ -1637,6 +1694,16 @@ impl BackgroundShellManager {
                 READY_WAIT_POLL_INTERVAL_MS.min(remaining_ms.max(1)),
             ));
         }
+    }
+}
+
+fn dependency_consumer_display(summary: &BackgroundShellCapabilityDependencySummary) -> String {
+    if let Some(alias) = summary.job_alias.as_deref() {
+        format!("{} ({alias})", summary.job_id)
+    } else if let Some(label) = summary.job_label.as_deref() {
+        format!("{} ({label})", summary.job_id)
+    } else {
+        summary.job_id.clone()
     }
 }
 

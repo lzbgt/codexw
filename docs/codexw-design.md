@@ -222,6 +222,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps shells` for wrapper-owned local shell jobs only
   - `:ps services` for reusable service shells only
   - `:ps capabilities` for the live capability-to-service index across reusable service shells
+    - `:ps capabilities @api.http` drills into one capability directly and shows providers plus current consumers
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
   - `:ps attach <jobId|alias|@capability|n>` renders the structured attachment metadata for one service shell job
@@ -309,6 +310,7 @@ The current `codexw` implementation now reflects that model partially:
   - filtered `/ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
   - `/ps guidance` now uses the same graph to emit a highest-priority next-step hint instead of only another raw worker listing
 - `/status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
+- that compact summary now also carries capability-dependency issue counts (`cap_deps_missing`, `cap_deps_booting`, `cap_deps_ambiguous`), so durable service dependency health is visible without opening the detailed capability registry
 - `/status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives operator guidance as well as raw counts and dependency edges
 
 That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `/multi-agents`, `/ps`, ready status, and transcript summaries all read from that same model.

@@ -65,12 +65,24 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         .orchestration
         .background_shells
         .service_capability_conflict_count();
+    let cap_deps_missing = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Missing);
+    let cap_deps_booting = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Booting);
+    let cap_deps_ambiguous = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Ambiguous);
     let service_caps = state
         .orchestration
         .background_shells
         .unique_service_capability_count();
     format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} cap_deps_missing={} cap_deps_booting={} cap_deps_ambiguous={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -84,6 +96,9 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
         service_caps,
         service_cap_conflicts,
+        cap_deps_missing,
+        cap_deps_booting,
+        cap_deps_ambiguous,
         snapshot.live_agent_tasks.len(),
         snapshot.cached_agent_threads.len(),
         if agent_counts.is_empty() {
@@ -110,12 +125,24 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         .orchestration
         .background_shells
         .service_capability_conflict_count();
+    let cap_deps_missing = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Missing);
+    let cap_deps_booting = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Booting);
+    let cap_deps_ambiguous = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Ambiguous);
     let service_caps = state
         .orchestration
         .background_shells
         .unique_service_capability_count();
     Some(format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} cap_deps_missing={} cap_deps_booting={} cap_deps_ambiguous={} agent_tasks={} shells={} thread_terms={} agents={}{}",
         main_agent_state_label(state),
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -129,6 +156,9 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
         service_caps,
         service_cap_conflicts,
+        cap_deps_missing,
+        cap_deps_booting,
+        cap_deps_ambiguous,
         snapshot.live_agent_tasks.len(),
         snapshot.background_shell_jobs,
         snapshot.thread_background_terminals,
@@ -160,6 +190,18 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
         .orchestration
         .background_shells
         .unique_service_capability_count();
+    let cap_deps_missing = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Missing);
+    let cap_deps_booting = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Booting);
+    let cap_deps_ambiguous = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Ambiguous);
     let terminals = server_background_terminal_count(state);
     if waits == 0
         && prereqs == 0
@@ -167,6 +209,9 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
         && services_ready == 0
         && services_booting == 0
         && services_untracked == 0
+        && cap_deps_missing == 0
+        && cap_deps_booting == 0
+        && cap_deps_ambiguous == 0
         && terminals == 0
     {
         return None;
@@ -219,6 +264,15 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
             pluralize(service_caps, "service capability", "service capabilities")
         ));
     }
+    if cap_deps_missing > 0 {
+        parts.push(format!("{} missing deps", cap_deps_missing));
+    }
+    if cap_deps_booting > 0 {
+        parts.push(format!("{} booting deps", cap_deps_booting));
+    }
+    if cap_deps_ambiguous > 0 {
+        parts.push(format!("{} ambiguous deps", cap_deps_ambiguous));
+    }
     if terminals > 0 {
         parts.push(pluralize(terminals, "terminal", "terminals"));
     }
@@ -236,12 +290,31 @@ pub(crate) fn orchestration_background_summary(state: &AppState) -> Option<Strin
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
     let untracked =
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
+    let cap_deps_missing = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Missing);
+    let cap_deps_booting = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Booting);
+    let cap_deps_ambiguous = state
+        .orchestration
+        .background_shells
+        .capability_dependency_count_by_state(BackgroundShellCapabilityDependencyState::Ambiguous);
     let terminals = server_background_terminal_count(state);
-    if prereqs == 0 && sidecars == 0 && services == 0 && terminals == 0 {
+    if prereqs == 0
+        && sidecars == 0
+        && services == 0
+        && cap_deps_missing == 0
+        && cap_deps_booting == 0
+        && cap_deps_ambiguous == 0
+        && terminals == 0
+    {
         None
     } else {
         Some(format!(
-            "prereqs={prereqs} shell_sidecars={sidecars} services={services} services_ready={ready} services_booting={booting} services_untracked={untracked} terminals={terminals}"
+            "prereqs={prereqs} shell_sidecars={sidecars} services={services} services_ready={ready} services_booting={booting} services_untracked={untracked} cap_deps_missing={cap_deps_missing} cap_deps_booting={cap_deps_booting} cap_deps_ambiguous={cap_deps_ambiguous} terminals={terminals}"
         ))
     }
 }

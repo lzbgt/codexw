@@ -395,7 +395,7 @@ fn capability_index_can_render_consumers_of_reusable_services() {
         .expect("render capability index")
         .join("\n");
     assert!(rendered.contains("@api.http -> bg-1"));
-    assert!(rendered.contains("used by bg-2 [satisfied]"));
+    assert!(rendered.contains("used by bg-2 (integration test) [satisfied]"));
     let polled = manager
         .poll_job("bg-2", 0, 20)
         .expect("poll dependent shell");
@@ -423,6 +423,41 @@ fn capability_index_can_render_missing_providers_for_declared_dependencies() {
         .join("\n");
     assert!(rendered.contains("@api.http -> <missing provider>"));
     assert!(rendered.contains("used by bg-1 [missing]"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn single_capability_view_renders_providers_and_consumers() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start provider");
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "label": "integration test",
+                "dependsOnCapabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start dependent");
+
+    let rendered = manager
+        .render_single_service_capability_for_ps("@api.http")
+        .expect("render capability detail")
+        .join("\n");
+    assert!(rendered.contains("Service capability: @api.http"));
+    assert!(rendered.contains("Providers: bg-1"));
+    assert!(rendered.contains("bg-2 (integration test)  [satisfied]  blocking=yes"));
     let _ = manager.terminate_all_running();
 }
 
