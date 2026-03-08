@@ -934,6 +934,66 @@ fn ps_command_can_alias_and_reuse_background_shell_job_references() {
 }
 
 #[test]
+fn ps_command_can_alias_and_unalias_background_shell_job_by_capability_reference() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "printf 'ready\\n'; sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+                "label": "api"
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+    std::thread::sleep(Duration::from_millis(50));
+
+    handle_ps_command(
+        "alias @api.http dev.api",
+        &["alias", "@api.http", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("alias background shell by capability");
+    assert_eq!(
+        state
+            .background_shells
+            .resolve_job_reference("dev.api")
+            .expect("resolve alias"),
+        "bg-1"
+    );
+
+    handle_ps_command(
+        "unalias @api.http",
+        &["unalias", "@api.http"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("clear alias by capability");
+    assert!(
+        state
+            .background_shells
+            .resolve_job_reference("dev.api")
+            .is_err()
+    );
+    let polled = state
+        .background_shells
+        .poll_job("bg-1", 0, 200)
+        .expect("poll shell directly");
+    assert!(!polled.contains("Alias: dev.api"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
 fn ps_clean_services_can_target_one_capability() {
     let cli = test_cli();
     let mut state = crate::state::AppState::new(true, false);

@@ -293,8 +293,8 @@ The current `codexw` implementation now reflects that model partially:
   - the model-facing dynamic tool layer now also includes live shell metadata mutation, so orchestration can assign or clear stable in-session aliases through `background_shell_set_alias`, replace or clear a service shell's declared `capabilities`, live `label`, or attachment-contract fields such as `protocol`, `endpoint`, `attachHint`, `readyPattern`, and `recipes` through `background_shell_update_service`, and can retarget or clear any running job's declared `dependsOnCapabilities` set through `background_shell_update_dependencies`, instead of forcing a restart when a reusable role, attach contract, or dependency edge needs to change
   - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
 - `/ps` also has in-session attachment naming now:
-  - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
-  - `:ps unalias <name>` removes that alias
+  - `:ps alias <jobId|alias|@capability|n> <name>` assigns a stable alias to one local shell job through the same job-reference syntax used by the other `/ps` control commands
+  - `:ps unalias <name|jobId|alias|@capability|n>` removes that alias either by the alias token itself or by resolving the target job reference directly
   - aliases are session-local, operator-visible in `/ps`, and reusable anywhere the existing `jobId` reference surface is accepted, including poll, send, and terminate flows from both operator commands and dynamic tools
   - this gives long-lived service shells a first-class continuity handle without pretending they are repo-global or backend-native objects
 - cleanup is now scoped along the same control boundary:

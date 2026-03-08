@@ -210,11 +210,11 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Background Shell", &rendered)?;
     } else if matches!(action, Some("alias")) {
         let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps alias <jobId|n> <name>")?;
+            output.line_stderr("[session] usage: :ps alias <jobId|alias|@capability|n> <name>")?;
             return Ok(true);
         };
         let Some(alias) = args.get(2).copied() else {
-            output.line_stderr("[session] usage: :ps alias <jobId|n> <name>")?;
+            output.line_stderr("[session] usage: :ps alias <jobId|alias|@capability|n> <name>")?;
             return Ok(true);
         };
         let job_id = match state
@@ -239,15 +239,40 @@ pub(crate) fn handle_ps_command(
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
     } else if matches!(action, Some("unalias")) {
-        let Some(alias) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps unalias <name>")?;
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps unalias <name|jobId|alias|@capability|n>")?;
             return Ok(true);
         };
-        match state.orchestration.background_shells.clear_job_alias(alias) {
+        match state
+            .orchestration
+            .background_shells
+            .clear_job_alias(reference)
+        {
             Ok(job_id) => output.line_stderr(format!(
-                "[thread] removed alias {alias} from background shell job {job_id}"
+                "[thread] removed alias {reference} from background shell job {job_id}"
             ))?,
-            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+            Err(alias_err) => {
+                match state
+                    .orchestration
+                    .background_shells
+                    .resolve_job_reference(reference)
+                {
+                    Ok(job_id) => {
+                        if let Err(err) = state
+                            .orchestration
+                            .background_shells
+                            .clear_job_alias_for_job(&job_id)
+                        {
+                            output.line_stderr(format!("[session] {err}"))?;
+                        } else {
+                            output.line_stderr(format!(
+                                "[thread] cleared alias for background shell job {job_id}"
+                            ))?;
+                        }
+                    }
+                    Err(_) => output.line_stderr(format!("[session] {alias_err}"))?,
+                }
+            }
         }
     } else if matches!(action, Some("provide")) {
         let Some(reference) = args.get(1).copied() else {
