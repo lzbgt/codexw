@@ -1,5 +1,9 @@
 use unicode_segmentation::UnicodeSegmentation;
 
+pub(crate) use crate::editor_graphemes::grapheme_count;
+pub(crate) use crate::editor_graphemes::grapheme_is_whitespace;
+pub(crate) use crate::editor_graphemes::grapheme_to_byte_index;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EditorEvent {
     Submit(String),
@@ -193,22 +197,4 @@ impl LineEditor {
     fn grapheme_len(&self) -> usize {
         grapheme_count(&self.buffer)
     }
-}
-
-fn grapheme_to_byte_index(text: &str, grapheme_index: usize) -> usize {
-    if grapheme_index == 0 {
-        return 0;
-    }
-    UnicodeSegmentation::grapheme_indices(text, true)
-        .nth(grapheme_index)
-        .map(|(idx, _)| idx)
-        .unwrap_or(text.len())
-}
-
-fn grapheme_count(text: &str) -> usize {
-    UnicodeSegmentation::graphemes(text, true).count()
-}
-
-fn grapheme_is_whitespace(grapheme: &str) -> bool {
-    grapheme.chars().all(char::is_whitespace)
 }

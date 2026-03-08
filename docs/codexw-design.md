@@ -45,7 +45,7 @@ The runtime has thirteen main layers.
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
 
 6. Shared state and text/buffer helpers
-   `state.rs` owns `AppState`, process-output buffering, attachment queues, request bookkeeping, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering.
+   `state.rs`, `state_core.rs`, and `state_helpers.rs` own `AppState`, process-output buffering, attachment queues, request bookkeeping, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering. `state.rs` is the facade over the split core/helper modules.
 
 7. Runtime policy
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
@@ -63,7 +63,7 @@ The runtime has thirteen main layers.
    `catalog_views.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `status_views.rs` and `transcript_views.rs` remain narrow compatibility facades over the split helpers.
 
 12. Human input handling
-   `editor.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, and `dispatch_command_session.rs` are compatibility facades over those splits.
+   `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, and `dispatch_command_session.rs` are compatibility facades over those splits.
 
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
@@ -77,7 +77,7 @@ Status display helpers are split across `status_config.rs`, `status_account.rs`,
 Transcript display helpers are split across `transcript_render.rs` and `transcript_summary.rs`, with `transcript_views.rs` kept as a thin compatibility facade over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
-Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
+Shared state helpers are split across `state_core.rs` and `state_helpers.rs`, with `state.rs` kept as the thin facade over `AppState`, buffer/state types, and common text/path helper functions used across modules.
 Command catalog helpers are split across `commands_entries.rs` and `commands_catalog.rs`: entry data now lives in `commands_entries.rs`, while `commands_catalog.rs` keeps the public entrypoint and stable command-name ordering.
 Command metadata helpers live in `commands_metadata.rs`: command descriptions and help-line generation over the shared command catalog.
 Command completion helpers live in `commands_completion.rs` and `commands_match.rs`: slash completion rendering stays in the facade while cursor parsing, fuzzy scoring, and prefix logic live in the extracted matcher module.
@@ -497,6 +497,14 @@ The biggest known limits are architectural, not accidental.
   Prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion helpers.
 - `wrapper/src/editor.rs`
   Inline line editor and editing semantics.
+- `wrapper/src/editor_graphemes.rs`
+  Grapheme-aware byte-index, counting, and whitespace helpers used by the editor.
+- `wrapper/src/state.rs`
+  Compatibility facade for the split shared-state layer.
+- `wrapper/src/state_core.rs`
+  `AppState`, process-output buffer types, and core state mutation methods.
+- `wrapper/src/state_helpers.rs`
+  Shared state/text/buffer helper functions such as `thread_id`, `get_string`, delta buffering, status dedupe, and path canonicalization.
 - `wrapper/src/editor_tests.rs`
   Crate-level regression tests for the inline editor.
 - `wrapper/src/output.rs`
