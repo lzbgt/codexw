@@ -277,6 +277,21 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             }
         }),
         json!({
+            "name": "background_shell_update_service",
+            "description": "Update mutable metadata for a running service background shell job by jobId, alias, or @capability. Currently supports replacing the declared reusable capabilities set.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"},
+                    "capabilities": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                },
+                "required": ["jobId", "capabilities"]
+            }
+        }),
+        json!({
             "name": "background_shell_inspect_capability",
             "description": "Inspect one reusable service capability and show its current providers, provider metadata, and consumers. Accepts `capability` with or without the leading @.",
             "inputSchema": {
@@ -420,6 +435,10 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
             .orchestration
             .background_shells
             .list_services_from_tool(arguments),
+        "background_shell_update_service" => state
+            .orchestration
+            .background_shells
+            .update_service_from_tool(arguments),
         "background_shell_inspect_capability" => state
             .orchestration
             .background_shells

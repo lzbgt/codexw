@@ -6,6 +6,7 @@ use super::BackgroundShellCapabilityDependencySummary;
 use super::BackgroundShellCapabilityIssueClass;
 use super::BackgroundShellIntent;
 use super::BackgroundShellJobSnapshot;
+use super::BackgroundShellJobStatus;
 use super::BackgroundShellManager;
 use super::BackgroundShellServiceIssueClass;
 use super::BackgroundShellServiceReadiness;
@@ -13,6 +14,64 @@ use super::terminate_jobs;
 use super::validate_service_capability;
 
 impl BackgroundShellManager {
+    pub(crate) fn set_running_service_capabilities(
+        &self,
+        job_id: &str,
+        capabilities: &[String],
+    ) -> Result<Vec<String>, String> {
+        let normalized = normalize_service_capabilities(capabilities)?;
+        let job = self.lookup_job(job_id)?;
+        let mut state = job.lock().expect("background shell job lock");
+        if !matches!(state.status, BackgroundShellJobStatus::Running) {
+            return Err(format!(
+                "background shell job `{job_id}` is not running; only running service jobs can change reusable capabilities"
+            ));
+        }
+        if state.intent != BackgroundShellIntent::Service {
+            return Err(format!(
+                "background shell job `{job_id}` is not a service job; only running service jobs can change reusable capabilities"
+            ));
+        }
+        state.service_capabilities = normalized.clone();
+        Ok(normalized)
+    }
+
+    pub(crate) fn update_service_capabilities_for_operator(
+        &self,
+        reference: &str,
+        capabilities: &[String],
+    ) -> Result<String, String> {
+        let resolved_job_id = self.resolve_job_reference(reference)?;
+        let normalized = self.set_running_service_capabilities(&resolved_job_id, capabilities)?;
+        Ok(render_service_capability_update_summary(
+            &resolved_job_id,
+            &normalized,
+        ))
+    }
+
+    pub(crate) fn update_service_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments.as_object().ok_or_else(|| {
+            "background_shell_update_service expects an object argument".to_string()
+        })?;
+        let job_id = object
+            .get("jobId")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_update_service requires `jobId`".to_string())?;
+        let capabilities = parse_service_capabilities_argument(
+            object.get("capabilities"),
+            "background_shell_update_service",
+        )?;
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        let normalized = self.set_running_service_capabilities(&resolved_job_id, &capabilities)?;
+        Ok(render_service_capability_update_summary(
+            &resolved_job_id,
+            &normalized,
+        ))
+    }
+
     pub(crate) fn terminate_running_blockers_by_capability(
         &self,
         capability: &str,
@@ -664,6 +723,52 @@ fn provider_display(snapshot: &BackgroundShellJobSnapshot) -> String {
         format!("{} ({label})", snapshot.id)
     } else {
         snapshot.id.clone()
+    }
+}
+
+fn normalize_service_capabilities(capabilities: &[String]) -> Result<Vec<String>, String> {
+    let mut normalized = capabilities
+        .iter()
+        .map(|capability| validate_service_capability(capability.trim_start_matches('@')))
+        .collect::<Result<Vec<_>, _>>()?;
+    normalized.sort();
+    normalized.dedup();
+    Ok(normalized)
+}
+
+fn parse_service_capabilities_argument(
+    value: Option<&serde_json::Value>,
+    context: &str,
+) -> Result<Vec<String>, String> {
+    let value = value.ok_or_else(|| format!("{context} requires `capabilities`"))?;
+    let array = value
+        .as_array()
+        .ok_or_else(|| format!("{context} `capabilities` must be an array"))?;
+    let raw = array
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            value
+                .as_str()
+                .map(str::to_string)
+                .ok_or_else(|| format!("{context} `capabilities[{index}]` must be a string"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    normalize_service_capabilities(&raw)
+}
+
+fn render_service_capability_update_summary(job_id: &str, capabilities: &[String]) -> String {
+    if capabilities.is_empty() {
+        format!("Cleared reusable service capabilities for background shell job {job_id}.")
+    } else {
+        format!(
+            "Updated reusable service capabilities for background shell job {job_id}: {}",
+            capabilities
+                .iter()
+                .map(|capability| format!("@{capability}"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     }
 }
 

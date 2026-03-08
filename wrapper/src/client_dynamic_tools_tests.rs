@@ -31,6 +31,7 @@ fn dynamic_tool_specs_include_workspace_tools() {
             "background_shell_send",
             "background_shell_list_capabilities",
             "background_shell_list_services",
+            "background_shell_update_service",
             "background_shell_inspect_capability",
             "background_shell_attach",
             "background_shell_wait_ready",
@@ -740,6 +741,51 @@ fn background_shell_list_services_can_filter_by_capability() {
     assert!(text.contains("api svc"));
     assert!(text.contains("api.http"));
     assert!(!text.contains("frontend svc"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn background_shell_update_service_can_reassign_capabilities() {
+    let manager = BackgroundShellManager::default();
+    execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_start",
+            "arguments": {
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"]
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_update_service",
+            "arguments": {
+                "jobId": "bg-1",
+                "capabilities": ["frontend.dev"]
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("update text");
+    assert!(text.contains("Updated reusable service capabilities"));
+    assert!(text.contains("@frontend.dev"));
+
+    let rendered = manager
+        .render_service_capabilities_for_ps_filtered(None)
+        .expect("capability index")
+        .join("\n");
+    assert!(!rendered.contains("@api.http"));
+    assert!(rendered.contains("@frontend.dev"));
     let _ = manager.terminate_all_running();
 }
 

@@ -155,6 +155,35 @@ fn background_shell_list_reports_running_jobs() {
 }
 
 #[test]
+fn running_service_capabilities_can_be_reassigned_without_restart() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start service");
+
+    let updated = manager
+        .set_running_service_capabilities("bg-1", &["frontend.dev".to_string()])
+        .expect("update capabilities");
+    assert_eq!(updated, vec!["frontend.dev".to_string()]);
+
+    let rendered = manager
+        .render_service_capabilities_for_ps_filtered(None)
+        .expect("capability index")
+        .join("\n");
+    assert!(!rendered.contains("@api.http"));
+    assert!(rendered.contains("@frontend.dev"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn service_shell_views_can_filter_ready_booting_untracked_and_conflicting_jobs() {
     let manager = BackgroundShellManager::default();
     manager

@@ -249,6 +249,28 @@ pub(crate) fn handle_ps_command(
             ))?,
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
+    } else if matches!(action, Some("provide")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr(
+                "[session] usage: :ps provide <jobId|alias|@capability|n> <@capability...|none>",
+            )?;
+            return Ok(true);
+        };
+        let capabilities = match parse_ps_provide_capabilities(&args[2..]) {
+            Ok(capabilities) => capabilities,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        match state
+            .orchestration
+            .background_shells
+            .update_service_capabilities_for_operator(reference, &capabilities)
+        {
+            Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        }
     } else if matches!(action, Some("capabilities" | "caps" | "cap")) && args.len() > 1 {
         let selector = args[1];
         if selector.starts_with('@') {
@@ -394,7 +416,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)
@@ -506,6 +528,34 @@ pub(crate) fn parse_ps_focus_capability(args: &[&str], context: &str) -> Result<
         return Err(usage);
     }
     Ok(capability.to_string())
+}
+
+fn parse_ps_provide_capabilities(args: &[&str]) -> Result<Vec<String>, String> {
+    if args.is_empty() {
+        return Err(
+            "usage: :ps provide <jobId|alias|@capability|n> <@capability...|none>".to_string(),
+        );
+    }
+    if args.len() == 1 && matches!(args[0], "none" | "-") {
+        return Ok(Vec::new());
+    }
+    let mut capabilities = Vec::with_capacity(args.len());
+    for raw in args {
+        let Some(capability) = raw.strip_prefix('@') else {
+            return Err(
+                "usage: :ps provide <jobId|alias|@capability|n> <@capability...|none>".to_string(),
+            );
+        };
+        if capability.is_empty() || !is_valid_capability_ref(capability) {
+            return Err(
+                "usage: :ps provide <jobId|alias|@capability|n> <@capability...|none>".to_string(),
+            );
+        }
+        capabilities.push(capability.to_string());
+    }
+    capabilities.sort();
+    capabilities.dedup();
+    Ok(capabilities)
 }
 
 pub(crate) fn parse_ps_dependency_filter(action: Option<&str>) -> Option<DependencyFilter> {
