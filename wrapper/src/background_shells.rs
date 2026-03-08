@@ -4,6 +4,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
+use std::net::Shutdown;
 use std::net::TcpStream;
 use std::path::Path;
 use std::path::PathBuf;
@@ -15,6 +16,7 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::thread;
+use std::time::Duration;
 use url::Url;
 
 const DEFAULT_POLL_LIMIT: usize = 40;
@@ -167,6 +169,12 @@ pub(crate) enum BackgroundShellInteractionAction {
         body: Option<String>,
         headers: Vec<(String, String)>,
         expected_status: Option<u16>,
+    },
+    Tcp {
+        payload: Option<String>,
+        append_newline: bool,
+        expect_substring: Option<String>,
+        read_timeout_ms: Option<u64>,
     },
 }
 
@@ -997,6 +1005,35 @@ impl BackgroundShellManager {
                     response
                 ))
             }
+            BackgroundShellInteractionAction::Tcp {
+                payload,
+                append_newline,
+                expect_substring,
+                read_timeout_ms,
+            } => {
+                let endpoint = endpoint.ok_or_else(|| {
+                    format!(
+                        "recipe `{recipe_name}` on background shell job `{job_id}` requires a service `endpoint`"
+                    )
+                })?;
+                let response = invoke_tcp_recipe(
+                    &endpoint,
+                    payload.as_deref(),
+                    append_newline,
+                    expect_substring.as_deref(),
+                    read_timeout_ms,
+                )?;
+                Ok(format!(
+                    "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nResponse:\n{}",
+                    interaction_action_summary(&BackgroundShellInteractionAction::Tcp {
+                        payload,
+                        append_newline,
+                        expect_substring,
+                        read_timeout_ms,
+                    }),
+                    response
+                ))
+            }
         }
     }
 }
@@ -1202,9 +1239,55 @@ fn parse_background_shell_interaction_action(
                 expected_status,
             })
         }
+        "tcp" => {
+            let payload = match object.get("payload") {
+                None | Some(serde_json::Value::Null) => None,
+                Some(value) => Some(
+                    value
+                        .as_str()
+                        .ok_or_else(|| {
+                            format!(
+                                "background_shell_start `recipes[{index}].action.payload` must be a string"
+                            )
+                        })?
+                        .to_string(),
+                ),
+            };
+            let append_newline = object
+                .get("appendNewline")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false);
+            let expect_substring = match object.get("expectSubstring") {
+                None | Some(serde_json::Value::Null) => None,
+                Some(value) => Some(
+                    value
+                        .as_str()
+                        .ok_or_else(|| {
+                            format!(
+                                "background_shell_start `recipes[{index}].action.expectSubstring` must be a string"
+                            )
+                        })?
+                        .to_string(),
+                ),
+            };
+            let read_timeout_ms = match object.get("readTimeoutMs") {
+                None | Some(serde_json::Value::Null) => None,
+                Some(value) => Some(value.as_u64().ok_or_else(|| {
+                    format!(
+                        "background_shell_start `recipes[{index}].action.readTimeoutMs` must be an integer"
+                    )
+                })?),
+            };
+            Ok(BackgroundShellInteractionAction::Tcp {
+                payload,
+                append_newline,
+                expect_substring,
+                read_timeout_ms,
+            })
+        }
         "info" | "informational" => Ok(BackgroundShellInteractionAction::Informational),
         _ => Err(format!(
-            "background_shell_start `recipes[{index}].action.type` must be one of `stdin`, `http`, or `informational`"
+            "background_shell_start `recipes[{index}].action.type` must be one of `stdin`, `http`, `tcp`, or `informational`"
         )),
     }
 }
@@ -1451,6 +1534,30 @@ fn interaction_action_summary(action: &BackgroundShellInteractionAction) -> Stri
             }
             summary
         }
+        BackgroundShellInteractionAction::Tcp {
+            payload,
+            append_newline,
+            expect_substring,
+            read_timeout_ms,
+        } => {
+            let mut summary = "tcp".to_string();
+            if let Some(payload) = payload.as_deref() {
+                summary.push_str(&format!(" payload=\"{}\"", summarize_recipe_text(payload)));
+                if *append_newline {
+                    summary.push_str(" newline");
+                }
+            }
+            if let Some(expect_substring) = expect_substring.as_deref() {
+                summary.push_str(&format!(
+                    " expect=\"{}\"",
+                    summarize_recipe_text(expect_substring)
+                ));
+            }
+            if let Some(timeout_ms) = read_timeout_ms {
+                summary.push_str(&format!(" timeout={}ms", timeout_ms));
+            }
+            summary
+        }
     }
 }
 
@@ -1548,6 +1655,124 @@ fn invoke_http_recipe(
         ));
     }
     Ok(format_http_response(&response))
+}
+
+fn invoke_tcp_recipe(
+    endpoint: &str,
+    payload: Option<&str>,
+    append_newline: bool,
+    expect_substring: Option<&str>,
+    read_timeout_ms: Option<u64>,
+) -> Result<String, String> {
+    let (host, port) = parse_tcp_endpoint(endpoint)?;
+    let mut stream = TcpStream::connect((host.as_str(), port))
+        .map_err(|err| format!("failed to connect to {host}:{port}: {err}"))?;
+    let timeout = Duration::from_millis(read_timeout_ms.unwrap_or(500));
+    stream
+        .set_read_timeout(Some(timeout))
+        .map_err(|err| format!("failed to set read timeout for {host}:{port}: {err}"))?;
+    stream
+        .set_write_timeout(Some(timeout))
+        .map_err(|err| format!("failed to set write timeout for {host}:{port}: {err}"))?;
+
+    let mut payload_line = None;
+    if let Some(payload) = payload {
+        let mut outbound = payload.as_bytes().to_vec();
+        if append_newline {
+            outbound.push(b'\n');
+        }
+        stream
+            .write_all(&outbound)
+            .map_err(|err| format!("failed to write tcp payload to {host}:{port}: {err}"))?;
+        stream
+            .flush()
+            .map_err(|err| format!("failed to flush tcp payload to {host}:{port}: {err}"))?;
+        payload_line = Some(String::from_utf8_lossy(&outbound).into_owned());
+    }
+    let _ = stream.shutdown(Shutdown::Write);
+
+    let mut response = Vec::new();
+    let mut buf = [0_u8; 4096];
+    loop {
+        match stream.read(&mut buf) {
+            Ok(0) => break,
+            Ok(bytes) => response.extend_from_slice(&buf[..bytes]),
+            Err(err)
+                if err.kind() == std::io::ErrorKind::WouldBlock
+                    || err.kind() == std::io::ErrorKind::TimedOut =>
+            {
+                break;
+            }
+            Err(err) => {
+                return Err(format!(
+                    "failed to read tcp response from {host}:{port}: {err}"
+                ));
+            }
+        }
+    }
+
+    let response_text = String::from_utf8_lossy(&response).into_owned();
+    if let Some(expect_substring) = expect_substring
+        && !response_text.contains(expect_substring)
+    {
+        return Err(format!(
+            "tcp recipe expected substring `{expect_substring}` but it was not observed.\nResponse:\n{}",
+            format_tcp_response(host.as_str(), port, payload_line.as_deref(), &response_text)
+        ));
+    }
+
+    Ok(format_tcp_response(
+        host.as_str(),
+        port,
+        payload_line.as_deref(),
+        &response_text,
+    ))
+}
+
+fn parse_tcp_endpoint(endpoint: &str) -> Result<(String, u16), String> {
+    if endpoint.contains("://") {
+        let url = Url::parse(endpoint)
+            .map_err(|err| format!("invalid tcp endpoint `{endpoint}`: {err}"))?;
+        if url.scheme() != "tcp" {
+            return Err(format!(
+                "background shell service endpoint `{endpoint}` uses unsupported scheme `{}` for tcp recipes; use tcp://host:port",
+                url.scheme()
+            ));
+        }
+        let host = url
+            .host_str()
+            .ok_or_else(|| format!("tcp endpoint `{endpoint}` has no host"))?
+            .to_string();
+        let port = url
+            .port()
+            .ok_or_else(|| format!("tcp endpoint `{endpoint}` has no explicit port"))?;
+        return Ok((host, port));
+    }
+    let (host, port) = endpoint.rsplit_once(':').ok_or_else(|| {
+        format!("tcp endpoint `{endpoint}` must be `host:port` or `tcp://host:port`")
+    })?;
+    let port = port
+        .parse::<u16>()
+        .map_err(|err| format!("invalid tcp port in endpoint `{endpoint}`: {err}"))?;
+    if host.trim().is_empty() {
+        return Err(format!("tcp endpoint `{endpoint}` has an empty host"));
+    }
+    Ok((host.to_string(), port))
+}
+
+fn format_tcp_response(host: &str, port: u16, payload: Option<&str>, response: &str) -> String {
+    let mut lines = vec![format!("Address: {host}:{port}")];
+    if let Some(payload) = payload {
+        lines.push("Payload:".to_string());
+        lines.extend(payload.lines().map(ToOwned::to_owned));
+    }
+    if response.is_empty() {
+        lines.push("Body: (empty)".to_string());
+    } else {
+        lines.push("Body:".to_string());
+        lines.extend(response.lines().map(ToOwned::to_owned));
+    }
+    lines.join("\n")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2134,6 +2359,103 @@ mod tests {
             .expect_err("expected status mismatch should fail");
         assert!(err.contains("expected status 204"));
         assert!(err.contains("Status code: 200"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_can_invoke_tcp_action() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("local addr");
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut request = [0_u8; 4096];
+            let bytes = stream.read(&mut request).expect("read request");
+            let request = String::from_utf8_lossy(&request[..bytes]).into_owned();
+            assert_eq!(request, "PING\n");
+            stream.write_all(b"PONG\n").expect("write response");
+            stream.flush().expect("flush response");
+        });
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "tcp",
+                    "endpoint": format!("tcp://{addr}"),
+                    "recipes": [
+                        {
+                            "name": "ping",
+                            "description": "Ping the raw socket service",
+                            "action": {
+                                "type": "tcp",
+                                "payload": "PING",
+                                "appendNewline": true,
+                                "expectSubstring": "PONG",
+                                "readTimeoutMs": 500
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start tcp service shell");
+
+        let rendered = manager
+            .invoke_recipe_for_operator("bg-1", "ping")
+            .expect("invoke tcp recipe");
+        assert!(
+            rendered.contains("Action: tcp payload=\"PING\" newline expect=\"PONG\" timeout=500ms")
+        );
+        assert!(rendered.contains("Address:"));
+        assert!(rendered.contains("Payload:"));
+        assert!(rendered.contains("PING"));
+        assert!(rendered.contains("PONG"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_tcp_expectation_is_enforced() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("local addr");
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut request = [0_u8; 4096];
+            let _ = stream.read(&mut request).expect("read request");
+            stream.write_all(b"ERR\n").expect("write response");
+            stream.flush().expect("flush response");
+        });
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "tcp",
+                    "endpoint": format!("{addr}"),
+                    "recipes": [
+                        {
+                            "name": "ping",
+                            "description": "Ping the raw socket service",
+                            "action": {
+                                "type": "tcp",
+                                "payload": "PING",
+                                "appendNewline": true,
+                                "expectSubstring": "PONG",
+                                "readTimeoutMs": 500
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start tcp service shell");
+
+        let err = manager
+            .invoke_recipe_for_operator("bg-1", "ping")
+            .expect_err("expectation mismatch should fail");
+        assert!(err.contains("expected substring `PONG`"));
+        assert!(err.contains("ERR"));
         let _ = manager.terminate_all_running();
     }
 
