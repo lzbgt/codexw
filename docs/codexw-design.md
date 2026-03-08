@@ -66,7 +66,7 @@ The runtime has thirteen main layers.
    `editor.rs`, `input.rs`, `dispatch.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, prompt visibility rules, and structured app-server user input construction.
 
 13. Human output handling
-   `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
+   `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` is the compatibility facade over that split.
 
 Session feature helpers are split across `model_session.rs`, `collaboration.rs`, and `session_status.rs`, with `session.rs` kept as a thin compatibility facade for imports and tests.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
@@ -277,7 +277,7 @@ Important properties:
 - prompt hide and redraw before emitted transcript blocks
 - no mixed stdout/stderr interleaving for user-visible UI
 
-`render.rs` converts semantic content into styled terminal lines using `ratatui` text primitives such as `Text`, `Line`, and `Span`, then emits ANSI text into normal scrollback.
+`render.rs` is the compatibility facade for the split render layer. `render_prompt.rs` owns prompt fitting and committed prompt rendering, `render_blocks.rs` owns markdown/diff/command/plain block rendering, and `render_ansi.rs` owns ANSI serialization for `ratatui` text primitives such as `Text`, `Line`, and `Span`.
 
 It renders:
 
@@ -399,7 +399,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/output.rs`
   Prompt redraw, committed output, prompt visibility, output ordering.
 - `wrapper/src/render.rs`
-  Rich transcript and prompt rendering.
+  Compatibility facade for the split render layer.
+- `wrapper/src/render_prompt.rs`
+  Prompt fitting, grapheme-aware cursor positioning, and committed prompt rendering.
+- `wrapper/src/render_blocks.rs`
+  Rich block rendering for markdown, diffs, command output, plain text, and inline formatting.
+- `wrapper/src/render_ansi.rs`
+  ANSI serialization helpers for `ratatui` text structures and styles.
 - `wrapper/src/prompt.rs`
   Auto-continue prompt synthesis and stop-marker parsing.
 - `skills/session-autopilot/`
