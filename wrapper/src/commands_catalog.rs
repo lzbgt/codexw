@@ -123,11 +123,6 @@ fn builtin_command_rank(name: &str) -> usize {
 fn is_hidden_builtin_command(name: &str) -> bool {
     matches!(
         name,
-        "agent"
-            | "multi-agents"
-            | "init"
-            | "rollout"
-            | "sandbox-add-read-dir"
-            | "setup-default-sandbox"
+        "agent" | "multi-agents" | "rollout" | "sandbox-add-read-dir" | "setup-default-sandbox"
     )
 }

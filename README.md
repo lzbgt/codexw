@@ -162,6 +162,7 @@ Useful interactive commands:
 - `:status` or `/status`
 - `:statusline`
 - `:settings`
+- `:init`
 - `:feedback <category> [reason] [--logs]`
 - `:logout`
 - `:approvals` or `/permissions`
@@ -187,6 +188,7 @@ Submission features:
 - `:approvals` and `:permissions` now open a numbered preset picker that updates the approval policy plus sandbox posture for later turns and local shell commands.
 - `:fast` now toggles the active `serviceTier` override for later turns, matching the native “fast mode” intent instead of acting as a placeholder, and it persists the saved `service_tier` default into `~/.codex/config.toml`.
 - `:theme` now opens a numbered picker over bundled syntax-highlighting themes, applies the selection immediately to rendered code blocks, persists `[tui].theme` into `~/.codex/config.toml`, and reloads that saved theme at startup.
+- `:init` now follows the native Codex flow instead of stopping at a limitation message. It refuses to overwrite an existing `AGENTS.md`; otherwise it submits the upstream repository-guidelines prompt as a user turn so Codex can draft the file in-context.
 - `:realtime` is now a real experimental text workflow instead of a placeholder. `:realtime start [prompt...]` starts a thread-scoped realtime session, `:realtime send <text>` appends text, `:realtime stop` closes the session, and bare `:realtime`, `:realtime status`, or `:realtime show` prints the current realtime status block. Audio output deltas are intentionally not rendered in `codexw`.
 - `:ps clean` now uses the real experimental `thread/backgroundTerminals/clean` API to stop all background terminals for the current thread. Plain `:ps` explains the upstream limitation: app-server exposes cleanup, but not the background-terminal listing surface the native TUI uses internally.
 - `:diff` prints the latest aggregated turn diff snapshot emitted by app-server.
@@ -214,5 +216,5 @@ Submission features:
 - Unknown app-server requests now receive an explicit JSON-RPC "method not implemented" error instead of being ignored, which avoids hangs from unanswered server requests.
 - Full file contents are not always available from the app-server protocol. The client shows full command lines, command output, diffs, and file-change payloads that Codex emits.
 - `:quit` exits immediately. `Ctrl+C` preserves Codex-like semantics: the first press interrupts a running turn or terminates an active `!command` without discarding the current draft, and only exits when the client is idle with no active draft or background work. On exit, `codexw` now prints a copy-pasteable full resume command, including cwd and thread id, when one is available.
-- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs, but model selection, permissions presets, theme selection, fast mode, collaboration-mode switching, experimental-feature listing, personality selection, background-terminal cleanup, and a text-only realtime workflow are now backend-backed through app-server or local runtime state rather than being treated as impossible.
+- Some native Codex slash commands still map to informative placeholders in `codexw` instead of full popup UIs, but model selection, permissions presets, theme selection, fast mode, collaboration-mode switching, experimental-feature listing, personality selection, `:init`, background-terminal cleanup, and a text-only realtime workflow are now backend-backed through app-server or local runtime state rather than being treated as impossible.
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.
