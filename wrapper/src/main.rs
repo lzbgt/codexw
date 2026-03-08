@@ -25,6 +25,8 @@ mod dispatch_command_session_catalog_lists;
 mod dispatch_command_session_catalog_models;
 mod dispatch_command_thread;
 mod dispatch_command_thread_common;
+mod dispatch_command_thread_draft;
+mod dispatch_command_thread_view;
 mod dispatch_command_utils;
 mod dispatch_commands;
 mod dispatch_submit;

@@ -7,13 +7,15 @@ use crate::editor::LineEditor;
 use crate::output::Output;
 #[path = "dispatch_command_session_collab.rs"]
 mod dispatch_command_session_collab;
+#[path = "dispatch_command_session_ps.rs"]
+mod dispatch_command_session_ps;
 #[path = "dispatch_command_session_realtime.rs"]
 mod dispatch_command_session_realtime;
 
 use crate::state::AppState;
 use dispatch_command_session_collab::handle_collab_command;
 use dispatch_command_session_collab::handle_plan_command;
-use dispatch_command_session_realtime::handle_ps_command;
+use dispatch_command_session_ps::handle_ps_command;
 use dispatch_command_session_realtime::handle_realtime_command;
 
 pub(crate) fn try_handle_session_mode_command(

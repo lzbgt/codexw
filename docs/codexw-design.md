@@ -81,7 +81,7 @@ Shared state helpers are split across `state_model.rs`, `state_mutations.rs`, `s
 Command catalog helpers are split across `commands_entry_session_catalog.rs`, `commands_entry_session_modes.rs`, `commands_entry_session.rs`, `commands_entry_thread.rs`, `commands_entry_runtime.rs`, `commands_entries.rs`, and `commands_catalog.rs`: grouped command-entry data lives in the `commands_entry_*` modules, `commands_entry_session.rs` is the compatibility facade that assembles the session-oriented entries, `commands_entries.rs` is the compatibility facade that assembles the shared table, and `commands_catalog.rs` keeps the public entrypoint and stable command-name ordering.
 Command metadata helpers live in `commands_metadata.rs`: command descriptions and help-line generation over the shared command catalog.
 Command completion helpers live in `commands_completion.rs`, `commands_completion_apply.rs`, `commands_completion_render.rs`, and `commands_match.rs`: the facade keeps the public surface, completion application stays in the extracted apply helper, rendering and quoting stay in the render helper, and cursor parsing, fuzzy scoring, and prefix logic live in the matcher module.
-Command-dispatch helpers are split across `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_submit.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_catalog.rs`, `dispatch_command_session_control.rs`, and `dispatch_submit.rs` kept as thin compatibility facades for imports and tests.
+Command-dispatch helpers are split across `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_submit.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_thread_view.rs`, `dispatch_command_thread_draft.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_ps.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_catalog.rs`, `dispatch_command_session_control.rs`, and `dispatch_submit.rs` kept as thin compatibility facades for imports and tests.
 Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_mention_links.rs`, `input/input_decode_mention_paths.rs`, `input/input_decode_inline.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_inline_skills.rs`, `input/input_decode_tokens.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, and `input/input_build.rs`, with `input.rs`, `input/input_decode.rs`, and `input/input_resolve.rs` kept as thin compatibility facades for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live across `prompt_state.rs`, `prompt_completion.rs`, `prompt_file_completions.rs`, `prompt_file_completions_token.rs`, and `prompt_file_completions_search.rs`, with `prompting.rs` kept as the thin facade over prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Render helpers live across `render_prompt_layout.rs`, `render_prompt_commit.rs`, `render_markdown_block_structures.rs`, `render_markdown_links.rs`, and `render_markdown_styles.rs`, with `render_prompt.rs`, `render_block_markdown.rs`, and `render_markdown_inline.rs` kept as thin facades over prompt-layout, markdown-block, and inline-markdown behavior.
@@ -397,7 +397,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_collaboration.rs`
   Collaboration preset extraction, rendering, and prompt-status regression tests.
 - `wrapper/src/main_test_session_models.rs`
-  Model/personality extraction and status-snapshot regression tests.
+  Compatibility hub for split model/personality/status regression tests.
+- `wrapper/src/main_test_session_model_catalog.rs`
+  Model catalog extraction regression tests.
+- `wrapper/src/main_test_session_personality_status.rs`
+  Personality rendering, prompt-status, and status-snapshot regression tests.
 - `wrapper/src/main_test_session_status.rs`
   Thread-status, prompt-status, and realtime-status snapshot regression tests.
 - `wrapper/src/app.rs`
@@ -637,7 +641,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_command_thread_actions.rs`
   Thread action workflows such as review, interrupt, compact, and cleanup.
 - `wrapper/src/dispatch_command_thread_workspace.rs`
-  Mention/diff/copy/clear and attachment-queue slash-command workflows.
+  Compatibility facade for split thread workspace command helpers.
+- `wrapper/src/dispatch_command_thread_view.rs`
+  Mention insertion/search, diff display, and copy slash-command workflows.
+- `wrapper/src/dispatch_command_thread_draft.rs`
+  Attachment-queue draft slash-command workflows.
 - `wrapper/src/dispatch_command_session.rs`
   Compatibility facade for the split session/catalog/realtime slash-command workflows.
 - `wrapper/src/dispatch_command_session_info.rs`
@@ -654,6 +662,8 @@ The biggest known limits are architectural, not accidental.
   Compatibility facade for the split session-control command helpers.
 - `wrapper/src/dispatch_command_session_modes.rs`
   Session mode and runtime-control workflows such as auto mode, collaboration, realtime control, and `/ps`.
+- `wrapper/src/dispatch_command_session_ps.rs`
+  Background-terminal cleanup and `/ps` status messaging.
 - `wrapper/src/dispatch_command_session_meta.rs`
   Session meta workflows such as feedback, logout, and recognized-but-unported native popup paths.
 - `wrapper/src/dispatch_command_utils.rs`
