@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
+use crate::background_terminals::track_started_command_item;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -29,6 +30,9 @@ pub(crate) fn handle_status_update(
         | "item/reasoning/textDelta"
         | "item/reasoning/summaryPartAdded" => {}
         "serverRequest/resolved" => {
+            if state.last_status_line.as_deref() == Some("waiting on approval") {
+                state.last_status_line = None;
+            }
             if cli.verbose_events {
                 output.line_stderr(format!(
                     "[approval] resolved {}",
@@ -48,6 +52,7 @@ fn render_item_started(params: &Value, cli: &Cli, state: &mut AppState) -> Resul
     let item_type = get_string(item, &["type"]).unwrap_or("unknown");
     match item_type {
         "commandExecution" => {
+            track_started_command_item(state, item);
             let command = get_string(item, &["command"]).unwrap_or("");
             state.last_status_line = Some(format!("running {}", summarize_text(command)));
         }

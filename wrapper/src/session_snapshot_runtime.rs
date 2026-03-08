@@ -1,4 +1,5 @@
 use crate::Cli;
+use crate::background_terminals::background_terminal_count;
 use crate::session_prompt_status_active::format_elapsed;
 use crate::state::AppState;
 use crate::state::summarize_text;
@@ -26,6 +27,12 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
     }
     if let Some(error) = state.realtime_last_error.as_deref() {
         lines.push(format!("realtime error  {}", summarize_text(error)));
+    }
+    if background_terminal_count(state) > 0 {
+        lines.push(format!(
+            "background      {}",
+            background_terminal_count(state)
+        ));
     }
 
     if let Some(account) = render_account_summary(state.account_info.as_ref()) {

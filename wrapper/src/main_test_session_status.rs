@@ -1,5 +1,10 @@
 use crate::Cli;
+use crate::background_terminals::background_terminal_count;
+use crate::background_terminals::render_background_terminals;
+use crate::events::handle_realtime_notification;
+use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
+use crate::notification_item_status::handle_status_update;
 use crate::output::Output;
 use crate::prompt_state::render_prompt_status;
 use crate::session_prompt_status_active::spinner_frame;
@@ -226,4 +231,123 @@ fn completed_command_execution_keeps_newer_status_line() {
         state.last_status_line.as_deref(),
         Some("waiting on approval")
     );
+}
+
+#[test]
+fn active_thread_status_without_flags_clears_stale_detail() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    state.last_status_line = Some("waiting on approval".to_string());
+    let mut output = Output::default();
+
+    handle_realtime_notification(
+        &crate::rpc::RpcNotification {
+            method: "thread/status/changed".to_string(),
+            params: serde_json::json!({
+                "status": {"type": "active", "activeFlags": []}
+            }),
+        },
+        &cli,
+        &mut state,
+        &mut output,
+    )
+    .expect("handle thread status");
+
+    assert!(state.last_status_line.is_none());
+}
+
+#[test]
+fn resolved_server_request_clears_waiting_on_approval_status() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    state.last_status_line = Some("waiting on approval".to_string());
+    let mut output = Output::default();
+
+    let handled = handle_status_update(
+        "serverRequest/resolved",
+        &serde_json::json!({
+            "threadId": "thread-1",
+            "requestId": "req-1"
+        }),
+        &cli,
+        &mut state,
+        &mut output,
+    )
+    .expect("handle resolved request");
+
+    assert!(handled);
+    assert!(state.last_status_line.is_none());
+}
+
+#[test]
+fn background_terminal_tracking_survives_turn_reset_and_shows_recent_output() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+
+    handle_status_update(
+        "item/started",
+        &serde_json::json!({
+            "item": {
+                "type": "commandExecution",
+                "id": "cmd-1",
+                "command": "python worker.py"
+            }
+        }),
+        &cli,
+        &mut state,
+        &mut output,
+    )
+    .expect("start command item");
+    handle_buffer_update(
+        "item/commandExecution/outputDelta",
+        &serde_json::json!({
+            "itemId": "cmd-1",
+            "delta": "booting\\nready\\n"
+        }),
+        &cli,
+        &mut state,
+        &mut output,
+    )
+    .expect("buffer output");
+    handle_buffer_update(
+        "item/commandExecution/terminalInteraction",
+        &serde_json::json!({
+            "itemId": "cmd-1",
+            "processId": "proc-1",
+            "stdin": ""
+        }),
+        &cli,
+        &mut state,
+        &mut output,
+    )
+    .expect("track background terminal");
+
+    state.reset_turn_stream_state();
+
+    assert_eq!(background_terminal_count(&state), 1);
+    let rendered = render_background_terminals(&state);
+    assert!(rendered.contains("python worker.py"));
+    assert!(rendered.contains("proc-1"));
+    assert!(rendered.contains("ready"));
+}
+
+#[test]
+fn ready_status_mentions_background_terminals() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.background_terminals.insert(
+        "proc-1".to_string(),
+        crate::background_terminals::BackgroundTerminalSummary {
+            item_id: "cmd-1".to_string(),
+            process_id: "proc-1".to_string(),
+            command_display: "python worker.py".to_string(),
+            waiting: true,
+            recent_inputs: Vec::new(),
+            recent_output: vec!["ready".to_string()],
+        },
+    );
+
+    let rendered = render_prompt_status(&state);
+    assert!(rendered.contains("background terminal running"));
+    assert!(rendered.contains("/ps to view"));
 }

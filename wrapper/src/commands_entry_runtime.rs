@@ -49,7 +49,7 @@ pub(crate) const RUNTIME_COMMAND_ENTRIES: &[BuiltinCommandEntry] = &[
     BuiltinCommandEntry {
         name: "ps",
         help_syntax: "ps [clean]",
-        description: "explain background-terminal limits or stop all background terminals",
+        description: "list or stop background terminals",
     },
     BuiltinCommandEntry {
         name: "clean",

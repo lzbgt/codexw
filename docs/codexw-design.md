@@ -330,7 +330,7 @@ Current user-facing capabilities include:
 - read-only client dynamic tools on new threads via `thread/start.dynamicTools`, currently covering directory listing, path inspection, workspace file reads, file-path search, and text search
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
-- backend-backed background-terminal cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
+- live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus backend-backed cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns

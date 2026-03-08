@@ -2,6 +2,8 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
+use crate::background_terminals::track_command_output_delta;
+use crate::background_terminals::track_terminal_interaction;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::buffer_item_delta;
@@ -38,10 +40,12 @@ pub(crate) fn handle_buffer_update(
             }
         }
         "item/commandExecution/outputDelta" => {
-            buffer_item_delta(&mut state.command_output_buffers, params)
+            buffer_item_delta(&mut state.command_output_buffers, params);
+            track_command_output_delta(state, params);
         }
         "item/fileChange/outputDelta" => buffer_item_delta(&mut state.file_output_buffers, params),
         "item/commandExecution/terminalInteraction" => {
+            track_terminal_interaction(state, params);
             if cli.verbose_events
                 && let Some(summary) = summarize_terminal_interaction(params)
             {

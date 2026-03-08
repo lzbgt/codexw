@@ -3,6 +3,7 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::background_terminals::render_background_terminals;
 use crate::output::Output;
 use crate::requests::send_clean_background_terminals;
 use crate::state::AppState;
@@ -27,9 +28,7 @@ pub(crate) fn handle_ps_command(
             send_clean_background_terminals(writer, state, current_thread_id)?;
         }
     } else {
-        output.line_stderr(
-            "[session] app-server does not expose background-terminal listing like the native TUI; use /ps clean to stop all background terminals for this thread",
-        )?;
+        output.block_stdout("Background terminals", &render_background_terminals(state))?;
     }
     Ok(true)
 }

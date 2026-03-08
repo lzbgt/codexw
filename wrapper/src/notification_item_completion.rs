@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
+use crate::background_terminals::clear_completed_command_item;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -34,6 +35,7 @@ pub(crate) fn render_item_completed(
             }
         }
         "commandExecution" => {
+            clear_completed_command_item(state, item);
             let status = get_string(item, &["status"]).unwrap_or("unknown");
             let command = get_string(item, &["command"]).unwrap_or("");
             let exit_code = item

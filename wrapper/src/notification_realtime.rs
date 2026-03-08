@@ -47,6 +47,8 @@ pub(crate) fn handle_realtime_notification(
         "thread/status/changed" => {
             if let Some(status_line) = summarize_thread_status_for_display(&notification.params) {
                 emit_status_line(output, state, status_line)?;
+            } else {
+                state.last_status_line = None;
             }
         }
         "thread/tokenUsage/updated" => {

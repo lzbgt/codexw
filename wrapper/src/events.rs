@@ -354,7 +354,7 @@ fn handle_thread_session_response(
                 initial_prompt.as_deref(),
             )?;
         }
-        _ => return handle_thread_maintenance_response(pending, output),
+        _ => return handle_thread_maintenance_response(pending, state, output),
     }
     Ok(true)
 }

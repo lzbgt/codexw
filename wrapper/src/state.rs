@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Instant;
 
+use crate::background_terminals::BackgroundTerminalSummary;
 use crate::collaboration_preset::CollaborationModePreset;
 use crate::input::AppCatalogEntry;
 use crate::input::PluginCatalogEntry;
@@ -68,6 +69,8 @@ pub(crate) struct AppState {
     pub(crate) command_output_buffers: HashMap<String, String>,
     pub(crate) file_output_buffers: HashMap<String, String>,
     pub(crate) process_output_buffers: HashMap<String, ProcessOutputBuffer>,
+    pub(crate) active_command_items: HashMap<String, String>,
+    pub(crate) background_terminals: HashMap<String, BackgroundTerminalSummary>,
     pub(crate) pending_local_images: Vec<String>,
     pub(crate) pending_remote_images: Vec<String>,
     pub(crate) active_personality: Option<String>,
@@ -117,6 +120,8 @@ impl AppState {
             command_output_buffers: HashMap::new(),
             file_output_buffers: HashMap::new(),
             process_output_buffers: HashMap::new(),
+            active_command_items: HashMap::new(),
+            background_terminals: HashMap::new(),
             pending_local_images: Vec::new(),
             pending_remote_images: Vec::new(),
             active_personality: None,
@@ -156,6 +161,7 @@ impl AppState {
     pub(crate) fn reset_thread_context(&mut self) {
         self.reset_turn_stream_state();
         self.process_output_buffers.clear();
+        self.background_terminals.clear();
         self.active_turn_id = None;
         self.active_exec_process_id = None;
         self.current_rollout_path = None;
