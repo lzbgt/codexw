@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub(crate) use crate::collaboration::CollaborationModeAction;
 pub(crate) use crate::collaboration::CollaborationModePreset;
 pub(crate) use crate::collaboration::apply_collaboration_mode_action;

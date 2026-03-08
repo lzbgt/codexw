@@ -1,6 +1,9 @@
 mod bootstrap_requests;
+mod command_requests;
 mod request_types;
 mod session_requests;
+mod thread_requests;
+mod turn_requests;
 
 use std::io::Write;
 use std::process::ChildStdin;
@@ -23,22 +26,22 @@ pub(crate) use bootstrap_requests::send_load_models;
 pub(crate) use bootstrap_requests::send_load_rate_limits;
 pub(crate) use bootstrap_requests::send_load_skills;
 pub(crate) use bootstrap_requests::send_logout_account;
+pub(crate) use command_requests::send_command_exec;
+pub(crate) use command_requests::send_command_exec_terminate;
 pub(crate) use request_types::PendingRequest;
-pub(crate) use session_requests::send_clean_background_terminals;
-pub(crate) use session_requests::send_command_exec;
-pub(crate) use session_requests::send_command_exec_terminate;
-pub(crate) use session_requests::send_start_review;
-pub(crate) use session_requests::send_thread_compact;
-pub(crate) use session_requests::send_thread_fork;
-pub(crate) use session_requests::send_thread_realtime_append_text;
-pub(crate) use session_requests::send_thread_realtime_start;
-pub(crate) use session_requests::send_thread_realtime_stop;
-pub(crate) use session_requests::send_thread_rename;
-pub(crate) use session_requests::send_thread_resume;
-pub(crate) use session_requests::send_thread_start;
-pub(crate) use session_requests::send_turn_interrupt;
-pub(crate) use session_requests::send_turn_start;
-pub(crate) use session_requests::send_turn_steer;
+pub(crate) use thread_requests::send_clean_background_terminals;
+pub(crate) use thread_requests::send_start_review;
+pub(crate) use thread_requests::send_thread_compact;
+pub(crate) use thread_requests::send_thread_fork;
+pub(crate) use thread_requests::send_thread_realtime_append_text;
+pub(crate) use thread_requests::send_thread_realtime_start;
+pub(crate) use thread_requests::send_thread_realtime_stop;
+pub(crate) use thread_requests::send_thread_rename;
+pub(crate) use thread_requests::send_thread_resume;
+pub(crate) use thread_requests::send_thread_start;
+pub(crate) use turn_requests::send_turn_interrupt;
+pub(crate) use turn_requests::send_turn_start;
+pub(crate) use turn_requests::send_turn_steer;
 
 pub(crate) fn send_json<T: serde::Serialize>(writer: &mut ChildStdin, value: &T) -> Result<()> {
     let mut encoded = serde_json::to_string(value).context("serialize JSON-RPC message")?;

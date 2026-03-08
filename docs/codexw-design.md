@@ -36,10 +36,10 @@ The runtime has thirteen main layers.
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
 3. Outbound request construction
-   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions. `requests.rs` is the compatibility facade over that split.
+   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_requests.rs`, `requests/thread_requests.rs`, `requests/turn_requests.rs`, `requests/command_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions. `requests.rs` is the compatibility facade over that split, and `session_requests.rs` is now a small legacy facade over the thread/turn/command request helpers.
 
 4. Inbound event handling
-   `events.rs`, `responses.rs`, `response_success.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, item-completion rendering, and response success/error paths. `responses.rs` and `notifications.rs` are compatibility facades over the split inbound handlers.
+   `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, and `response_success.rs` are compatibility/router facades over the split inbound handlers.
 
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
@@ -417,10 +417,20 @@ The biggest known limits are architectural, not accidental.
   `PendingRequest` variants used to track in-flight JSON-RPC work.
 - `wrapper/src/requests/bootstrap_requests.rs`
   Initialize, catalog, account, config, model, collaboration-mode, thread-list, and file-search request builders.
+- `wrapper/src/requests/thread_requests.rs`
+  Thread lifecycle, realtime, and review request builders.
+- `wrapper/src/requests/turn_requests.rs`
+  Turn start, steer, and interrupt request builders.
+- `wrapper/src/requests/command_requests.rs`
+  Local command exec and terminate request builders.
 - `wrapper/src/requests/session_requests.rs`
-  Thread, realtime, review, turn, and local command request builders.
+  Compatibility facade re-exporting the split thread/turn/command request builders.
 - `wrapper/src/rpc.rs`
   JSON-RPC wire types and line parsing.
+- `wrapper/src/response_bootstrap.rs`
+  Successful initialize, catalog/config/account, and discovery response handling.
+- `wrapper/src/response_threads.rs`
+  Successful thread, realtime, review, turn, and local-command response handling.
 - `wrapper/src/commands.rs`
   Compatibility facade for the split command metadata/completion layer.
 - `wrapper/src/commands_metadata.rs`

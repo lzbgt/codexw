@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub(crate) use crate::catalog_views::extract_file_search_paths;
 pub(crate) use crate::catalog_views::extract_thread_ids;
 pub(crate) use crate::catalog_views::render_apps_list;
