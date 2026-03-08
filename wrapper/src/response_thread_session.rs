@@ -9,9 +9,9 @@ mod response_thread_maintenance;
 use self::response_thread_maintenance::handle_thread_maintenance_response;
 use crate::Cli;
 use crate::output::Output;
-use crate::response_thread_switch::handle_forked_thread;
-use crate::response_thread_switch::handle_resumed_thread;
-use crate::response_thread_switch::handle_started_thread;
+use crate::response_thread_loaded::handle_forked_thread;
+use crate::response_thread_loaded::handle_resumed_thread;
+use crate::response_thread_loaded::handle_started_thread;
 use crate::state::AppState;
 
 pub(crate) fn handle_thread_session_response(

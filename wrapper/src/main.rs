@@ -72,7 +72,6 @@ mod response_realtime_activity;
 mod response_thread_loaded;
 mod response_thread_runtime;
 mod response_thread_session;
-mod response_thread_switch;
 mod response_turn_activity;
 mod responses;
 mod rpc;

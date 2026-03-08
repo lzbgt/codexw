@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use crate::input::input_decode_inline::collect_prefixed_tokens;
-use crate::input::input_decode_inline::mention_skill_path;
+use crate::input::input_decode_inline_skills::mention_skill_path;
+use crate::input::input_decode_tokens::collect_prefixed_tokens;
 use crate::input::input_resolve_tools::ToolMentions;
 use crate::input::input_types::AppCatalogEntry;
 use crate::input::input_types::PluginCatalogEntry;

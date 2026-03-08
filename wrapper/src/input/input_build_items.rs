@@ -1,7 +1,7 @@
 use serde_json::Value;
 use serde_json::json;
 
-use crate::input::input_decode_inline::mention_skill_path;
+use crate::input::input_decode_inline_skills::mention_skill_path;
 use crate::input::input_types::DecodedHistoryText;
 
 pub(crate) fn push_attachment_items(

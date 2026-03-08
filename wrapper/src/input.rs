@@ -1,6 +1,9 @@
 mod input_build;
-mod input_decode_inline;
+mod input_decode_inline_mentions;
+mod input_decode_inline_paths;
+mod input_decode_inline_skills;
 mod input_decode_mentions;
+mod input_decode_tokens;
 mod input_resolve_catalog;
 mod input_resolve_tools;
 mod input_types;
@@ -12,6 +15,6 @@ pub use input_types::PluginCatalogEntry;
 pub use input_types::SkillCatalogEntry;
 
 #[cfg(test)]
-pub(crate) use input_decode_inline::resolve_file_mention_path;
+pub(crate) use input_decode_inline_paths::resolve_file_mention_path;
 #[cfg(test)]
 pub(crate) use input_decode_mentions::decode_linked_mentions;

@@ -10,13 +10,13 @@ pub(crate) fn parse_linked_tool_mention<'a>(
 
     let name_start = sigil_index + 1;
     let first_name_byte = text_bytes.get(name_start)?;
-    if !super::super::input_decode_inline::is_mention_name_char(*first_name_byte) {
+    if !super::super::input_decode_tokens::is_mention_name_char(*first_name_byte) {
         return None;
     }
 
     let mut name_end = name_start + 1;
     while let Some(next_byte) = text_bytes.get(name_end)
-        && super::super::input_decode_inline::is_mention_name_char(*next_byte)
+        && super::super::input_decode_tokens::is_mention_name_char(*next_byte)
     {
         name_end += 1;
     }

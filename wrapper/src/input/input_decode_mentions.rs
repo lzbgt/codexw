@@ -10,7 +10,7 @@ pub fn decode_linked_mentions(text: &str) -> DecodedHistoryText {
     while index < bytes.len() {
         if bytes[index] == b'['
             && let Some((name, path, end_index)) = parse_linked_tool_mention(text, bytes, index)
-            && !super::input_decode_inline::is_common_env_var(name)
+            && !super::input_decode_tokens::is_common_env_var(name)
             && is_tool_path(path)
         {
             out.push('$');
