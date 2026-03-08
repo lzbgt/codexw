@@ -28,6 +28,8 @@ mod render_block_common;
 mod render_block_markdown;
 mod render_block_structured;
 mod render_blocks;
+mod render_markdown_code;
+mod render_markdown_inline;
 mod render_prompt;
 mod requests;
 mod responses;
@@ -40,6 +42,8 @@ mod status_views;
 mod transcript_views;
 mod views;
 
+#[cfg(test)]
+mod input_tests;
 #[cfg(test)]
 mod main_tests;
 

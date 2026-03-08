@@ -66,7 +66,7 @@ The runtime has thirteen main layers.
    `editor.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `dispatch.rs`, and `dispatch_commands.rs` are compatibility facades over those splits.
 
 13. Human output handling
-   `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
+   `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
 
 Session feature helpers are split across `model_session.rs`, `collaboration.rs`, and `session_status.rs`, with `session.rs` kept as a thin compatibility facade for imports and tests.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
@@ -82,7 +82,7 @@ Shared state helpers live in `state.rs`: `AppState`, pending request ids, stream
 Command metadata helpers live in `commands_metadata.rs`: builtin command catalog, descriptions, and help-line generation.
 Command completion helpers live in `commands_completion.rs`: slash completion, fuzzy scoring, prefix logic, and generic quoting helpers.
 Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs` and `dispatch_commands.rs` kept as thin compatibility facades for imports and tests.
-Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and tests.
+Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers live in `responses.rs`: JSON-RPC success/error handling for pending outbound requests.
 Notification helpers live in `notifications.rs`: realtime, turn, item, and status notifications plus auto-continue turn chaining.
@@ -280,7 +280,7 @@ Important properties:
 - prompt hide and redraw before emitted transcript blocks
 - no mixed stdout/stderr interleaving for user-visible UI
 
-`render.rs` is the compatibility facade for the split render layer. `render_prompt.rs` owns prompt fitting and committed prompt rendering. `render_blocks.rs` is now the compatibility facade for block rendering, while `render_block_common.rs` owns block classification/title/status styling, `render_block_markdown.rs` owns markdown/code rendering, `render_block_structured.rs` owns diff/command/plain block rendering, and `render_ansi.rs` owns ANSI serialization for `ratatui` text primitives such as `Text`, `Line`, and `Span`.
+`render.rs` is the compatibility facade for the split render layer. `render_prompt.rs` owns prompt fitting and committed prompt rendering. `render_blocks.rs` is now the compatibility facade for block rendering, while `render_block_common.rs` owns block classification/title/status styling, `render_block_markdown.rs` owns markdown block assembly, `render_markdown_code.rs` owns syntax-highlighted code rendering, `render_markdown_inline.rs` owns inline markdown parsing/tinting, `render_block_structured.rs` owns diff/command/plain block rendering, and `render_ansi.rs` owns ANSI serialization for `ratatui` text primitives such as `Text`, `Line`, and `Span`.
 
 It renders:
 
@@ -436,13 +436,19 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/render_block_common.rs`
   Block classification, title styling, and status-line formatting helpers.
 - `wrapper/src/render_block_markdown.rs`
-  Markdown-like text rendering, fenced code highlighting, inline markdown formatting, and thinking tinting.
+  Markdown-like block assembly and thinking tinting.
+- `wrapper/src/render_markdown_code.rs`
+  Syntax-highlighted fenced-code and single-line code rendering.
+- `wrapper/src/render_markdown_inline.rs`
+  Inline markdown parsing, link rendering, and span tinting helpers.
 - `wrapper/src/render_block_structured.rs`
   Diff, command, and plain-text block rendering.
 - `wrapper/src/render_ansi.rs`
   ANSI serialization helpers for `ratatui` text structures and styles.
 - `wrapper/src/prompt.rs`
   Auto-continue prompt synthesis and stop-marker parsing.
+- `wrapper/src/input_tests.rs`
+  Crate-level regression tests for the split input layer facade and helpers.
 - `skills/session-autopilot/`
   Companion cooperative skill for end-of-turn continuation policy.
 

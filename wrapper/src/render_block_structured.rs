@@ -7,8 +7,8 @@ use ratatui::text::Text;
 
 use crate::render_block_common::split_kv_label;
 use crate::render_block_common::style_status_line;
-use crate::render_block_markdown::highlight_code_line;
-use crate::render_block_markdown::render_inline_markdown;
+use crate::render_markdown_code::highlight_code_line;
+use crate::render_markdown_inline::render_inline_markdown;
 
 pub(crate) fn render_diff_text(body: &str) -> Text<'static> {
     let lines = body
