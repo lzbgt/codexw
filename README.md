@@ -66,10 +66,11 @@ To reduce transcript duplication, codexw now prefers that transient status line 
 Build locally:
 
 ```bash
-cd /Users/zongbaolu/work/codexw/wrapper
-cargo build --release
-cp target/release/codexw /Users/zongbaolu/work/codexw/bin/codexw
+cd /Users/zongbaolu/work/codexw
+./scripts/install-codexw
 ```
+
+That installer rebuilds the release binary, copies it into `bin/codexw`, applies an ad-hoc `codesign`, installs it to `/opt/homebrew/bin/codexw`, and signs the installed copy as well.
 
 Start a new interactive session:
 

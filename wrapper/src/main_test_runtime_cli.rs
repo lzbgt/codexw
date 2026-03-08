@@ -5,9 +5,14 @@ use crate::commands_completion_render::quote_if_needed;
 use crate::dispatch_command_utils::parse_feedback_args;
 use crate::runtime_process::effective_cwd;
 use crate::runtime_process::normalize_cli;
+use crate::runtime_process::shutdown_child;
 use std::path::PathBuf;
+use std::process::Command;
+use std::process::Stdio;
 use std::sync::Mutex;
 use std::sync::OnceLock;
+use std::time::Duration;
+use std::time::Instant;
 use tempfile::tempdir;
 
 #[cfg(unix)]
@@ -181,4 +186,21 @@ fn build_resume_hint_line_includes_full_resume_command() {
         build_resume_hint_line("codexw", "/tmp/work tree", None),
         None
     );
+}
+
+#[test]
+fn shutdown_child_terminates_process_that_ignores_stdin_close() {
+    let mut child = Command::new("sh")
+        .arg("-c")
+        .arg("sleep 30")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("spawn stubborn child");
+    let writer = child.stdin.take().expect("child stdin");
+
+    let started = Instant::now();
+    shutdown_child(writer, child).expect("shutdown child");
+    assert!(started.elapsed() < Duration::from_secs(5));
 }

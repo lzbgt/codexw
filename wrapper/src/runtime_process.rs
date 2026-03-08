@@ -2,6 +2,9 @@ use std::process::Child;
 use std::process::ChildStdin;
 use std::process::Command;
 use std::process::Stdio;
+use std::thread;
+use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -90,8 +93,32 @@ fn inherit_proxy_env(cmd: &mut Command) {
 }
 
 pub(crate) fn shutdown_child(writer: ChildStdin, mut child: Child) -> Result<()> {
+    const SHUTDOWN_WAIT: Duration = Duration::from_millis(750);
+    const POLL_INTERVAL: Duration = Duration::from_millis(25);
+
     drop(writer);
-    let status = child.wait().context("wait for codex app-server exit")?;
+    let deadline = Instant::now() + SHUTDOWN_WAIT;
+    let status = loop {
+        if let Some(status) = child
+            .try_wait()
+            .context("poll codex app-server exit during shutdown")?
+        {
+            break status;
+        }
+        if Instant::now() >= deadline {
+            match child.kill() {
+                Ok(()) => {}
+                Err(err) if err.kind() == std::io::ErrorKind::InvalidInput => {}
+                Err(err) => {
+                    return Err(err).context("terminate codex app-server after shutdown timeout");
+                }
+            }
+            break child
+                .wait()
+                .context("wait for codex app-server exit after terminate")?;
+        }
+        thread::sleep(POLL_INTERVAL);
+    };
     if !status.success() {
         eprintln!("[session] codex app-server exited with {status}");
     }
