@@ -16,6 +16,16 @@ use crate::orchestration_registry::wait_dependency_summary;
 use crate::state::AppState;
 use crate::state::summarize_text;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WorkerFilter {
+    All,
+    Blockers,
+    Agents,
+    Shells,
+    Services,
+    Terminals,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct CachedAgentThreadSummary {
     pub(crate) id: String,
@@ -160,107 +170,64 @@ pub(crate) fn orchestration_background_summary(state: &AppState) -> Option<Strin
 }
 
 pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
-    let background = render_background_terminals(state);
-    let has_background = background != "No background terminals running.";
+    render_orchestration_workers_with_filter(state, WorkerFilter::All)
+}
+
+pub(crate) fn render_orchestration_workers_with_filter(
+    state: &AppState,
+    filter: WorkerFilter,
+) -> String {
     let mut lines = Vec::new();
-    let mut main_line = format!("Main agent state: {}", main_agent_state_label(state));
-    if let Some(waiting_on) = wait_dependency_summary(state) {
-        main_line.push_str(&format!(" | {waiting_on}"));
+    if matches!(filter, WorkerFilter::All | WorkerFilter::Blockers) {
+        lines.extend(render_main_agent_section(state, filter));
     }
-    main_line.push_str(&format!(
-        " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} | deps blocking={} sidecar={}",
-        active_sidecar_agent_task_count(state),
-        running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
-        running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
-        running_shell_count_by_intent(state, BackgroundShellIntent::Service),
-        blocking_dependency_count(state),
-        sidecar_dependency_count(state)
-    ));
-    lines.push(main_line);
-    let dependencies = orchestration_dependency_edges(state);
-    if !dependencies.is_empty() {
-        lines.push(String::new());
-        lines.push("Dependencies:".to_string());
-        for (index, edge) in dependencies.iter().enumerate() {
-            lines.push(format!(
-                "{:>2}. {} -> {}  [{}{}]",
-                index + 1,
-                edge.from,
-                edge.to,
-                edge.kind,
-                if edge.blocking { ", blocking" } else { "" }
-            ));
+    if matches!(
+        filter,
+        WorkerFilter::All | WorkerFilter::Agents | WorkerFilter::Blockers
+    ) {
+        let tasks = live_agent_tasks(state)
+            .into_iter()
+            .filter(|task| match filter {
+                WorkerFilter::All | WorkerFilter::Agents => true,
+                WorkerFilter::Blockers => task.tool == "wait" && task.status == "inProgress",
+                _ => false,
+            })
+            .collect::<Vec<_>>();
+        if !tasks.is_empty() {
+            push_section_gap(&mut lines);
+            lines.extend(render_live_agent_tasks_section(&tasks));
         }
     }
-    if !state.live_agent_tasks.is_empty() {
-        if !lines.is_empty() {
-            lines.push(String::new());
-        }
-        lines.push("Live agent tasks:".to_string());
-        for (index, task) in live_agent_tasks(state).iter().enumerate() {
-            let receiver_preview = if task.receiver_thread_ids.is_empty() {
-                "-".to_string()
-            } else {
-                task.receiver_thread_ids.join(", ")
-            };
-            let status_preview = if task.agent_statuses.is_empty() {
-                "-".to_string()
-            } else {
-                task.agent_statuses
-                    .iter()
-                    .map(|(thread_id, status)| format!("{thread_id}={status}"))
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            };
-            lines.push(format!(
-                "{:>2}. {}  [{}]  {} -> {}",
-                index + 1,
-                task.tool,
-                task.status,
-                task.sender_thread_id,
-                receiver_preview
-            ));
-            lines.push(format!("    task     {}", task.id));
-            lines.push(format!("    role     {}", task_role(task)));
-            lines.push(format!(
-                "    blocking {}",
-                if task.tool == "wait" && task.status == "inProgress" {
-                    "yes"
-                } else {
-                    "no"
-                }
-            ));
-            lines.push(format!("    agents   {status_preview}"));
-            if let Some(prompt) = task.prompt.as_deref() {
-                lines.push(format!("    prompt   {prompt}"));
-            }
-        }
+    if matches!(filter, WorkerFilter::All | WorkerFilter::Agents)
+        && !state.cached_agent_threads.is_empty()
+    {
+        push_section_gap(&mut lines);
+        lines.extend(render_cached_agent_threads_section(
+            &state.cached_agent_threads,
+        ));
     }
-    if !state.cached_agent_threads.is_empty() {
-        if !lines.is_empty() {
-            lines.push(String::new());
-        }
-        lines.push("Cached agent threads:".to_string());
-        for (index, agent) in state.cached_agent_threads.iter().enumerate() {
-            let mut line = format!("{:>2}. {}  [{}]", index + 1, agent.id, agent.status);
-            if let Some(updated_at) = agent.updated_at {
-                line.push_str(&format!("  [updated {updated_at}]"));
-            }
-            if !agent.preview.is_empty() && agent.preview != "-" {
-                line.push_str(&format!("  {}", agent.preview));
-            }
-            lines.push(line);
-        }
-        lines.push("Use /multi-agents to refresh or switch agent threads.".to_string());
+    let shell_lines = match filter {
+        WorkerFilter::All | WorkerFilter::Shells => state.background_shells.render_for_ps(),
+        WorkerFilter::Services => state
+            .background_shells
+            .render_for_ps_filtered(Some(BackgroundShellIntent::Service)),
+        WorkerFilter::Blockers => state
+            .background_shells
+            .render_for_ps_filtered(Some(BackgroundShellIntent::Prerequisite)),
+        _ => None,
+    };
+    if let Some(shell_lines) = shell_lines {
+        push_section_gap(&mut lines);
+        lines.extend(shell_lines);
     }
-    if has_background {
-        if !lines.is_empty() {
-            lines.push(String::new());
-        }
-        lines.extend(background.lines().map(ToOwned::to_owned));
+    if matches!(filter, WorkerFilter::All | WorkerFilter::Terminals)
+        && let Some(terminal_lines) = render_server_background_terminals_only(state)
+    {
+        push_section_gap(&mut lines);
+        lines.extend(terminal_lines);
     }
     if lines.is_empty() {
-        return "No workers tracked yet. Use /multi-agents to cache agent threads or start a background task.".to_string();
+        return empty_filter_message(filter).to_string();
     }
     lines.join("\n")
 }
@@ -286,6 +253,138 @@ fn summarize_agent_status_counts(agent_threads: &[CachedAgentThreadSummary]) -> 
         .join(" ")
 }
 
+fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut main_line = format!("Main agent state: {}", main_agent_state_label(state));
+    if let Some(waiting_on) = wait_dependency_summary(state) {
+        main_line.push_str(&format!(" | {waiting_on}"));
+    }
+    main_line.push_str(&format!(
+        " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} | deps blocking={} sidecar={}",
+        active_sidecar_agent_task_count(state),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Service),
+        blocking_dependency_count(state),
+        sidecar_dependency_count(state)
+    ));
+    lines.push(main_line);
+    let dependencies = orchestration_dependency_edges(state)
+        .into_iter()
+        .filter(|edge| !matches!(filter, WorkerFilter::Blockers) || edge.blocking)
+        .collect::<Vec<_>>();
+    if !dependencies.is_empty() {
+        lines.push(String::new());
+        lines.push("Dependencies:".to_string());
+        for (index, edge) in dependencies.iter().enumerate() {
+            lines.push(format!(
+                "{:>2}. {} -> {}  [{}{}]",
+                index + 1,
+                edge.from,
+                edge.to,
+                edge.kind,
+                if edge.blocking { ", blocking" } else { "" }
+            ));
+        }
+    }
+    lines
+}
+
+fn render_live_agent_tasks_section(tasks: &[LiveAgentTaskSummary]) -> Vec<String> {
+    let mut lines = vec!["Live agent tasks:".to_string()];
+    for (index, task) in tasks.iter().enumerate() {
+        let receiver_preview = if task.receiver_thread_ids.is_empty() {
+            "-".to_string()
+        } else {
+            task.receiver_thread_ids.join(", ")
+        };
+        let status_preview = if task.agent_statuses.is_empty() {
+            "-".to_string()
+        } else {
+            task.agent_statuses
+                .iter()
+                .map(|(thread_id, status)| format!("{thread_id}={status}"))
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        lines.push(format!(
+            "{:>2}. {}  [{}]  {} -> {}",
+            index + 1,
+            task.tool,
+            task.status,
+            task.sender_thread_id,
+            receiver_preview
+        ));
+        lines.push(format!("    task     {}", task.id));
+        lines.push(format!("    role     {}", task_role(task)));
+        lines.push(format!(
+            "    blocking {}",
+            if task.tool == "wait" && task.status == "inProgress" {
+                "yes"
+            } else {
+                "no"
+            }
+        ));
+        lines.push(format!("    agents   {status_preview}"));
+        if let Some(prompt) = task.prompt.as_deref() {
+            lines.push(format!("    prompt   {prompt}"));
+        }
+    }
+    lines
+}
+
+fn render_cached_agent_threads_section(agent_threads: &[CachedAgentThreadSummary]) -> Vec<String> {
+    let mut lines = vec!["Cached agent threads:".to_string()];
+    for (index, agent) in agent_threads.iter().enumerate() {
+        let mut line = format!("{:>2}. {}  [{}]", index + 1, agent.id, agent.status);
+        if let Some(updated_at) = agent.updated_at {
+            line.push_str(&format!("  [updated {updated_at}]"));
+        }
+        if !agent.preview.is_empty() && agent.preview != "-" {
+            line.push_str(&format!("  {}", agent.preview));
+        }
+        lines.push(line);
+    }
+    lines.push("Use /multi-agents to refresh or switch agent threads.".to_string());
+    lines
+}
+
+fn render_server_background_terminals_only(state: &AppState) -> Option<Vec<String>> {
+    let background = render_background_terminals(state);
+    if background == "No background terminals running." {
+        return None;
+    }
+    let lines = background
+        .lines()
+        .take_while(|line| *line != "Local background shell jobs:")
+        .map(ToOwned::to_owned)
+        .collect::<Vec<_>>();
+    if lines.is_empty() || lines[0] != "Server-observed background terminals:" {
+        None
+    } else {
+        Some(lines)
+    }
+}
+
+fn push_section_gap(lines: &mut Vec<String>) {
+    if !lines.is_empty() {
+        lines.push(String::new());
+    }
+}
+
+fn empty_filter_message(filter: WorkerFilter) -> &'static str {
+    match filter {
+        WorkerFilter::All => {
+            "No workers tracked yet. Use /multi-agents to cache agent threads or start a background task."
+        }
+        WorkerFilter::Blockers => "No blocking workers tracked right now.",
+        WorkerFilter::Agents => "No agent workers tracked right now.",
+        WorkerFilter::Shells => "No local background shell jobs tracked right now.",
+        WorkerFilter::Services => "No service shells tracked right now.",
+        WorkerFilter::Terminals => "No server-observed background terminals tracked right now.",
+    }
+}
+
 fn pluralize(count: usize, singular: &str, plural: &str) -> String {
     format!("{count} {}", if count == 1 { singular } else { plural })
 }
@@ -301,11 +400,13 @@ mod tests {
     use crate::orchestration_registry::LiveAgentTaskSummary;
 
     use super::CachedAgentThreadSummary;
+    use super::WorkerFilter;
     use super::orchestration_background_summary;
     use super::orchestration_overview_summary;
     use super::orchestration_prompt_suffix;
     use super::orchestration_runtime_summary;
     use super::render_orchestration_workers;
+    use super::render_orchestration_workers_with_filter;
 
     #[test]
     fn orchestration_summary_includes_agent_status_breakdown() {
@@ -467,5 +568,73 @@ mod tests {
         assert!(rendered.contains("Use /multi-agents to refresh or switch agent threads."));
         assert!(rendered.contains("Server-observed background terminals:"));
         assert!(rendered.contains("python worker.py"));
+    }
+
+    #[test]
+    fn filtered_worker_rendering_can_target_blockers_services_and_terminals() {
+        let mut state = crate::state::AppState::new(true, false);
+        state.thread_id = Some("thread-main".to_string());
+        state.live_agent_tasks.insert(
+            "call-wait".to_string(),
+            LiveAgentTaskSummary {
+                id: "call-wait".to_string(),
+                tool: "wait".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["agent-1".to_string()],
+                prompt: None,
+                agent_statuses: BTreeMap::from([("agent-1".to_string(), "running".to_string())]),
+            },
+        );
+        state.cached_agent_threads = vec![CachedAgentThreadSummary {
+            id: "agent-1".to_string(),
+            status: "active".to_string(),
+            preview: "inspect auth".to_string(),
+            updated_at: Some(10),
+        }];
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+                "/tmp",
+            )
+            .expect("start prerequisite shell");
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({"command": "sleep 0.4", "intent": "service", "label": "dev server"}),
+                "/tmp",
+            )
+            .expect("start service shell");
+        state.background_terminals.insert(
+            "proc-1".to_string(),
+            crate::background_terminals::BackgroundTerminalSummary {
+                item_id: "cmd-1".to_string(),
+                process_id: "proc-1".to_string(),
+                command_display: "python worker.py".to_string(),
+                waiting: true,
+                recent_inputs: Vec::new(),
+                recent_output: vec!["ready".to_string()],
+            },
+        );
+
+        let blockers = render_orchestration_workers_with_filter(&state, WorkerFilter::Blockers);
+        assert!(blockers.contains("Dependencies:"));
+        assert!(blockers.contains("wait, blocking"));
+        assert!(blockers.contains("backgroundShell:prerequisite, blocking"));
+        assert!(!blockers.contains("Cached agent threads:"));
+        assert!(!blockers.contains("Server-observed background terminals:"));
+
+        let services = render_orchestration_workers_with_filter(&state, WorkerFilter::Services);
+        assert!(services.contains("Local background shell jobs:"));
+        assert!(services.contains("intent   service"));
+        assert!(services.contains("label    dev server"));
+        assert!(!services.contains("intent   prerequisite"));
+
+        let terminals = render_orchestration_workers_with_filter(&state, WorkerFilter::Terminals);
+        assert!(terminals.contains("Server-observed background terminals:"));
+        assert!(terminals.contains("python worker.py"));
+        assert!(!terminals.contains("Local background shell jobs:"));
+        let _ = state.background_shells.terminate_all_running();
     }
 }

@@ -3,7 +3,9 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::render_orchestration_workers;
+use crate::orchestration_view::render_orchestration_workers_with_filter;
 use crate::output::Output;
 use crate::requests::send_clean_background_terminals;
 use crate::state::AppState;
@@ -40,8 +42,30 @@ pub(crate) fn handle_ps_command(
             }
             send_clean_background_terminals(writer, state, current_thread_id)?;
         }
+    } else if let Some(filter) = parse_ps_filter(action) {
+        let rendered = if matches!(filter, WorkerFilter::All) {
+            render_orchestration_workers(state)
+        } else {
+            render_orchestration_workers_with_filter(state, filter)
+        };
+        output.block_stdout("Workers", &rendered)?;
     } else {
-        output.block_stdout("Workers", &render_orchestration_workers(state))?;
+        output.line_stderr(
+            "[session] usage: :ps [blockers|agents|shells|services|terminals|clean]",
+        )?;
     }
     Ok(true)
+}
+
+pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {
+    match action {
+        None | Some("all") => Some(WorkerFilter::All),
+        Some("blockers") | Some("blocking") | Some("prereqs") => Some(WorkerFilter::Blockers),
+        Some("agents") => Some(WorkerFilter::Agents),
+        Some("shells") => Some(WorkerFilter::Shells),
+        Some("services") => Some(WorkerFilter::Services),
+        Some("terminals") => Some(WorkerFilter::Terminals),
+        Some("clean") => None,
+        Some(_) => None,
+    }
 }

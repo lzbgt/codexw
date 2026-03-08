@@ -384,7 +384,18 @@ impl BackgroundShellManager {
     }
 
     pub(crate) fn render_for_ps(&self) -> Option<Vec<String>> {
+        self.render_for_ps_filtered(None)
+    }
+
+    pub(crate) fn render_for_ps_filtered(
+        &self,
+        intent_filter: Option<BackgroundShellIntent>,
+    ) -> Option<Vec<String>> {
         let snapshots = self.snapshots();
+        let snapshots = snapshots
+            .into_iter()
+            .filter(|snapshot| intent_filter.is_none_or(|intent| snapshot.intent == intent))
+            .collect::<Vec<_>>();
         if snapshots.is_empty() {
             return None;
         }

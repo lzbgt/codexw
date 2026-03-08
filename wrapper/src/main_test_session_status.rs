@@ -1,12 +1,14 @@
 use crate::Cli;
 use crate::background_terminals::background_terminal_count;
 use crate::background_terminals::render_background_terminals;
+use crate::dispatch_command_session_ps::parse_ps_filter;
 use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
 use crate::notification_item_status::handle_status_update;
 use crate::orchestration_registry::LiveAgentTaskSummary;
 use crate::orchestration_view::CachedAgentThreadSummary;
+use crate::orchestration_view::WorkerFilter;
 use crate::output::Output;
 use crate::prompt_state::render_prompt_status;
 use crate::session_prompt_status_active::spinner_frame;
@@ -500,6 +502,36 @@ fn status_runtime_reports_background_classes() {
     assert!(rendered.contains("background      4"));
     assert!(rendered.contains("background cls  prereqs=1 shell_sidecars=1 services=1 terminals=1"));
     let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_filter_parser_accepts_worker_class_aliases() {
+    assert_eq!(parse_ps_filter(None), Some(WorkerFilter::All));
+    assert_eq!(parse_ps_filter(Some("all")), Some(WorkerFilter::All));
+    assert_eq!(
+        parse_ps_filter(Some("blockers")),
+        Some(WorkerFilter::Blockers)
+    );
+    assert_eq!(
+        parse_ps_filter(Some("blocking")),
+        Some(WorkerFilter::Blockers)
+    );
+    assert_eq!(
+        parse_ps_filter(Some("prereqs")),
+        Some(WorkerFilter::Blockers)
+    );
+    assert_eq!(parse_ps_filter(Some("agents")), Some(WorkerFilter::Agents));
+    assert_eq!(parse_ps_filter(Some("shells")), Some(WorkerFilter::Shells));
+    assert_eq!(
+        parse_ps_filter(Some("services")),
+        Some(WorkerFilter::Services)
+    );
+    assert_eq!(
+        parse_ps_filter(Some("terminals")),
+        Some(WorkerFilter::Terminals)
+    );
+    assert_eq!(parse_ps_filter(Some("clean")), None);
+    assert_eq!(parse_ps_filter(Some("unknown")), None);
 }
 
 #[test]

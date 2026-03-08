@@ -203,6 +203,12 @@ The current `codexw` implementation now reflects that model partially:
   - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
   - `wait` calls are tracked separately as main-agent dependencies, so the wrapper can tell the difference between "subagents are running" and "the foreground agent is actually blocked waiting on them"
 - `/ps` renders the tracked worker snapshot: cached cognitive workers from `/agent` or `/multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
+- `/ps` now also supports worker-class filters:
+  - `:ps blockers` for blocking waits and prerequisite shells
+  - `:ps agents` for cognitive workers only
+  - `:ps shells` for wrapper-owned local shell jobs only
+  - `:ps services` for reusable service shells only
+  - `:ps terminals` for backend-observed terminals only
 - `/status` now reports an orchestration breakdown with:
   - `main=1`
   - blocking and sidecar dependency-edge counts derived from the live orchestration graph
@@ -219,6 +225,9 @@ The current `codexw` implementation now reflects that model partially:
   - it reports when the main agent is blocked on prerequisite shells or agent waits
   - it distinguishes sidecars, reusable services, and server terminals instead of showing only a flat background-task count
   - it keeps `/ps` and `/clean` as the action hints for inspecting or stopping async work
+- that orchestration state is now actionable from `/ps` itself, not just visible:
+  - the full worker view remains the default
+  - filtered `/ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
 - `/status` runtime output also exposes a compact `background cls` line with the shell-intent and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking or merely observational
 
 The next architectural step, if deeper orchestration is needed, is a unified worker/task registry that gives the wrapper one internal model for:
