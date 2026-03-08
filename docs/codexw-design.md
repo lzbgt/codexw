@@ -193,6 +193,11 @@ The current `codexw` implementation now reflects that model partially:
   - `background_shell_poll`
   - `background_shell_list`
   - `background_shell_terminate`
+- `background_shell_start` now accepts explicit orchestration intent:
+  - `prerequisite` for critical-path shell work that should count as blocking
+  - `observation` for non-blocking sidecar execution such as tests, searches, or crawls
+  - `service` for reusable long-lived helpers such as dev servers
+  - optional `label` text for operator-facing status and `/ps` output
 - live `collabAgentToolCall` items are now tracked as in-turn cognitive work:
   - active collab-agent calls are kept in a live registry while the turn is running
   - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
@@ -203,7 +208,9 @@ The current `codexw` implementation now reflects that model partially:
   - blocking and sidecar dependency-edge counts derived from the live orchestration graph
   - live wait count from in-progress `wait` collab calls
   - live sidecar-agent count from `spawnAgent` / `sendInput` / `resumeAgent`
-  - live execution-sidecar count from wrapper background shells that are still running
+  - live execution-prerequisite count from wrapper background shells marked `prerequisite`
+  - live execution-sidecar count from wrapper background shells marked `observation`
+  - live execution-service count from wrapper background shells marked `service`
   - live collab-agent task count from the current turn
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
   - wrapper-owned background shell count
@@ -217,7 +224,7 @@ The next architectural step, if deeper orchestration is needed, is a unified wor
 - dependency and wait state
 
 That registry would let `/multi-agents`, `/ps`, ready status, and transcript summaries read from one orchestration state model rather than several feature-specific trackers.
-`codexw` now also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus `main -> shell:*` edges for running wrapper-owned background shell jobs. `/ps` renders those edges directly so the orchestration view is not just counters.
+`codexw` now also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.
 
 Two design choices matter here:
 

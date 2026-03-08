@@ -17,6 +17,37 @@ const MAX_POLL_LIMIT: usize = 200;
 const MAX_STORED_LINES: usize = 2_000;
 const MAX_RENDERED_RECENT_LINES: usize = 3;
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) enum BackgroundShellIntent {
+    Prerequisite,
+    #[default]
+    Observation,
+    Service,
+}
+
+impl BackgroundShellIntent {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Prerequisite => "prerequisite",
+            Self::Observation => "observation",
+            Self::Service => "service",
+        }
+    }
+
+    pub(crate) fn is_blocking(self) -> bool {
+        matches!(self, Self::Prerequisite)
+    }
+
+    fn from_str(raw: &str) -> Option<Self> {
+        match raw {
+            "prerequisite" => Some(Self::Prerequisite),
+            "observation" => Some(Self::Observation),
+            "service" => Some(Self::Service),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct BackgroundShellOrigin {
     pub(crate) source_thread_id: Option<String>,
@@ -41,6 +72,8 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) pid: u32,
     pub(crate) command: String,
     pub(crate) cwd: String,
+    pub(crate) intent: BackgroundShellIntent,
+    pub(crate) label: Option<String>,
     pub(crate) origin: BackgroundShellOrigin,
     pub(crate) status: String,
     pub(crate) exit_code: Option<i32>,
@@ -54,6 +87,8 @@ struct BackgroundShellJobState {
     pid: u32,
     command: String,
     cwd: String,
+    intent: BackgroundShellIntent,
+    label: Option<String>,
     origin: BackgroundShellOrigin,
     status: BackgroundShellJobStatus,
     total_lines: u64,
@@ -103,6 +138,8 @@ impl BackgroundShellManager {
             object.get("cwd").and_then(serde_json::Value::as_str),
             resolved_cwd,
         )?;
+        let intent = parse_background_shell_intent(object.get("intent"))?;
+        let label = parse_background_shell_label(object.get("label"));
         let job_id = format!(
             "bg-{}",
             self.inner.next_job_id.fetch_add(1, Ordering::Relaxed) + 1
@@ -122,6 +159,8 @@ impl BackgroundShellManager {
             pid,
             command: command.to_string(),
             cwd: cwd.display().to_string(),
+            intent,
+            label: label.clone(),
             origin: origin.clone(),
             status: BackgroundShellJobStatus::Running,
             total_lines: 0,
@@ -152,10 +191,20 @@ impl BackgroundShellManager {
             state.status = status;
         });
 
-        Ok(format!(
-            "Started background shell job {job_id}\nPID: {pid}\nCWD: {}\nCommand: {command}\nUse background_shell_poll with {{\"jobId\":\"{job_id}\"}} to inspect output while continuing other work.",
-            cwd.display()
-        ))
+        let mut lines = vec![
+            format!("Started background shell job {job_id}"),
+            format!("PID: {pid}"),
+            format!("CWD: {}", cwd.display()),
+            format!("Intent: {}", intent.as_str()),
+            format!("Command: {command}"),
+        ];
+        if let Some(label) = label {
+            lines.insert(4, format!("Label: {label}"));
+        }
+        lines.push(format!(
+            "Use background_shell_poll with {{\"jobId\":\"{job_id}\"}} to inspect output while continuing other work."
+        ));
+        Ok(lines.join("\n"))
     }
 
     pub(crate) fn poll_from_tool(&self, arguments: &serde_json::Value) -> Result<String, String> {
@@ -191,9 +240,13 @@ impl BackgroundShellManager {
             format!("Status: {}", status_label(&state.status)),
             format!("PID: {}", state.pid),
             format!("CWD: {}", state.cwd),
+            format!("Intent: {}", state.intent.as_str()),
             format!("Command: {}", state.command),
             format!("Next afterLine: {}", state.total_lines),
         ];
+        if let Some(label) = state.label.as_deref() {
+            lines.push(format!("Label: {label}"));
+        }
         if let Some(source_thread_id) = state.origin.source_thread_id.as_deref() {
             lines.push(format!("Source thread: {source_thread_id}"));
         }
@@ -228,11 +281,18 @@ impl BackgroundShellManager {
         let mut lines = vec!["Background shell jobs:".to_string()];
         for snapshot in snapshots {
             let mut line = format!(
-                "{}  {}  pid={}  {}",
-                snapshot.id, snapshot.status, snapshot.pid, snapshot.command
+                "{}  {}  intent={}  pid={}  {}",
+                snapshot.id,
+                snapshot.status,
+                snapshot.intent.as_str(),
+                snapshot.pid,
+                snapshot.command
             );
             if let Some(exit_code) = snapshot.exit_code {
                 line.push_str(&format!("  exit={exit_code}"));
+            }
+            if let Some(label) = snapshot.label.as_deref() {
+                line.push_str(&format!("  label={label}"));
             }
             if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
                 line.push_str(&format!("  source={source_thread_id}"));
@@ -270,6 +330,15 @@ impl BackgroundShellManager {
         self.snapshots()
             .into_iter()
             .filter(|job| job.exit_code.is_none() && job.status == "running")
+            .count()
+    }
+
+    pub(crate) fn running_count_by_intent(&self, intent: BackgroundShellIntent) -> usize {
+        self.snapshots()
+            .into_iter()
+            .filter(|job| {
+                job.exit_code.is_none() && job.status == "running" && job.intent == intent
+            })
             .count()
     }
 
@@ -330,6 +399,10 @@ impl BackgroundShellManager {
             lines.push(format!("    job      {}", snapshot.id));
             lines.push(format!("    process  {}", snapshot.pid));
             lines.push(format!("    cwd      {}", snapshot.cwd));
+            lines.push(format!("    intent   {}", snapshot.intent.as_str()));
+            if let Some(label) = snapshot.label.as_deref() {
+                lines.push(format!("    label    {label}"));
+            }
             lines.push(format!("    lines    {}", snapshot.total_lines));
             if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
                 lines.push(format!("    origin   thread={source_thread_id}"));
@@ -399,6 +472,32 @@ fn resolve_background_cwd(raw_cwd: Option<&str>, resolved_cwd: &str) -> Result<P
         ));
     }
     Ok(cwd)
+}
+
+fn parse_background_shell_intent(
+    value: Option<&serde_json::Value>,
+) -> Result<BackgroundShellIntent, String> {
+    let Some(raw) = value else {
+        return Ok(BackgroundShellIntent::Observation);
+    };
+    let raw = raw
+        .as_str()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            "background_shell_start `intent` must be one of `prerequisite`, `observation`, or `service`".to_string()
+        })?;
+    BackgroundShellIntent::from_str(raw).ok_or_else(|| {
+        "background_shell_start `intent` must be one of `prerequisite`, `observation`, or `service`".to_string()
+    })
+}
+
+fn parse_background_shell_label(value: Option<&serde_json::Value>) -> Option<String> {
+    value
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
 }
 
 fn spawn_shell_process(command: &str, cwd: &Path) -> Result<std::process::Child, String> {
@@ -480,6 +579,8 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         pid: state.pid,
         command: state.command.clone(),
         cwd: state.cwd.clone(),
+        intent: state.intent,
+        label: state.label.clone(),
         origin: state.origin.clone(),
         status: status_label(&state.status).to_string(),
         exit_code: exit_code(&state.status),
@@ -554,6 +655,7 @@ fn terminate_pid(pid: u32) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    use super::BackgroundShellIntent;
     use super::BackgroundShellManager;
     use super::BackgroundShellOrigin;
     use serde_json::json;
@@ -594,15 +696,20 @@ mod tests {
         assert!(rendered.contains("Background shell jobs:"));
         assert!(rendered.contains("bg-1"));
         assert!(rendered.contains("running"));
+        assert!(rendered.contains("intent=observation"));
         let _ = manager.terminate_all_running();
     }
 
     #[test]
-    fn background_shell_origin_is_preserved_in_snapshots_and_poll() {
+    fn background_shell_origin_intent_and_label_are_preserved_in_snapshots_and_poll() {
         let manager = BackgroundShellManager::default();
         manager
             .start_from_tool_with_context(
-                &json!({"command": "sleep 0.4"}),
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "label": "webpack dev server"
+                }),
                 "/tmp",
                 BackgroundShellOrigin {
                     source_thread_id: Some("thread-agent-1".to_string()),
@@ -617,11 +724,49 @@ mod tests {
             snapshots[0].origin.source_thread_id.as_deref(),
             Some("thread-agent-1")
         );
+        assert_eq!(snapshots[0].intent, BackgroundShellIntent::Service);
+        assert_eq!(snapshots[0].label.as_deref(), Some("webpack dev server"));
         let rendered = manager
             .poll_from_tool(&json!({"jobId": "bg-1"}))
             .expect("poll background shell");
+        assert!(rendered.contains("Intent: service"));
+        assert!(rendered.contains("Label: webpack dev server"));
         assert!(rendered.contains("Source thread: thread-agent-1"));
         assert!(rendered.contains("Source call: call-77"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_manager_counts_running_jobs_by_intent() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+                "/tmp",
+            )
+            .expect("start prerequisite background shell");
+        manager
+            .start_from_tool(
+                &json!({"command": "sleep 0.4", "intent": "service"}),
+                "/tmp",
+            )
+            .expect("start service background shell");
+        manager
+            .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+            .expect("start observation background shell");
+
+        assert_eq!(
+            manager.running_count_by_intent(BackgroundShellIntent::Prerequisite),
+            1
+        );
+        assert_eq!(
+            manager.running_count_by_intent(BackgroundShellIntent::Service),
+            1
+        );
+        assert_eq!(
+            manager.running_count_by_intent(BackgroundShellIntent::Observation),
+            1
+        );
         let _ = manager.terminate_all_running();
     }
 }

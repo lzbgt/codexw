@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::background_shells::BackgroundShellIntent;
 use crate::background_terminals::render_background_terminals;
 use crate::background_terminals::server_background_terminal_count;
 use crate::orchestration_registry::LiveAgentTaskSummary;
@@ -8,6 +9,7 @@ use crate::orchestration_registry::active_wait_task_count;
 use crate::orchestration_registry::blocking_dependency_count;
 use crate::orchestration_registry::main_agent_state_label;
 use crate::orchestration_registry::orchestration_dependency_edges;
+use crate::orchestration_registry::running_shell_count_by_intent;
 use crate::orchestration_registry::sidecar_dependency_count;
 use crate::orchestration_registry::task_role;
 use crate::orchestration_registry::wait_dependency_summary;
@@ -45,13 +47,15 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
     let snapshot = orchestration_snapshot(state);
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_sidecars={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
         active_wait_task_count(state),
         active_sidecar_agent_task_count(state),
-        state.background_shells.running_count(),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Service),
         snapshot.live_agent_tasks.len(),
         snapshot.cached_agent_threads.len(),
         if agent_counts.is_empty() {
@@ -75,13 +79,15 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
     }
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     Some(format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_sidecars={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} agent_tasks={} shells={} thread_terms={} agents={}{}",
         main_agent_state_label(state),
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
         active_wait_task_count(state),
         active_sidecar_agent_task_count(state),
-        state.background_shells.running_count(),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Service),
         snapshot.live_agent_tasks.len(),
         snapshot.background_shell_jobs,
         snapshot.thread_background_terminals,
@@ -103,9 +109,11 @@ pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
         main_line.push_str(&format!(" | {waiting_on}"));
     }
     main_line.push_str(&format!(
-        " | sidecar agents={} | exec sidecars={} | deps blocking={} sidecar={}",
+        " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} | deps blocking={} sidecar={}",
         active_sidecar_agent_task_count(state),
-        state.background_shells.running_count(),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
+        running_shell_count_by_intent(state, BackgroundShellIntent::Service),
         blocking_dependency_count(state),
         sidecar_dependency_count(state)
     ));
@@ -257,7 +265,9 @@ mod tests {
         assert!(summary.contains("deps_sidecar=0"));
         assert!(summary.contains("waits=0"));
         assert!(summary.contains("sidecar_agents=0"));
+        assert!(summary.contains("exec_prereqs=0"));
         assert!(summary.contains("exec_sidecars=0"));
+        assert!(summary.contains("exec_services=0"));
         assert!(summary.contains("agents_live=0"));
         assert!(summary.contains("agents_cached=2"));
         assert!(summary.contains("active=1"));
@@ -317,9 +327,9 @@ mod tests {
 
         let rendered = render_orchestration_workers(&state);
         assert!(rendered.contains("Main agent state: blocked | waiting on agent agent-1"));
-        assert!(
-            rendered.contains("sidecar agents=1 | exec sidecars=0 | deps blocking=1 sidecar=1")
-        );
+        assert!(rendered.contains(
+            "sidecar agents=1 | exec prereqs=0 | exec sidecars=0 | exec services=0 | deps blocking=1 sidecar=1"
+        ));
         assert!(rendered.contains("Dependencies:"));
         assert!(rendered.contains("main -> agent:agent-1  [wait, blocking]"));
         assert!(rendered.contains("main -> agent:agent-1  [spawnAgent]"));

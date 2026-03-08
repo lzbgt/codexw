@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 
 use serde_json::Value;
 
+use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellJobSnapshot;
 use crate::orchestration_view::CachedAgentThreadSummary;
 use crate::state::AppState;
@@ -45,7 +46,10 @@ pub(crate) fn active_sidecar_agent_task_count(state: &AppState) -> usize {
 }
 
 pub(crate) fn main_agent_state_label(state: &AppState) -> &'static str {
-    if active_wait_task_count(state) > 0 {
+    if orchestration_dependency_edges(state)
+        .iter()
+        .any(|edge| edge.from == "main" && edge.blocking)
+    {
         "blocked"
     } else {
         "runnable"
@@ -146,11 +150,12 @@ pub(crate) fn orchestration_dependency_edges(state: &AppState) -> Vec<Orchestrat
         }
     }
     for shell in running_background_shells(state) {
+        let kind = format!("backgroundShell:{}", shell.intent.as_str());
         let edge = OrchestrationDependencyEdge {
             from: shell_source_node(state, &shell),
             to: format!("shell:{}", shell.id),
-            kind: "backgroundShell".to_string(),
-            blocking: false,
+            kind,
+            blocking: shell.intent.is_blocking(),
         };
         let dedupe = (
             edge.from.clone(),
@@ -242,6 +247,13 @@ fn shell_source_node(state: &AppState, shell: &BackgroundShellJobSnapshot) -> St
     format!("thread:{source_thread_id}")
 }
 
+pub(crate) fn running_shell_count_by_intent(
+    state: &AppState,
+    intent: BackgroundShellIntent,
+) -> usize {
+    state.background_shells.running_count_by_intent(intent)
+}
+
 fn known_agent_thread_ids(state: &AppState) -> BTreeSet<String> {
     let mut ids = state
         .cached_agent_threads
@@ -329,6 +341,7 @@ mod tests {
     use super::blocking_dependency_count;
     use super::main_agent_state_label;
     use super::orchestration_dependency_edges;
+    use super::running_shell_count_by_intent;
     use super::sidecar_dependency_count;
     use super::task_role;
     use super::track_collab_agent_task_completed;
@@ -491,7 +504,11 @@ mod tests {
         state
             .background_shells
             .start_from_tool_with_context(
-                &json!({"command": "sleep 0.4"}),
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "label": "build"
+                }),
                 "/tmp",
                 crate::background_shells::BackgroundShellOrigin {
                     source_thread_id: Some("thread-agent-2".to_string()),
@@ -514,9 +531,38 @@ mod tests {
         );
         assert!(edges.iter().any(|edge| edge.from == "agent:thread-agent-2"
             && edge.to == "shell:bg-1"
-            && !edge.blocking));
-        assert_eq!(blocking_dependency_count(&state), 1);
-        assert_eq!(sidecar_dependency_count(&state), 2);
+            && edge.kind == "backgroundShell:prerequisite"
+            && edge.blocking));
+        assert_eq!(blocking_dependency_count(&state), 2);
+        assert_eq!(sidecar_dependency_count(&state), 1);
+        assert_eq!(
+            running_shell_count_by_intent(
+                &state,
+                crate::background_shells::BackgroundShellIntent::Prerequisite
+            ),
+            1
+        );
+        let _ = state.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn main_agent_state_turns_blocked_for_main_prerequisite_shells() {
+        let mut state = crate::state::AppState::new(true, false);
+        state.thread_id = Some("thread-main".to_string());
+        state
+            .background_shells
+            .start_from_tool_with_context(
+                &json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+                "/tmp",
+                crate::background_shells::BackgroundShellOrigin {
+                    source_thread_id: Some("thread-main".to_string()),
+                    source_call_id: Some("call-11".to_string()),
+                    source_tool: Some("background_shell_start".to_string()),
+                },
+            )
+            .expect("start background shell");
+
+        assert_eq!(main_agent_state_label(&state), "blocked");
         let _ = state.background_shells.terminate_all_running();
     }
 }

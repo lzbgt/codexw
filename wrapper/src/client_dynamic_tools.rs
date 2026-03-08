@@ -76,12 +76,17 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_start",
-            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use this for builds, tests, searches, servers, or any command that may take a while.",
+            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "command": {"type": "string"},
-                    "cwd": {"type": "string"}
+                    "cwd": {"type": "string"},
+                    "intent": {
+                        "type": "string",
+                        "enum": ["prerequisite", "observation", "service"]
+                    },
+                    "label": {"type": "string"}
                 },
                 "required": ["command"]
             }
@@ -557,7 +562,11 @@ mod tests {
                 "threadId": "thread-agent-1",
                 "callId": "call-55",
                 "tool": "background_shell_start",
-                "arguments": {"command": "sleep 0.4"}
+                "arguments": {
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "label": "repo build"
+                }
             }),
             "/tmp",
             &manager,
@@ -574,6 +583,8 @@ mod tests {
             snapshots[0].origin.source_call_id.as_deref(),
             Some("call-55")
         );
+        assert_eq!(snapshots[0].intent.as_str(), "prerequisite");
+        assert_eq!(snapshots[0].label.as_deref(), Some("repo build"));
         let _ = manager.terminate_all_running();
     }
 
