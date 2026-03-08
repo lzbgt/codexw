@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::ChildStdin;
 use std::process::Command;
 use std::process::Stdio;
 use std::sync::Arc;
@@ -92,6 +94,7 @@ struct BackgroundShellJobState {
     label: Option<String>,
     alias: Option<String>,
     origin: BackgroundShellOrigin,
+    stdin: Option<ChildStdin>,
     status: BackgroundShellJobStatus,
     total_lines: u64,
     lines: VecDeque<BackgroundShellOutputLine>,
@@ -156,6 +159,10 @@ impl BackgroundShellManager {
             .stderr
             .take()
             .ok_or_else(|| "background shell stderr pipe was not available".to_string())?;
+        let stdin = process
+            .stdin
+            .take()
+            .ok_or_else(|| "background shell stdin pipe was not available".to_string())?;
         let job = Arc::new(Mutex::new(BackgroundShellJobState {
             id: job_id.clone(),
             pid,
@@ -165,6 +172,7 @@ impl BackgroundShellManager {
             label: label.clone(),
             alias: None,
             origin: origin.clone(),
+            stdin: Some(stdin),
             status: BackgroundShellJobStatus::Running,
             total_lines: 0,
             lines: VecDeque::new(),
@@ -192,6 +200,7 @@ impl BackgroundShellManager {
             };
             let mut state = job.lock().expect("background shell job lock");
             state.status = status;
+            state.stdin = None;
         });
 
         let mut lines = vec![
@@ -218,6 +227,7 @@ impl BackgroundShellManager {
             .get("jobId")
             .and_then(serde_json::Value::as_str)
             .ok_or_else(|| "background_shell_poll requires `jobId`".to_string())?;
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
         let after_line = object
             .get("afterLine")
             .and_then(serde_json::Value::as_u64)
@@ -228,7 +238,7 @@ impl BackgroundShellManager {
             .and_then(|value| usize::try_from(value).ok())
             .map(|value| value.clamp(1, MAX_POLL_LIMIT))
             .unwrap_or(DEFAULT_POLL_LIMIT);
-        let job = self.lookup_job(job_id)?;
+        let job = self.lookup_job(&resolved_job_id)?;
         let state = job.lock().expect("background shell job lock");
         let matching = state
             .lines
@@ -329,9 +339,37 @@ impl BackgroundShellManager {
             .get("jobId")
             .and_then(serde_json::Value::as_str)
             .ok_or_else(|| "background_shell_terminate requires `jobId`".to_string())?;
-        self.terminate_job(job_id)?;
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        self.terminate_job(&resolved_job_id)?;
         Ok(format!(
-            "Termination requested for background shell job {job_id}."
+            "Termination requested for background shell job {resolved_job_id}."
+        ))
+    }
+
+    pub(crate) fn send_input_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments
+            .as_object()
+            .ok_or_else(|| "background_shell_send expects an object argument".to_string())?;
+        let job_id = object
+            .get("jobId")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_send requires `jobId`".to_string())?;
+        let text = object
+            .get("text")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_send requires `text`".to_string())?;
+        let append_newline = object
+            .get("appendNewline")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(true);
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        let bytes_written = self.send_input_to_job(&resolved_job_id, text, append_newline)?;
+        Ok(format!(
+            "Sent {bytes_written} byte{} to background shell job {resolved_job_id}.",
+            if bytes_written == 1 { "" } else { "s" }
         ))
     }
 
@@ -418,6 +456,15 @@ impl BackgroundShellManager {
 
     pub(crate) fn terminate_job_for_operator(&self, job_id: &str) -> Result<(), String> {
         self.terminate_job(job_id)
+    }
+
+    pub(crate) fn send_input_for_operator(
+        &self,
+        job_id: &str,
+        text: &str,
+        append_newline: bool,
+    ) -> Result<usize, String> {
+        self.send_input_to_job(job_id, text, append_newline)
     }
 
     pub(crate) fn running_count(&self) -> usize {
@@ -554,7 +601,36 @@ impl BackgroundShellManager {
         terminate_pid(pid)?;
         let mut state = job.lock().expect("background shell job lock");
         state.status = BackgroundShellJobStatus::Terminated(None);
+        state.stdin = None;
         Ok(())
+    }
+
+    fn send_input_to_job(
+        &self,
+        job_id: &str,
+        text: &str,
+        append_newline: bool,
+    ) -> Result<usize, String> {
+        let job = self.lookup_job(job_id)?;
+        let mut state = job.lock().expect("background shell job lock");
+        if !matches!(state.status, BackgroundShellJobStatus::Running) {
+            return Err(format!("background shell job `{job_id}` is not running"));
+        }
+        let stdin = state
+            .stdin
+            .as_mut()
+            .ok_or_else(|| format!("background shell job `{job_id}` is not accepting stdin"))?;
+        let mut payload = text.as_bytes().to_vec();
+        if append_newline {
+            payload.push(b'\n');
+        }
+        stdin
+            .write_all(&payload)
+            .map_err(|err| format!("failed to write to background shell job `{job_id}`: {err}"))?;
+        stdin.flush().map_err(|err| {
+            format!("failed to flush background shell job `{job_id}` stdin: {err}")
+        })?;
+        Ok(payload.len())
     }
 }
 
@@ -630,7 +706,7 @@ fn validate_alias(alias: &str) -> Result<String, String> {
 fn spawn_shell_process(command: &str, cwd: &Path) -> Result<std::process::Child, String> {
     let mut shell = shell_command(command);
     shell.current_dir(cwd);
-    shell.stdin(Stdio::null());
+    shell.stdin(Stdio::piped());
     shell.stdout(Stdio::piped());
     shell.stderr(Stdio::piped());
     shell
@@ -800,6 +876,16 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
+    #[cfg(unix)]
+    fn interactive_echo_command() -> &'static str {
+        "cat"
+    }
+
+    #[cfg(windows)]
+    fn interactive_echo_command() -> &'static str {
+        "more"
+    }
+
     #[test]
     fn background_shell_job_can_start_and_poll_output() {
         let manager = BackgroundShellManager::default();
@@ -822,6 +908,32 @@ mod tests {
         assert!(rendered.contains("Job: bg-1"));
         assert!(rendered.contains("alpha"));
         assert!(rendered.contains("beta"));
+    }
+
+    #[test]
+    fn background_shell_job_accepts_stdin_and_emits_output() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(&json!({"command": interactive_echo_command()}), "/tmp")
+            .expect("start interactive background shell");
+
+        manager
+            .send_input_for_operator("bg-1", "hello from stdin", true)
+            .expect("send stdin");
+
+        let mut rendered = String::new();
+        for _ in 0..40 {
+            rendered = manager
+                .poll_from_tool(&json!({"jobId": "bg-1"}))
+                .expect("poll background shell");
+            if rendered.contains("hello from stdin") {
+                break;
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+
+        assert!(rendered.contains("hello from stdin"));
+        let _ = manager.terminate_all_running();
     }
 
     #[test]
@@ -1007,6 +1119,25 @@ mod tests {
         assert_eq!(cleared, "bg-1");
         let snapshots = manager.snapshots();
         assert!(snapshots[0].alias.is_none());
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_send_from_tool_resolves_aliases() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(&json!({"command": interactive_echo_command()}), "/tmp")
+            .expect("start shell");
+        manager.set_job_alias("bg-1", "dev.api").expect("set alias");
+
+        let rendered = manager
+            .send_input_from_tool(&json!({
+                "jobId": "dev.api",
+                "text": "ping via alias"
+            }))
+            .expect("send via alias");
+
+        assert!(rendered.contains("Sent"));
         let _ = manager.terminate_all_running();
     }
 }

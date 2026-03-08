@@ -191,6 +191,7 @@ The current `codexw` implementation now reflects that model partially:
 - new threads advertise client dynamic tools for wrapper-owned background shells:
   - `background_shell_start`
   - `background_shell_poll`
+  - `background_shell_send`
   - `background_shell_list`
   - `background_shell_terminate`
 - `background_shell_start` now accepts explicit orchestration intent:
@@ -211,12 +212,13 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
   - `:ps poll <jobId|n>` renders the full current poll snapshot for one wrapper-owned shell job
+  - `:ps send <jobId|alias|n> <text>` sends targeted stdin back into one wrapper-owned shell job without blocking the turn
   - `:ps terminate <jobId|n>` stops one wrapper-owned shell job without touching the others
-  - job references accept either stable ids like `bg-2` or the current 1-based sorted shell index
+  - job references accept either stable ids like `bg-2`, session-local aliases, or the current 1-based sorted shell index
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
   - `:ps unalias <name>` removes that alias
-  - aliases are session-local, operator-visible in `/ps`, and reusable anywhere the existing `jobId` reference surface is accepted
+  - aliases are session-local, operator-visible in `/ps`, and reusable anywhere the existing `jobId` reference surface is accepted, including poll, send, and terminate flows from both operator commands and dynamic tools
   - this gives long-lived service shells a first-class continuity handle without pretending they are repo-global or backend-native objects
 - cleanup is now scoped along the same control boundary:
   - `:clean blockers` and `:ps clean blockers` terminate only wrapper-owned prerequisite shells
@@ -448,7 +450,7 @@ Current user-facing capabilities include:
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
 - backend-backed `/agent` and `/multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
-- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_list`, `background_shell_terminate`)
+- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_list`, `background_shell_terminate`)
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
 - live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with scoped cleanup for local shell classes and backend-tracked terminals

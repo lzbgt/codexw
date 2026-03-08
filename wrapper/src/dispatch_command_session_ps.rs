@@ -22,6 +22,7 @@ pub(crate) enum CleanTarget {
 }
 
 pub(crate) fn handle_ps_command(
+    raw_args: &str,
     args: &[&str],
     cli: &Cli,
     state: &mut AppState,
@@ -35,6 +36,28 @@ pub(crate) fn handle_ps_command(
         } else {
             output
                 .line_stderr("[session] usage: :ps clean [blockers|shells|services|terminals]")?;
+        }
+    } else if matches!(action, Some("send" | "write" | "stdin")) {
+        let Some((reference, text)) = parse_ps_send_args(raw_args) else {
+            output.line_stderr("[session] usage: :ps send <jobId|alias|n> <text>")?;
+            return Ok(true);
+        };
+        let job_id = match state.background_shells.resolve_job_reference(reference) {
+            Ok(job_id) => job_id,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        match state
+            .background_shells
+            .send_input_for_operator(&job_id, text, true)
+        {
+            Ok(bytes_written) => output.line_stderr(format!(
+                "[thread] sent {bytes_written} byte{} to background shell job {job_id}",
+                if bytes_written == 1 { "" } else { "s" }
+            ))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
     } else if matches!(action, Some("poll" | "show" | "inspect")) {
         let Some(reference) = args.get(1).copied() else {
@@ -116,10 +139,26 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [blockers|agents|shells|services|terminals|poll|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [blockers|agents|shells|services|terminals|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
+}
+
+fn parse_ps_send_args(raw_args: &str) -> Option<(&str, &str)> {
+    let remainder = raw_args
+        .trim_start()
+        .strip_prefix("send")
+        .or_else(|| raw_args.trim_start().strip_prefix("write"))
+        .or_else(|| raw_args.trim_start().strip_prefix("stdin"))?
+        .trim_start();
+    let (reference, text) = remainder.split_once(char::is_whitespace)?;
+    let text = text.trim_start();
+    if reference.is_empty() || text.is_empty() {
+        None
+    } else {
+        Some((reference, text))
+    }
 }
 
 pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {

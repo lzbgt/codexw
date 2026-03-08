@@ -604,8 +604,15 @@ fn ps_command_can_poll_and_terminate_specific_background_shell_jobs() {
         .expect("start pollable shell");
     std::thread::sleep(Duration::from_millis(50));
 
-    handle_ps_command(&["poll", "1"], &cli, &mut state, &mut output, &mut writer)
-        .expect("poll background shell");
+    handle_ps_command(
+        "poll 1",
+        &["poll", "1"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("poll background shell");
 
     assert_eq!(state.background_shells.job_count(), 1);
     let polled = state
@@ -616,6 +623,7 @@ fn ps_command_can_poll_and_terminate_specific_background_shell_jobs() {
     assert!(polled.contains("alpha"));
 
     handle_ps_command(
+        "terminate bg-1",
         &["terminate", "bg-1"],
         &cli,
         &mut state,
@@ -647,6 +655,7 @@ fn ps_command_can_alias_and_reuse_background_shell_job_references() {
     std::thread::sleep(Duration::from_millis(50));
 
     handle_ps_command(
+        "alias 1 dev.api",
         &["alias", "1", "dev.api"],
         &cli,
         &mut state,
@@ -663,6 +672,7 @@ fn ps_command_can_alias_and_reuse_background_shell_job_references() {
     );
 
     handle_ps_command(
+        "poll dev.api",
         &["poll", "dev.api"],
         &cli,
         &mut state,
@@ -677,6 +687,7 @@ fn ps_command_can_alias_and_reuse_background_shell_job_references() {
     assert!(polled.contains("Alias: dev.api"));
 
     handle_ps_command(
+        "unalias dev.api",
         &["unalias", "dev.api"],
         &cli,
         &mut state,
@@ -690,6 +701,56 @@ fn ps_command_can_alias_and_reuse_background_shell_job_references() {
             .resolve_job_reference("dev.api")
             .is_err()
     );
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_command_can_send_input_to_aliased_background_shell_job() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({"command": if cfg!(windows) { "more" } else { "cat" }, "intent": "service"}),
+            "/tmp",
+        )
+        .expect("start interactive shell");
+
+    handle_ps_command(
+        "alias 1 dev.api",
+        &["alias", "1", "dev.api"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("alias background shell");
+
+    handle_ps_command(
+        "send dev.api hello there from ps",
+        &["send", "dev.api", "hello", "there", "from", "ps"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("send stdin");
+
+    let mut rendered = String::new();
+    for _ in 0..40 {
+        rendered = state
+            .background_shells
+            .poll_job("bg-1", 0, 200)
+            .expect("poll shell directly");
+        if rendered.contains("hello there from ps") {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+
+    assert!(rendered.contains("hello there from ps"));
     let _ = state.background_shells.terminate_all_running();
 }
 

@@ -105,6 +105,19 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             }
         }),
         json!({
+            "name": "background_shell_send",
+            "description": "Send stdin text to a running background shell job by jobId or alias. Defaults to appending a trailing newline.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"},
+                    "text": {"type": "string"},
+                    "appendNewline": {"type": "boolean"}
+                },
+                "required": ["jobId", "text"]
+            }
+        }),
+        json!({
             "name": "background_shell_list",
             "description": "List wrapper-owned background shell jobs with their current status.",
             "inputSchema": {
@@ -148,6 +161,7 @@ pub(crate) fn execute_dynamic_tool_call(
             dynamic_tool_origin(params),
         ),
         "background_shell_poll" => background_shells.poll_from_tool(arguments),
+        "background_shell_send" => background_shells.send_input_from_tool(arguments),
         "background_shell_list" => Ok(background_shells.list_from_tool()),
         "background_shell_terminate" => background_shells.terminate_from_tool(arguments),
         _ => Err(format!("unsupported client dynamic tool `{tool}`")),
@@ -521,6 +535,7 @@ mod tests {
                 "workspace_search_text",
                 "background_shell_start",
                 "background_shell_poll",
+                "background_shell_send",
                 "background_shell_list",
                 "background_shell_terminate"
             ]
@@ -585,6 +600,62 @@ mod tests {
         );
         assert_eq!(snapshots[0].intent.as_str(), "prerequisite");
         assert_eq!(snapshots[0].label.as_deref(), Some("repo build"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_send_writes_to_alias_target() {
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": if cfg!(windows) { "more" } else { "cat" },
+                    "intent": "service",
+                    "label": "echo shell"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        manager.set_job_alias("bg-1", "dev.api").expect("set alias");
+
+        let send_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_send",
+                "arguments": {
+                    "jobId": "dev.api",
+                    "text": "ping from tool"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(send_result["success"], true);
+        let mut rendered = String::new();
+        for _ in 0..40 {
+            let poll_result = execute_dynamic_tool_call(
+                &json!({
+                    "tool": "background_shell_poll",
+                    "arguments": {
+                        "jobId": "dev.api"
+                    }
+                }),
+                "/tmp",
+                &manager,
+            );
+            rendered = poll_result["contentItems"][0]["text"]
+                .as_str()
+                .expect("poll text")
+                .to_string();
+            if rendered.contains("ping from tool") {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+
+        assert!(rendered.contains("ping from tool"));
         let _ = manager.terminate_all_running();
     }
 

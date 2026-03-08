@@ -168,7 +168,9 @@ pub(crate) fn handle_command(
                 "collab" => Some(handle_collab_command(&args, state, output, writer)?),
                 "plan" => Some(handle_plan_command(state, output, writer)?),
                 "realtime" => handle_realtime_command(&args, cli, state, output, writer)?,
-                "ps" => Some(handle_ps_command(&args, cli, state, output, writer)?),
+                "ps" => Some(handle_ps_command(
+                    raw_args, &args, cli, state, output, writer,
+                )?),
                 _ => None,
             } {
                 return Ok(result);
