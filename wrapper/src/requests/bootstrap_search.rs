@@ -12,7 +12,7 @@ use crate::state::AppState;
 pub(crate) fn send_list_threads(
     writer: &mut ChildStdin,
     state: &mut AppState,
-    resolved_cwd: &str,
+    cwd_filter: Option<&str>,
     search_term: Option<String>,
 ) -> Result<()> {
     let request_id = state.next_request_id();
@@ -20,16 +20,10 @@ pub(crate) fn send_list_threads(
         request_id.clone(),
         PendingRequest::ListThreads {
             search_term: search_term.clone(),
+            cwd_filter: cwd_filter.map(ToOwned::to_owned),
         },
     );
-    let mut params = json!({
-        "limit": 10,
-        "sortKey": "updated_at",
-        "cwd": resolved_cwd,
-    });
-    if let Some(search_term) = search_term {
-        params["searchTerm"] = Value::String(search_term);
-    }
+    let params = thread_list_params(cwd_filter, search_term.as_deref());
     send_json(
         writer,
         &OutgoingRequest {
@@ -38,6 +32,20 @@ pub(crate) fn send_list_threads(
             params,
         },
     )
+}
+
+pub(crate) fn thread_list_params(cwd_filter: Option<&str>, search_term: Option<&str>) -> Value {
+    let mut params = json!({
+        "limit": 10,
+        "sortKey": "updated_at",
+    });
+    if let Some(cwd_filter) = cwd_filter {
+        params["cwd"] = Value::String(cwd_filter.to_string());
+    }
+    if let Some(search_term) = search_term {
+        params["searchTerm"] = Value::String(search_term.to_string());
+    }
+    params
 }
 
 pub(crate) fn send_fuzzy_file_search(

@@ -49,7 +49,7 @@ pub(crate) fn try_handle_thread_session_navigation(
                 output.line_stderr(
                     "[session] loading recent threads; use /resume <n> or /resume <thread-id>",
                 )?;
-                send_list_threads(writer, state, resolved_cwd, None)?;
+                send_list_threads(writer, state, Some(resolved_cwd), None)?;
             }
             true
         }
@@ -62,7 +62,7 @@ pub(crate) fn try_handle_thread_session_navigation(
                 Some(search_term.to_string())
             };
             output.line_stderr("[session] loading recent threads")?;
-            send_list_threads(writer, state, resolved_cwd, search_term)?;
+            send_list_threads(writer, state, Some(resolved_cwd), search_term)?;
             true
         }
         _ => return Ok(None),

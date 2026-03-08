@@ -12,6 +12,7 @@ use crate::notification_turn_completed::handle_turn_completed;
 use crate::notification_turn_started::handle_turn_started;
 use crate::output::Output;
 use crate::requests::PendingRequest;
+use crate::requests::send_list_threads;
 use crate::response_bootstrap_catalog_state::handle_account_loaded;
 use crate::response_bootstrap_catalog_state::handle_apps_loaded;
 use crate::response_bootstrap_catalog_state::handle_collaboration_modes_loaded;
@@ -223,8 +224,22 @@ fn handle_bootstrap_response_success(
         PendingRequest::LoadMcpServers => {
             handle_mcp_servers_loaded(result, output)?;
         }
-        PendingRequest::ListThreads { search_term } => {
-            handle_threads_listed(result, search_term.as_deref(), state, output)?;
+        PendingRequest::ListThreads {
+            search_term,
+            cwd_filter,
+        } => {
+            if crate::catalog_thread_list::should_fallback_to_all_workspaces(
+                result,
+                search_term.as_deref(),
+                cwd_filter.as_deref(),
+            ) {
+                output.line_stderr(
+                    "[session] no recent threads matched the current workspace; retrying across all workspaces",
+                )?;
+                send_list_threads(writer, state, None, search_term.clone())?;
+            } else {
+                handle_threads_listed(result, search_term.as_deref(), state, output)?;
+            }
         }
         PendingRequest::FuzzyFileSearch { query } => {
             handle_fuzzy_file_search(result, query, state, output)?;

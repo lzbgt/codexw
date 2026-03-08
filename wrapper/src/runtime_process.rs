@@ -99,15 +99,11 @@ pub(crate) fn shutdown_child(writer: ChildStdin, mut child: Child) -> Result<()>
 }
 
 pub(crate) fn effective_cwd(cli: &Cli) -> Result<String> {
-    cli.cwd
-        .as_deref()
-        .map(|path| {
-            std::fs::canonicalize(path)
-                .with_context(|| format!("canonicalize cwd `{path}`"))
-                .map(|value| value.to_string_lossy().to_string())
-        })
-        .transpose()?
-        .map(Ok)
-        .unwrap_or_else(|| std::env::current_dir().map(|p| p.to_string_lossy().to_string()))
-        .context("resolve current working directory")
+    let cwd = match cli.cwd.as_deref() {
+        Some(path) => std::path::PathBuf::from(path),
+        None => std::env::current_dir().context("resolve current working directory")?,
+    };
+    std::fs::canonicalize(&cwd)
+        .with_context(|| format!("canonicalize cwd `{}`", cwd.to_string_lossy()))
+        .map(|value| value.to_string_lossy().to_string())
 }

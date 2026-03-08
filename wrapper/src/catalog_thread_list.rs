@@ -27,6 +27,18 @@ fn sorted_threads(result: &Value) -> Vec<Value> {
     threads
 }
 
+pub(crate) fn thread_list_is_empty(result: &Value) -> bool {
+    sorted_threads(result).is_empty()
+}
+
+pub(crate) fn should_fallback_to_all_workspaces(
+    result: &Value,
+    search_term: Option<&str>,
+    cwd_filter: Option<&str>,
+) -> bool {
+    cwd_filter.is_some() && search_term.is_none() && thread_list_is_empty(result)
+}
+
 pub(crate) fn render_thread_list(result: &Value, search_term: Option<&str>) -> String {
     let threads = sorted_threads(result);
     if threads.is_empty() {

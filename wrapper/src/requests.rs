@@ -33,6 +33,8 @@ pub(crate) use bootstrap_init::send_initialize;
 pub(crate) use bootstrap_init::send_initialized;
 pub(crate) use bootstrap_search::send_fuzzy_file_search;
 pub(crate) use bootstrap_search::send_list_threads;
+#[cfg(test)]
+pub(crate) use bootstrap_search::thread_list_params;
 pub(crate) use command_requests::send_command_exec;
 pub(crate) use command_requests::send_command_exec_terminate;
 pub(crate) use request_types::PendingRequest;
