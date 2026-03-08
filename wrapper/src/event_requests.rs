@@ -15,6 +15,7 @@ mod event_request_approvals;
 mod event_request_tools;
 
 use event_request_approvals::handle_approval_request;
+#[allow(unused_imports)]
 pub(crate) use event_request_approvals::params_auto_approval_result;
 use event_request_tools::handle_tool_request;
 

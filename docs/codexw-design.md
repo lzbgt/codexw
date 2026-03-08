@@ -68,7 +68,7 @@ The runtime has thirteen main layers.
 13. Human output handling
    `output.rs`, `output_prompt.rs`, `output_stream.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `output.rs`, `render.rs`, and `render_blocks.rs` are compatibility facades over that split.
 
-Session feature helpers are split across `model_catalog.rs`, `model_personality.rs`, `collaboration_preset.rs`, `collaboration_actions.rs`, `session_prompt_status.rs`, `session_realtime.rs`, `session_snapshot_overview.rs`, and `session_snapshot_runtime.rs`, with `model_session.rs`, `collaboration.rs`, `session_snapshot.rs`, and `session_status.rs` kept as thin facades.
+Session feature helpers are split across `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, and `session_snapshot_runtime.rs`, with `model_personality.rs`, `model_session.rs`, `collaboration_actions.rs`, `collaboration.rs`, `session_realtime.rs`, `session_snapshot.rs`, and `session_status.rs` kept as thin facades.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers are split across `app.rs`, `app_input.rs`, `app_input_editor.rs`, and `app_input_interrupt.rs`: `app.rs` owns backend/session startup and the top-level runtime loop, `app_input.rs` is the input facade, `app_input_editor.rs` owns editor-key behavior and submit handling, and `app_input_interrupt.rs` owns interrupt and exit behavior.
 Resume-preview helpers live across `history_render.rs`, `history_state.rs`, and `history_text.rs`, with `history.rs` kept as the thin facade for recent conversation extraction, resumed objective/last-reply seeding, resumed transcript rendering, and shared history text formatting.
@@ -450,7 +450,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/session_prompt_status.rs`
   Prompt status rendering, spinner selection, and elapsed-time formatting.
 - `wrapper/src/session_realtime.rs`
-  Realtime session status and realtime item rendering helpers.
+  Compatibility facade for the split realtime status/item helpers.
+- `wrapper/src/session_realtime_status.rs`
+  Realtime session status rendering for `/realtime` state, prompt, elapsed time, and last error.
+- `wrapper/src/session_realtime_item.rs`
+  Realtime item rendering plus text/transcript extraction from streamed realtime payloads.
 - `wrapper/src/session_snapshot.rs`
   Compatibility facade for the split `/status` snapshot helpers.
 - `wrapper/src/session_snapshot_overview.rs`
@@ -576,13 +580,21 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/model_catalog.rs`
   Model catalog extraction and effective-model selection.
 - `wrapper/src/model_personality.rs`
-  Personality rendering, validation, and model/personality action handling.
+  Compatibility facade for the split personality view/action helpers.
+- `wrapper/src/model_personality_view.rs`
+  Personality labeling, active-personality summaries, and `/personality` option rendering.
+- `wrapper/src/model_personality_actions.rs`
+  Personality validation, selection application, and load-model action handling.
 - `wrapper/src/model_session.rs`
   Compatibility facade for the split model catalog and personality helpers.
 - `wrapper/src/collaboration_preset.rs`
   Collaboration preset extraction, summaries, and selector matching.
 - `wrapper/src/collaboration_actions.rs`
-  Active collaboration-mode value/label rendering and collaboration-mode action application.
+  Compatibility facade for the split collaboration render/action helpers.
+- `wrapper/src/collaboration_view.rs`
+  Active collaboration-mode summaries, labels, and collaboration preset list rendering.
+- `wrapper/src/collaboration_apply.rs`
+  Collaboration-mode toggle and selection application logic.
 - `wrapper/src/collaboration.rs`
   Compatibility facade for the split collaboration preset/action helpers.
 - `wrapper/src/editor.rs`
