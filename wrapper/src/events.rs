@@ -3,8 +3,9 @@ use serde_json::Value;
 use std::process::ChildStdin;
 
 use crate::Cli;
+use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
-use crate::notification_item_updates::handle_update_notification;
+use crate::notification_item_status::handle_status_update;
 use crate::notification_turn_completed::handle_turn_completed;
 use crate::notification_turn_started::handle_turn_started;
 use crate::output::Output;
@@ -259,12 +260,20 @@ fn handle_notification(
         _ => {}
     }
 
-    handle_update_notification(
+    if handle_buffer_update(
         &notification.method,
         &notification.params,
         cli,
         state,
         output,
-    )?;
+    )? || handle_status_update(
+        &notification.method,
+        &notification.params,
+        cli,
+        state,
+        output,
+    )? {
+        return Ok(());
+    }
     Ok(())
 }
