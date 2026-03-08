@@ -9,7 +9,10 @@ pub(crate) fn render_command_completion(
     exit_code: &str,
     output: Option<&str>,
 ) -> String {
-    let mut rendered = format!("$ {command}\nstatus  {status}\nexit    {exit_code}");
+    let mut rendered = format!("$ {command}");
+    if !is_successful_command_completion(status, exit_code) {
+        rendered.push_str(&format!("\nstatus  {status}\nexit    {exit_code}"));
+    }
     if let Some(output) = output {
         let trimmed = output.trim_end();
         if !trimmed.is_empty() {
@@ -20,20 +23,40 @@ pub(crate) fn render_command_completion(
     rendered
 }
 
+fn is_successful_command_completion(status: &str, exit_code: &str) -> bool {
+    status == "completed" && exit_code == "0"
+}
+
 pub(crate) fn render_local_command_completion(
     command: &str,
     exit_code: &str,
     stdout: &str,
     stderr: &str,
 ) -> String {
-    let mut rendered = format!("$ {command}\nexit    {exit_code}");
-    if !stdout.trim().is_empty() {
-        rendered.push_str("\n\n[stdout]\n");
-        rendered.push_str(stdout.trim_end());
+    let mut rendered = format!("$ {command}");
+    let stdout = stdout.trim_end();
+    let stderr = stderr.trim_end();
+    let show_exit = exit_code != "0";
+    let show_stdout = !stdout.trim().is_empty();
+    let show_stderr = !stderr.trim().is_empty();
+    let show_stream_labels = show_stdout && show_stderr;
+
+    if show_exit {
+        rendered.push_str(&format!("\nexit    {exit_code}"));
     }
-    if !stderr.trim().is_empty() {
-        rendered.push_str("\n\n[stderr]\n");
-        rendered.push_str(stderr.trim_end());
+    if show_stdout {
+        rendered.push_str("\n\n");
+        if show_stream_labels {
+            rendered.push_str("[stdout]\n");
+        }
+        rendered.push_str(stdout);
+    }
+    if show_stderr {
+        rendered.push_str("\n\n");
+        if show_stream_labels {
+            rendered.push_str("[stderr]\n");
+        }
+        rendered.push_str(stderr);
     }
     rendered
 }
@@ -43,15 +66,31 @@ pub(crate) fn render_file_change_completion(
     status: &str,
     output: Option<&str>,
 ) -> String {
-    let mut rendered = format!("status  {status}\n{}", summarize_file_change_paths(item));
     let structured = render_file_changes(item);
-    if !structured.is_empty() {
-        rendered.push_str("\n\n");
+    let has_structured = !structured.is_empty();
+    let mut rendered = if has_structured {
+        String::new()
+    } else {
+        summarize_file_change_paths(item)
+    };
+    if status != "completed" {
+        if !rendered.is_empty() {
+            rendered = format!("status  {status}\n{rendered}");
+        } else {
+            rendered = format!("status  {status}");
+        }
+    }
+    if has_structured {
+        if !rendered.is_empty() {
+            rendered.push_str("\n\n");
+        }
         rendered.push_str(&structured);
     } else if let Some(output) = output {
         let trimmed = output.trim_end();
         if !trimmed.is_empty() {
-            rendered.push_str("\n\n");
+            if !rendered.is_empty() {
+                rendered.push_str("\n\n");
+            }
             rendered.push_str(trimmed);
         }
     }

@@ -4,6 +4,8 @@ use crate::render_prompt::fit_status_line;
 use crate::render_prompt::render_committed_prompt;
 use crate::render_prompt::render_prompt_lines;
 use crate::transcript_completion_render::render_command_completion;
+use crate::transcript_completion_render::render_file_change_completion;
+use crate::transcript_completion_render::render_local_command_completion;
 
 fn strip_ansi(text: &str) -> String {
     let mut out = String::new();
@@ -56,7 +58,7 @@ fn diff_blocks_render_colored_lines() {
 }
 
 #[test]
-fn command_completion_preserves_shell_quotes_and_plain_labels() {
+fn successful_command_completion_hides_status_and_exit_metadata() {
     let body = render_command_completion(
         "/bin/zsh -lc \"sed -n '96,116p' README.md\"",
         "completed",
@@ -64,18 +66,66 @@ fn command_completion_preserves_shell_quotes_and_plain_labels() {
         None,
     );
     assert!(body.contains("$ /bin/zsh -lc \"sed -n '96,116p' README.md\""));
-    assert!(body.contains("\nstatus  completed\nexit    0"));
+    assert!(!body.contains("\nstatus  completed\nexit    0"));
     assert!(!body.contains("[status]"));
     assert!(!body.contains("[exit]"));
 
     let rendered = render_block_lines_to_ansi("Command complete", &body).join("\n");
     let visible = strip_ansi(&rendered);
     assert!(visible.contains("$ /bin/zsh -lc \"sed -n '96,116p' README.md\""));
-    assert!(visible.contains("status"));
-    assert!(visible.contains("completed"));
-    assert!(visible.contains("exit"));
-    assert!(visible.contains("0"));
+    assert!(!visible.contains("status"));
+    assert!(!visible.contains("completed"));
+    assert!(!visible.contains("exit"));
     assert!(!visible.contains("Command complete"));
+}
+
+#[test]
+fn failed_command_completion_keeps_status_and_exit_metadata() {
+    let body = render_command_completion("/bin/zsh -lc false", "failed", "1", None);
+    assert!(body.contains("\nstatus  failed\nexit    1"));
+}
+
+#[test]
+fn successful_local_command_hides_exit_and_stdout_label_when_unneeded() {
+    let body = render_local_command_completion("sed -n '1,5p' file", "0", "hello\n", "");
+    assert_eq!(body, "$ sed -n '1,5p' file\n\nhello");
+}
+
+#[test]
+fn failed_local_command_keeps_exit_and_stream_labels_when_needed() {
+    let body = render_local_command_completion("false", "1", "out\n", "err\n");
+    assert!(body.contains("\nexit    1"));
+    assert!(body.contains("[stdout]\nout"));
+    assert!(body.contains("[stderr]\nerr"));
+}
+
+#[test]
+fn completed_file_change_hides_redundant_status_and_summary_when_structured() {
+    let body = render_file_change_completion(
+        &serde_json::json!({
+            "changes": [
+                {"kind": "update", "path": "docs/FOLLOW_TRADING.md"}
+            ]
+        }),
+        "completed",
+        None,
+    );
+    assert_eq!(body, "update docs/FOLLOW_TRADING.md");
+}
+
+#[test]
+fn failed_file_change_keeps_status_context() {
+    let body = render_file_change_completion(
+        &serde_json::json!({
+            "changes": [
+                {"kind": "update", "path": "docs/FOLLOW_TRADING.md"}
+            ]
+        }),
+        "failed",
+        None,
+    );
+    assert!(body.contains("status  failed"));
+    assert!(body.contains("update docs/FOLLOW_TRADING.md"));
 }
 
 #[test]
