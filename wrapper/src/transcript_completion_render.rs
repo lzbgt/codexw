@@ -9,7 +9,7 @@ pub(crate) fn render_command_completion(
     exit_code: &str,
     output: Option<&str>,
 ) -> String {
-    let mut rendered = format!("{command}\n[status] {status}  [exit] {exit_code}");
+    let mut rendered = format!("{command}\nstatus  {status}\nexit    {exit_code}");
     if let Some(output) = output {
         let trimmed = output.trim_end();
         if !trimmed.is_empty() {
@@ -26,7 +26,7 @@ pub(crate) fn render_local_command_completion(
     stdout: &str,
     stderr: &str,
 ) -> String {
-    let mut rendered = format!("{command}\n[exit] {exit_code}");
+    let mut rendered = format!("{command}\nexit    {exit_code}");
     if !stdout.trim().is_empty() {
         rendered.push_str("\n\n[stdout]\n");
         rendered.push_str(stdout.trim_end());
@@ -43,7 +43,7 @@ pub(crate) fn render_file_change_completion(
     status: &str,
     output: Option<&str>,
 ) -> String {
-    let mut rendered = format!("[status] {status}\n{}", summarize_file_change_paths(item));
+    let mut rendered = format!("status  {status}\n{}", summarize_file_change_paths(item));
     let structured = render_file_changes(item);
     if !structured.is_empty() {
         rendered.push_str("\n\n");

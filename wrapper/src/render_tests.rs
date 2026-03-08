@@ -3,6 +3,7 @@ use crate::output::render_line_to_ansi;
 use crate::render_prompt::fit_status_line;
 use crate::render_prompt::render_committed_prompt;
 use crate::render_prompt::render_prompt_lines;
+use crate::transcript_completion_render::render_command_completion;
 
 #[test]
 fn assistant_blocks_render_with_ansi_styling() {
@@ -23,6 +24,27 @@ fn diff_blocks_render_colored_lines() {
     assert!(rendered.contains("old"));
     assert!(rendered.contains("new"));
     assert!(rendered.contains("\u{1b}["));
+}
+
+#[test]
+fn command_completion_preserves_shell_quotes_and_plain_labels() {
+    let body = render_command_completion(
+        "/bin/zsh -lc \"sed -n '96,116p' README.md\"",
+        "completed",
+        "0",
+        None,
+    );
+    assert!(body.contains("/bin/zsh -lc \"sed -n '96,116p' README.md\""));
+    assert!(body.contains("\nstatus  completed\nexit    0"));
+    assert!(!body.contains("[status]"));
+    assert!(!body.contains("[exit]"));
+
+    let rendered = render_block_lines_to_ansi("Command complete", &body).join("\n");
+    assert!(rendered.contains("/bin/zsh -lc \"sed -n '96,116p' README.md\""));
+    assert!(rendered.contains("status"));
+    assert!(rendered.contains("completed"));
+    assert!(rendered.contains("exit"));
+    assert!(rendered.contains("0"));
 }
 
 #[test]
@@ -54,12 +76,13 @@ fn prompt_line_wraps_when_buffer_overflows_terminal_width() {
 }
 
 #[test]
-fn prompt_line_previews_multiline_buffer_with_visible_newline_marker() {
+fn prompt_line_renders_multiline_buffer_as_visual_lines() {
     let (rendered, cursor_row, cursor_col) = render_prompt_lines("", "first\nsecond", 12, 10);
-    assert!(rendered.join("\n").contains("⏎"));
     assert!(rendered.len() > 1);
-    assert!(cursor_row < rendered.len());
+    assert_eq!(cursor_row, 1);
     assert!(cursor_col <= 10);
+    assert!(rendered[0].contains("first"));
+    assert!(rendered[1].contains("second"));
 }
 
 #[test]

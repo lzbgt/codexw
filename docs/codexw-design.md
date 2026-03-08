@@ -246,7 +246,7 @@ The editor and prompt renderer now operate on grapheme boundaries and display wi
 
 The prompt stays scroll-native. Instead of owning a fixed alternate screen, `output.rs` redraws a single prompt line in place and also handles committed transcript/status/block writes into normal terminal history.
 
-Long drafts now wrap to the current terminal width so redraw stays aligned with the actual editor buffer instead of compressing everything into a single preview row. Explicit multiline drafts still show a newline marker so `Ctrl-J` remains visible while editing. In that multiline mode, Home/End and `Ctrl-A`/`Ctrl-E` operate on the current line segment rather than the full buffer, and `Ctrl-U` clears back to the current line start.
+Long drafts now wrap to the current terminal width so redraw stays aligned with the actual editor buffer instead of compressing everything into a single preview row. Explicit multiline drafts now render as real visual prompt rows, so `Ctrl-J` moves the cursor to the next line instead of showing a synthetic newline marker inside a flattened preview. In that multiline mode, Home/End and `Ctrl-A`/`Ctrl-E` operate on the current line segment rather than the full buffer, and `Ctrl-U` clears back to the current line start.
 
 ## Input Construction
 

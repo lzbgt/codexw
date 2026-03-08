@@ -40,9 +40,8 @@ pub(crate) fn render_prompt_lines(
     let prefix_width = UnicodeWidthStr::width(prefix.as_str());
     let continuation_prefix = " ".repeat(prefix_width.max(2));
     let available_chars = terminal_width.saturating_sub(prefix_width).max(1);
-    let display_buffer = preview_prompt_buffer(buffer);
     let (visible_lines, cursor_row, visible_cursor_chars) =
-        wrap_prompt_buffer(&display_buffer, cursor_chars, available_chars);
+        wrap_prompt_buffer(buffer, cursor_chars, available_chars);
 
     let mut rendered = Vec::with_capacity(visible_lines.len());
     for (idx, visible_buffer) in visible_lines.into_iter().enumerate() {
@@ -95,13 +94,6 @@ pub(crate) fn fit_status_line(status: &str, terminal_width: usize) -> String {
     visible
 }
 
-fn preview_prompt_buffer(buffer: &str) -> String {
-    buffer
-        .chars()
-        .map(|ch| if ch == '\n' { '⏎' } else { ch })
-        .collect()
-}
-
 fn wrap_prompt_buffer(
     buffer: &str,
     cursor_chars: usize,
@@ -125,6 +117,13 @@ fn wrap_prompt_buffer(
         if idx == cursor {
             cursor_row = lines.len();
             cursor_col = current_width.min(line_width);
+        }
+
+        if *grapheme == "\n" {
+            lines.push(current);
+            current = String::new();
+            current_width = 0;
+            continue;
         }
 
         let grapheme_width = UnicodeWidthStr::width(*grapheme).max(1);
