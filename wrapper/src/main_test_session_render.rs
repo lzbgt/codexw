@@ -1,3 +1,4 @@
+use crate::background_shells::BackgroundShellManager;
 use crate::client_dynamic_tools::execute_dynamic_tool_call;
 use crate::session_realtime_item::render_realtime_item;
 use crate::transcript_approval_summary::summarize_terminal_interaction;
@@ -116,6 +117,7 @@ fn unknown_dynamic_tool_reports_failure_to_model() {
             "arguments": {"id": "ABC-123"}
         }),
         "/tmp",
+        &BackgroundShellManager::default(),
     );
     assert_eq!(response["success"], false);
     assert_eq!(

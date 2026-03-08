@@ -34,13 +34,26 @@ pub(crate) fn try_handle_thread_control_command(
             true
         }
         "clean" => {
+            let cleaned_local = state.background_shells.terminate_all_running();
             if cli.no_experimental_api {
                 output.line_stderr(
-                    "[thread] background terminal cleanup requires experimental API support; restart without --no-experimental-api",
+                    "[thread] server background terminal cleanup requires experimental API support; restart without --no-experimental-api",
                 )?;
+                if cleaned_local > 0 {
+                    output.line_stderr(format!(
+                        "[thread] terminated {cleaned_local} local background shell job{}",
+                        if cleaned_local == 1 { "" } else { "s" }
+                    ))?;
+                }
             } else {
                 let current_thread_id = thread_id(state)?.to_string();
-                output.line_stderr("[thread] cleaning background terminals")?;
+                output.line_stderr("[thread] cleaning background tasks")?;
+                if cleaned_local > 0 {
+                    output.line_stderr(format!(
+                        "[thread] terminated {cleaned_local} local background shell job{}",
+                        if cleaned_local == 1 { "" } else { "s" }
+                    ))?;
+                }
                 send_clean_background_terminals(writer, state, current_thread_id)?;
             }
             true

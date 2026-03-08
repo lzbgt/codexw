@@ -76,7 +76,7 @@ pub(crate) fn process_server_line(
             start_after_initialize,
         )?,
         Ok(IncomingMessage::Request(request)) => {
-            handle_server_request(request, cli, resolved_cwd, output, writer)?;
+            handle_server_request(request, cli, resolved_cwd, state, output, writer)?;
         }
         Ok(IncomingMessage::Notification(notification)) => {
             handle_notification(notification, cli, resolved_cwd, state, output, writer)?;
@@ -277,13 +277,14 @@ fn handle_server_request(
     request: crate::rpc::RpcRequest,
     cli: &Cli,
     resolved_cwd: &str,
+    state: &mut AppState,
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<()> {
     if handle_approval_request(&request, cli, output, writer)? {
         return Ok(());
     }
-    if handle_tool_request(&request, resolved_cwd, output, writer)? {
+    if handle_tool_request(&request, resolved_cwd, state, output, writer)? {
         return Ok(());
     }
     if cli.verbose_events || cli.raw_json {

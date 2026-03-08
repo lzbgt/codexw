@@ -3,6 +3,7 @@ mod app_input_controls;
 mod app_input_editing;
 mod app_input_editor;
 mod app_input_interrupt;
+mod background_shells;
 mod background_terminals;
 mod catalog;
 mod catalog_backend_views;

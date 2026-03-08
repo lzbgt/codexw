@@ -327,15 +327,15 @@ Current user-facing capabilities include:
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
 - backend-backed `/agent` and `/multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
-- read-only client dynamic tools on new threads via `thread/start.dynamicTools`, currently covering directory listing, path inspection, workspace file reads, file-path search, and text search
+- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_list`, `background_shell_terminate`)
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
-- live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus backend-backed cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
+- live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with `/ps clean` cleaning both the local jobs and backend-tracked terminals
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns
 
-`codexw` no longer leaves any of the user-facing slash-command side effects in a generic placeholder state. The Windows-only `:sandbox-add-read-dir` path is now handled client-side like upstream: it validates the requested absolute directory and refreshes sandbox read grants locally rather than going through app-server. The main remaining gaps are architectural or UX-level instead of command dispatch parity. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
+`codexw` no longer leaves any of the user-facing slash-command side effects in a generic placeholder state. The Windows-only `:sandbox-add-read-dir` path is now handled client-side like upstream: it validates the requested absolute directory and refreshes sandbox read grants locally rather than going through app-server. The main remaining gaps are architectural or UX-level instead of command dispatch parity. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only. Upstream app-server also still does not expose a public client request that can write to or poll model-owned `item/commandExecution` sessions directly, so same-turn async shell work is implemented through wrapper-owned dynamic tools instead of reusing the backend's internal unified-exec handles.
 
 ## Approval and Automation Posture
 
@@ -367,6 +367,7 @@ The biggest known limits are architectural, not accidental.
 
 - `codexw` is not the native upstream Codex TUI.
 - It depends only on app-server surfaces, so popup-heavy native workflows cannot always be reproduced exactly.
+- It cannot directly control model-owned `item/commandExecution` sessions through app-server today; the background-shell workflow is a wrapper-side workaround built on dynamic tools.
 - A small number of platform-specific commands can only explain their limitation because app-server does not expose the needed internal state, notably the Windows additional read-root grant workflow.
 - Rendering is richer than plain logs, but it is still terminal-scrollback based rather than a full alternate-screen widget tree.
 

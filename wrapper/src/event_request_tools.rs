@@ -6,6 +6,7 @@ use crate::output::Output;
 use crate::requests::send_json;
 use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcRequest;
+use crate::state::AppState;
 use crate::transcript_approval_summary::summarize_tool_request;
 use crate::transcript_plan_render::build_mcp_elicitation_response;
 use crate::transcript_plan_render::build_tool_user_input_response;
@@ -13,6 +14,7 @@ use crate::transcript_plan_render::build_tool_user_input_response;
 pub(crate) fn handle_tool_request(
     request: &RpcRequest,
     resolved_cwd: &str,
+    state: &mut AppState,
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<bool> {
@@ -52,7 +54,8 @@ pub(crate) fn handle_tool_request(
             Ok(true)
         }
         "item/tool/call" => {
-            let result = execute_dynamic_tool_call(&request.params, resolved_cwd);
+            let result =
+                execute_dynamic_tool_call(&request.params, resolved_cwd, &state.background_shells);
             let success = result
                 .get("success")
                 .and_then(serde_json::Value::as_bool)

@@ -574,7 +574,11 @@ fn new_thread_requests_advertise_client_dynamic_tools() {
             "workspace_stat_path",
             "workspace_read_file",
             "workspace_find_files",
-            "workspace_search_text"
+            "workspace_search_text",
+            "background_shell_start",
+            "background_shell_poll",
+            "background_shell_list",
+            "background_shell_terminate"
         ]
     );
 }

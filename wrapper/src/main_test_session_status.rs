@@ -348,6 +348,21 @@ fn ready_status_mentions_background_terminals() {
     );
 
     let rendered = render_prompt_status(&state);
-    assert!(rendered.contains("background terminal running"));
+    assert!(rendered.contains("background task running"));
     assert!(rendered.contains("/ps to view"));
+}
+
+#[test]
+fn background_task_rendering_includes_local_background_shell_jobs() {
+    let state = crate::state::AppState::new(true, false);
+    state
+        .background_shells
+        .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+        .expect("start background shell");
+
+    let rendered = render_background_terminals(&state);
+    assert!(rendered.contains("Local background shell jobs:"));
+    assert!(rendered.contains("bg-1"));
+    assert!(rendered.contains("sleep 0.4"));
+    let _ = state.background_shells.terminate_all_running();
 }

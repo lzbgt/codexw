@@ -106,7 +106,7 @@ pub(crate) fn clear_all_background_terminals(state: &mut AppState) {
 }
 
 pub(crate) fn background_terminal_count(state: &AppState) -> usize {
-    state.background_terminals.len()
+    state.background_terminals.len() + state.background_shells.running_count()
 }
 
 pub(crate) fn render_background_terminals(state: &AppState) -> String {
@@ -120,37 +120,45 @@ pub(crate) fn render_background_terminals(state: &AppState) -> String {
             .cmp(&right.command_display)
             .then_with(|| left.process_id.cmp(&right.process_id))
     });
-    if processes.is_empty() {
+    let mut lines = Vec::new();
+    if !processes.is_empty() {
+        lines.push("Server-observed background terminals:".to_string());
+        for (index, process) in processes.iter().enumerate() {
+            lines.push(format!(
+                "{:>2}. {}  [{}]",
+                index + 1,
+                process.command_display,
+                if process.waiting {
+                    "waiting"
+                } else {
+                    "interactive"
+                }
+            ));
+            lines.push(format!("    process  {}", process.process_id));
+            if !process.recent_inputs.is_empty() {
+                lines.push(format!(
+                    "    recent   {}",
+                    process.recent_inputs.join(" | ")
+                ));
+            }
+            if !process.recent_output.is_empty() {
+                lines.push(format!(
+                    "    output   {}",
+                    process.recent_output.join(" | ")
+                ));
+            }
+        }
+    }
+    if let Some(local_jobs) = state.background_shells.render_for_ps() {
+        if !lines.is_empty() {
+            lines.push(String::new());
+        }
+        lines.extend(local_jobs);
+    }
+    if lines.is_empty() {
         return "No background terminals running.".to_string();
     }
-
-    let mut lines = Vec::new();
-    for (index, process) in processes.iter().enumerate() {
-        lines.push(format!(
-            "{:>2}. {}  [{}]",
-            index + 1,
-            process.command_display,
-            if process.waiting {
-                "waiting"
-            } else {
-                "interactive"
-            }
-        ));
-        lines.push(format!("    process  {}", process.process_id));
-        if !process.recent_inputs.is_empty() {
-            lines.push(format!(
-                "    recent   {}",
-                process.recent_inputs.join(" | ")
-            ));
-        }
-        if !process.recent_output.is_empty() {
-            lines.push(format!(
-                "    output   {}",
-                process.recent_output.join(" | ")
-            ));
-        }
-    }
-    lines.push("Use /clean to stop all background terminals for this thread.".to_string());
+    lines.push("Use /clean to stop all running background tasks.".to_string());
     lines.join("\n")
 }
 
@@ -159,9 +167,9 @@ pub(crate) fn background_terminal_status_suffix(state: &AppState) -> Option<Stri
     if count == 0 {
         None
     } else {
-        let plural = if count == 1 { "" } else { "s" };
         Some(format!(
-            "{count} background terminal{plural} running | /ps to view | /clean to close"
+            "{count} background task{} running | /ps to view | /clean to close",
+            if count == 1 { "" } else { "s" }
         ))
     }
 }

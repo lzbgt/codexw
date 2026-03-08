@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Instant;
 
+use crate::background_shells::BackgroundShellManager;
 use crate::background_terminals::BackgroundTerminalSummary;
 use crate::collaboration_preset::CollaborationModePreset;
 use crate::input::AppCatalogEntry;
@@ -71,6 +72,7 @@ pub(crate) struct AppState {
     pub(crate) process_output_buffers: HashMap<String, ProcessOutputBuffer>,
     pub(crate) active_command_items: HashMap<String, String>,
     pub(crate) background_terminals: HashMap<String, BackgroundTerminalSummary>,
+    pub(crate) background_shells: BackgroundShellManager,
     pub(crate) pending_local_images: Vec<String>,
     pub(crate) pending_remote_images: Vec<String>,
     pub(crate) active_personality: Option<String>,
@@ -122,6 +124,7 @@ impl AppState {
             process_output_buffers: HashMap::new(),
             active_command_items: HashMap::new(),
             background_terminals: HashMap::new(),
+            background_shells: BackgroundShellManager::default(),
             pending_local_images: Vec::new(),
             pending_remote_images: Vec::new(),
             active_personality: None,

@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use serde_json::Value;
 use serde_json::json;
 
+use crate::background_shells::BackgroundShellManager;
+
 const MAX_FILE_BYTES: u64 = 256 * 1024;
 const DEFAULT_LIMIT: usize = 20;
 const MAX_RESULTS: usize = 100;
@@ -71,10 +73,58 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                 "required": ["query"]
             }
         }),
+        json!({
+            "name": "background_shell_start",
+            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use this for builds, tests, searches, servers, or any command that may take a while.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string"},
+                    "cwd": {"type": "string"}
+                },
+                "required": ["command"]
+            }
+        }),
+        json!({
+            "name": "background_shell_poll",
+            "description": "Inspect a background shell job by jobId and fetch new output lines since an optional afterLine cursor.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"},
+                    "afterLine": {"type": "integer", "minimum": 0},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 200}
+                },
+                "required": ["jobId"]
+            }
+        }),
+        json!({
+            "name": "background_shell_list",
+            "description": "List wrapper-owned background shell jobs with their current status.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
+        }),
+        json!({
+            "name": "background_shell_terminate",
+            "description": "Terminate a running background shell job by jobId.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"}
+                },
+                "required": ["jobId"]
+            }
+        }),
     ])
 }
 
-pub(crate) fn execute_dynamic_tool_call(params: &Value, resolved_cwd: &str) -> Value {
+pub(crate) fn execute_dynamic_tool_call(
+    params: &Value,
+    resolved_cwd: &str,
+    background_shells: &BackgroundShellManager,
+) -> Value {
     let tool = params
         .get("tool")
         .and_then(Value::as_str)
@@ -86,6 +136,10 @@ pub(crate) fn execute_dynamic_tool_call(params: &Value, resolved_cwd: &str) -> V
         "workspace_read_file" => workspace_read_file(arguments, resolved_cwd),
         "workspace_find_files" => workspace_find_files(arguments, resolved_cwd),
         "workspace_search_text" => workspace_search_text(arguments, resolved_cwd),
+        "background_shell_start" => background_shells.start_from_tool(arguments, resolved_cwd),
+        "background_shell_poll" => background_shells.poll_from_tool(arguments),
+        "background_shell_list" => Ok(background_shells.list_from_tool()),
+        "background_shell_terminate" => background_shells.terminate_from_tool(arguments),
         _ => Err(format!("unsupported client dynamic tool `{tool}`")),
     };
 
@@ -418,6 +472,7 @@ fn extract_limit(limit: Option<&Value>) -> usize {
 mod tests {
     use super::dynamic_tool_specs;
     use super::execute_dynamic_tool_call;
+    use crate::background_shells::BackgroundShellManager;
     use serde_json::json;
 
     #[test]
@@ -436,7 +491,11 @@ mod tests {
                 "workspace_stat_path",
                 "workspace_read_file",
                 "workspace_find_files",
-                "workspace_search_text"
+                "workspace_search_text",
+                "background_shell_start",
+                "background_shell_poll",
+                "background_shell_list",
+                "background_shell_terminate"
             ]
         );
     }
@@ -454,6 +513,7 @@ mod tests {
                 "arguments": {"path": ".", "limit": 10}
             }),
             workspace.path().to_str().expect("utf8 path"),
+            &BackgroundShellManager::default(),
         );
 
         assert_eq!(result["success"], true);
@@ -478,6 +538,7 @@ mod tests {
                 "arguments": {"path": "hello.txt"}
             }),
             workspace.path().to_str().expect("utf8 path"),
+            &BackgroundShellManager::default(),
         );
 
         assert_eq!(result["success"], true);
@@ -500,6 +561,7 @@ mod tests {
                 "arguments": {"path": "hello.txt", "startLine": 2}
             }),
             workspace.path().to_str().expect("utf8 path"),
+            &BackgroundShellManager::default(),
         );
 
         assert_eq!(result["success"], true);
@@ -521,6 +583,7 @@ mod tests {
                 "arguments": {"query": "needle"}
             }),
             workspace.path().to_str().expect("utf8 path"),
+            &BackgroundShellManager::default(),
         );
 
         assert_eq!(result["success"], true);
@@ -543,6 +606,7 @@ mod tests {
                 "arguments": {"query": "lib"}
             }),
             workspace.path().to_str().expect("utf8 path"),
+            &BackgroundShellManager::default(),
         );
 
         assert_eq!(result["success"], true);
@@ -564,6 +628,7 @@ mod tests {
                 "arguments": {"path": outside.path()}
             }),
             workspace.path().to_str().expect("utf8 path"),
+            &BackgroundShellManager::default(),
         );
 
         assert_eq!(result["success"], false);
