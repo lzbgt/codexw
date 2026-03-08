@@ -7,7 +7,7 @@ use crate::policy::thread_sandbox_mode;
 use crate::policy::turn_sandbox_policy;
 use crate::state::AppState;
 use crate::state::summarize_text;
-use crate::status_views::summarize_sandbox_policy;
+use crate::status_config::summarize_sandbox_policy;
 
 pub(crate) fn render_status_overview(
     cli: &Cli,

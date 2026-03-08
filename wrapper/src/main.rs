@@ -102,7 +102,7 @@ mod status_config;
 mod status_rate_credits;
 mod status_rate_windows;
 mod status_token_usage;
-mod status_views;
+mod status_value;
 mod transcript_approval_summary;
 mod transcript_completion_render;
 mod transcript_item_summary;

@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::state::get_string;
 use crate::state::summarize_text;
-use crate::status_views::summarize_value;
+use crate::status_value::summarize_value;
 
 pub(crate) fn summarize_command_approval_request(params: &Value, decision: &Value) -> String {
     let mut parts = Vec::new();

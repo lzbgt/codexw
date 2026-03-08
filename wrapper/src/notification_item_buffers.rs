@@ -7,7 +7,7 @@ use crate::state::AppState;
 use crate::state::buffer_item_delta;
 use crate::state::buffer_process_delta;
 use crate::state::get_string;
-use crate::status_views::summarize_value;
+use crate::status_value::summarize_value;
 use crate::transcript_approval_summary::summarize_terminal_interaction;
 use crate::transcript_plan_render::format_plan;
 

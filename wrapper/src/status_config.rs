@@ -6,7 +6,7 @@ use crate::policy::approval_policy;
 use crate::policy::thread_sandbox_mode;
 use crate::policy::turn_sandbox_policy;
 use crate::state::get_string;
-use crate::status_views::summarize_value;
+use crate::status_value::summarize_value;
 
 pub(crate) fn render_permissions_snapshot(cli: &Cli) -> String {
     [

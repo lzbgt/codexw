@@ -9,7 +9,7 @@ use crate::catalog_thread_list::extract_thread_ids;
 use crate::catalog_thread_list::render_thread_list;
 use crate::output::Output;
 use crate::state::AppState;
-use crate::status_views::render_config_snapshot;
+use crate::status_config::render_config_snapshot;
 
 pub(crate) fn handle_experimental_features_loaded(
     result: &Value,

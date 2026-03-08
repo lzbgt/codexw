@@ -60,7 +60,7 @@ The runtime has thirteen main layers.
    `history_render.rs`, `history_state.rs`, and `history_text.rs` own resumed-thread state seeding, compact conversation-history extraction, resumed history rendering, and shared history text normalization/user-message rendering. Callers now import the concrete render/state helpers directly instead of routing through a separate `history.rs` facade.
 
 11. View and transcript rendering helpers
-  `catalog_connector_views.rs`, `catalog_feature_views.rs`, `catalog_backend_views.rs`, `catalog_thread_list.rs`, `catalog_file_search.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_rate_windows.rs`, `status_rate_credits.rs`, `status_token_usage.rs`, `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `status_views.rs` remains the generic value-summary facade, while transcript callers now import the concrete helper modules directly.
+  `catalog_connector_views.rs`, `catalog_feature_views.rs`, `catalog_backend_views.rs`, `catalog_thread_list.rs`, `catalog_file_search.rs`, `status_value.rs`, `status_config.rs`, `status_account.rs`, `status_rate_windows.rs`, `status_rate_credits.rs`, `status_token_usage.rs`, `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. Generic JSON value formatting now lives in `status_value.rs`, while transcript callers import the concrete helper modules directly.
 
 12. Human input handling
    `editor.rs`, `editor_buffer.rs`, `editor_history.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_mention_links.rs`, `input/input_decode_mention_paths.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_inline_paths.rs`, `input/input_decode_inline_skills.rs`, `input/input_decode_tokens.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `input/input_build_items.rs`, `input/input_build_mentions.rs`, `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_commands.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation_session.rs`, `dispatch_command_thread_navigation_identity.rs`, `dispatch_command_thread_review.rs`, `dispatch_command_thread_control.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_thread_view.rs`, `dispatch_command_thread_draft.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_ps.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_file_completions.rs`, `prompt_file_completions_token.rs`, and `prompt_file_completions_search.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `editor.rs`, `input.rs`, and `dispatch_commands.rs` are the remaining compatibility facades over those splits, while both thread and session command dispatch now route directly through the concrete handlers.
@@ -73,7 +73,7 @@ Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary
 App loop helpers are split across `app.rs`, `app_input_editor.rs`, `app_input_editing.rs`, `app_input_controls.rs`, and `app_input_interrupt.rs`: `app.rs` owns backend/session startup, the top-level runtime loop, and input-key routing; `app_input_editor.rs` owns editor-key behavior and submit handling; `app_input_editing.rs` routes editing/navigation keys; and `app_input_controls.rs` plus `app_input_interrupt.rs` own control, interrupt, and exit behavior.
 Resume-preview helpers live across `history_render.rs`, `history_state.rs`, and `history_text.rs`, and callers now import those concrete helpers directly for recent conversation extraction, resumed objective/last-reply seeding, resumed transcript rendering, and shared history text formatting.
 Catalog display helpers are split across `catalog_connector_views.rs`, `catalog_feature_views.rs`, `catalog_backend_views.rs`, `catalog_thread_list.rs`, and `catalog_file_search.rs`, and callers now import those concrete app/skill/experimental/thread/search helpers directly.
-Status display helpers are split across `status_config.rs`, `status_account.rs`, `status_rate_windows.rs`, `status_rate_credits.rs`, and `status_token_usage.rs`, with `status_views.rs` kept as the generic value-summary facade while rate-limit and token-usage callers import the concrete helpers directly.
+Status display helpers are split across `status_value.rs`, `status_config.rs`, `status_account.rs`, `status_rate_windows.rs`, `status_rate_credits.rs`, and `status_token_usage.rs`, with rate-limit and token-usage callers importing the concrete helpers directly.
 Transcript display helpers now live directly across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, without an extra transcript compatibility layer in the runtime path.
 Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, and event-source threads now imported directly from those concrete modules.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
@@ -85,8 +85,8 @@ Command-dispatch helpers are split across `dispatch_submit_commands.rs`, `dispat
 Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_mention_links.rs`, `input/input_decode_mention_paths.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_inline_paths.rs`, `input/input_decode_inline_skills.rs`, `input/input_decode_tokens.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `input/input_build_items.rs`, and `input/input_build_mentions.rs`, with `input.rs` kept as the thin compatibility facade for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live across `prompt_state.rs`, `prompt_file_completions.rs`, `prompt_file_completions_token.rs`, and `prompt_file_completions_search.rs`, with prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion now imported directly from the concrete helper modules.
 Render helpers live across `render_prompt_layout.rs`, `render_prompt_commit.rs`, `render_markdown_block_structures.rs`, `render_markdown_links.rs`, and `render_markdown_styles.rs`, with `render_prompt.rs`, `render_block_markdown.rs`, and `render_markdown_inline.rs` kept as thin facades over prompt-layout, markdown-block, and inline-markdown behavior.
-Response helpers are split across `response_success.rs`, `response_error_session.rs`, `response_error_runtime.rs`, `response_bootstrap_init.rs`, `response_bootstrap_catalog_state.rs`, `response_bootstrap_catalog_views.rs`, `response_thread_session.rs`, `response_thread_maintenance.rs`, `response_thread_runtime.rs`, `response_thread_loaded.rs`, `response_realtime_activity.rs`, `response_turn_activity.rs`, and `response_local_command.rs`, with `responses.rs` and `response_success.rs` kept as the remaining thin compatibility facades for JSON-RPC success/error handling of pending outbound requests.
-Notification helpers are split across `notification_realtime.rs`, `notification_turn_started.rs`, `notification_turn_completed.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, `notification_item_buffers.rs`, `notification_item_status.rs`, and `notification_item_completion.rs`, with `events.rs` now routing directly to realtime, lifecycle, and item handlers while `notification_turn_lifecycle.rs` and `notification_turn_items.rs` remain the thin compatibility facades over turn start/completion and item update/completion subhelpers.
+Response helpers are split across `response_bootstrap_init.rs`, `response_bootstrap_catalog_state.rs`, `response_bootstrap_catalog_views.rs`, `response_thread_session.rs`, `response_thread_maintenance.rs`, `response_thread_runtime.rs`, `response_thread_loaded.rs`, `response_error_session.rs`, `response_error_runtime.rs`, `response_realtime_activity.rs`, `response_turn_activity.rs`, and `response_local_command.rs`, with `events.rs` routing directly to those concrete success and error handlers for pending outbound requests.
+Notification helpers are split across `notification_realtime.rs`, `notification_turn_started.rs`, `notification_turn_completed.rs`, `notification_item_updates.rs`, `notification_item_buffers.rs`, `notification_item_status.rs`, and `notification_item_completion.rs`, with `events.rs` routing directly to realtime, turn, and item handlers without extra notification-router facades.
 
 ## Process Model
 
@@ -453,8 +453,8 @@ The biggest known limits are architectural, not accidental.
   File-search rendering and extracted-path helpers for `/mention`.
 - `wrapper/src/catalog_backend_views.rs`
   Models and MCP server rendering helpers.
-- `wrapper/src/status_views.rs`
-  Compatibility facade re-exporting the split status helpers plus generic JSON value summarization.
+- `wrapper/src/status_value.rs`
+  Generic JSON value summarization helpers shared by status, transcript, and server-request rendering.
 - `wrapper/src/status_config.rs`
   Permission and config rendering plus sandbox-policy summarization.
 - `wrapper/src/status_account.rs`
@@ -516,7 +516,7 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/response_bootstrap_catalog_views.rs`
   Bootstrap response rendering for config, experimental flags, MCP servers, thread lists, and file-search results.
 - `wrapper/src/response_thread_session.rs`
-  Compatibility facade routing thread/session response handling to switch and maintenance helpers.
+  Thread/session response handling that routes directly to loaded-thread and maintenance helpers.
 - `wrapper/src/response_thread_maintenance.rs`
   Compact, rename, and background-terminal cleanup success reporting.
 - `wrapper/src/response_thread_runtime.rs`
@@ -554,7 +554,7 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/input/input_decode_mention_paths.rs`
   Tool-path classification helpers for linked mentions.
 - `wrapper/src/input/input_decode_inline_mentions.rs`
-  Inline `@file` expansion facade over token scanning and file-path rendering helpers.
+  Inline `@file` expansion helpers layered on token scanning and file-path rendering.
 - `wrapper/src/input/input_decode_inline_paths.rs`
   Filesystem-backed path resolution and shell-safe rendering helpers for inline `@file` mentions.
 - `wrapper/src/input/input_decode_inline_skills.rs`
@@ -566,7 +566,7 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/input/input_resolve_catalog.rs`
   Catalog-driven app/plugin/skill mention selection.
 - `wrapper/src/input/input_build.rs`
-  Structured turn payload construction facade for app-server `UserInput`.
+  Structured turn payload construction entrypoint for app-server `UserInput`.
 - `wrapper/src/input/input_build_items.rs`
   Attachment, text, and linked-mention payload item assembly.
 - `wrapper/src/input/input_build_mentions.rs`
@@ -576,7 +576,7 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_submit_turns.rs`
   Structured turn submission and steer handoff.
 - `wrapper/src/dispatch_commands.rs`
-  Compatibility facade for the split slash-command layer.
+  Slash-command dispatcher that routes directly to concrete thread/session handlers.
 - `wrapper/src/dispatch_command_thread_common.rs`
   Shared thread command guards and cached thread-reference resolution helpers.
 - `wrapper/src/dispatch_command_thread_navigation_session.rs`

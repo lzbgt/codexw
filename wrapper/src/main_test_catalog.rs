@@ -1,7 +1,7 @@
 use crate::history_state::latest_conversation_history_items;
 use crate::history_state::seed_resumed_state_from_turns;
 use crate::state::AppState;
-use crate::status_views::render_rate_limit_lines;
+use crate::status_rate_windows::render_rate_limit_lines;
 use serde_json::Value;
 use serde_json::json;
 

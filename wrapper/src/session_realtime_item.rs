@@ -1,7 +1,7 @@
 use serde_json::Value;
 
 use crate::state::get_string;
-use crate::status_views::summarize_value;
+use crate::status_value::summarize_value;
 
 pub(crate) fn render_realtime_item(item: &Value) -> String {
     let item_type = get_string(item, &["type"]).unwrap_or("item");

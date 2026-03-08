@@ -7,7 +7,7 @@ use crate::requests::send_json;
 use crate::rpc::OutgoingErrorObject;
 use crate::rpc::OutgoingErrorResponse;
 use crate::rpc::RpcRequest;
-use crate::status_views::summarize_value;
+use crate::status_value::summarize_value;
 
 #[path = "event_request_approvals.rs"]
 mod event_request_approvals;

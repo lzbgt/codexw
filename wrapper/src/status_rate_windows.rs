@@ -3,6 +3,29 @@ use chrono::Local;
 use chrono::Utc;
 use serde_json::Value;
 
+use crate::status_rate_credits::render_credit_line;
+
+pub(crate) fn render_rate_limit_lines(rate_limits: Option<&Value>) -> Vec<String> {
+    let Some(rate_limits) = rate_limits else {
+        return vec!["rate limits     unavailable".to_string()];
+    };
+
+    let mut lines = render_window_lines(rate_limits);
+    let first_row = lines.is_empty();
+
+    if let Some(credits) = rate_limits.get("credits")
+        && let Some(credit_line) = render_credit_line(credits, first_row)
+    {
+        lines.push(credit_line);
+    }
+
+    if lines.is_empty() {
+        vec!["rate limits     none reported".to_string()]
+    } else {
+        lines
+    }
+}
+
 pub(crate) fn render_window_lines(rate_limits: &Value) -> Vec<String> {
     let mut lines = Vec::new();
     let mut first_row = true;

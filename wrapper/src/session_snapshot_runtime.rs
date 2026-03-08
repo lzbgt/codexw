@@ -2,9 +2,9 @@ use crate::Cli;
 use crate::session_prompt_status_active::format_elapsed;
 use crate::state::AppState;
 use crate::state::summarize_text;
-use crate::status_views::render_account_summary;
-use crate::status_views::render_rate_limit_lines;
-use crate::status_views::render_token_usage_summary;
+use crate::status_account::render_account_summary;
+use crate::status_rate_windows::render_rate_limit_lines;
+use crate::status_token_usage::render_token_usage_summary;
 
 pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String> {
     let mut lines = Vec::new();

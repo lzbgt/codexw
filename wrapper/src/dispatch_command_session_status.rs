@@ -10,7 +10,7 @@ use crate::session_realtime_status::render_realtime_status;
 use crate::session_snapshot_overview::render_status_overview;
 use crate::session_snapshot_runtime::render_status_runtime;
 use crate::state::AppState;
-use crate::status_views::render_permissions_snapshot;
+use crate::status_config::render_permissions_snapshot;
 use crate::transcript_completion_render::render_pending_attachments;
 
 pub(crate) fn try_handle_session_status_command(

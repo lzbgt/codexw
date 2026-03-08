@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::state::get_string;
 use crate::state::summarize_text;
-use crate::status_views::summarize_value;
+use crate::status_value::summarize_value;
 
 pub(crate) fn summarize_file_change_paths(item: &Value) -> String {
     let Some(changes) = item.get("changes").and_then(Value::as_array) else {
