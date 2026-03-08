@@ -278,7 +278,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_update_service",
-            "description": "Update mutable metadata for a running service background shell job by jobId, alias, or @capability. Supports replacing declared reusable capabilities and updating or clearing the live service label, protocol, endpoint, and attach hint.",
+            "description": "Update mutable metadata for a running service background shell job by jobId, alias, or @capability. Supports replacing declared reusable capabilities and updating or clearing the live service label, protocol, endpoint, attach hint, readyPattern, and structured recipes.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -295,9 +295,67 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                     "attachHint": {
                         "type": ["string", "null"]
                     },
+                    "readyPattern": {
+                        "type": ["string", "null"]
+                    },
                     "capabilities": {
                         "type": "array",
                         "items": {"type": "string"}
+                    },
+                    "recipes": {
+                        "type": ["array", "null"],
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "description": {"type": "string"},
+                                "example": {"type": "string"},
+                                "parameters": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {"type": "string"},
+                                            "description": {"type": "string"},
+                                            "default": {"type": "string"},
+                                            "required": {"type": "boolean"}
+                                        },
+                                        "required": ["name"]
+                                    }
+                                },
+                                "action": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["informational", "stdin", "http", "tcp", "redis"]
+                                        },
+                                        "text": {"type": "string"},
+                                        "appendNewline": {"type": "boolean"},
+                                        "method": {"type": "string"},
+                                        "path": {"type": "string"},
+                                        "body": {"type": "string"},
+                                        "payload": {"type": "string"},
+                                        "command": {
+                                            "type": "array",
+                                            "items": {"type": "string"}
+                                        },
+                                        "expectSubstring": {"type": "string"},
+                                        "readTimeoutMs": {"type": "integer", "minimum": 1},
+                                        "headers": {
+                                            "type": "object",
+                                            "additionalProperties": {"type": "string"}
+                                        },
+                                        "expectedStatus": {
+                                            "type": "integer",
+                                            "minimum": 100,
+                                            "maximum": 599
+                                        }
+                                    }
+                                }
+                            },
+                            "required": ["name"]
+                        }
                     }
                 },
                 "required": ["jobId"]

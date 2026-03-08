@@ -5,11 +5,13 @@ use super::BackgroundShellCapabilityDependencyState;
 use super::BackgroundShellCapabilityDependencySummary;
 use super::BackgroundShellCapabilityIssueClass;
 use super::BackgroundShellIntent;
+use super::BackgroundShellInteractionRecipe;
 use super::BackgroundShellJobSnapshot;
 use super::BackgroundShellJobStatus;
 use super::BackgroundShellManager;
 use super::BackgroundShellServiceIssueClass;
 use super::BackgroundShellServiceReadiness;
+use super::parse_background_shell_interaction_recipes;
 use super::terminate_jobs;
 use super::validate_service_capability;
 
@@ -20,6 +22,8 @@ impl BackgroundShellManager {
         protocol: Option<Option<String>>,
         endpoint: Option<Option<String>>,
         attach_hint: Option<Option<String>>,
+        ready_pattern: Option<Option<String>>,
+        interaction_recipes: Option<Vec<BackgroundShellInteractionRecipe>>,
     ) -> Result<(), String> {
         let normalized_protocol = match protocol {
             Some(protocol) => Some(normalize_service_label_update(protocol)?),
@@ -31,6 +35,10 @@ impl BackgroundShellManager {
         };
         let normalized_attach_hint = match attach_hint {
             Some(attach_hint) => Some(normalize_service_label_update(attach_hint)?),
+            None => None,
+        };
+        let normalized_ready_pattern = match ready_pattern {
+            Some(ready_pattern) => Some(normalize_service_label_update(ready_pattern)?),
             None => None,
         };
         let job = self.lookup_job(job_id)?;
@@ -53,6 +61,15 @@ impl BackgroundShellManager {
         }
         if let Some(attach_hint) = normalized_attach_hint.clone() {
             state.attach_hint = attach_hint;
+        }
+        if let Some(recipes) = interaction_recipes {
+            state.interaction_recipes = recipes;
+        }
+        if let Some(ready_pattern) = normalized_ready_pattern {
+            state.ready_pattern = ready_pattern.clone();
+            state.service_ready = ready_pattern.as_ref().is_some_and(|pattern| {
+                state.lines.iter().any(|entry| entry.text.contains(pattern))
+            });
         }
         Ok(())
     }
@@ -132,6 +149,8 @@ impl BackgroundShellManager {
             None,
             None,
             None,
+            None,
+            None,
         ))
     }
 
@@ -149,6 +168,8 @@ impl BackgroundShellManager {
             None,
             None,
             None,
+            None,
+            None,
         ))
     }
 
@@ -158,6 +179,8 @@ impl BackgroundShellManager {
         protocol: Option<Option<String>>,
         endpoint: Option<Option<String>>,
         attach_hint: Option<Option<String>>,
+        ready_pattern: Option<Option<String>>,
+        interaction_recipes: Option<Vec<BackgroundShellInteractionRecipe>>,
     ) -> Result<String, String> {
         let resolved_job_id = self.resolve_job_reference(reference)?;
         let normalized_protocol = protocol
@@ -172,7 +195,19 @@ impl BackgroundShellManager {
             .clone()
             .map(normalize_service_label_update)
             .transpose()?;
-        self.set_running_service_contract(&resolved_job_id, protocol, endpoint, attach_hint)?;
+        let normalized_ready_pattern = ready_pattern
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        let recipe_count = interaction_recipes.as_ref().map(Vec::len);
+        self.set_running_service_contract(
+            &resolved_job_id,
+            protocol,
+            endpoint,
+            attach_hint,
+            ready_pattern,
+            interaction_recipes,
+        )?;
         Ok(render_service_metadata_update_summary(
             &resolved_job_id,
             None,
@@ -180,6 +215,8 @@ impl BackgroundShellManager {
             normalized_protocol,
             normalized_endpoint,
             normalized_attach_hint,
+            normalized_ready_pattern,
+            recipe_count,
         ))
     }
 
@@ -249,14 +286,32 @@ impl BackgroundShellManager {
         } else {
             None
         };
+        let ready_pattern = if object.contains_key("readyPattern") {
+            Some(parse_service_label_argument(
+                object.get("readyPattern"),
+                "background_shell_update_service",
+            )?)
+        } else {
+            None
+        };
+        let interaction_recipes = if object.contains_key("recipes") {
+            Some(parse_service_recipe_updates(
+                object.get("recipes"),
+                "background_shell_update_service",
+            )?)
+        } else {
+            None
+        };
         if capabilities.is_none()
             && label.is_none()
             && protocol.is_none()
             && endpoint.is_none()
             && attach_hint.is_none()
+            && ready_pattern.is_none()
+            && interaction_recipes.is_none()
         {
             return Err(
-                "background_shell_update_service requires at least one mutable field such as `capabilities`, `label`, `protocol`, `endpoint`, or `attachHint`"
+                "background_shell_update_service requires at least one mutable field such as `capabilities`, `label`, `protocol`, `endpoint`, `attachHint`, `readyPattern`, or `recipes`"
                     .to_string(),
             );
         }
@@ -283,8 +338,25 @@ impl BackgroundShellManager {
             .clone()
             .map(normalize_service_label_update)
             .transpose()?;
-        if protocol.is_some() || endpoint.is_some() || attach_hint.is_some() {
-            self.set_running_service_contract(&resolved_job_id, protocol, endpoint, attach_hint)?;
+        let normalized_ready_pattern = ready_pattern
+            .clone()
+            .map(normalize_service_label_update)
+            .transpose()?;
+        let recipe_count = interaction_recipes.as_ref().map(Vec::len);
+        if protocol.is_some()
+            || endpoint.is_some()
+            || attach_hint.is_some()
+            || ready_pattern.is_some()
+            || interaction_recipes.is_some()
+        {
+            self.set_running_service_contract(
+                &resolved_job_id,
+                protocol,
+                endpoint,
+                attach_hint,
+                ready_pattern,
+                interaction_recipes,
+            )?;
         }
         Ok(render_service_metadata_update_summary(
             &resolved_job_id,
@@ -293,6 +365,8 @@ impl BackgroundShellManager {
             normalized_protocol,
             normalized_endpoint,
             normalized_attach_hint,
+            normalized_ready_pattern,
+            recipe_count,
         ))
     }
 
@@ -1035,6 +1109,18 @@ fn parse_service_label_argument(
     }
 }
 
+fn parse_service_recipe_updates(
+    value: Option<&serde_json::Value>,
+    context: &str,
+) -> Result<Vec<BackgroundShellInteractionRecipe>, String> {
+    match value {
+        Some(serde_json::Value::Null) => Ok(Vec::new()),
+        Some(value) => parse_background_shell_interaction_recipes(Some(value))
+            .map_err(|err| format!("{context}: {err}")),
+        None => Err(format!("{context} requires `recipes`")),
+    }
+}
+
 fn render_service_metadata_update_summary(
     job_id: &str,
     capabilities: Option<&[String]>,
@@ -1042,6 +1128,8 @@ fn render_service_metadata_update_summary(
     protocol: Option<Option<String>>,
     endpoint: Option<Option<String>>,
     attach_hint: Option<Option<String>>,
+    ready_pattern: Option<Option<String>>,
+    recipe_count: Option<usize>,
 ) -> String {
     let mut parts = Vec::new();
     if let Some(capabilities) = capabilities {
@@ -1080,6 +1168,19 @@ fn render_service_metadata_update_summary(
         match attach_hint {
             Some(attach_hint) => parts.push(format!("attachHint={attach_hint}")),
             None => parts.push("cleared attachHint".to_string()),
+        }
+    }
+    if let Some(ready_pattern) = ready_pattern {
+        match ready_pattern {
+            Some(ready_pattern) => parts.push(format!("readyPattern={ready_pattern}")),
+            None => parts.push("cleared readyPattern".to_string()),
+        }
+    }
+    if let Some(recipe_count) = recipe_count {
+        if recipe_count == 0 {
+            parts.push("cleared recipes".to_string());
+        } else {
+            parts.push(format!("recipes={recipe_count}"));
         }
     }
 

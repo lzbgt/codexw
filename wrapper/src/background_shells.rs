@@ -31,7 +31,7 @@ use self::recipes::interaction_action_summary;
 use self::recipes::invoke_http_recipe;
 use self::recipes::invoke_redis_recipe;
 use self::recipes::invoke_tcp_recipe;
-use self::recipes::parse_background_shell_interaction_recipes;
+pub(crate) use self::recipes::parse_background_shell_interaction_recipes;
 use self::recipes::parse_recipe_arguments_map;
 use self::recipes::render_recipe_parameters;
 use self::recipes::resolve_recipe_arguments;

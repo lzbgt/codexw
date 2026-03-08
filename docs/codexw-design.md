@@ -241,7 +241,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps terminate <jobId|alias|@capability|n>` stops one wrapper-owned shell job without touching the others
   - `:ps provide <jobId|alias|@capability|n> <@capability...|none>` replaces the declared reusable capability set on one running service shell without restarting the job
   - `:ps depend <jobId|alias|@capability|n> <@capability...|none>` replaces the declared dependency-capability set on one running shell job without restarting it
-  - `:ps contract <jobId|alias|@capability|n> <json-object>` updates live service attachment metadata such as `protocol`, `endpoint`, or `attachHint` on one running service shell without restarting it
+  - `:ps contract <jobId|alias|@capability|n> <json-object>` updates live service attachment metadata such as `protocol`, `endpoint`, `attachHint`, `readyPattern`, or `recipes` on one running service shell without restarting it
   - `:ps relabel <jobId|alias|@capability|n> <label|none>` updates or clears the live service label on one running service shell without restarting the job
   - job references accept either stable ids like `bg-2`, session-local aliases, declared service capabilities prefixed with `@`, or the current 1-based sorted shell index
 - service shells now have explicit readiness state when the job declared `readyPattern`:
@@ -290,7 +290,7 @@ The current `codexw` implementation now reflects that model partially:
   - the capability index also shows current consumers of each capability when running jobs declare `dependsOnCapabilities`, so provider and consumer sides of reusable service roles are visible in one place
   - the model-facing dynamic tool layer now includes capability inspection too, so orchestration can inspect one reusable service role directly without scraping the whole shell list
   - the model-facing dynamic tool layer now also includes filtered capability listing, so orchestration can ask for only missing, booting, ambiguous, or healthy service roles instead of scraping the full reusable-service registry
-  - the model-facing dynamic tool layer now also includes live shell metadata mutation, so orchestration can replace a service shell's declared `capabilities`, live `label`, or attachment-contract fields such as `protocol`, `endpoint`, and `attachHint` through `background_shell_update_service`, and can retarget any running job's declared `dependsOnCapabilities` set through `background_shell_update_dependencies`, instead of forcing a restart when a reusable role, attach contract, or dependency edge needs to change
+  - the model-facing dynamic tool layer now also includes live shell metadata mutation, so orchestration can replace a service shell's declared `capabilities`, live `label`, or attachment-contract fields such as `protocol`, `endpoint`, `attachHint`, `readyPattern`, and `recipes` through `background_shell_update_service`, and can retarget any running job's declared `dependsOnCapabilities` set through `background_shell_update_dependencies`, instead of forcing a restart when a reusable role, attach contract, or dependency edge needs to change
   - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job

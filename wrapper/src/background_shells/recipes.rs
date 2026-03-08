@@ -12,7 +12,7 @@ use super::BackgroundShellInteractionParameter;
 use super::BackgroundShellInteractionRecipe;
 use super::parse_background_shell_optional_string;
 
-pub(super) fn parse_background_shell_interaction_recipes(
+pub(crate) fn parse_background_shell_interaction_recipes(
     value: Option<&serde_json::Value>,
 ) -> Result<Vec<BackgroundShellInteractionRecipe>, String> {
     let Some(value) = value else {

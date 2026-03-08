@@ -325,17 +325,43 @@ pub(crate) fn handle_ps_command(
                     return Ok(true);
                 }
             };
-        if protocol.is_none() && endpoint.is_none() && attach_hint.is_none() {
+        let ready_pattern =
+            match parse_optional_contract_field(contract.get("readyPattern"), "readyPattern") {
+                Ok(value) => value,
+                Err(err) => {
+                    output.line_stderr(format!("[session] {err}"))?;
+                    return Ok(true);
+                }
+            };
+        let recipes = match parse_optional_contract_recipes(contract.get("recipes")) {
+            Ok(value) => value,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        if protocol.is_none()
+            && endpoint.is_none()
+            && attach_hint.is_none()
+            && ready_pattern.is_none()
+            && recipes.is_none()
+        {
             output.line_stderr(
-                "[session] :ps contract requires at least one of `protocol`, `endpoint`, or `attachHint`",
+                "[session] :ps contract requires at least one of `protocol`, `endpoint`, `attachHint`, `readyPattern`, or `recipes`",
             )?;
             return Ok(true);
         }
         match state
             .orchestration
             .background_shells
-            .update_service_contract_for_operator(reference, protocol, endpoint, attach_hint)
-        {
+            .update_service_contract_for_operator(
+                reference,
+                protocol,
+                endpoint,
+                attach_hint,
+                ready_pattern,
+                recipes,
+            ) {
             Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
@@ -591,6 +617,20 @@ fn parse_optional_contract_field(
         Some(_) => Err(format!(
             ":ps contract `{field_name}` must be a string or null"
         )),
+    }
+}
+
+fn parse_optional_contract_recipes(
+    value: Option<&serde_json::Value>,
+) -> Result<Option<Vec<crate::background_shells::BackgroundShellInteractionRecipe>>, String> {
+    match value {
+        None => Ok(None),
+        Some(serde_json::Value::Null) => Ok(Some(Vec::new())),
+        Some(value) => {
+            crate::background_shells::parse_background_shell_interaction_recipes(Some(value))
+                .map(Some)
+                .map_err(|err| format!(":ps contract {err}"))
+        }
     }
 }
 
