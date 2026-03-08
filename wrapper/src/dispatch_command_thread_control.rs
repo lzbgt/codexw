@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::dispatch_command_session_ps::execute_clean_target;
-use crate::dispatch_command_session_ps::parse_clean_target;
+use crate::dispatch_command_session_ps::parse_clean_selection;
 use crate::dispatch_command_thread_common::require_idle_turn;
 use crate::editor::LineEditor;
 use crate::output::Output;
@@ -35,11 +35,13 @@ pub(crate) fn try_handle_thread_control_command(
             true
         }
         "clean" => {
-            if let Some(target) = parse_clean_target(args.first().copied()) {
-                execute_clean_target(target, cli, state, output, writer)?;
-            } else {
-                output
-                    .line_stderr("[session] usage: :clean [blockers|shells|services|terminals]")?;
+            match parse_clean_selection(args, ":clean") {
+                Ok(selection) => {
+                    execute_clean_target(selection, cli, state, output, writer)?;
+                }
+                Err(err) => {
+                    output.line_stderr(format!("[session] {err}"))?;
+                }
             }
             true
         }

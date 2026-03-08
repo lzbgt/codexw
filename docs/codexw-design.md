@@ -296,6 +296,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:clean blockers` and `:ps clean blockers` terminate only wrapper-owned prerequisite shells
   - `:clean shells` terminates all wrapper-owned local shell jobs
   - `:clean services` terminates only wrapper-owned service shells
+  - `:clean services @api.http` and `:ps clean services @api.http` terminate all running providers for one reusable service capability, which is the intended conflict-resolution path when a capability is ambiguous across multiple service shells
   - `:clean terminals` uses the backend `thread/backgroundTerminals/clean` API without touching local shell jobs
   - agent waits remain inspectable but are not directly terminable from the wrapper, so blocker cleanup is honest about targeting only controllable prerequisite shells
 - `/status` now reports an orchestration breakdown with:

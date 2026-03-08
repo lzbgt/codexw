@@ -265,6 +265,59 @@ fn service_shell_views_can_filter_ready_booting_untracked_and_conflicting_jobs()
 }
 
 #[test]
+fn terminate_running_services_by_capability_terminates_all_matching_providers() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "service",
+                "label": "api a",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start first api provider");
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "service",
+                "label": "api b",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start second api provider");
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "service",
+                "label": "db",
+                "capabilities": ["db.redis"]
+            }),
+            "/tmp",
+        )
+        .expect("start unrelated provider");
+
+    let terminated = manager
+        .terminate_running_services_by_capability("@api.http")
+        .expect("terminate api providers");
+    assert_eq!(terminated, 2);
+
+    let rendered = manager
+        .render_service_shells_for_ps_filtered(None, None)
+        .expect("render remaining services")
+        .join("\n");
+    assert!(!rendered.contains("api a"));
+    assert!(!rendered.contains("api b"));
+    assert!(rendered.contains("db"));
+
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn background_shell_origin_intent_and_label_are_preserved_in_snapshots_and_poll() {
     let manager = BackgroundShellManager::default();
     manager

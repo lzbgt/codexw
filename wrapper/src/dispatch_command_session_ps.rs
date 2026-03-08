@@ -25,6 +25,12 @@ pub(crate) enum CleanTarget {
     Terminals,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CleanSelection {
+    pub(crate) target: CleanTarget,
+    pub(crate) capability: Option<String>,
+}
+
 pub(crate) fn handle_ps_command(
     raw_args: &str,
     args: &[&str],
@@ -35,11 +41,13 @@ pub(crate) fn handle_ps_command(
 ) -> Result<bool> {
     let action = args.first().copied();
     if matches!(action, Some("clean")) {
-        if let Some(target) = parse_clean_target(args.get(1).copied()) {
-            execute_clean_target(target, cli, state, output, writer)?;
-        } else {
-            output
-                .line_stderr("[session] usage: :ps clean [blockers|shells|services|terminals]")?;
+        match parse_clean_selection(&args[1..], ":ps clean") {
+            Ok(selection) => {
+                execute_clean_target(selection, cli, state, output, writer)?;
+            }
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+            }
         }
     } else if matches!(action, Some("send" | "write" | "stdin")) {
         let Some((reference, text)) = parse_ps_send_args(raw_args) else {
@@ -331,7 +339,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [guidance|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)
@@ -568,14 +576,43 @@ pub(crate) fn parse_clean_target(action: Option<&str>) -> Option<CleanTarget> {
     }
 }
 
+pub(crate) fn parse_clean_selection(
+    args: &[&str],
+    context: &str,
+) -> Result<CleanSelection, String> {
+    let usage = format!("{context} [blockers|shells|services [@capability]|terminals]");
+    let Some(target) = parse_clean_target(args.first().copied()) else {
+        return Err(format!("usage: {usage}"));
+    };
+    let capability = match args.get(1).copied() {
+        None => None,
+        Some(raw_capability) if matches!(target, CleanTarget::Services) => {
+            let Some(raw_capability) = raw_capability.strip_prefix('@') else {
+                return Err(format!("usage: {usage}"));
+            };
+            if raw_capability.is_empty() || !is_valid_capability_ref(raw_capability) {
+                return Err(format!("usage: {usage}"));
+            }
+            Some(raw_capability.to_string())
+        }
+        Some(_) => {
+            return Err(format!("usage: {usage}"));
+        }
+    };
+    if args.len() > 2 {
+        return Err(format!("usage: {usage}"));
+    }
+    Ok(CleanSelection { target, capability })
+}
+
 pub(crate) fn execute_clean_target(
-    target: CleanTarget,
+    selection: CleanSelection,
     cli: &Cli,
     state: &mut AppState,
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<()> {
-    let cleaned_local = match target {
+    let cleaned_local = match selection.target {
         CleanTarget::All | CleanTarget::Shells => state
             .orchestration
             .background_shells
@@ -584,21 +621,43 @@ pub(crate) fn execute_clean_target(
             .orchestration
             .background_shells
             .terminate_running_by_intent(BackgroundShellIntent::Prerequisite),
-        CleanTarget::Services => state
-            .orchestration
-            .background_shells
-            .terminate_running_by_intent(BackgroundShellIntent::Service),
+        CleanTarget::Services => {
+            if let Some(capability) = selection.capability.as_deref() {
+                match state
+                    .orchestration
+                    .background_shells
+                    .terminate_running_services_by_capability(capability)
+                {
+                    Ok(cleaned_local) => cleaned_local,
+                    Err(err) => {
+                        output.line_stderr(format!("[session] {err}"))?;
+                        return Ok(());
+                    }
+                }
+            } else {
+                state
+                    .orchestration
+                    .background_shells
+                    .terminate_running_by_intent(BackgroundShellIntent::Service)
+            }
+        }
         CleanTarget::Terminals => 0,
     };
 
-    let target_label = match target {
+    let target_label = match selection.target {
         CleanTarget::All => "background tasks",
         CleanTarget::Blockers => "blocking prerequisite shells",
         CleanTarget::Shells => "local background shell jobs",
         CleanTarget::Services => "service shells",
         CleanTarget::Terminals => "server background terminals",
     };
-    output.line_stderr(format!("[thread] cleaning {target_label}"))?;
+    if let Some(capability) = selection.capability.as_deref() {
+        output.line_stderr(format!(
+            "[thread] cleaning service shells for @{capability}"
+        ))?;
+    } else {
+        output.line_stderr(format!("[thread] cleaning {target_label}"))?;
+    }
 
     if cleaned_local > 0 {
         output.line_stderr(format!(
@@ -607,7 +666,7 @@ pub(crate) fn execute_clean_target(
         ))?;
     }
 
-    match target {
+    match selection.target {
         CleanTarget::All | CleanTarget::Terminals => {
             if cli.no_experimental_api {
                 output.line_stderr(

@@ -9,9 +9,33 @@ use super::BackgroundShellJobSnapshot;
 use super::BackgroundShellManager;
 use super::BackgroundShellServiceIssueClass;
 use super::BackgroundShellServiceReadiness;
+use super::terminate_jobs;
 use super::validate_service_capability;
 
 impl BackgroundShellManager {
+    pub(crate) fn terminate_running_services_by_capability(
+        &self,
+        capability: &str,
+    ) -> Result<usize, String> {
+        let capability = validate_service_capability(capability.trim_start_matches('@'))?;
+        let job_ids = self
+            .running_service_snapshots()
+            .into_iter()
+            .filter(|job| {
+                job.service_capabilities
+                    .iter()
+                    .any(|entry| entry == &capability)
+            })
+            .map(|job| job.id)
+            .collect::<Vec<_>>();
+        if job_ids.is_empty() {
+            return Err(format!(
+                "unknown running background shell capability `@{capability}`; use /ps capabilities to inspect reusable service roles"
+            ));
+        }
+        Ok(terminate_jobs(self, job_ids))
+    }
+
     pub(crate) fn running_service_count_by_readiness(
         &self,
         readiness: BackgroundShellServiceReadiness,

@@ -2,6 +2,7 @@ use crate::Cli;
 use crate::background_terminals::background_terminal_count;
 use crate::background_terminals::render_background_terminals;
 use crate::dispatch_command_session_ps::handle_ps_command;
+use crate::dispatch_command_session_ps::parse_clean_selection;
 use crate::dispatch_command_session_ps::parse_clean_target;
 use crate::dispatch_command_session_ps::parse_ps_capability_issue_filter;
 use crate::dispatch_command_session_ps::parse_ps_dependency_filter;
@@ -742,6 +743,7 @@ fn ps_service_filter_parser_accepts_issue_aliases() {
 
 #[test]
 fn clean_target_parser_accepts_scoped_cleanup_aliases() {
+    use crate::dispatch_command_session_ps::CleanSelection;
     use crate::dispatch_command_session_ps::CleanTarget;
 
     assert_eq!(parse_clean_target(None), Some(CleanTarget::All));
@@ -772,6 +774,16 @@ fn clean_target_parser_accepts_scoped_cleanup_aliases() {
     );
     assert_eq!(parse_clean_target(Some("agents")), None);
     assert_eq!(parse_clean_target(Some("unknown")), None);
+
+    assert_eq!(
+        parse_clean_selection(&["services", "@api.http"], ":clean").expect("parse clean selector"),
+        CleanSelection {
+            target: CleanTarget::Services,
+            capability: Some("api.http".to_string())
+        }
+    );
+    assert!(parse_clean_selection(&["services", "api.http"], ":clean").is_err());
+    assert!(parse_clean_selection(&["shells", "@api.http"], ":clean").is_err());
 }
 
 #[test]
@@ -887,6 +899,69 @@ fn ps_command_can_alias_and_reuse_background_shell_job_references() {
             .is_err()
     );
     let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_clean_services_can_target_one_capability() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "service",
+                "label": "api a",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start first api provider");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "service",
+                "label": "api b",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start second api provider");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.5",
+                "intent": "service",
+                "label": "db",
+                "capabilities": ["db.redis"]
+            }),
+            "/tmp",
+        )
+        .expect("start db provider");
+
+    handle_ps_command(
+        "clean services @api.http",
+        &["clean", "services", "@api.http"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("clean services by capability");
+
+    let rendered = state
+        .background_shells
+        .render_service_shells_for_ps_filtered(None, None)
+        .expect("render remaining services")
+        .join("\n");
+    assert!(!rendered.contains("api a"));
+    assert!(!rendered.contains("api b"));
+    assert!(rendered.contains("db"));
 }
 
 #[test]
