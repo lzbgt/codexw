@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::model_session::extract_models;
+use crate::model_catalog::extract_models;
 use crate::state::get_string;
 
 pub(crate) fn render_models_list(result: &Value) -> String {

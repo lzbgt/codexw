@@ -1,7 +1,7 @@
 use crate::Cli;
-use crate::collaboration::summarize_active_collaboration_mode;
-use crate::model_session::effective_model_entry;
-use crate::model_session::summarize_active_personality;
+use crate::collaboration_actions::summarize_active_collaboration_mode;
+use crate::model_catalog::effective_model_entry;
+use crate::model_personality::summarize_active_personality;
 use crate::policy::approval_policy;
 use crate::policy::thread_sandbox_mode;
 use crate::policy::turn_sandbox_policy;

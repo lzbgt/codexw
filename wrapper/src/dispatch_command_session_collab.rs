@@ -2,7 +2,7 @@ use std::process::ChildStdin;
 
 use anyhow::Result;
 
-use crate::collaboration::CollaborationModeAction;
+use crate::collaboration_actions::CollaborationModeAction;
 use crate::output::Output;
 use crate::requests::send_load_collaboration_modes;
 use crate::state::AppState;

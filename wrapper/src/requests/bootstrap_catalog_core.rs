@@ -3,8 +3,8 @@ use std::process::ChildStdin;
 use anyhow::Result;
 use serde_json::json;
 
-use crate::collaboration::CollaborationModeAction;
-use crate::model_session::ModelsAction;
+use crate::collaboration_actions::CollaborationModeAction;
+use crate::model_personality::ModelsAction;
 use crate::requests::PendingRequest;
 use crate::requests::send_json;
 use crate::rpc::OutgoingRequest;

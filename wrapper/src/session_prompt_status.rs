@@ -58,5 +58,5 @@ pub(crate) fn personality_label(personality: &str) -> &str {
 }
 
 pub(crate) fn current_collaboration_label(state: &AppState) -> Option<String> {
-    crate::collaboration::current_collaboration_mode_label(state)
+    crate::collaboration_actions::current_collaboration_mode_label(state)
 }

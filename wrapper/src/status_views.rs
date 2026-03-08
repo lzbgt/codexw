@@ -2,8 +2,8 @@ pub(crate) use crate::status_account::render_account_summary;
 pub(crate) use crate::status_config::render_config_snapshot;
 pub(crate) use crate::status_config::render_permissions_snapshot;
 pub(crate) use crate::status_config::summarize_sandbox_policy;
-pub(crate) use crate::status_limits::render_rate_limit_lines;
-pub(crate) use crate::status_limits::render_token_usage_summary;
+pub(crate) use crate::status_rate_limits::render_rate_limit_lines;
+pub(crate) use crate::status_token_usage::render_token_usage_summary;
 use serde_json::Value;
 
 pub(crate) fn summarize_value(value: &Value) -> String {

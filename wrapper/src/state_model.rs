@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::time::Instant;
 
-use crate::collaboration::CollaborationModePreset;
+use crate::collaboration_preset::CollaborationModePreset;
 use crate::input::AppCatalogEntry;
 use crate::input::PluginCatalogEntry;
 use crate::input::SkillCatalogEntry;
-use crate::model_session::ModelCatalogEntry;
+use crate::model_catalog::ModelCatalogEntry;
 use crate::requests::PendingRequest;
 use crate::rpc::RequestId;
 

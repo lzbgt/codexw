@@ -7,7 +7,7 @@ use serde_json::json;
 use super::PendingRequest;
 use super::send_json;
 use crate::Cli;
-use crate::collaboration::current_collaboration_mode_value;
+use crate::collaboration_actions::current_collaboration_mode_value;
 use crate::input::ParsedInput;
 use crate::policy::approval_policy;
 use crate::policy::reasoning_summary;

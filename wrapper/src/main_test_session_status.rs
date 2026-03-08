@@ -43,7 +43,7 @@ fn prompt_status_ready_includes_collaboration_and_personality() {
     let mut state = crate::state::AppState::new(true, false);
     state.completed_turn_count = 3;
     state.active_personality = Some("pragmatic".to_string());
-    state.active_collaboration_mode = Some(crate::collaboration::CollaborationModePreset {
+    state.active_collaboration_mode = Some(crate::collaboration_preset::CollaborationModePreset {
         name: "Plan".to_string(),
         mode_kind: Some("plan".to_string()),
         model: Some("gpt-5-codex".to_string()),

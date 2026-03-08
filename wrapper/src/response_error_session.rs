@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::collaboration::CollaborationModeAction;
+use crate::collaboration_actions::CollaborationModeAction;
 use crate::output::Output;
 use crate::requests::PendingRequest;
 use crate::state::AppState;

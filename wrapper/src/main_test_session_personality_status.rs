@@ -1,7 +1,7 @@
 use crate::Cli;
-use crate::model_session::extract_models;
-use crate::model_session::render_personality_options;
-use crate::model_session::summarize_active_personality;
+use crate::model_catalog::extract_models;
+use crate::model_personality::render_personality_options;
+use crate::model_personality::summarize_active_personality;
 use crate::session_snapshot::render_status_snapshot;
 use serde_json::json;
 
