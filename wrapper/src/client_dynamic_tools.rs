@@ -333,6 +333,20 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                 "required": ["jobId"]
             }
         }),
+        json!({
+            "name": "background_shell_clean",
+            "description": "Terminate local background shell jobs by scope. Supports all, blockers, shells, or services, and service cleanup can optionally target one @capability to resolve ambiguous reusable roles.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "scope": {
+                        "type": "string",
+                        "enum": ["all", "blockers", "shells", "services"]
+                    },
+                    "capability": {"type": "string"}
+                }
+            }
+        }),
     ])
 }
 
@@ -409,6 +423,10 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
             .orchestration
             .background_shells
             .terminate_from_tool(arguments),
+        "background_shell_clean" => state
+            .orchestration
+            .background_shells
+            .clean_from_tool(arguments),
         _ => Err(format!("unsupported client dynamic tool `{tool}`")),
     };
 

@@ -649,6 +649,76 @@ impl BackgroundShellManager {
         ))
     }
 
+    pub(crate) fn clean_from_tool(&self, arguments: &serde_json::Value) -> Result<String, String> {
+        let object = arguments
+            .as_object()
+            .ok_or_else(|| "background_shell_clean expects an object argument".to_string())?;
+        let scope = object
+            .get("scope")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("all");
+        let capability = object.get("capability").and_then(serde_json::Value::as_str);
+        let terminated = match scope {
+            "all" => {
+                if capability.is_some() {
+                    return Err(
+                        "background_shell_clean `capability` is only valid with `scope=services`"
+                            .to_string(),
+                    );
+                }
+                self.terminate_all_running()
+            }
+            "blockers" => {
+                if capability.is_some() {
+                    return Err(
+                        "background_shell_clean `capability` is only valid with `scope=services`"
+                            .to_string(),
+                    );
+                }
+                self.terminate_running_by_intent(BackgroundShellIntent::Prerequisite)
+            }
+            "shells" => {
+                if capability.is_some() {
+                    return Err(
+                        "background_shell_clean `capability` is only valid with `scope=services`"
+                            .to_string(),
+                    );
+                }
+                self.terminate_all_running()
+            }
+            "services" => match capability {
+                Some(capability) => self.terminate_running_services_by_capability(capability)?,
+                None => self.terminate_running_by_intent(BackgroundShellIntent::Service),
+            },
+            other => {
+                return Err(format!(
+                    "background_shell_clean `scope` must be one of `all`, `blockers`, `shells`, or `services`, got `{other}`"
+                ));
+            }
+        };
+        let summary = match (scope, capability) {
+            ("services", Some(capability)) => format!(
+                "Terminated {terminated} background shell job{} for reusable service capability @{}.",
+                if terminated == 1 { "" } else { "s" },
+                capability.trim_start_matches('@')
+            ),
+            ("services", None) => format!(
+                "Terminated {terminated} service background shell job{}.",
+                if terminated == 1 { "" } else { "s" }
+            ),
+            ("blockers", None) => format!(
+                "Terminated {terminated} blocking prerequisite background shell job{}.",
+                if terminated == 1 { "" } else { "s" }
+            ),
+            ("all" | "shells", None) => format!(
+                "Terminated {terminated} local background shell job{}.",
+                if terminated == 1 { "" } else { "s" }
+            ),
+            _ => unreachable!(),
+        };
+        Ok(summary)
+    }
+
     pub(crate) fn send_input_from_tool(
         &self,
         arguments: &serde_json::Value,

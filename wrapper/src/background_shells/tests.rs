@@ -473,10 +473,15 @@ fn service_capability_reference_ignores_completed_service_jobs() {
             "/tmp",
         )
         .expect("start short-lived service");
-    thread::sleep(Duration::from_millis(75));
-    let err = manager
-        .resolve_job_reference("@api")
-        .expect_err("completed service should not satisfy capability resolution");
+    let err = (0..20)
+        .find_map(|_| match manager.resolve_job_reference("@api") {
+            Ok(_) => {
+                thread::sleep(Duration::from_millis(25));
+                None
+            }
+            Err(err) => Some(err),
+        })
+        .expect("completed service should not satisfy capability resolution");
     assert!(err.contains("unknown running background shell capability"));
 }
 
