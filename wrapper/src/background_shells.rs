@@ -532,6 +532,9 @@ impl BackgroundShellManager {
             "Use background_shell_poll with a jobId to inspect logs while continuing other work."
                 .to_string(),
         );
+        if let Some(capability_lines) = self.render_service_capability_index_lines() {
+            lines.extend(capability_lines);
+        }
         let conflicts = self.service_capability_conflicts();
         if !conflicts.is_empty() {
             lines.push("Capability conflicts:".to_string());
@@ -818,22 +821,8 @@ impl BackgroundShellManager {
     }
 
     pub(crate) fn service_capability_conflicts(&self) -> Vec<(String, Vec<String>)> {
-        let mut index = BTreeMap::<String, Vec<String>>::new();
-        for snapshot in self
-            .snapshots()
-            .into_iter()
-            .filter(|job| job.intent == BackgroundShellIntent::Service)
-        {
-            let job_ref = snapshot
-                .alias
-                .as_deref()
-                .map(|alias| format!("{} ({alias})", snapshot.id))
-                .unwrap_or_else(|| snapshot.id.clone());
-            for capability in snapshot.service_capabilities {
-                index.entry(capability).or_default().push(job_ref.clone());
-            }
-        }
-        let mut conflicts = index
+        let mut conflicts = self
+            .service_capability_index()
             .into_iter()
             .filter_map(|(capability, mut jobs)| {
                 if jobs.len() < 2 {
@@ -846,6 +835,25 @@ impl BackgroundShellManager {
             .collect::<Vec<_>>();
         conflicts.sort_by(|left, right| left.0.cmp(&right.0));
         conflicts
+    }
+
+    pub(crate) fn unique_service_capability_count(&self) -> usize {
+        self.service_capability_index().len()
+    }
+
+    pub(crate) fn service_capability_index(&self) -> Vec<(String, Vec<String>)> {
+        let mut index = BTreeMap::<String, Vec<String>>::new();
+        for snapshot in self.running_service_snapshots() {
+            let job_ref = snapshot
+                .alias
+                .as_deref()
+                .map(|alias| format!("{} ({alias})", snapshot.id))
+                .unwrap_or_else(|| snapshot.id.clone());
+            for capability in snapshot.service_capabilities {
+                index.entry(capability).or_default().push(job_ref.clone());
+            }
+        }
+        index.into_iter().collect()
     }
 
     pub(crate) fn service_capability_conflict_count(&self) -> usize {
@@ -973,6 +981,9 @@ impl BackgroundShellManager {
             }
         }
         if matches!(intent_filter, None | Some(BackgroundShellIntent::Service)) {
+            if let Some(capability_lines) = self.render_service_capability_index_lines() {
+                lines.extend(capability_lines);
+            }
             let conflicts = self.service_capability_conflicts();
             if !conflicts.is_empty() {
                 lines.push("Capability conflicts:".to_string());
@@ -981,6 +992,29 @@ impl BackgroundShellManager {
                 }
             }
         }
+        Some(lines)
+    }
+
+    pub(crate) fn render_service_capabilities_for_ps(&self) -> Option<Vec<String>> {
+        let capability_index = self.service_capability_index();
+        if capability_index.is_empty() {
+            return None;
+        }
+        let mut lines = vec!["Service capability index:".to_string()];
+        for (index, (capability, jobs)) in capability_index.iter().enumerate() {
+            let qualifier = if jobs.len() > 1 { "  [conflict]" } else { "" };
+            lines.push(format!(
+                "{:>2}. @{} -> {}{}",
+                index + 1,
+                capability,
+                jobs.join(", "),
+                qualifier
+            ));
+        }
+        lines.push(
+            "Use @capability with :ps poll|send|attach|wait|run|terminate to target a reusable service."
+                .to_string(),
+        );
         Some(lines)
     }
 
@@ -1036,6 +1070,29 @@ impl BackgroundShellManager {
             format!("failed to flush background shell job `{job_id}` stdin: {err}")
         })?;
         Ok(payload.len())
+    }
+
+    fn running_service_snapshots(&self) -> Vec<BackgroundShellJobSnapshot> {
+        self.snapshots()
+            .into_iter()
+            .filter(|job| {
+                job.intent == BackgroundShellIntent::Service
+                    && job.exit_code.is_none()
+                    && job.status == "running"
+            })
+            .collect()
+    }
+
+    fn render_service_capability_index_lines(&self) -> Option<Vec<String>> {
+        let capability_index = self.service_capability_index();
+        if capability_index.is_empty() {
+            return None;
+        }
+        let mut lines = vec!["Capability index:".to_string()];
+        for (capability, jobs) in capability_index {
+            lines.push(format!("    @{capability} -> {}", jobs.join(", ")));
+        }
+        Some(lines)
     }
 
     fn service_attachment_summary(&self, job_id: &str) -> Result<String, String> {
@@ -1515,19 +1572,17 @@ impl BackgroundShellManager {
     fn resolve_service_capability_reference(&self, capability: &str) -> Result<String, String> {
         let capability = validate_service_capability(capability)?;
         let matches = self
-            .snapshots()
+            .running_service_snapshots()
             .into_iter()
             .filter(|job| {
-                job.intent == BackgroundShellIntent::Service
-                    && job
-                        .service_capabilities
-                        .iter()
-                        .any(|entry| entry == &capability)
+                job.service_capabilities
+                    .iter()
+                    .any(|entry| entry == &capability)
             })
             .collect::<Vec<_>>();
         match matches.as_slice() {
             [] => Err(format!(
-                "unknown background shell capability `@{capability}`"
+                "unknown running background shell capability `@{capability}`; use /ps capabilities to inspect reusable service roles"
             )),
             [job] => Ok(job.id.clone()),
             jobs => {
@@ -1540,7 +1595,7 @@ impl BackgroundShellManager {
                     .collect::<Vec<_>>()
                     .join(", ");
                 Err(format!(
-                    "background shell capability `@{capability}` is ambiguous across multiple service jobs: {refs}"
+                    "background shell capability `@{capability}` is ambiguous across multiple running service jobs: {refs}; use /ps capabilities to inspect reusable service roles"
                 ))
             }
         }

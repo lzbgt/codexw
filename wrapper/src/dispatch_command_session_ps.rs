@@ -269,7 +269,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance|blockers|agents|shells|services|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [guidance|blockers|agents|shells|services|capabilities|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
@@ -358,6 +358,7 @@ pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {
         Some("agents") => Some(WorkerFilter::Agents),
         Some("shells") => Some(WorkerFilter::Shells),
         Some("services") => Some(WorkerFilter::Services),
+        Some("capabilities") | Some("caps") | Some("cap") => Some(WorkerFilter::Capabilities),
         Some("terminals") => Some(WorkerFilter::Terminals),
         Some("clean") => None,
         Some(_) => None,

@@ -281,9 +281,11 @@ fn service_capability_reference_errors_when_ambiguous() {
         .resolve_job_reference("@api")
         .expect_err("capability should be ambiguous");
     assert!(err.contains("ambiguous"));
+    assert!(err.contains("/ps capabilities"));
     assert!(err.contains("bg-1"));
     assert!(err.contains("bg-2"));
     let listed = manager.list_from_tool();
+    assert!(listed.contains("Capability index:"));
     assert!(listed.contains("Capability conflicts:"));
     assert!(listed.contains("@api -> bg-1, bg-2"));
     let services = manager
@@ -292,6 +294,74 @@ fn service_capability_reference_errors_when_ambiguous() {
     let rendered = services.join("\n");
     assert!(rendered.contains("Capability conflicts:"));
     assert!(rendered.contains("@api -> bg-1, bg-2"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn service_capability_reference_ignores_completed_service_jobs() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "printf 'done\\n'",
+                "intent": "service",
+                "capabilities": ["api"]
+            }),
+            "/tmp",
+        )
+        .expect("start short-lived service");
+    thread::sleep(Duration::from_millis(75));
+    let err = manager
+        .resolve_job_reference("@api")
+        .expect_err("completed service should not satisfy capability resolution");
+    assert!(err.contains("unknown running background shell capability"));
+}
+
+#[test]
+fn service_capability_index_lists_running_service_roles() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http", "frontend.dev"]
+            }),
+            "/tmp",
+        )
+        .expect("start first service");
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http", "worker.queue"]
+            }),
+            "/tmp",
+        )
+        .expect("start second service");
+
+    let index = manager.service_capability_index();
+    assert_eq!(
+        index,
+        vec![
+            (
+                "api.http".to_string(),
+                vec!["bg-1".to_string(), "bg-2".to_string()]
+            ),
+            ("frontend.dev".to_string(), vec!["bg-1".to_string()]),
+            ("worker.queue".to_string(), vec!["bg-2".to_string()]),
+        ]
+    );
+
+    let rendered = manager
+        .render_service_capabilities_for_ps()
+        .expect("render capability index")
+        .join("\n");
+    assert!(rendered.contains("Service capability index:"));
+    assert!(rendered.contains("@api.http -> bg-1, bg-2  [conflict]"));
+    assert!(rendered.contains("@frontend.dev -> bg-1"));
+    assert!(rendered.contains("@worker.queue -> bg-2"));
     let _ = manager.terminate_all_running();
 }
 

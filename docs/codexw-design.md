@@ -221,6 +221,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps agents` for cognitive workers only
   - `:ps shells` for wrapper-owned local shell jobs only
   - `:ps services` for reusable service shells only
+  - `:ps capabilities` for the live capability-to-service index across reusable service shells
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
   - `:ps attach <jobId|alias|@capability|n>` renders the structured attachment metadata for one service shell job
@@ -270,7 +271,8 @@ The current `codexw` implementation now reflects that model partially:
   - executable network recipes (`http`, `tcp`, `redis`) now automatically wait for service readiness when the service declared `readyPattern`
     - explicit wait is also available through `:ps wait ...` and `background_shell_wait_ready`
     - `background_shell_invoke_recipe.waitForReadyMs` can lengthen or disable that auto-wait (`0` disables it)
-  - capability conflicts are surfaced proactively in service listings and orchestration guidance, so the wrapper shows `@capability` ambiguity before later reuse fails at resolution time
+  - capability conflicts are surfaced proactively in service listings, the dedicated capability index, and orchestration guidance, so the wrapper shows `@capability` ambiguity before later reuse fails at resolution time
+  - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
   - `:ps unalias <name>` removes that alias

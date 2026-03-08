@@ -25,6 +25,7 @@ pub(crate) enum WorkerFilter {
     Agents,
     Shells,
     Services,
+    Capabilities,
     Terminals,
     Guidance,
 }
@@ -63,8 +64,12 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         .orchestration
         .background_shells
         .service_capability_conflict_count();
+    let service_caps = state
+        .orchestration
+        .background_shells
+        .unique_service_capability_count();
     format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_cap_conflicts={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -76,6 +81,7 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+        service_caps,
         service_cap_conflicts,
         snapshot.live_agent_tasks.len(),
         snapshot.cached_agent_threads.len(),
@@ -103,8 +109,12 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         .orchestration
         .background_shells
         .service_capability_conflict_count();
+    let service_caps = state
+        .orchestration
+        .background_shells
+        .unique_service_capability_count();
     Some(format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_cap_conflicts={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} agent_tasks={} shells={} thread_terms={} agents={}{}",
         main_agent_state_label(state),
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -116,6 +126,7 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+        service_caps,
         service_cap_conflicts,
         snapshot.live_agent_tasks.len(),
         snapshot.background_shell_jobs,
@@ -144,6 +155,10 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
     let services_untracked =
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
+    let service_caps = state
+        .orchestration
+        .background_shells
+        .unique_service_capability_count();
     let terminals = server_background_terminal_count(state);
     if waits == 0
         && prereqs == 0
@@ -195,6 +210,12 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
         parts.push(format!(
             "{} untracked",
             pluralize(services_untracked, "service", "services")
+        ));
+    }
+    if service_caps > 0 {
+        parts.push(format!(
+            "{}",
+            pluralize(service_caps, "service capability", "service capabilities")
         ));
     }
     if terminals > 0 {
@@ -276,6 +297,10 @@ pub(crate) fn render_orchestration_workers_with_filter(
             .orchestration
             .background_shells
             .render_for_ps_filtered(Some(BackgroundShellIntent::Service)),
+        WorkerFilter::Capabilities => state
+            .orchestration
+            .background_shells
+            .render_service_capabilities_for_ps(),
         WorkerFilter::Blockers => state
             .orchestration
             .background_shells
@@ -468,6 +493,7 @@ fn empty_filter_message(filter: WorkerFilter) -> &'static str {
         WorkerFilter::Agents => "No agent workers tracked right now.",
         WorkerFilter::Shells => "No local background shell jobs tracked right now.",
         WorkerFilter::Services => "No service shells tracked right now.",
+        WorkerFilter::Capabilities => "No reusable service capabilities tracked right now.",
         WorkerFilter::Terminals => "No server-observed background terminals tracked right now.",
         WorkerFilter::Guidance => "No orchestration guidance right now.",
     }
@@ -517,7 +543,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 pluralize(conflict_count, "capability conflict is", "capability conflicts are")
             ),
             format!("Resolve ambiguous reuse targets such as @{first} before relying on capability-based attachment."),
-            "Use /ps services to inspect the conflicting jobs and assign more specific capabilities.".to_string(),
+            "Use /ps capabilities to inspect the ambiguous capability map and assign more specific capabilities.".to_string(),
         ];
     }
     if ready_services > 0 {
@@ -621,6 +647,7 @@ mod tests {
         assert!(summary.contains("services_ready=0"));
         assert!(summary.contains("services_booting=0"));
         assert!(summary.contains("services_untracked=0"));
+        assert!(summary.contains("service_caps=0"));
         assert!(summary.contains("service_cap_conflicts=0"));
         assert!(summary.contains("agents_live=0"));
         assert!(summary.contains("agents_cached=2"));
@@ -796,6 +823,7 @@ mod tests {
                     "command": "sleep 0.4",
                     "intent": "service",
                     "label": "dev server",
+                    "capabilities": ["frontend.dev"],
                     "protocol": "http",
                     "endpoint": "http://127.0.0.1:3000",
                     "attachHint": "Open the dev server in a browser",
@@ -837,7 +865,13 @@ mod tests {
         assert!(services.contains("attach   Open the dev server in a browser"));
         assert!(services.contains("recipes  1"));
         assert!(services.contains("service  untracked"));
+        assert!(services.contains("Capability index:"));
         assert!(!services.contains("intent   prerequisite"));
+
+        let capabilities =
+            render_orchestration_workers_with_filter(&state, WorkerFilter::Capabilities);
+        assert!(capabilities.contains("Service capability index:"));
+        assert!(!capabilities.contains("Local background shell jobs:"));
 
         let terminals = render_orchestration_workers_with_filter(&state, WorkerFilter::Terminals);
         assert!(terminals.contains("Server-observed background terminals:"));
@@ -896,6 +930,7 @@ mod tests {
         assert!(summary.contains("services_ready=1"));
         assert!(summary.contains("services_booting=1"));
         assert!(summary.contains("services_untracked=1"));
+        assert!(summary.contains("service_caps=0"));
         assert!(summary.contains("service_cap_conflicts=0"));
 
         let suffix = orchestration_prompt_suffix(&state).expect("prompt suffix");
@@ -995,6 +1030,7 @@ mod tests {
         assert!(hint.contains("capability conflict"));
         let rendered = render_orchestration_guidance(&services);
         assert!(rendered.contains("@api.http"));
+        assert!(rendered.contains("/ps capabilities"));
         let _ = services.background_shells.terminate_all_running();
     }
 
