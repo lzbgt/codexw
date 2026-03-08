@@ -6,59 +6,11 @@ pub(crate) struct BuiltinCommandEntry {
     pub(crate) description: &'static str,
 }
 
-pub(crate) fn builtin_command_names() -> &'static [&'static str] {
-    const NAMES: &[&str] = &[
-        "model",
-        "models",
-        "fast",
-        "approvals",
-        "permissions",
-        "setup-default-sandbox",
-        "sandbox-add-read-dir",
-        "experimental",
-        "skills",
-        "review",
-        "rename",
-        "new",
-        "resume",
-        "fork",
-        "init",
-        "compact",
-        "plan",
-        "collab",
-        "agent",
-        "multi-agents",
-        "diff",
-        "copy",
-        "mention",
-        "status",
-        "debug-config",
-        "statusline",
-        "theme",
-        "mcp",
-        "apps",
-        "logout",
-        "quit",
-        "exit",
-        "feedback",
-        "rollout",
-        "ps",
-        "clean",
-        "clear",
-        "personality",
-        "realtime",
-        "settings",
-        "threads",
-        "auto",
-        "attach-image",
-        "attach",
-        "attach-url",
-        "attachments",
-        "clear-attachments",
-        "interrupt",
-        "help",
-    ];
-    NAMES
+pub(crate) fn builtin_command_names() -> Vec<&'static str> {
+    builtin_command_entries()
+        .iter()
+        .map(|entry| entry.name)
+        .collect()
 }
 
 pub(crate) fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {

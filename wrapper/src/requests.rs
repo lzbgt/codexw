@@ -1,10 +1,8 @@
 mod bootstrap_account;
 mod bootstrap_catalog;
 mod bootstrap_init;
-mod bootstrap_requests;
 mod command_requests;
 mod request_types;
-mod session_requests;
 mod thread_activity;
 mod thread_lifecycle;
 mod turn_requests;

@@ -18,13 +18,12 @@ pub(crate) fn try_complete_slash_command(
     };
 
     let mut prefix_matches = builtin_command_names()
-        .iter()
-        .copied()
+        .into_iter()
         .filter(|name| name.starts_with(prefix))
         .collect::<Vec<_>>();
 
     if prefix_matches.is_empty() && prefix.is_empty() {
-        prefix_matches = builtin_command_names().to_vec();
+        prefix_matches = builtin_command_names();
     }
 
     if prefix_matches.len() == 1 {
@@ -57,8 +56,8 @@ pub(crate) fn try_complete_slash_command(
     }
 
     let mut fuzzy_matches = builtin_command_names()
-        .iter()
-        .filter_map(|name| fuzzy_match_score(name, prefix).map(|score| (*name, score)))
+        .into_iter()
+        .filter_map(|name| fuzzy_match_score(name, prefix).map(|score| (name, score)))
         .collect::<Vec<_>>();
     if fuzzy_matches.is_empty() {
         return None;

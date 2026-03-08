@@ -118,7 +118,7 @@ fn slash_completion_rendering_includes_descriptions() {
 
 #[test]
 fn bare_slash_completion_uses_native_like_order() {
-    let rendered = render_slash_completion_candidates("", builtin_command_names(), false);
+    let rendered = render_slash_completion_candidates("", &builtin_command_names(), false);
     let review_index = rendered.find("/review").expect("review");
     let rename_index = rendered.find("/rename").expect("rename");
     let new_index = rendered.find("/new").expect("new");

@@ -36,7 +36,7 @@ The runtime has thirteen main layers.
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
 3. Outbound request construction
-   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/bootstrap_requests.rs`, `requests/thread_lifecycle.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, `requests/command_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. `bootstrap_requests.rs` and `session_requests.rs` are now narrow compatibility facades over the split bootstrap/thread/turn/command request helpers.
+   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/thread_lifecycle.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, and `requests/command_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. The older bootstrap/session request facades are gone; production code now imports the concrete helpers directly through `requests.rs`.
 
 4. Inbound event handling
    `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, and `notification_turns.rs` are compatibility/router facades over the split inbound handlers.
@@ -423,8 +423,6 @@ The biggest known limits are architectural, not accidental.
   Account, logout, feedback-upload, and rate-limit request builders.
 - `wrapper/src/requests/bootstrap_catalog.rs`
   Catalog, config, model, collaboration-mode, thread-list, and file-search request builders.
-- `wrapper/src/requests/bootstrap_requests.rs`
-  Compatibility facade for the split bootstrap request layer.
 - `wrapper/src/requests/thread_lifecycle.rs`
   Thread lifecycle request builders such as start, resume, fork, compact, rename, and background-terminal cleanup.
 - `wrapper/src/requests/thread_activity.rs`
@@ -433,8 +431,6 @@ The biggest known limits are architectural, not accidental.
   Turn start, steer, and interrupt request builders.
 - `wrapper/src/requests/command_requests.rs`
   Local command exec and terminate request builders.
-- `wrapper/src/requests/session_requests.rs`
-  Compatibility facade re-exporting the split thread/turn/command request builders.
 - `wrapper/src/rpc.rs`
   JSON-RPC wire types and line parsing.
 - `wrapper/src/response_bootstrap.rs`
