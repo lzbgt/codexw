@@ -3,6 +3,7 @@ mod catalog;
 mod catalog_views;
 mod collaboration;
 mod commands;
+mod commands_catalog;
 mod commands_completion;
 mod commands_metadata;
 mod dispatch;

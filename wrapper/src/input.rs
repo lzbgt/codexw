@@ -1,5 +1,7 @@
 mod input_build;
 mod input_decode;
+mod input_decode_inline;
+mod input_decode_mentions;
 mod input_resolve;
 mod input_types;
 
