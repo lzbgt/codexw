@@ -12,26 +12,21 @@ use crate::state::AppState;
 pub(crate) fn send_list_threads(
     writer: &mut ChildStdin,
     state: &mut AppState,
-    cwd_filter: Option<&str>,
+    resolved_cwd: &str,
     search_term: Option<String>,
-    allow_fallback_all: bool,
 ) -> Result<()> {
     let request_id = state.next_request_id();
     state.pending.insert(
         request_id.clone(),
         PendingRequest::ListThreads {
             search_term: search_term.clone(),
-            cwd_filter: cwd_filter.map(ToOwned::to_owned),
-            allow_fallback_all,
         },
     );
     let mut params = json!({
         "limit": 10,
         "sortKey": "updated_at",
+        "cwd": resolved_cwd,
     });
-    if let Some(cwd_filter) = cwd_filter {
-        params["cwd"] = Value::String(cwd_filter.to_string());
-    }
     if let Some(search_term) = search_term {
         params["searchTerm"] = Value::String(search_term);
     }
