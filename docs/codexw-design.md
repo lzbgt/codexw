@@ -45,7 +45,7 @@ The runtime has thirteen main layers.
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
 
 6. Shared state and text/buffer helpers
-   `state.rs`, `state_core.rs`, `state_model.rs`, `state_mutations.rs`, and `state_helpers.rs` own `AppState`, process-output buffering, attachment queues, request bookkeeping, state-reset/attachment mutations, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering. `state.rs` remains the shared runtime surface over the split state/helper modules, while `state_core.rs` is now the thin request-id helper facade over the concrete state model and mutation layers.
+   `state.rs`, `state_model.rs`, `state_mutations.rs`, and `state_helpers.rs` own `AppState`, process-output buffering, attachment queues, request bookkeeping, request-id generation, state-reset/attachment mutations, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering. `state.rs` remains the shared runtime surface over the split state/helper modules.
 
 7. Runtime policy
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
@@ -77,8 +77,8 @@ Status display helpers are split across `status_config.rs`, `status_account.rs`,
 Transcript display helpers now live directly across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, without an extra transcript compatibility layer in the runtime path.
 Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, and event-source threads now imported directly from those concrete modules.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
-Shared state helpers are split across `state_model.rs`, `state_mutations.rs`, `state_core.rs`, and `state_helpers.rs`, with `state.rs` kept as the thin facade over `AppState`, buffer/state types, and common text/path helper functions used across modules.
-Command catalog helpers are split across `commands_entry_session_catalog.rs`, `commands_entry_session_modes.rs`, `commands_entry_session.rs`, `commands_entry_thread.rs`, `commands_entry_runtime.rs`, and `commands_catalog.rs`: grouped command-entry data lives in the `commands_entry_*` modules, `commands_entry_session.rs` is the compatibility facade that assembles the session-oriented entries, and `commands_catalog.rs` now assembles the shared table directly while keeping the public entrypoint and stable command-name ordering.
+Shared state helpers are split across `state_model.rs`, `state_mutations.rs`, and `state_helpers.rs`, with `state.rs` kept as the thin facade over `AppState`, request-id generation, buffer/state types, and common text/path helper functions used across modules.
+Command catalog helpers are split across `commands_entry_session_catalog.rs`, `commands_entry_session_modes.rs`, `commands_entry_thread.rs`, `commands_entry_runtime.rs`, and `commands_catalog.rs`: grouped command-entry data lives in the `commands_entry_*` modules, and `commands_catalog.rs` assembles the shared table directly while keeping the public entrypoint and stable command-name ordering.
 Command metadata helpers live in `commands_metadata.rs`: command descriptions and help-line generation over the shared command catalog.
 Command completion helpers live in `commands_completion_apply.rs`, `commands_completion_render.rs`, and `commands_match.rs`: completion application stays in the extracted apply helper, rendering and quoting stay in the render helper, and cursor parsing, fuzzy scoring, and prefix logic live in the matcher module.
 Command-dispatch helpers are split across `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_navigation_session.rs`, `dispatch_command_thread_navigation_identity.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_review.rs`, `dispatch_command_thread_control.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_thread_view.rs`, `dispatch_command_thread_draft.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_ps.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch_commands.rs` kept as the remaining thin compatibility facade for imports and tests.
@@ -529,8 +529,6 @@ The biggest known limits are architectural, not accidental.
   Session/bootstrap/thread-switch error handling for account, models, collaboration, logout, feedback, and thread changes.
 - `wrapper/src/response_error_runtime.rs`
   Runtime error handling for realtime and local-command failures.
-- `wrapper/src/commands_entry_session.rs`
-  Compatibility facade assembling split session command-entry groups.
 - `wrapper/src/commands_entry_session_catalog.rs`
   Session catalog, status, and personality builtin command entries.
 - `wrapper/src/commands_entry_session_modes.rs`
@@ -638,8 +636,10 @@ The biggest known limits are architectural, not accidental.
   Grapheme-aware byte-index, counting, and whitespace helpers used by the editor.
 - `wrapper/src/state.rs`
   Compatibility facade for the split shared-state layer.
-- `wrapper/src/state_core.rs`
-  `AppState`, process-output buffer types, and core state mutation methods.
+- `wrapper/src/state_model.rs`
+  `AppState` and `ProcessOutputBuffer` state definitions.
+- `wrapper/src/state_mutations.rs`
+  `AppState` constructor, reset, and attachment transfer helpers.
 - `wrapper/src/state_helpers.rs`
   Shared state/text/buffer helper functions such as `thread_id`, `get_string`, delta buffering, status dedupe, and path canonicalization.
 - `wrapper/src/editor_tests.rs`

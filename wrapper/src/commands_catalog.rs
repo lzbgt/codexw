@@ -9,17 +9,19 @@ use std::sync::OnceLock;
 
 #[path = "commands_entry_runtime.rs"]
 mod commands_entry_runtime;
-#[path = "commands_entry_session.rs"]
-mod commands_entry_session;
 #[path = "commands_entry_thread.rs"]
 mod commands_entry_thread;
+
+use crate::commands_entry_session_catalog::SESSION_CATALOG_COMMAND_ENTRIES;
+use crate::commands_entry_session_modes::SESSION_MODE_COMMAND_ENTRIES;
 
 pub(crate) fn builtin_command_entries() -> &'static [BuiltinCommandEntry] {
     static ENTRIES: OnceLock<Vec<BuiltinCommandEntry>> = OnceLock::new();
     ENTRIES
         .get_or_init(|| {
             let mut entries = Vec::new();
-            entries.extend(commands_entry_session::session_command_entries().copied());
+            entries.extend(SESSION_CATALOG_COMMAND_ENTRIES.iter().copied());
+            entries.extend(SESSION_MODE_COMMAND_ENTRIES.iter().copied());
             entries.extend_from_slice(commands_entry_thread::THREAD_COMMAND_ENTRIES);
             entries.extend_from_slice(commands_entry_runtime::RUNTIME_COMMAND_ENTRIES);
             entries.sort_by_key(|entry| builtin_command_rank(entry.name));
