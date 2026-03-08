@@ -1,5 +1,5 @@
 use crate::editor::LineEditor;
-use crate::prompt_completion::try_complete_file_token;
+use crate::prompt_file_completions::try_complete_file_token;
 use crate::prompt_state::prompt_accepts_input;
 use crate::prompt_state::prompt_is_visible;
 use crate::state::AppState;

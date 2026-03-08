@@ -84,6 +84,6 @@ fn status_snapshot_surfaces_effective_model_personality_support() {
 fn prompt_status_mentions_personality_when_selected() {
     let mut state = crate::state::AppState::new(true, false);
     state.active_personality = Some("friendly".to_string());
-    let rendered = crate::session_prompt_status::render_prompt_status(&state);
+    let rendered = crate::prompt_state::render_prompt_status(&state);
     assert!(rendered.contains("Friendly"));
 }

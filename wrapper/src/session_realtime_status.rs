@@ -1,4 +1,4 @@
-use crate::session_prompt_status::format_elapsed;
+use crate::session_prompt_status_active::format_elapsed;
 use crate::state::AppState;
 use crate::state::summarize_text;
 

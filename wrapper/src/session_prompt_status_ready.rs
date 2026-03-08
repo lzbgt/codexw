@@ -1,9 +1,9 @@
-use crate::session_prompt_status::current_collaboration_label;
-use crate::session_prompt_status::personality_label;
+use crate::collaboration_view::current_collaboration_mode_label;
+use crate::model_personality_view::personality_label;
 use crate::state::AppState;
 
 pub(crate) fn render_ready_status(state: &AppState) -> String {
-    match current_collaboration_label(state) {
+    match current_collaboration_mode_label(state) {
         Some(label) => match state.active_personality.as_deref() {
             Some(personality) => format!(
                 "ready · {label} · {} · {} turns",

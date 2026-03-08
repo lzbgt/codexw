@@ -2,7 +2,7 @@ use crate::collaboration_preset::CollaborationModePreset;
 use crate::collaboration_preset::extract_collaboration_mode_presets;
 use crate::collaboration_view::render_collaboration_modes;
 use crate::collaboration_view::summarize_active_collaboration_mode;
-use crate::session_prompt_status::render_prompt_status;
+use crate::prompt_state::render_prompt_status;
 use serde_json::json;
 
 #[test]

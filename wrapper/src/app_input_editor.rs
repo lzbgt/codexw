@@ -3,12 +3,13 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::commands_completion_apply::try_complete_slash_command;
 use crate::dispatch_submit_commands::try_handle_prefixed_submission;
 use crate::dispatch_submit_turns::submit_turn_input;
 use crate::editor::EditorEvent;
 use crate::editor::LineEditor;
 use crate::output::Output;
-use crate::prompt_completion::handle_tab_completion;
+use crate::prompt_file_completions::try_complete_file_token;
 use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 
@@ -34,6 +35,35 @@ pub(crate) fn handle_editor_key(
         InputKey::CtrlW => editor.delete_prev_word(),
         InputKey::CtrlJ => editor.insert_newline(),
         InputKey::Esc | InputKey::CtrlC | InputKey::Enter => {}
+    }
+    Ok(())
+}
+
+fn handle_tab_completion(
+    editor: &mut LineEditor,
+    state: &AppState,
+    resolved_cwd: &str,
+    output: &mut Output,
+) -> Result<()> {
+    let buffer = editor.buffer().to_string();
+    let cursor_byte = editor.cursor_byte_index();
+
+    if let Some(result) = try_complete_slash_command(editor, &buffer, cursor_byte) {
+        if let Some(rendered) = result.rendered_candidates {
+            output.block_stdout("Command completions", &rendered)?;
+        }
+        return Ok(());
+    }
+
+    if let Some(result) = try_complete_file_token(editor, &buffer, cursor_byte, resolved_cwd)? {
+        if let Some(rendered) = result.rendered_candidates {
+            output.block_stdout("File completions", &rendered)?;
+        }
+        return Ok(());
+    }
+
+    if !state.turn_running && !buffer.trim_start().starts_with('!') {
+        output.line_stderr("[tab] no completion available")?;
     }
     Ok(())
 }
