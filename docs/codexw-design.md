@@ -215,6 +215,11 @@ The current `codexw` implementation now reflects that model partially:
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
   - wrapper-owned background shell count
   - backend thread-terminal count
+- the ready prompt now consumes the same orchestration state:
+  - it reports when the main agent is blocked on prerequisite shells or agent waits
+  - it distinguishes sidecars, reusable services, and server terminals instead of showing only a flat background-task count
+  - it keeps `/ps` and `/clean` as the action hints for inspecting or stopping async work
+- `/status` runtime output also exposes a compact `background cls` line with the shell-intent and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking or merely observational
 
 The next architectural step, if deeper orchestration is needed, is a unified worker/task registry that gives the wrapper one internal model for:
 

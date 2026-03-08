@@ -1,5 +1,6 @@
 use crate::Cli;
 use crate::background_terminals::background_terminal_count;
+use crate::orchestration_view::orchestration_background_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
 use crate::session_prompt_status_active::format_elapsed;
 use crate::state::AppState;
@@ -34,6 +35,9 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             "background      {}",
             background_terminal_count(state)
         ));
+    }
+    if let Some(summary) = orchestration_background_summary(state) {
+        lines.push(format!("background cls  {summary}"));
     }
     if let Some(summary) = orchestration_runtime_summary(state) {
         lines.push(format!("workers         {summary}"));

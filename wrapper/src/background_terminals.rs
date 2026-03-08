@@ -166,18 +166,6 @@ pub(crate) fn render_background_terminals(state: &AppState) -> String {
     lines.join("\n")
 }
 
-pub(crate) fn background_terminal_status_suffix(state: &AppState) -> Option<String> {
-    let count = background_terminal_count(state);
-    if count == 0 {
-        None
-    } else {
-        Some(format!(
-            "{count} background task{} running | /ps to view | /clean to close",
-            if count == 1 { "" } else { "s" }
-        ))
-    }
-}
-
 fn recent_output_lines(state: &AppState, item_id: &str) -> Vec<String> {
     state
         .command_output_buffers

@@ -1,6 +1,6 @@
-use crate::background_terminals::background_terminal_status_suffix;
 use crate::collaboration_view::current_collaboration_mode_label;
 use crate::model_personality_view::personality_label;
+use crate::orchestration_view::orchestration_prompt_suffix;
 use crate::state::AppState;
 
 pub(crate) fn render_ready_status(state: &AppState) -> String {
@@ -22,7 +22,7 @@ pub(crate) fn render_ready_status(state: &AppState) -> String {
             None => format!("ready | {} turns", state.completed_turn_count),
         },
     };
-    if let Some(background) = background_terminal_status_suffix(state) {
+    if let Some(background) = orchestration_prompt_suffix(state) {
         format!("{base} | {background}")
     } else {
         base

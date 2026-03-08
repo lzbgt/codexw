@@ -351,8 +351,23 @@ fn background_terminal_tracking_survives_turn_reset_and_shows_recent_output() {
 }
 
 #[test]
-fn ready_status_mentions_background_terminals() {
+fn ready_status_mentions_blocking_prereqs_services_and_terminals() {
     let mut state = crate::state::AppState::new(true, false);
+    state.thread_id = Some("thread-main".to_string());
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+            "/tmp",
+        )
+        .expect("start prerequisite shell");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({"command": "sleep 0.4", "intent": "service"}),
+            "/tmp",
+        )
+        .expect("start service shell");
     state.background_terminals.insert(
         "proc-1".to_string(),
         crate::background_terminals::BackgroundTerminalSummary {
@@ -366,8 +381,11 @@ fn ready_status_mentions_background_terminals() {
     );
 
     let rendered = render_prompt_status(&state);
-    assert!(rendered.contains("background task running"));
+    assert!(rendered.contains("blocked on 1 prerequisite shell"));
+    assert!(rendered.contains("1 service"));
+    assert!(rendered.contains("1 terminal"));
     assert!(rendered.contains("/ps to view"));
+    let _ = state.background_shells.terminate_all_running();
 }
 
 #[test]
@@ -441,6 +459,46 @@ fn status_overview_reports_orchestration_breakdown() {
     assert!(rendered.contains("idle=1"));
     assert!(rendered.contains("bg_shells=1"));
     assert!(rendered.contains("thread_terms=1"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn status_runtime_reports_background_classes() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+            "/tmp",
+        )
+        .expect("start prerequisite shell");
+    state
+        .background_shells
+        .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+        .expect("start observation shell");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({"command": "sleep 0.4", "intent": "service"}),
+            "/tmp",
+        )
+        .expect("start service shell");
+    state.background_terminals.insert(
+        "proc-1".to_string(),
+        crate::background_terminals::BackgroundTerminalSummary {
+            item_id: "cmd-1".to_string(),
+            process_id: "proc-1".to_string(),
+            command_display: "python worker.py".to_string(),
+            waiting: true,
+            recent_inputs: Vec::new(),
+            recent_output: vec!["ready".to_string()],
+        },
+    );
+
+    let rendered = render_status_runtime(&cli, &state).join("\n");
+    assert!(rendered.contains("background      4"));
+    assert!(rendered.contains("background cls  prereqs=1 shell_sidecars=1 services=1 terminals=1"));
     let _ = state.background_shells.terminate_all_running();
 }
 

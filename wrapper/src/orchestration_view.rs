@@ -100,6 +100,65 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
     ))
 }
 
+pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
+    let waits = active_wait_task_count(state);
+    let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
+    let sidecars = active_sidecar_agent_task_count(state)
+        + running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
+    let services = running_shell_count_by_intent(state, BackgroundShellIntent::Service);
+    let terminals = server_background_terminal_count(state);
+    if waits == 0 && prereqs == 0 && sidecars == 0 && services == 0 && terminals == 0 {
+        return None;
+    }
+
+    let mut parts = Vec::new();
+    if main_agent_state_label(state) == "blocked" {
+        if waits > 0 && prereqs > 0 {
+            parts.push(format!(
+                "blocked on {} and {}",
+                pluralize(waits, "agent wait", "agent waits"),
+                pluralize(prereqs, "prerequisite shell", "prerequisite shells")
+            ));
+        } else if waits > 0 {
+            parts.push(format!(
+                "blocked on {}",
+                pluralize(waits, "agent wait", "agent waits")
+            ));
+        } else if prereqs > 0 {
+            parts.push(format!(
+                "blocked on {}",
+                pluralize(prereqs, "prerequisite shell", "prerequisite shells")
+            ));
+        }
+    }
+    if sidecars > 0 {
+        parts.push(pluralize(sidecars, "sidecar", "sidecars"));
+    }
+    if services > 0 {
+        parts.push(pluralize(services, "service", "services"));
+    }
+    if terminals > 0 {
+        parts.push(pluralize(terminals, "terminal", "terminals"));
+    }
+    parts.push("/ps to view".to_string());
+    parts.push("/clean to close".to_string());
+    Some(parts.join(" | "))
+}
+
+pub(crate) fn orchestration_background_summary(state: &AppState) -> Option<String> {
+    let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
+    let sidecars = running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
+    let services = running_shell_count_by_intent(state, BackgroundShellIntent::Service);
+    let terminals = server_background_terminal_count(state);
+    if prereqs == 0 && sidecars == 0 && services == 0 && terminals == 0 {
+        None
+    } else {
+        Some(format!(
+            "prereqs={prereqs} shell_sidecars={sidecars} services={services} terminals={terminals}"
+        ))
+    }
+}
+
 pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
     let background = render_background_terminals(state);
     let has_background = background != "No background terminals running.";
@@ -227,6 +286,10 @@ fn summarize_agent_status_counts(agent_threads: &[CachedAgentThreadSummary]) -> 
         .join(" ")
 }
 
+fn pluralize(count: usize, singular: &str, plural: &str) -> String {
+    format!("{count} {}", if count == 1 { singular } else { plural })
+}
+
 pub(crate) fn summarize_agent_preview(preview: &str) -> String {
     summarize_text(preview)
 }
@@ -238,7 +301,9 @@ mod tests {
     use crate::orchestration_registry::LiveAgentTaskSummary;
 
     use super::CachedAgentThreadSummary;
+    use super::orchestration_background_summary;
     use super::orchestration_overview_summary;
+    use super::orchestration_prompt_suffix;
     use super::orchestration_runtime_summary;
     use super::render_orchestration_workers;
 
@@ -278,6 +343,63 @@ mod tests {
     fn orchestration_runtime_summary_is_empty_when_no_workers_exist() {
         let state = crate::state::AppState::new(true, false);
         assert!(orchestration_runtime_summary(&state).is_none());
+        assert!(orchestration_prompt_suffix(&state).is_none());
+        assert!(orchestration_background_summary(&state).is_none());
+    }
+
+    #[test]
+    fn orchestration_prompt_suffix_distinguishes_blockers_sidecars_services_and_terminals() {
+        let mut state = crate::state::AppState::new(true, false);
+        state.thread_id = Some("thread-main".to_string());
+        state.live_agent_tasks.insert(
+            "call-1".to_string(),
+            LiveAgentTaskSummary {
+                id: "call-1".to_string(),
+                tool: "wait".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["agent-1".to_string()],
+                prompt: None,
+                agent_statuses: BTreeMap::from([("agent-1".to_string(), "running".to_string())]),
+            },
+        );
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+                "/tmp",
+            )
+            .expect("start prerequisite shell");
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({"command": "sleep 0.4", "intent": "service"}),
+                "/tmp",
+            )
+            .expect("start service shell");
+        state.background_terminals.insert(
+            "proc-1".to_string(),
+            crate::background_terminals::BackgroundTerminalSummary {
+                item_id: "cmd-1".to_string(),
+                process_id: "proc-1".to_string(),
+                command_display: "python worker.py".to_string(),
+                waiting: true,
+                recent_inputs: Vec::new(),
+                recent_output: vec!["ready".to_string()],
+            },
+        );
+
+        let suffix = orchestration_prompt_suffix(&state).expect("prompt suffix");
+        assert!(suffix.contains("blocked on 1 agent wait and 1 prerequisite shell"));
+        assert!(suffix.contains("1 service"));
+        assert!(suffix.contains("1 terminal"));
+        assert!(suffix.contains("/ps to view"));
+        let background = orchestration_background_summary(&state).expect("background summary");
+        assert!(background.contains("prereqs=1"));
+        assert!(background.contains("shell_sidecars=0"));
+        assert!(background.contains("services=1"));
+        assert!(background.contains("terminals=1"));
+        let _ = state.background_shells.terminate_all_running();
     }
 
     #[test]
