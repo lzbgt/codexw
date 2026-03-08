@@ -1,82 +1,25 @@
 use std::time::Instant;
 
-use crate::collaboration::current_collaboration_mode_label;
 use crate::state::AppState;
 
-fn personality_label(personality: &str) -> &str {
-    match personality {
-        "none" => "None",
-        "friendly" => "Friendly",
-        "pragmatic" => "Pragmatic",
-        _ => personality,
-    }
-}
+#[path = "session_prompt_status_active.rs"]
+mod session_prompt_status_active;
+#[path = "session_prompt_status_ready.rs"]
+mod session_prompt_status_ready;
 
 pub(crate) fn render_prompt_status(state: &AppState) -> String {
-    let detail = state
-        .last_status_line
-        .as_deref()
-        .filter(|line| !line.trim().is_empty() && *line != "ready");
     if state.active_exec_process_id.is_some() {
-        if let Some(detail) = detail {
-            format!(
-                "{} {} · {}",
-                spinner_frame(state.activity_started_at),
-                detail,
-                format_elapsed(state.activity_started_at),
-            )
-        } else {
-            format!(
-                "{} cmd · {}",
-                spinner_frame(state.activity_started_at),
-                format_elapsed(state.activity_started_at),
-            )
-        }
+        session_prompt_status_active::render_exec_status(state)
     } else if state.turn_running {
-        if let Some(detail) = detail {
-            format!(
-                "{} {} · {}",
-                spinner_frame(state.activity_started_at),
-                detail,
-                format_elapsed(state.activity_started_at),
-            )
-        } else {
-            format!(
-                "{} turn {} · {}",
-                spinner_frame(state.activity_started_at),
-                state.started_turn_count.max(1),
-                format_elapsed(state.activity_started_at)
-            )
-        }
+        session_prompt_status_active::render_turn_status(state)
     } else if state.realtime_active {
-        format!(
-            "{} realtime · {}",
-            spinner_frame(state.realtime_started_at),
-            format_elapsed(state.realtime_started_at)
-        )
+        session_prompt_status_active::render_realtime_status(state)
     } else {
-        match current_collaboration_mode_label(state) {
-            Some(label) => match state.active_personality.as_deref() {
-                Some(personality) => format!(
-                    "ready · {label} · {} · {} turns",
-                    personality_label(personality),
-                    state.completed_turn_count
-                ),
-                None => format!("ready · {label} · {} turns", state.completed_turn_count),
-            },
-            None => match state.active_personality.as_deref() {
-                Some(personality) => format!(
-                    "ready · {} · {} turns",
-                    personality_label(personality),
-                    state.completed_turn_count
-                ),
-                None => format!("ready · {} turns", state.completed_turn_count),
-            },
-        }
+        session_prompt_status_ready::render_ready_status(state)
     }
 }
 
-fn spinner_frame(started_at: Option<Instant>) -> &'static str {
+pub(crate) fn spinner_frame(started_at: Option<Instant>) -> &'static str {
     const FRAMES: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
     let idx = started_at
         .map(|start| {
@@ -96,4 +39,24 @@ pub(crate) fn format_elapsed(started_at: Option<Instant>) -> String {
     } else {
         format!("{}m{:02}s", elapsed / 60, elapsed % 60)
     }
+}
+
+pub(crate) fn active_status_detail(state: &AppState) -> Option<&str> {
+    state
+        .last_status_line
+        .as_deref()
+        .filter(|line| !line.trim().is_empty() && *line != "ready")
+}
+
+pub(crate) fn personality_label(personality: &str) -> &str {
+    match personality {
+        "none" => "None",
+        "friendly" => "Friendly",
+        "pragmatic" => "Pragmatic",
+        _ => personality,
+    }
+}
+
+pub(crate) fn current_collaboration_label(state: &AppState) -> Option<String> {
+    crate::collaboration::current_collaboration_mode_label(state)
 }

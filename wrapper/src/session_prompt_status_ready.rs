@@ -1,0 +1,24 @@
+use crate::session_prompt_status::current_collaboration_label;
+use crate::session_prompt_status::personality_label;
+use crate::state::AppState;
+
+pub(crate) fn render_ready_status(state: &AppState) -> String {
+    match current_collaboration_label(state) {
+        Some(label) => match state.active_personality.as_deref() {
+            Some(personality) => format!(
+                "ready · {label} · {} · {} turns",
+                personality_label(personality),
+                state.completed_turn_count
+            ),
+            None => format!("ready · {label} · {} turns", state.completed_turn_count),
+        },
+        None => match state.active_personality.as_deref() {
+            Some(personality) => format!(
+                "ready · {} · {} turns",
+                personality_label(personality),
+                state.completed_turn_count
+            ),
+            None => format!("ready · {} turns", state.completed_turn_count),
+        },
+    }
+}

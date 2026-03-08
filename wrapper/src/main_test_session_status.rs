@@ -39,6 +39,23 @@ fn prompt_status_mentions_realtime_when_active() {
 }
 
 #[test]
+fn prompt_status_ready_includes_collaboration_and_personality() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.completed_turn_count = 3;
+    state.active_personality = Some("pragmatic".to_string());
+    state.active_collaboration_mode = Some(crate::collaboration::CollaborationModePreset {
+        name: "Plan".to_string(),
+        mode_kind: Some("plan".to_string()),
+        model: Some("gpt-5-codex".to_string()),
+        reasoning_effort: Some(Some("high".to_string())),
+    });
+    let rendered = render_prompt_status(&state);
+    assert!(rendered.contains("plan mode"));
+    assert!(rendered.contains("Pragmatic"));
+    assert!(rendered.contains("3 turns"));
+}
+
+#[test]
 fn status_snapshot_includes_realtime_fields() {
     let mut state = crate::state::AppState::new(true, false);
     state.thread_id = Some("thread-1".to_string());
