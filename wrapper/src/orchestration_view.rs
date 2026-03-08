@@ -477,7 +477,7 @@ pub(crate) fn render_orchestration_guidance(state: &AppState) -> String {
 }
 
 pub(crate) fn render_orchestration_actions(state: &AppState) -> String {
-    let lines = action_lines(state);
+    let lines = action_lines(state, ActionAudience::Operator);
     if lines.is_empty() {
         String::new()
     } else {
@@ -487,6 +487,25 @@ pub(crate) fn render_orchestration_actions(state: &AppState) -> String {
         }
         rendered.join("\n")
     }
+}
+
+pub(crate) fn render_orchestration_actions_for_tool(state: &AppState) -> String {
+    let lines = action_lines(state, ActionAudience::Tool);
+    if lines.is_empty() {
+        String::new()
+    } else {
+        let mut rendered = vec!["Suggested actions:".to_string()];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        rendered.join("\n")
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ActionAudience {
+    Operator,
+    Tool,
 }
 
 fn live_agent_tasks(state: &AppState) -> Vec<LiveAgentTaskSummary> {
@@ -861,7 +880,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
     Vec::new()
 }
 
-fn action_lines(state: &AppState) -> Vec<String> {
+fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
     let waits = active_wait_task_count(state);
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
     let sidecar_agents = active_sidecar_agent_task_count(state);
@@ -884,107 +903,209 @@ fn action_lines(state: &AppState) -> Vec<String> {
         .iter()
         .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Missing)
     {
-        return vec![
-            format!(
-                "Run `:ps capabilities @{}` to inspect the missing provider map.",
-                issue.capability
-            ),
-            format!(
-                "Run `:ps dependencies missing @{}` to inspect the blocked dependency edges.",
-                issue.capability
-            ),
-            "If the blocked shell is no longer needed, run `:clean blockers`.".to_string(),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                format!(
+                    "Run `:ps capabilities @{}` to inspect the missing provider map.",
+                    issue.capability
+                ),
+                format!(
+                    "Run `:ps dependencies missing @{}` to inspect the blocked dependency edges.",
+                    issue.capability
+                ),
+                "If the blocked shell is no longer needed, run `:clean blockers`.".to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                format!(
+                    "Use `background_shell_inspect_capability {{\"capability\":\"@{}\"}}` to inspect the missing provider map.",
+                    issue.capability
+                ),
+                format!(
+                    "Use `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{}\"}}` to inspect the blocked dependency edges.",
+                    issue.capability
+                ),
+                "Use `background_shell_clean {\"scope\":\"blockers\"}` to abandon the blocking prerequisite shells if they are no longer needed.".to_string(),
+            ],
+        };
     }
     if let Some(issue) = blocking_capability_issues
         .iter()
         .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Ambiguous)
     {
-        return vec![
-            format!(
-                "Run `:ps capabilities @{}` to inspect the ambiguous provider set.",
-                issue.capability
-            ),
-            format!(
-                "Run `:clean services @{}` to clear the conflicting reusable role in one step.",
-                issue.capability
-            ),
-            format!(
-                "Run `:ps services @{}` to inspect the remaining providers.",
-                issue.capability
-            ),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                format!(
+                    "Run `:ps capabilities @{}` to inspect the ambiguous provider set.",
+                    issue.capability
+                ),
+                format!(
+                    "Run `:clean services @{}` to clear the conflicting reusable role in one step.",
+                    issue.capability
+                ),
+                format!(
+                    "Run `:ps services @{}` to inspect the remaining providers.",
+                    issue.capability
+                ),
+            ],
+            ActionAudience::Tool => vec![
+                format!(
+                    "Use `background_shell_inspect_capability {{\"capability\":\"@{}\"}}` to inspect the ambiguous provider set.",
+                    issue.capability
+                ),
+                format!(
+                    "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{}\"}}` to clear the conflicting reusable role in one step.",
+                    issue.capability
+                ),
+                format!(
+                    "Use `background_shell_list_services {{\"capability\":\"@{}\"}}` to inspect the remaining providers.",
+                    issue.capability
+                ),
+            ],
+        };
     }
     if let Some(issue) = blocking_capability_issues
         .iter()
         .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Booting)
     {
-        return vec![
-            format!(
-                "Run `:ps services @{}` to inspect the booting provider state.",
-                issue.capability
-            ),
-            format!(
-                "Run `:ps wait @{} 5000` to wait on the capability provider.",
-                issue.capability
-            ),
-            format!(
-                "Run `:ps dependencies booting @{}` to keep the dependency view focused.",
-                issue.capability
-            ),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                format!(
+                    "Run `:ps services @{}` to inspect the booting provider state.",
+                    issue.capability
+                ),
+                format!(
+                    "Run `:ps wait @{} 5000` to wait on the capability provider.",
+                    issue.capability
+                ),
+                format!(
+                    "Run `:ps dependencies booting @{}` to keep the dependency view focused.",
+                    issue.capability
+                ),
+            ],
+            ActionAudience::Tool => vec![
+                format!(
+                    "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{}\"}}` to inspect the booting provider state.",
+                    issue.capability
+                ),
+                format!(
+                    "Use `background_shell_wait_ready {{\"jobId\":\"@{}\",\"timeoutMs\":5000}}` to wait on the capability provider.",
+                    issue.capability
+                ),
+                format!(
+                    "Use `orchestration_list_dependencies {{\"filter\":\"booting\",\"capability\":\"@{}\"}}` to keep the dependency view focused.",
+                    issue.capability
+                ),
+            ],
+        };
     }
     if prereqs > 0 {
-        return vec![
-            "Run `:ps blockers` to inspect the gating shell or wait dependency.".to_string(),
-            "Run `:ps poll <job>` or `:ps wait <job> [timeoutMs]` on the blocker you care about."
-                .to_string(),
-            "Run `:clean blockers` to abandon the current blocking prerequisite work.".to_string(),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                "Run `:ps blockers` to inspect the gating shell or wait dependency.".to_string(),
+                "Run `:ps poll <job>` or `:ps wait <job> [timeoutMs]` on the blocker you care about."
+                    .to_string(),
+                "Run `:clean blockers` to abandon the current blocking prerequisite work.".to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                "Use `orchestration_list_workers {\"filter\":\"blockers\"}` to inspect the gating shell or wait dependency.".to_string(),
+                "Use `background_shell_poll {\"jobId\":\"bg-...\"}` or `background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}` on the blocker you care about."
+                    .to_string(),
+                "Use `background_shell_clean {\"scope\":\"blockers\"}` to abandon the current blocking prerequisite work.".to_string(),
+            ],
+        };
     }
     if waits > 0 {
-        return vec![
-            "Run `:ps blockers` to inspect the active wait dependencies.".to_string(),
-            "Run `:multi-agents` to refresh spawned agent threads.".to_string(),
-            "Run `:resume <n>` to switch into the agent thread that matters.".to_string(),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                "Run `:ps blockers` to inspect the active wait dependencies.".to_string(),
+                "Run `:multi-agents` to refresh spawned agent threads.".to_string(),
+                "Run `:resume <n>` to switch into the agent thread that matters.".to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                "Use `orchestration_list_workers {\"filter\":\"blockers\"}` to inspect the active wait dependencies.".to_string(),
+                "Use `orchestration_list_workers {\"filter\":\"agents\"}` to inspect cached and live agent workers.".to_string(),
+                "Continue foreground work until one of the waiting agent results becomes critical.".to_string(),
+            ],
+        };
     }
     if let Some((capability, _)) = capability_conflicts.first() {
-        return vec![
-            format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
-            format!("Run `:clean services @{capability}` to clear the ambiguous reusable role."),
-            format!("Run `:ps services @{capability}` to verify the surviving providers."),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
+                format!(
+                    "Run `:clean services @{capability}` to clear the ambiguous reusable role."
+                ),
+                format!("Run `:ps services @{capability}` to verify the surviving providers."),
+            ],
+            ActionAudience::Tool => vec![
+                format!(
+                    "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect providers and consumers."
+                ),
+                format!(
+                    "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the ambiguous reusable role."
+                ),
+                format!(
+                    "Use `background_shell_list_services {{\"capability\":\"@{capability}\"}}` to verify the surviving providers."
+                ),
+            ],
+        };
     }
     if ready_services > 0 {
-        return vec![
-            "Run `:ps services ready` to inspect reusable service metadata.".to_string(),
-            "Run `:ps attach <job|@capability>` to inspect endpoint and recipe details.".to_string(),
-            "Run `:ps run <job|@capability> <recipe> [json-args]` to reuse the ready service directly."
-                .to_string(),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                "Run `:ps services ready` to inspect reusable service metadata.".to_string(),
+                "Run `:ps attach <job|@capability>` to inspect endpoint and recipe details.".to_string(),
+                "Run `:ps run <job|@capability> <recipe> [json-args]` to reuse the ready service directly."
+                    .to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                "Use `background_shell_list_services {\"status\":\"ready\"}` to inspect reusable service metadata.".to_string(),
+                "Use `background_shell_attach {\"jobId\":\"@capability\"}` to inspect endpoint and recipe details for the service you choose.".to_string(),
+                "Use `background_shell_invoke_recipe {\"jobId\":\"@capability\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
+            ],
+        };
     }
     if booting_services > 0 {
-        return vec![
-            "Run `:ps services booting` to inspect readiness state and startup metadata."
-                .to_string(),
-            "Run `:ps wait <job|@capability> [timeoutMs]` for the booting service you need."
-                .to_string(),
-            "Run `:ps capabilities booting` to keep the capability view focused.".to_string(),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                "Run `:ps services booting` to inspect readiness state and startup metadata."
+                    .to_string(),
+                "Run `:ps wait <job|@capability> [timeoutMs]` for the booting service you need."
+                    .to_string(),
+                "Run `:ps capabilities booting` to keep the capability view focused.".to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                "Use `background_shell_list_services {\"status\":\"booting\"}` to inspect readiness state and startup metadata.".to_string(),
+                "Use `background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}` for the booting service you need.".to_string(),
+                "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
+            ],
+        };
     }
     if sidecar_agents + shell_sidecars > 0 {
-        return vec![
-            "Run `:ps agents` to inspect sidecar agent progress.".to_string(),
-            "Run `:ps shells` to inspect non-blocking shell jobs.".to_string(),
-            "Continue foreground work until one of those results becomes relevant.".to_string(),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                "Run `:ps agents` to inspect sidecar agent progress.".to_string(),
+                "Run `:ps shells` to inspect non-blocking shell jobs.".to_string(),
+                "Continue foreground work until one of those results becomes relevant.".to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                "Use `orchestration_list_workers {\"filter\":\"agents\"}` to inspect sidecar agent progress.".to_string(),
+                "Use `orchestration_list_workers {\"filter\":\"shells\"}` to inspect non-blocking shell jobs.".to_string(),
+                "Continue foreground work until one of those results becomes relevant.".to_string(),
+            ],
+        };
     }
     if terminals > 0 {
-        return vec![
-            "Run `:ps terminals` to inspect server-observed background terminals.".to_string(),
-            "Run `:clean terminals` to close them if they are no longer needed.".to_string(),
-        ];
+        return match audience {
+            ActionAudience::Operator => vec![
+                "Run `:ps terminals` to inspect server-observed background terminals.".to_string(),
+                "Run `:clean terminals` to close them if they are no longer needed.".to_string(),
+            ],
+            ActionAudience::Tool => vec![
+                "Use `orchestration_list_workers {\"filter\":\"terminals\"}` to inspect server-observed background terminals.".to_string(),
+                "Terminal cleanup is operator-only; use `:clean terminals` from the wrapper when they are no longer needed.".to_string(),
+            ],
+        };
     }
 
     Vec::new()
@@ -1012,6 +1133,7 @@ mod tests {
     use super::orchestration_prompt_suffix;
     use super::orchestration_runtime_summary;
     use super::render_orchestration_actions;
+    use super::render_orchestration_actions_for_tool;
     use super::render_orchestration_guidance;
     use super::render_orchestration_workers;
     use super::render_orchestration_workers_with_filter;
@@ -1521,8 +1643,19 @@ mod tests {
         assert!(rendered.contains(":ps capabilities @api.http"));
         assert!(rendered.contains(":clean services @api.http"));
 
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains("Suggested actions:"));
+        assert!(
+            tool_rendered
+                .contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
+        );
+        assert!(tool_rendered.contains(
+            "background_shell_clean {\"scope\":\"services\",\"capability\":\"@api.http\"}"
+        ));
+
         let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
         assert!(filtered.contains("Suggested actions:"));
+        assert!(filtered.contains(":ps capabilities @api.http"));
         let _ = services.background_shells.terminate_all_running();
     }
 }

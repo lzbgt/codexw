@@ -14,7 +14,7 @@ use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::orchestration_guidance_summary;
 use crate::orchestration_view::orchestration_overview_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
-use crate::orchestration_view::render_orchestration_actions;
+use crate::orchestration_view::render_orchestration_actions_for_tool;
 use crate::orchestration_view::render_orchestration_dependencies;
 use crate::orchestration_view::render_orchestration_workers;
 use crate::orchestration_view::render_orchestration_workers_with_filter;
@@ -54,7 +54,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "orchestration_suggest_actions",
-            "description": "Render concrete next-step commands for the current orchestration state, such as blocker inspection, service attach, readiness waits, or cleanup actions.",
+            "description": "Render concrete next-step dynamic tool suggestions for the current orchestration state, such as capability inspection, readiness waits, service attach, or scoped cleanup actions.",
             "inputSchema": {
                 "type": "object",
                 "properties": {}
@@ -383,7 +383,7 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
     let result = match tool {
         "orchestration_status" => Ok(render_orchestration_status_for_tool(state)),
         "orchestration_list_workers" => render_orchestration_workers_for_tool(arguments, state),
-        "orchestration_suggest_actions" => Ok(render_orchestration_actions(state)),
+        "orchestration_suggest_actions" => Ok(render_orchestration_actions_for_tool(state)),
         "orchestration_list_dependencies" => {
             render_orchestration_dependencies_for_tool(arguments, state)
         }
@@ -478,6 +478,8 @@ fn render_orchestration_workers_for_tool(
     )?;
     Ok(if matches!(filter, WorkerFilter::All) {
         render_orchestration_workers(state)
+    } else if matches!(filter, WorkerFilter::Actions) {
+        render_orchestration_actions_for_tool(state)
     } else {
         render_orchestration_workers_with_filter(state, filter)
     })

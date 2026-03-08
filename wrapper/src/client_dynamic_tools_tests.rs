@@ -162,7 +162,9 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
         .as_str()
         .expect("actions text");
     assert!(actions_text.contains("Suggested actions:"));
-    assert!(actions_text.contains(":ps capabilities @api.http"));
+    assert!(
+        actions_text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
+    );
     let _ = state
         .orchestration
         .background_shells
@@ -170,7 +172,7 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
 }
 
 #[test]
-fn orchestration_suggest_actions_returns_concrete_operator_steps() {
+fn orchestration_suggest_actions_returns_concrete_tool_steps() {
     let state = AppState::new(true, false);
     state
         .orchestration
@@ -209,8 +211,12 @@ fn orchestration_suggest_actions_returns_concrete_operator_steps() {
         .as_str()
         .expect("actions text");
     assert!(text.contains("Suggested actions:"));
-    assert!(text.contains(":ps capabilities @api.http"));
-    assert!(text.contains(":clean services @api.http"));
+    assert!(text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}"));
+    assert!(
+        text.contains(
+            "background_shell_clean {\"scope\":\"services\",\"capability\":\"@api.http\"}"
+        )
+    );
     let _ = state
         .orchestration
         .background_shells

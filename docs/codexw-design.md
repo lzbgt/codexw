@@ -330,8 +330,8 @@ The current `codexw` implementation now reflects that model partially:
 - `/status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives operator guidance as well as raw counts and dependency edges
 - the same orchestration graph is now available to the model-side dynamic tool layer too:
   - `orchestration_status` mirrors the compact orchestration summary plus next-action hint
-  - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, `guidance`, or `actions`
-  - `orchestration_suggest_actions` mirrors `/ps actions` and returns only the concrete remediation commands suggested by the current orchestration state
+  - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, `guidance`, or `actions`; when `filter=actions`, it returns concrete dynamic-tool suggestions instead of operator slash commands
+  - `orchestration_suggest_actions` is the focused model-side companion to `/ps actions` and returns only the concrete dynamic-tool remediation steps suggested by the current orchestration state
   - `orchestration_list_dependencies` mirrors the focused dependency-edge view with optional filters such as `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`, plus an optional `capability` selector for one reusable role
   - `background_shell_list_services` mirrors the focused reusable-service registry with optional filters such as `ready`, `booting`, `untracked`, or `conflicts`, plus an optional `capability` selector for one reusable role
   - `background_shell_clean` mirrors the local cleanup control surface with `scope=all|blockers|shells|services`, and `scope=services` can optionally target one reusable role with `capability=@...` so model-side orchestration can resolve ambiguous service providers instead of only reporting the conflict
