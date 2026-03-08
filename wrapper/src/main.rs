@@ -9,6 +9,7 @@ mod catalog_connector_views;
 mod catalog_feature_views;
 mod catalog_file_search;
 mod catalog_thread_list;
+mod client_dynamic_tools;
 mod collaboration_apply;
 mod collaboration_preset;
 mod collaboration_view;

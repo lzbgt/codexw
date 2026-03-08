@@ -115,28 +115,6 @@ pub(crate) fn build_mcp_elicitation_response(params: &Value) -> Value {
     }
 }
 
-pub(crate) fn build_dynamic_tool_call_response(params: &Value) -> Value {
-    let tool = params
-        .get("tool")
-        .and_then(Value::as_str)
-        .unwrap_or("dynamic tool");
-    let arguments = params
-        .get("arguments")
-        .map(render_dynamic_tool_arguments)
-        .unwrap_or_else(|| "null".to_string());
-    json!({
-        "contentItems": [
-            {
-                "type": "inputText",
-                "text": format!(
-                    "codexw cannot execute client-side dynamic tool `{tool}` automatically; arguments={arguments}"
-                )
-            }
-        ],
-        "success": false
-    })
-}
-
 fn build_mcp_elicitation_form_content(schema: Option<&Value>) -> Value {
     let Some(schema) = schema else {
         return Value::Object(Map::new());
@@ -267,11 +245,4 @@ fn array_value(schema: &Value) -> Value {
         values.push(item.clone());
     }
     Value::Array(values)
-}
-
-fn render_dynamic_tool_arguments(arguments: &Value) -> String {
-    match arguments {
-        Value::String(text) => text.clone(),
-        _ => serde_json::to_string(arguments).unwrap_or_else(|_| "null".to_string()),
-    }
 }

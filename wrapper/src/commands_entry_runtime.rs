@@ -4,12 +4,12 @@ pub(crate) const RUNTIME_COMMAND_ENTRIES: &[BuiltinCommandEntry] = &[
     BuiltinCommandEntry {
         name: "setup-default-sandbox",
         help_syntax: "setup-default-sandbox",
-        description: "native sandbox setup workflow not yet ported",
+        description: "Windows-only sandbox setup workflow",
     },
     BuiltinCommandEntry {
         name: "sandbox-add-read-dir",
         help_syntax: "sandbox-add-read-dir",
-        description: "native sandbox read-dir workflow not yet ported",
+        description: "Windows-only sandbox read-dir workflow",
     },
     BuiltinCommandEntry {
         name: "init",
@@ -44,7 +44,7 @@ pub(crate) const RUNTIME_COMMAND_ENTRIES: &[BuiltinCommandEntry] = &[
     BuiltinCommandEntry {
         name: "rollout",
         help_syntax: "rollout",
-        description: "native rollout-path display not yet ported",
+        description: "print the rollout file path for the current thread",
     },
     BuiltinCommandEntry {
         name: "ps",

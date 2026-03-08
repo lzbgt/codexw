@@ -7,6 +7,7 @@ use serde_json::json;
 use super::PendingRequest;
 use super::send_json;
 use crate::Cli;
+use crate::client_dynamic_tools::dynamic_tool_specs;
 use crate::policy::approval_policy;
 use crate::policy::thread_sandbox_mode;
 use crate::rpc::OutgoingRequest;
@@ -62,6 +63,9 @@ pub(crate) fn send_thread_start(
         params["personality"] = personality
             .as_ref()
             .map_or(Value::Null, |value| Value::String(value.clone()));
+    }
+    if !cli.no_experimental_api {
+        params["dynamicTools"] = dynamic_tool_specs();
     }
     send_thread_switch_request(
         writer,

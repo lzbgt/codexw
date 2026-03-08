@@ -1,6 +1,6 @@
+use crate::client_dynamic_tools::execute_dynamic_tool_call;
 use crate::session_realtime_item::render_realtime_item;
 use crate::transcript_approval_summary::summarize_terminal_interaction;
-use crate::transcript_plan_render::build_dynamic_tool_call_response;
 use crate::transcript_plan_render::build_mcp_elicitation_response;
 use crate::transcript_plan_render::build_tool_user_input_response;
 use crate::transcript_plan_render::render_reasoning_item;
@@ -85,22 +85,18 @@ fn mcp_url_elicitation_is_cancelled_for_unattended_mode() {
 }
 
 #[test]
-fn dynamic_tool_fallback_names_tool_and_arguments() {
-    let response = build_dynamic_tool_call_response(&json!({
-        "tool": "lookup_ticket",
-        "arguments": {"id": "ABC-123"}
-    }));
+fn unknown_dynamic_tool_reports_failure_to_model() {
+    let response = execute_dynamic_tool_call(
+        &json!({
+            "tool": "lookup_ticket",
+            "arguments": {"id": "ABC-123"}
+        }),
+        "/tmp",
+    );
+    assert_eq!(response["success"], false);
     assert_eq!(
-        response,
-        json!({
-            "contentItems": [
-                {
-                    "type": "inputText",
-                    "text": "codexw cannot execute client-side dynamic tool `lookup_ticket` automatically; arguments={\"id\":\"ABC-123\"}"
-                }
-            ],
-            "success": false
-        })
+        response["contentItems"][0]["text"],
+        "unsupported client dynamic tool `lookup_ticket`"
     );
 }
 

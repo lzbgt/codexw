@@ -533,3 +533,73 @@ fn multi_agents_command_tracks_agent_thread_view() {
         other => panic!("expected agent thread list request, got {other:?}"),
     }
 }
+
+#[test]
+fn new_thread_requests_advertise_client_dynamic_tools() {
+    let cli = build_cli();
+    let mut state = AppState::new(true, false);
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+    let (_temp, mut child, mut writer, path) = spawn_recording_stdin();
+
+    assert_eq!(
+        try_handle_prefixed_submission(
+            "/new",
+            &cli,
+            "/tmp/project",
+            &mut state,
+            &mut editor,
+            &mut output,
+            &mut writer,
+        )
+        .expect("run new command"),
+        Some(true)
+    );
+
+    let requests = read_recorded_requests(&mut child, writer, &path);
+    let request = requests.last().expect("request");
+    assert_eq!(request["method"], "thread/start");
+    let names = request["params"]["dynamicTools"]
+        .as_array()
+        .expect("dynamic tools")
+        .iter()
+        .filter_map(|tool| tool.get("name").and_then(Value::as_str))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        names,
+        vec![
+            "workspace_read_file",
+            "workspace_find_files",
+            "workspace_search_text"
+        ]
+    );
+}
+
+#[test]
+fn new_thread_omits_dynamic_tools_when_experimental_api_is_disabled() {
+    let mut cli = build_cli();
+    cli.no_experimental_api = true;
+    let mut state = AppState::new(true, false);
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+    let (_temp, mut child, mut writer, path) = spawn_recording_stdin();
+
+    assert_eq!(
+        try_handle_prefixed_submission(
+            "/new",
+            &cli,
+            "/tmp/project",
+            &mut state,
+            &mut editor,
+            &mut output,
+            &mut writer,
+        )
+        .expect("run new command"),
+        Some(true)
+    );
+
+    let requests = read_recorded_requests(&mut child, writer, &path);
+    let request = requests.last().expect("request");
+    assert_eq!(request["method"], "thread/start");
+    assert!(request["params"].get("dynamicTools").is_none());
+}

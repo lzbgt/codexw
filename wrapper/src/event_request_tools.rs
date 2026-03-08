@@ -1,17 +1,18 @@
 use anyhow::Result;
 use std::process::ChildStdin;
 
+use crate::client_dynamic_tools::execute_dynamic_tool_call;
 use crate::output::Output;
 use crate::requests::send_json;
 use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcRequest;
 use crate::transcript_approval_summary::summarize_tool_request;
-use crate::transcript_plan_render::build_dynamic_tool_call_response;
 use crate::transcript_plan_render::build_mcp_elicitation_response;
 use crate::transcript_plan_render::build_tool_user_input_response;
 
 pub(crate) fn handle_tool_request(
     request: &RpcRequest,
+    resolved_cwd: &str,
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<bool> {
@@ -51,9 +52,14 @@ pub(crate) fn handle_tool_request(
             Ok(true)
         }
         "item/tool/call" => {
-            let result = build_dynamic_tool_call_response(&request.params);
+            let result = execute_dynamic_tool_call(&request.params, resolved_cwd);
+            let success = result
+                .get("success")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false);
             output.line_stderr(format!(
-                "[tool] dynamic tool fallback returned to model: {}",
+                "[tool] dynamic tool {}: {}",
+                if success { "completed" } else { "failed" },
                 summarize_tool_request(&request.params)
             ))?;
             send_json(
