@@ -30,10 +30,12 @@ fn assistant_blocks_render_with_ansi_styling() {
         "# Heading\n\n- item\n\n```rust\nfn main() {}\n```",
     )
     .join("\n");
+    let visible = strip_ansi(&rendered);
     assert!(rendered.contains("\u{1b}["));
     assert!(rendered.contains("Heading"));
     assert!(rendered.contains("fn"));
     assert!(rendered.contains("main"));
+    assert!(!visible.contains("Assistant"));
 }
 
 #[test]
@@ -64,6 +66,7 @@ fn command_completion_preserves_shell_quotes_and_plain_labels() {
     assert!(visible.contains("completed"));
     assert!(visible.contains("exit"));
     assert!(visible.contains("0"));
+    assert!(!visible.contains("Command complete"));
 }
 
 #[test]
@@ -75,6 +78,7 @@ fn updated_plan_blocks_use_checkbox_style() {
     .join("\n");
     let visible = strip_ansi(&rendered);
     assert!(visible.contains("Updated Plan"));
+    assert!(visible.contains("• Updated Plan"));
     assert!(visible.contains("✔ Explore codebase"));
     assert!(visible.contains("□ Implement feature"));
     assert!(visible.contains("◦ Write tests"));
@@ -87,6 +91,7 @@ fn proposed_plan_blocks_render_markdown_body() {
         render_block_lines_to_ansi("Proposed Plan", "## Plan\n\n1. Inspect\n2. Patch").join("\n");
     let visible = strip_ansi(&rendered);
     assert!(visible.contains("Proposed Plan"));
+    assert!(visible.contains("• Proposed Plan"));
     assert!(visible.contains("## Plan"));
     assert!(visible.contains("1. Inspect"));
     assert!(visible.contains("2. Patch"));

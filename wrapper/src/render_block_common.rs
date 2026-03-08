@@ -14,6 +14,13 @@ pub(crate) enum BlockKind {
     Plain,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum BlockHeaderStyle {
+    Hidden,
+    Plain,
+    Bullet,
+}
+
 pub(crate) fn classify_block(title: &str, body: &str) -> BlockKind {
     let title = title.to_ascii_lowercase();
     if title.contains("assistant") {
@@ -46,6 +53,28 @@ pub(crate) fn classify_block(title: &str, body: &str) -> BlockKind {
 }
 
 pub(crate) fn render_title_line(title: &str) -> Line<'static> {
+    match header_style(title) {
+        BlockHeaderStyle::Hidden => Line::default(),
+        BlockHeaderStyle::Plain => render_plain_title_line(title),
+        BlockHeaderStyle::Bullet => render_bullet_title_line(title),
+    }
+}
+
+pub(crate) fn header_style(title: &str) -> BlockHeaderStyle {
+    let title = title.to_ascii_lowercase();
+    if matches!(
+        title.as_str(),
+        "assistant" | "command complete" | "file changes complete" | "thinking"
+    ) {
+        BlockHeaderStyle::Hidden
+    } else if title.contains("proposed plan") || title.contains("updated plan") {
+        BlockHeaderStyle::Bullet
+    } else {
+        BlockHeaderStyle::Plain
+    }
+}
+
+fn render_plain_title_line(title: &str) -> Line<'static> {
     let accent = if title.eq_ignore_ascii_case("Assistant") {
         Color::Blue
     } else if title.eq_ignore_ascii_case("Thinking") {
@@ -55,11 +84,18 @@ pub(crate) fn render_title_line(title: &str) -> Line<'static> {
     } else {
         Color::DarkGray
     };
+    Line::from(Span::styled(
+        title.to_string(),
+        Style::default().fg(accent).add_modifier(Modifier::BOLD),
+    ))
+}
+
+fn render_bullet_title_line(title: &str) -> Line<'static> {
     Line::from(vec![
-        Span::styled("| ", Style::default().fg(accent)),
+        Span::styled("• ", Style::default().fg(Color::DarkGray)),
         Span::styled(
             title.to_string(),
-            Style::default().fg(accent).add_modifier(Modifier::BOLD),
+            Style::default().add_modifier(Modifier::BOLD),
         ),
     ])
 }

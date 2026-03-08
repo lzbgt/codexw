@@ -7,8 +7,10 @@ use ratatui::text::Text;
 pub(crate) const CLEAR_LINE: &str = "\r\x1b[2K";
 
 use crate::render_ansi::line_to_ansi;
+use crate::render_block_common::BlockHeaderStyle;
 use crate::render_block_common::BlockKind;
 use crate::render_block_common::classify_block;
+use crate::render_block_common::header_style;
 use crate::render_block_common::render_title_line;
 use crate::render_block_common::style_status_line;
 use crate::render_block_markdown::render_markdown_text;
@@ -211,9 +213,14 @@ fn normalize_line_endings(text: &str) -> String {
 
 pub(crate) fn render_block_lines_to_ansi(title: &str, body: &str) -> Vec<String> {
     let mut text = Text::default();
-    text.lines.push(render_title_line(title));
+    let header_style = header_style(title);
+    if header_style != BlockHeaderStyle::Hidden {
+        text.lines.push(render_title_line(title));
+    }
     if !body.trim().is_empty() {
-        text.lines.push(ratatui::text::Line::default());
+        if header_style != BlockHeaderStyle::Hidden {
+            text.lines.push(ratatui::text::Line::default());
+        }
         text.lines.extend(match classify_block(title, body) {
             BlockKind::Markdown => render_markdown_text(body).lines,
             BlockKind::Diff => render_diff_text(body).lines,
