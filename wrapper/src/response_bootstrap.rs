@@ -1,6 +1,5 @@
 use std::process::ChildStdin;
 
-use anyhow::Context;
 use anyhow::Result;
 use serde_json::Value;
 

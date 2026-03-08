@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub(crate) use crate::transcript_render::build_tool_user_input_response;
 pub(crate) use crate::transcript_render::format_plan;
 pub(crate) use crate::transcript_render::render_command_completion;

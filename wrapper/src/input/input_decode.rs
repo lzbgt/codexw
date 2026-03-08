@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub(crate) use super::input_decode_inline::collect_prefixed_tokens;
 pub(crate) use super::input_decode_inline::expand_inline_file_mentions;
 pub(crate) use super::input_decode_inline::is_common_env_var;

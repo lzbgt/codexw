@@ -1,7 +1,6 @@
 use anyhow::Result;
 
 use crate::Cli;
-use crate::model_session::ModelsAction;
 use crate::output::Output;
 use crate::requests::PendingRequest;
 use crate::runtime::StartMode;
