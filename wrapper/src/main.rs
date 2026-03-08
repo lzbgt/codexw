@@ -21,6 +21,8 @@ mod editor;
 mod editor_graphemes;
 mod events;
 mod history;
+mod history_render;
+mod history_state;
 mod input;
 mod interaction;
 mod model_session;

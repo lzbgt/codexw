@@ -36,7 +36,7 @@ The runtime has thirteen main layers.
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
 3. Outbound request construction
-   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/thread_lifecycle.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, and `requests/command_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. The older bootstrap/session request facades are gone; production code now imports the concrete helpers directly through `requests.rs`.
+   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/bootstrap_search.rs`, `requests/thread_switch.rs`, `requests/thread_maintenance.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, and `requests/command_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. `bootstrap_catalog.rs` and `thread_lifecycle.rs` are now thin compatibility facades over the split concrete helpers, and production code imports the concrete request surface through `requests.rs`.
 
 4. Inbound event handling
    `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, `notification_item_completion.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, delta/status buffering, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, and `notification_turns.rs` are compatibility/router facades over the split inbound handlers.
@@ -57,7 +57,7 @@ The runtime has thirteen main layers.
    `app.rs` and `app_input.rs` own process wiring, the main event loop, and keyboard-event dispatch for the live interactive session. `app.rs` now holds the top-level loop, while `app_input.rs` owns the normalized input-key handler.
 
 10. Resume and history rendering
-   `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
+   `history.rs`, `history_render.rs`, and `history_state.rs` own resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering. `history.rs` is the thin facade over the split render/state helpers.
 
 11. View and transcript rendering helpers
    `catalog_views.rs`, `catalog_lists.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` remain narrow compatibility facades over the split helpers.
@@ -71,7 +71,7 @@ The runtime has thirteen main layers.
 Session feature helpers are split across `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `session_status.rs` kept as the thin status facade.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers are split across `app.rs` and `app_input.rs`: `app.rs` owns backend/session startup and the top-level runtime loop, while `app_input.rs` owns input-key dispatch.
-Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
+Resume-preview helpers live across `history_render.rs` and `history_state.rs`, with `history.rs` kept as the thin facade for recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
 Catalog display helpers are split across `catalog_lists.rs` and `catalog_threads.rs`, with `catalog_views.rs` kept as the thin facade over app/skill/model/MCP display plus thread/search rendering.
 Status display helpers are split across `status_config.rs`, `status_account.rs`, and `status_limits.rs`, with `status_views.rs` kept as the thin facade plus the generic value summarizer.
 Transcript display helpers are split across `transcript_render.rs` and `transcript_summary.rs`, with `transcript_views.rs` kept as a thin compatibility facade over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
@@ -402,6 +402,8 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/catalog.rs`
   App and skill catalog parsing for app-server payloads.
 - `wrapper/src/history.rs`
+- `wrapper/src/history_render.rs`
+- `wrapper/src/history_state.rs`
   Resume-preview extraction, resumed objective/reply seeding, and resumed conversation rendering.
 - `wrapper/src/catalog_views.rs`
   Compatibility facade for the split catalog display helpers.
@@ -440,8 +442,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/requests/bootstrap_account.rs`
   Account, logout, feedback-upload, and rate-limit request builders.
 - `wrapper/src/requests/bootstrap_catalog.rs`
+- `wrapper/src/requests/bootstrap_search.rs`
   Catalog, config, model, collaboration-mode, thread-list, and file-search request builders.
 - `wrapper/src/requests/thread_lifecycle.rs`
+- `wrapper/src/requests/thread_switch.rs`
+- `wrapper/src/requests/thread_maintenance.rs`
   Thread lifecycle request builders such as start, resume, fork, compact, rename, and background-terminal cleanup.
 - `wrapper/src/requests/thread_activity.rs`
   Thread realtime and review request builders.

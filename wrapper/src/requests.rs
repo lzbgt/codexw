@@ -1,10 +1,13 @@
 mod bootstrap_account;
 mod bootstrap_catalog;
 mod bootstrap_init;
+mod bootstrap_search;
 mod command_requests;
 mod request_types;
 mod thread_activity;
 mod thread_lifecycle;
+mod thread_maintenance;
+mod thread_switch;
 mod turn_requests;
 
 use std::io::Write;
