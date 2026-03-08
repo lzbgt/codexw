@@ -524,6 +524,7 @@ fn status_runtime_reports_background_classes() {
     assert!(rendered.contains(
         "background cls  prereqs=1 shell_sidecars=1 services=1 services_ready=0 services_booting=0 services_untracked=1 terminals=1"
     ));
+    assert!(rendered.contains("next action     Main agent is blocked on 1 prerequisite shell."));
     let _ = state.background_shells.terminate_all_running();
 }
 
@@ -531,6 +532,11 @@ fn status_runtime_reports_background_classes() {
 fn ps_filter_parser_accepts_worker_class_aliases() {
     assert_eq!(parse_ps_filter(None), Some(WorkerFilter::All));
     assert_eq!(parse_ps_filter(Some("all")), Some(WorkerFilter::All));
+    assert_eq!(
+        parse_ps_filter(Some("guidance")),
+        Some(WorkerFilter::Guidance)
+    );
+    assert_eq!(parse_ps_filter(Some("next")), Some(WorkerFilter::Guidance));
     assert_eq!(
         parse_ps_filter(Some("blockers")),
         Some(WorkerFilter::Blockers)

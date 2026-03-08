@@ -26,6 +26,7 @@ pub(crate) enum WorkerFilter {
     Shells,
     Services,
     Terminals,
+    Guidance,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -116,6 +117,10 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
             format!(" {agent_counts}")
         }
     ))
+}
+
+pub(crate) fn orchestration_guidance_summary(state: &AppState) -> Option<String> {
+    guidance_lines(state).first().cloned()
 }
 
 pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
@@ -217,6 +222,13 @@ pub(crate) fn render_orchestration_workers_with_filter(
     state: &AppState,
     filter: WorkerFilter,
 ) -> String {
+    if matches!(filter, WorkerFilter::Guidance) {
+        let guidance = render_orchestration_guidance(state);
+        if guidance.is_empty() {
+            return empty_filter_message(filter).to_string();
+        }
+        return guidance;
+    }
     let mut lines = Vec::new();
     if matches!(filter, WorkerFilter::All | WorkerFilter::Blockers) {
         lines.extend(render_main_agent_section(state, filter));
@@ -274,6 +286,19 @@ pub(crate) fn render_orchestration_workers_with_filter(
         return empty_filter_message(filter).to_string();
     }
     lines.join("\n")
+}
+
+pub(crate) fn render_orchestration_guidance(state: &AppState) -> String {
+    let lines = guidance_lines(state);
+    if lines.is_empty() {
+        String::new()
+    } else {
+        let mut rendered = vec!["Next action:".to_string()];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        rendered.join("\n")
+    }
 }
 
 fn live_agent_tasks(state: &AppState) -> Vec<LiveAgentTaskSummary> {
@@ -434,7 +459,86 @@ fn empty_filter_message(filter: WorkerFilter) -> &'static str {
         WorkerFilter::Shells => "No local background shell jobs tracked right now.",
         WorkerFilter::Services => "No service shells tracked right now.",
         WorkerFilter::Terminals => "No server-observed background terminals tracked right now.",
+        WorkerFilter::Guidance => "No orchestration guidance right now.",
     }
+}
+
+fn guidance_lines(state: &AppState) -> Vec<String> {
+    let waits = active_wait_task_count(state);
+    let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
+    let sidecar_agents = active_sidecar_agent_task_count(state);
+    let shell_sidecars = running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
+    let ready_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+    let booting_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+    let terminals = server_background_terminal_count(state);
+
+    if prereqs > 0 {
+        return vec![
+            format!(
+                "Main agent is blocked on {}.",
+                pluralize(prereqs, "prerequisite shell", "prerequisite shells")
+            ),
+            "Inspect /ps blockers to identify the gating job.".to_string(),
+            "Use :ps wait <job> for services with readiness contracts or :ps poll <job> to inspect raw output.".to_string(),
+        ];
+    }
+    if waits > 0 {
+        return vec![
+            format!(
+                "Main agent is blocked on {}.",
+                pluralize(waits, "agent wait", "agent waits")
+            ),
+            "Inspect /ps blockers to see the blocking agent dependencies.".to_string(),
+            "Use /multi-agents to refresh or switch into the relevant agent thread.".to_string(),
+        ];
+    }
+    if ready_services > 0 {
+        return vec![
+            format!(
+                "{} {} ready for reuse.",
+                pluralize(ready_services, "service", "services"),
+                if ready_services == 1 { "is" } else { "are" }
+            ),
+            "Use /ps services to inspect attachment metadata and available recipes.".to_string(),
+            "Use :ps attach <job> or :ps run <job> <recipe> to reuse the service directly."
+                .to_string(),
+        ];
+    }
+    if booting_services > 0 {
+        return vec![
+            format!(
+                "{} still booting.",
+                pluralize(booting_services, "service shell is", "service shells are")
+            ),
+            "Use /ps services to inspect readiness state and startup metadata.".to_string(),
+            "Use :ps wait <job> [timeoutMs] when later work depends on service readiness."
+                .to_string(),
+        ];
+    }
+    if sidecar_agents + shell_sidecars > 0 {
+        let sidecars = sidecar_agents + shell_sidecars;
+        return vec![
+            format!(
+                "{} running without blocking the main agent.",
+                pluralize(sidecars, "sidecar is", "sidecars are")
+            ),
+            "Continue independent work on the foreground thread.".to_string(),
+            "Use /ps agents or /ps shells to inspect progress only when the result becomes relevant.".to_string(),
+        ];
+    }
+    if terminals > 0 {
+        return vec![
+            format!(
+                "{} still active.",
+                pluralize(terminals, "server terminal is", "server terminals are")
+            ),
+            "Use /ps terminals to inspect them or /clean terminals to close them.".to_string(),
+        ];
+    }
+
+    Vec::new()
 }
 
 fn pluralize(count: usize, singular: &str, plural: &str) -> String {
@@ -454,9 +558,11 @@ mod tests {
     use super::CachedAgentThreadSummary;
     use super::WorkerFilter;
     use super::orchestration_background_summary;
+    use super::orchestration_guidance_summary;
     use super::orchestration_overview_summary;
     use super::orchestration_prompt_suffix;
     use super::orchestration_runtime_summary;
+    use super::render_orchestration_guidance;
     use super::render_orchestration_workers;
     use super::render_orchestration_workers_with_filter;
 
@@ -501,6 +607,7 @@ mod tests {
         assert!(orchestration_runtime_summary(&state).is_none());
         assert!(orchestration_prompt_suffix(&state).is_none());
         assert!(orchestration_background_summary(&state).is_none());
+        assert!(orchestration_guidance_summary(&state).is_none());
     }
 
     #[test]
@@ -768,5 +875,87 @@ mod tests {
         assert!(suffix.contains("1 service booting"));
         assert!(suffix.contains("1 service untracked"));
         let _ = state.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn orchestration_guidance_prefers_blockers_then_ready_services_then_sidecars() {
+        let mut blocked = crate::state::AppState::new(true, false);
+        blocked
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({"command": "sleep 0.4", "intent": "prerequisite"}),
+                "/tmp",
+            )
+            .expect("start prerequisite shell");
+        let blocked_hint = orchestration_guidance_summary(&blocked).expect("blocked guidance");
+        assert!(blocked_hint.contains("blocked on 1 prerequisite shell"));
+        let blocked_view = render_orchestration_guidance(&blocked);
+        assert!(blocked_view.contains("Inspect /ps blockers"));
+        let _ = blocked.background_shells.terminate_all_running();
+
+        let ready = crate::state::AppState::new(true, false);
+        ready
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": if cfg!(windows) {
+                        "echo READY && ping -n 2 127.0.0.1 >NUL"
+                    } else {
+                        "printf 'READY\\n'; sleep 0.4"
+                    },
+                    "intent": "service",
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start ready service");
+        for _ in 0..40 {
+            if let Some(hint) = orchestration_guidance_summary(&ready)
+                && hint.contains("ready for reuse")
+            {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+        let ready_hint = orchestration_guidance_summary(&ready).expect("ready guidance");
+        assert!(ready_hint.contains("ready for reuse"));
+        let _ = ready.background_shells.terminate_all_running();
+
+        let mut sidecar = crate::state::AppState::new(true, false);
+        sidecar.live_agent_tasks.insert(
+            "call-1".to_string(),
+            LiveAgentTaskSummary {
+                id: "call-1".to_string(),
+                tool: "spawnAgent".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["agent-1".to_string()],
+                prompt: None,
+                agent_statuses: BTreeMap::new(),
+            },
+        );
+        let sidecar_hint = orchestration_guidance_summary(&sidecar).expect("sidecar guidance");
+        assert!(sidecar_hint.contains("running without blocking"));
+    }
+
+    #[test]
+    fn guidance_filter_renders_next_action_section() {
+        let mut state = crate::state::AppState::new(true, false);
+        state.live_agent_tasks.insert(
+            "call-1".to_string(),
+            LiveAgentTaskSummary {
+                id: "call-1".to_string(),
+                tool: "wait".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["agent-1".to_string()],
+                prompt: None,
+                agent_statuses: BTreeMap::new(),
+            },
+        );
+        let rendered = render_orchestration_workers_with_filter(&state, WorkerFilter::Guidance);
+        assert!(rendered.contains("Next action:"));
+        assert!(rendered.contains("blocked on 1 agent wait"));
+        assert!(rendered.contains("/multi-agents"));
     }
 }
