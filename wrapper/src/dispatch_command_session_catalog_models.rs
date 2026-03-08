@@ -3,9 +3,9 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::model_personality::ModelsAction;
-use crate::model_personality::apply_personality_selection;
-use crate::model_personality::render_personality_options;
+use crate::model_personality_actions::ModelsAction;
+use crate::model_personality_actions::apply_personality_selection;
+use crate::model_personality_view::render_personality_options;
 use crate::output::Output;
 use crate::requests::send_load_models;
 use crate::state::AppState;

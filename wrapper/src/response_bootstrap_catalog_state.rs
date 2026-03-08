@@ -4,11 +4,11 @@ use serde_json::Value;
 use crate::Cli;
 use crate::catalog::parse_apps_list;
 use crate::catalog::parse_skills_list;
-use crate::collaboration_actions::CollaborationModeAction;
-use crate::collaboration_actions::apply_collaboration_mode_action;
+use crate::collaboration_apply::CollaborationModeAction;
+use crate::collaboration_apply::apply_collaboration_mode_action;
 use crate::collaboration_preset::extract_collaboration_mode_presets;
-use crate::model_personality::ModelsAction;
-use crate::model_personality::apply_models_action;
+use crate::model_personality_actions::ModelsAction;
+use crate::model_personality_actions::apply_models_action;
 use crate::output::Output;
 use crate::state::AppState;
 

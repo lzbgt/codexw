@@ -4,8 +4,8 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
-use crate::collaboration_actions::CollaborationModeAction;
-use crate::model_personality::ModelsAction;
+use crate::collaboration_apply::CollaborationModeAction;
+use crate::model_personality_actions::ModelsAction;
 use crate::output::Output;
 use crate::requests::send_initialized;
 use crate::requests::send_load_account;

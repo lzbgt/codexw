@@ -1,8 +1,9 @@
 use crate::Cli;
 use crate::model_catalog::extract_models;
-use crate::model_personality::render_personality_options;
-use crate::model_personality::summarize_active_personality;
-use crate::session_snapshot::render_status_snapshot;
+use crate::model_personality_view::render_personality_options;
+use crate::model_personality_view::summarize_active_personality;
+use crate::session_snapshot_overview::render_status_overview;
+use crate::session_snapshot_runtime::render_status_runtime;
 use serde_json::json;
 
 #[test]
@@ -72,7 +73,9 @@ fn status_snapshot_surfaces_effective_model_personality_support() {
         yolo: false,
         prompt: Vec::new(),
     });
-    let rendered = render_status_snapshot(&cli, "/tmp/project", &state);
+    let mut lines = render_status_overview(&cli, "/tmp/project", &state);
+    lines.extend(render_status_runtime(&cli, &state));
+    let rendered = lines.join("\n");
     assert!(rendered.contains("model           GPT-5 Codex [supports personality]"));
     assert!(rendered.contains("models cached   1"));
 }

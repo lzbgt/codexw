@@ -7,7 +7,8 @@ use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_load_config;
 use crate::session_realtime_status::render_realtime_status;
-use crate::session_snapshot::render_status_snapshot;
+use crate::session_snapshot_overview::render_status_overview;
+use crate::session_snapshot_runtime::render_status_runtime;
 use crate::state::AppState;
 use crate::status_views::render_permissions_snapshot;
 use crate::transcript_render::render_pending_attachments;
@@ -40,7 +41,9 @@ pub(crate) fn try_handle_session_status_command(
             true
         }
         "status" | "statusline" => {
-            output.block_stdout("Status", &render_status_snapshot(cli, resolved_cwd, state))?;
+            let mut lines = render_status_overview(cli, resolved_cwd, state);
+            lines.extend(render_status_runtime(cli, state));
+            output.block_stdout("Status", &lines.join("\n"))?;
             true
         }
         "settings" | "debug-config" => {

@@ -8,9 +8,16 @@ use crate::model_catalog::extract_models;
 use crate::output::Output;
 use crate::state::AppState;
 
-use super::ModelsAction;
-use super::model_personality_view::personality_label;
-use super::model_personality_view::render_personality_options;
+use crate::model_personality_view::personality_label;
+use crate::model_personality_view::render_personality_options;
+
+#[derive(Debug, Clone)]
+pub(crate) enum ModelsAction {
+    CacheOnly,
+    ShowModels,
+    ShowPersonality,
+    SetPersonality(String),
+}
 
 pub(crate) fn apply_personality_selection(
     cli: &Cli,

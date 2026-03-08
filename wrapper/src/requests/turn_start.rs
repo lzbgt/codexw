@@ -7,7 +7,7 @@ use serde_json::json;
 use super::PendingRequest;
 use super::send_json;
 use crate::Cli;
-use crate::collaboration_actions::current_collaboration_mode_value;
+use crate::collaboration_preset::current_collaboration_mode_value;
 use crate::input::ParsedInput;
 use crate::policy::approval_policy;
 use crate::policy::reasoning_summary;
@@ -45,7 +45,9 @@ pub(crate) fn send_turn_start(
     if let Some(personality) = state.active_personality.as_deref() {
         params["personality"] = Value::String(personality.to_string());
     }
-    if let Some(collaboration_mode) = current_collaboration_mode_value(state) {
+    if let Some(collaboration_mode) =
+        current_collaboration_mode_value(state.active_collaboration_mode.as_ref())
+    {
         params["collaborationMode"] = collaboration_mode;
     }
 

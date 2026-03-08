@@ -5,8 +5,15 @@ use crate::collaboration_preset::find_collaboration_mode_by_selector;
 use crate::output::Output;
 use crate::state::AppState;
 
-use super::CollaborationModeAction;
-use super::collaboration_view::render_collaboration_modes;
+use crate::collaboration_view::render_collaboration_modes;
+
+#[derive(Debug, Clone)]
+pub(crate) enum CollaborationModeAction {
+    CacheOnly,
+    ShowList,
+    TogglePlan,
+    SetMode(String),
+}
 
 pub(crate) fn apply_collaboration_mode_action(
     state: &mut AppState,

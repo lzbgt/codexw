@@ -1,6 +1,7 @@
 use crate::Cli;
 use crate::session_prompt_status::render_prompt_status;
-use crate::session_snapshot::render_status_snapshot;
+use crate::session_snapshot_overview::render_status_overview;
+use crate::session_snapshot_runtime::render_status_runtime;
 use crate::transcript_summary::summarize_thread_status_for_display;
 use serde_json::json;
 
@@ -80,7 +81,9 @@ fn status_snapshot_includes_realtime_fields() {
         yolo: false,
         prompt: Vec::new(),
     });
-    let rendered = render_status_snapshot(&cli, "/tmp/project", &state);
+    let mut lines = render_status_overview(&cli, "/tmp/project", &state);
+    lines.extend(render_status_runtime(&cli, &state));
+    let rendered = lines.join("\n");
     assert!(rendered.contains("realtime        true"));
     assert!(rendered.contains("realtime id     rt-1"));
     assert!(rendered.contains("realtime prompt hello world"));

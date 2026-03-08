@@ -93,3 +93,9 @@ pub(crate) fn find_collaboration_mode_by_selector(
         })
         .cloned()
 }
+
+pub(crate) fn current_collaboration_mode_value(
+    active: Option<&CollaborationModePreset>,
+) -> Option<Value> {
+    active.and_then(CollaborationModePreset::turn_start_value)
+}

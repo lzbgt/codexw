@@ -51,7 +51,7 @@ The runtime has thirteen main layers.
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
 
 8. Session and turn orchestration
-   `model_catalog.rs`, `model_personality.rs`, `collaboration_preset.rs`, `collaboration_actions.rs`, `session_prompt_status.rs`, `session_prompt_status_active.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs`, `response_realtime_activity.rs`, `response_turn_activity.rs`, and `response_local_command.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, status snapshot generation, and the concrete thread-activity success handlers for realtime, turns, reviews, and local commands. `model_personality.rs`, `session_prompt_status.rs`, and `session_snapshot.rs` remain the small facades over the split helpers, while collaboration and model-catalog callers now import the concrete helpers directly.
+   `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status.rs`, `session_prompt_status_active.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs`, `response_realtime_activity.rs`, `response_turn_activity.rs`, and `response_local_command.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, status snapshot generation, and the concrete thread-activity success handlers for realtime, turns, reviews, and local commands. `session_prompt_status.rs` remains the small facade over the split prompt-status helpers, while collaboration, model-catalog, and status-snapshot callers now import the concrete helpers directly.
 
 9. App runtime loop
    `app.rs`, `app_input.rs`, `app_input_editor.rs`, `app_input_editing.rs`, `app_input_controls.rs`, and `app_input_interrupt.rs` own process wiring, the main event loop, keyboard-event dispatch, editor-key actions, submit/escape/interrupt behavior, and control-key routing for the live interactive session. `app.rs` holds the top-level loop, `app_input.rs` is the input facade, and the smaller helper modules own editor, editing, and control behavior.
@@ -68,7 +68,7 @@ The runtime has thirteen main layers.
 13. Human output handling
    `output.rs`, `output_prompt.rs`, `output_stream.rs`, `render_prompt.rs`, `render_prompt_layout.rs`, `render_prompt_commit.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_block_structures.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_markdown_links.rs`, `render_markdown_styles.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `output.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_markdown.rs`, and `render_markdown_inline.rs` are compatibility facades over that split.
 
-Session feature helpers are split across `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status_active.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, and `session_snapshot_runtime.rs`, with `model_personality.rs`, `collaboration_actions.rs`, `session_prompt_status.rs`, and `session_snapshot.rs` kept as the remaining thin facades.
+Session feature helpers are split across `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status_active.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, and `session_snapshot_runtime.rs`, with only `session_prompt_status.rs` kept as the remaining thin facade.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers are split across `app.rs`, `app_input.rs`, `app_input_editor.rs`, `app_input_editing.rs`, `app_input_controls.rs`, and `app_input_interrupt.rs`: `app.rs` owns backend/session startup and the top-level runtime loop, `app_input.rs` is the input facade, `app_input_editor.rs` owns editor-key behavior and submit handling, `app_input_editing.rs` routes editing/navigation keys, and `app_input_controls.rs` plus `app_input_interrupt.rs` own control, interrupt, and exit behavior.
 Resume-preview helpers live across `history_render.rs`, `history_state.rs`, and `history_text.rs`, and callers now import those concrete helpers directly for recent conversation extraction, resumed objective/last-reply seeding, resumed transcript rendering, and shared history text formatting.
@@ -497,8 +497,6 @@ The biggest known limits are architectural, not accidental.
   Realtime session status rendering for `/realtime` state, prompt, elapsed time, and last error.
 - `wrapper/src/session_realtime_item.rs`
   Realtime item rendering plus text/transcript extraction from streamed realtime payloads.
-- `wrapper/src/session_snapshot.rs`
-  Compatibility facade for the split `/status` snapshot helpers.
 - `wrapper/src/session_snapshot_overview.rs`
   Core `/status` overview lines for cwd, thread, sandbox, model, collaboration, and attachment state.
 - `wrapper/src/session_snapshot_runtime.rs`
@@ -644,16 +642,12 @@ The biggest known limits are architectural, not accidental.
   `@file` token parsing, filesystem completion, and candidate rendering.
 - `wrapper/src/model_catalog.rs`
   Model catalog extraction and effective-model selection.
-- `wrapper/src/model_personality.rs`
-  Compatibility facade for the split personality view/action helpers.
 - `wrapper/src/model_personality_view.rs`
   Personality labeling, active-personality summaries, and `/personality` option rendering.
 - `wrapper/src/model_personality_actions.rs`
   Personality validation, selection application, and load-model action handling.
 - `wrapper/src/collaboration_preset.rs`
   Collaboration preset extraction, summaries, and selector matching.
-- `wrapper/src/collaboration_actions.rs`
-  Compatibility facade for the split collaboration render/action helpers.
 - `wrapper/src/collaboration_view.rs`
   Active collaboration-mode summaries, labels, and collaboration preset list rendering.
 - `wrapper/src/collaboration_apply.rs`

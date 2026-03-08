@@ -1,5 +1,5 @@
-use crate::collaboration_actions::CollaborationModeAction;
-use crate::model_personality::ModelsAction;
+use crate::collaboration_apply::CollaborationModeAction;
+use crate::model_personality_actions::ModelsAction;
 
 #[derive(Debug)]
 pub(crate) enum PendingRequest {
