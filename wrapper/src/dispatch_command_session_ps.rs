@@ -80,12 +80,8 @@ pub(crate) fn handle_ps_command(
         };
         output.block_stdout("Service Attachment", &rendered)?;
     } else if matches!(action, Some("run" | "invoke")) {
-        let Some(reference) = args.get(1).copied() else {
-            output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe>")?;
-            return Ok(true);
-        };
-        let Some(recipe) = args.get(2).copied() else {
-            output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe>")?;
+        let Some((reference, recipe, invoke_args)) = parse_ps_run_args(raw_args) else {
+            output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe> [json-args]")?;
             return Ok(true);
         };
         let job_id = match state.background_shells.resolve_job_reference(reference) {
@@ -95,9 +91,16 @@ pub(crate) fn handle_ps_command(
                 return Ok(true);
             }
         };
+        let invoke_args = match parse_operator_recipe_args(invoke_args) {
+            Ok(args) => args,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
         let rendered = match state
             .background_shells
-            .invoke_recipe_for_operator(&job_id, recipe)
+            .invoke_recipe_for_operator_with_args(&job_id, recipe, &invoke_args)
         {
             Ok(rendered) => rendered,
             Err(err) => {
@@ -206,6 +209,57 @@ fn parse_ps_send_args(raw_args: &str) -> Option<(&str, &str)> {
     } else {
         Some((reference, text))
     }
+}
+
+fn parse_ps_run_args(raw_args: &str) -> Option<(&str, &str, Option<&str>)> {
+    let remainder = raw_args
+        .trim_start()
+        .strip_prefix("run")
+        .or_else(|| raw_args.trim_start().strip_prefix("invoke"))?
+        .trim_start();
+    let (reference, remainder) = remainder.split_once(char::is_whitespace)?;
+    let remainder = remainder.trim_start();
+    let (recipe, arg_tail) = match remainder.split_once(char::is_whitespace) {
+        Some((recipe, tail)) => (recipe, Some(tail.trim_start())),
+        None => (remainder, None),
+    };
+    if reference.is_empty() || recipe.is_empty() {
+        None
+    } else {
+        Some((
+            reference,
+            recipe,
+            arg_tail.filter(|value| !value.is_empty()),
+        ))
+    }
+}
+
+fn parse_operator_recipe_args(
+    raw_args: Option<&str>,
+) -> Result<std::collections::HashMap<String, String>> {
+    let Some(raw_args) = raw_args else {
+        return Ok(std::collections::HashMap::new());
+    };
+    let value: serde_json::Value = serde_json::from_str(raw_args)
+        .map_err(|err| anyhow::anyhow!("recipe args must be valid JSON object text: {err}"))?;
+    let object = value
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("recipe args must be a JSON object"))?;
+    let mut args = std::collections::HashMap::with_capacity(object.len());
+    for (key, value) in object {
+        let rendered = match value {
+            serde_json::Value::String(text) => text.clone(),
+            serde_json::Value::Bool(flag) => flag.to_string(),
+            serde_json::Value::Number(number) => number.to_string(),
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "recipe arg `{key}` must be a string, number, or boolean"
+                ));
+            }
+        };
+        args.insert(key.clone(), rendered);
+    }
+    Ok(args)
 }
 
 pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {

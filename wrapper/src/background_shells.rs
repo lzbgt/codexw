@@ -153,7 +153,16 @@ pub(crate) struct BackgroundShellInteractionRecipe {
     pub(crate) name: String,
     pub(crate) description: Option<String>,
     pub(crate) example: Option<String>,
+    pub(crate) parameters: Vec<BackgroundShellInteractionParameter>,
     pub(crate) action: BackgroundShellInteractionAction,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BackgroundShellInteractionParameter {
+    pub(crate) name: String,
+    pub(crate) description: Option<String>,
+    pub(crate) default: Option<String>,
+    pub(crate) required: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -558,8 +567,10 @@ impl BackgroundShellManager {
             .map(str::trim)
             .filter(|value| !value.is_empty())
             .ok_or_else(|| "background_shell_invoke_recipe requires `recipe`".to_string())?;
+        let args =
+            parse_recipe_arguments_map(object.get("args"), "background_shell_invoke_recipe")?;
         let resolved_job_id = self.resolve_job_reference(job_id)?;
-        self.invoke_recipe(&resolved_job_id, recipe_name)
+        self.invoke_recipe(&resolved_job_id, recipe_name, &args)
     }
 
     pub(crate) fn resolve_job_reference(&self, reference: &str) -> Result<String, String> {
@@ -660,12 +671,22 @@ impl BackgroundShellManager {
         self.service_attachment_summary(job_id)
     }
 
+    #[cfg(test)]
     pub(crate) fn invoke_recipe_for_operator(
         &self,
         job_id: &str,
         recipe_name: &str,
     ) -> Result<String, String> {
-        self.invoke_recipe(job_id, recipe_name)
+        self.invoke_recipe(job_id, recipe_name, &HashMap::new())
+    }
+
+    pub(crate) fn invoke_recipe_for_operator_with_args(
+        &self,
+        job_id: &str,
+        recipe_name: &str,
+        args: &HashMap<String, String>,
+    ) -> Result<String, String> {
+        self.invoke_recipe(job_id, recipe_name, args)
     }
 
     pub(crate) fn running_count(&self) -> usize {
@@ -915,6 +936,12 @@ impl BackgroundShellManager {
                     line.push_str(&format!(": {description}"));
                 }
                 lines.push(line);
+                if !recipe.parameters.is_empty() {
+                    lines.push(format!(
+                        "  params: {}",
+                        render_recipe_parameters(&recipe.parameters)
+                    ));
+                }
                 if let Some(example) = recipe.example.as_deref() {
                     lines.push(format!("  example: {example}"));
                 }
@@ -936,8 +963,13 @@ impl BackgroundShellManager {
         Ok(lines.join("\n"))
     }
 
-    fn invoke_recipe(&self, job_id: &str, recipe_name: &str) -> Result<String, String> {
-        let (job_label, action, endpoint) = {
+    fn invoke_recipe(
+        &self,
+        job_id: &str,
+        recipe_name: &str,
+        args: &HashMap<String, String>,
+    ) -> Result<String, String> {
+        let (job_label, action, endpoint, parameters) = {
             let job = self.lookup_job(job_id)?;
             let state = job.lock().expect("background shell job lock");
             if state.intent != BackgroundShellIntent::Service {
@@ -957,8 +989,11 @@ impl BackgroundShellManager {
                 state.alias.clone().unwrap_or_else(|| state.id.clone()),
                 recipe.action,
                 state.service_endpoint.clone(),
+                recipe.parameters,
             )
         };
+        let resolved_args = resolve_recipe_arguments(&parameters, args)?;
+        let action = apply_recipe_arguments_to_action(action, &resolved_args)?;
 
         match action {
             BackgroundShellInteractionAction::Informational => Err(format!(
@@ -1178,15 +1213,232 @@ fn parse_background_shell_interaction_recipes(
             object.get("example"),
             &format!("recipes[{index}].example"),
         )?;
+        let parameters =
+            parse_background_shell_interaction_parameters(object.get("parameters"), index)?;
         let action = parse_background_shell_interaction_action(object.get("action"), index)?;
         parsed.push(BackgroundShellInteractionRecipe {
             name,
             description,
             example,
+            parameters,
             action,
         });
     }
     Ok(parsed)
+}
+
+fn parse_background_shell_interaction_parameters(
+    value: Option<&serde_json::Value>,
+    index: usize,
+) -> Result<Vec<BackgroundShellInteractionParameter>, String> {
+    let Some(value) = value else {
+        return Ok(Vec::new());
+    };
+    let parameters = value.as_array().ok_or_else(|| {
+        format!("background_shell_start `recipes[{index}].parameters` must be an array")
+    })?;
+    let mut parsed = Vec::with_capacity(parameters.len());
+    for (param_index, parameter) in parameters.iter().enumerate() {
+        let object = parameter.as_object().ok_or_else(|| {
+            format!("background_shell_start `recipes[{index}].parameters[{param_index}]` must be an object")
+        })?;
+        let name = object
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| {
+                format!("background_shell_start `recipes[{index}].parameters[{param_index}].name` must be a non-empty string")
+            })?
+            .to_string();
+        let description = parse_background_shell_optional_string(
+            object.get("description"),
+            &format!("recipes[{index}].parameters[{param_index}].description"),
+        )?;
+        let default = parse_background_shell_optional_string(
+            object.get("default"),
+            &format!("recipes[{index}].parameters[{param_index}].default"),
+        )?;
+        let required = object
+            .get("required")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(default.is_none());
+        parsed.push(BackgroundShellInteractionParameter {
+            name,
+            description,
+            default,
+            required,
+        });
+    }
+    Ok(parsed)
+}
+
+fn parse_recipe_arguments_map(
+    value: Option<&serde_json::Value>,
+    field_name: &str,
+) -> Result<HashMap<String, String>, String> {
+    let Some(value) = value else {
+        return Ok(HashMap::new());
+    };
+    let object = value
+        .as_object()
+        .ok_or_else(|| format!("{field_name} `args` must be an object"))?;
+    let mut args = HashMap::with_capacity(object.len());
+    for (key, value) in object {
+        let rendered = match value {
+            serde_json::Value::String(text) => text.clone(),
+            serde_json::Value::Bool(flag) => flag.to_string(),
+            serde_json::Value::Number(number) => number.to_string(),
+            _ => {
+                return Err(format!(
+                    "{field_name} `args.{key}` must be a string, number, or boolean"
+                ));
+            }
+        };
+        args.insert(key.clone(), rendered);
+    }
+    Ok(args)
+}
+
+fn resolve_recipe_arguments(
+    parameters: &[BackgroundShellInteractionParameter],
+    provided: &HashMap<String, String>,
+) -> Result<HashMap<String, String>, String> {
+    let mut resolved = HashMap::with_capacity(parameters.len());
+    for parameter in parameters {
+        if let Some(value) = provided.get(&parameter.name) {
+            resolved.insert(parameter.name.clone(), value.clone());
+        } else if let Some(default) = parameter.default.as_deref() {
+            resolved.insert(parameter.name.clone(), default.to_string());
+        } else if parameter.required {
+            return Err(format!(
+                "recipe parameter `{}` is required but was not provided",
+                parameter.name
+            ));
+        }
+    }
+    for key in provided.keys() {
+        if !parameters.iter().any(|parameter| parameter.name == *key) {
+            return Err(format!("unknown recipe argument `{key}`"));
+        }
+    }
+    Ok(resolved)
+}
+
+fn apply_recipe_arguments_to_action(
+    action: BackgroundShellInteractionAction,
+    args: &HashMap<String, String>,
+) -> Result<BackgroundShellInteractionAction, String> {
+    Ok(match action {
+        BackgroundShellInteractionAction::Informational => {
+            BackgroundShellInteractionAction::Informational
+        }
+        BackgroundShellInteractionAction::Stdin {
+            text,
+            append_newline,
+        } => BackgroundShellInteractionAction::Stdin {
+            text: substitute_recipe_arguments(&text, args)?,
+            append_newline,
+        },
+        BackgroundShellInteractionAction::Http {
+            method,
+            path,
+            body,
+            headers,
+            expected_status,
+        } => BackgroundShellInteractionAction::Http {
+            method: substitute_recipe_arguments(&method, args)?,
+            path: substitute_recipe_arguments(&path, args)?,
+            body: body
+                .as_deref()
+                .map(|body| substitute_recipe_arguments(body, args))
+                .transpose()?,
+            headers: headers
+                .into_iter()
+                .map(|(name, value)| {
+                    Ok((
+                        substitute_recipe_arguments(&name, args)?,
+                        substitute_recipe_arguments(&value, args)?,
+                    ))
+                })
+                .collect::<Result<Vec<_>, String>>()?,
+            expected_status,
+        },
+        BackgroundShellInteractionAction::Tcp {
+            payload,
+            append_newline,
+            expect_substring,
+            read_timeout_ms,
+        } => BackgroundShellInteractionAction::Tcp {
+            payload: payload
+                .as_deref()
+                .map(|payload| substitute_recipe_arguments(payload, args))
+                .transpose()?,
+            append_newline,
+            expect_substring: expect_substring
+                .as_deref()
+                .map(|text| substitute_recipe_arguments(text, args))
+                .transpose()?,
+            read_timeout_ms,
+        },
+        BackgroundShellInteractionAction::Redis {
+            command,
+            expect_substring,
+            read_timeout_ms,
+        } => BackgroundShellInteractionAction::Redis {
+            command: command
+                .into_iter()
+                .map(|item| substitute_recipe_arguments(&item, args))
+                .collect::<Result<Vec<_>, String>>()?,
+            expect_substring: expect_substring
+                .as_deref()
+                .map(|text| substitute_recipe_arguments(text, args))
+                .transpose()?,
+            read_timeout_ms,
+        },
+    })
+}
+
+fn substitute_recipe_arguments(
+    template: &str,
+    args: &HashMap<String, String>,
+) -> Result<String, String> {
+    let mut rendered = String::with_capacity(template.len());
+    let mut cursor = 0;
+    while let Some(start_rel) = template[cursor..].find("{{") {
+        let start = cursor + start_rel;
+        rendered.push_str(&template[cursor..start]);
+        let rest = &template[start + 2..];
+        let Some(end_rel) = rest.find("}}") else {
+            return Err(format!("unterminated recipe placeholder in `{template}`"));
+        };
+        let end = start + 2 + end_rel;
+        let key = template[start + 2..end].trim();
+        let value = args
+            .get(key)
+            .ok_or_else(|| format!("recipe placeholder `{{{{{key}}}}}` was not provided"))?;
+        rendered.push_str(value);
+        cursor = end + 2;
+    }
+    rendered.push_str(&template[cursor..]);
+    Ok(rendered)
+}
+
+fn render_recipe_parameters(parameters: &[BackgroundShellInteractionParameter]) -> String {
+    parameters
+        .iter()
+        .map(|parameter| {
+            let mut rendered = parameter.name.clone();
+            if parameter.required {
+                rendered.push('*');
+            }
+            if let Some(default) = parameter.default.as_deref() {
+                rendered.push_str(&format!("={default}"));
+            }
+            rendered
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn parse_background_shell_interaction_action(
@@ -2206,6 +2458,7 @@ mod tests {
     use super::BackgroundShellOrigin;
     use super::BackgroundShellServiceReadiness;
     use serde_json::json;
+    use std::collections::HashMap;
     use std::io::Read;
     use std::io::Write;
     use std::net::TcpListener;
@@ -2479,10 +2732,17 @@ mod tests {
                             "name": "health",
                             "description": "Check service health",
                             "example": "curl http://127.0.0.1:4000/health",
+                            "parameters": [
+                                {
+                                    "name": "id",
+                                    "description": "Resource id",
+                                    "default": "health"
+                                }
+                            ],
                             "action": {
                                 "type": "http",
                                 "method": "GET",
-                                "path": "/health"
+                                "path": "/{{id}}"
                             }
                         },
                         {
@@ -2508,9 +2768,134 @@ mod tests {
         assert!(rendered.contains("Protocol: http"));
         assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
         assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
-        assert!(rendered.contains("health [http GET /health]: Check service health"));
+        assert!(rendered.contains("health [http GET /{{id}}]: Check service health"));
+        assert!(rendered.contains("params: id=health"));
         assert!(rendered.contains("example: curl http://127.0.0.1:4000/health"));
         assert!(rendered.contains("metrics [http GET /metrics]: Fetch metrics"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_parameters_support_defaults_and_substitution() {
+        let endpoint = spawn_test_http_server("GET", "/items/default-id", "ok");
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": endpoint,
+                    "recipes": [
+                        {
+                            "name": "item",
+                            "description": "Fetch one item",
+                            "parameters": [
+                                {
+                                    "name": "id",
+                                    "default": "default-id"
+                                }
+                            ],
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/items/{{id}}"
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let rendered = manager
+            .invoke_recipe_for_operator_with_args("bg-1", "item", &HashMap::new())
+            .expect("invoke defaulted recipe");
+        assert!(rendered.contains("Action: http GET /items/default-id"));
+        assert!(rendered.contains("Status: HTTP/1.1 200 OK"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_parameters_can_be_overridden() {
+        let endpoint = spawn_test_http_server("GET", "/items/42", "ok");
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": endpoint,
+                    "recipes": [
+                        {
+                            "name": "item",
+                            "description": "Fetch one item",
+                            "parameters": [
+                                {
+                                    "name": "id",
+                                    "required": true
+                                }
+                            ],
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/items/{{id}}"
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let rendered = manager
+            .invoke_recipe_for_operator_with_args(
+                "bg-1",
+                "item",
+                &HashMap::from([("id".to_string(), "42".to_string())]),
+            )
+            .expect("invoke overridden recipe");
+        assert!(rendered.contains("Action: http GET /items/42"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_missing_required_parameter_fails() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": "http://127.0.0.1:4000",
+                    "recipes": [
+                        {
+                            "name": "item",
+                            "description": "Fetch one item",
+                            "parameters": [
+                                {
+                                    "name": "id",
+                                    "required": true
+                                }
+                            ],
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/items/{{id}}"
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let err = manager
+            .invoke_recipe_for_operator("bg-1", "item")
+            .expect_err("missing required parameter should fail");
+        assert!(err.contains("parameter `id` is required"));
         let _ = manager.terminate_all_running();
     }
 

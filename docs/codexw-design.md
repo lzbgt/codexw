@@ -204,6 +204,7 @@ The current `codexw` implementation now reflects that model partially:
   - optional `readyPattern` text for service jobs, so the wrapper can promote them from `booting` to `ready` when logs match a concrete milestone
   - optional `protocol`, `endpoint`, and `attachHint` text for service jobs, so the wrapper can expose structured attachment metadata for later turns and worker tasks
   - optional `recipes` array for service jobs, so the wrapper can expose named interaction verbs such as `health`, `metrics`, `query`, or `seed`
+  - optional per-recipe `parameters` array, so one declared service verb can be reused with call-time arguments instead of cloning separate recipes for each key/path/payload variant
   - each recipe may remain descriptive-only or declare an executable `action`, currently `stdin`, plain `http`, `tcp`, or `redis`
   - `http` actions may also declare request `headers`, request `body`, and `expectedStatus` validation so the recipe contract can describe authenticated or mutating service interactions, not just basic GETs
   - `tcp` actions may declare bounded `payload`, `appendNewline`, `expectSubstring`, and `readTimeoutMs` fields so the recipe contract can describe raw socket probes and simple line protocols without falling back to ad hoc shell commands
@@ -221,7 +222,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
   - `:ps attach <jobId|alias|n>` renders the structured attachment metadata for one service shell job
-  - `:ps run <jobId|alias|n> <recipe>` invokes one declared service recipe through the wrapper-owned typed action layer
+  - `:ps run <jobId|alias|n> <recipe> [json-args]` invokes one declared service recipe through the wrapper-owned typed action layer, with optional per-invocation arguments
   - `:ps poll <jobId|n>` renders the full current poll snapshot for one wrapper-owned shell job
   - `:ps send <jobId|alias|n> <text>` sends targeted stdin back into one wrapper-owned shell job without blocking the turn
   - `:ps terminate <jobId|n>` stops one wrapper-owned shell job without touching the others
@@ -235,6 +236,12 @@ The current `codexw` implementation now reflects that model partially:
   - `endpoint` for the canonical URL/socket/target that later work should use
   - `attachHint` for the operator or agent-facing next-step instruction, such as “send HTTP requests to /health” or “attach with psql”
   - `recipes` for structured interaction verbs with optional description/example text, so later work can ask “what can I do with this service?” without scraping raw logs
+  - `parameters` on a recipe for reusable call-time arguments:
+    - each parameter has a `name`
+    - optional `description`
+    - optional `default`
+    - optional `required` flag
+    - when no default is provided, parameters are treated as required unless explicitly marked otherwise
   - recipe `action` for typed invocation when the service contract is executable instead of purely descriptive:
     - `stdin` for reusable command phrases that should be sent back to the service shell process
     - `http` for plain `http://` endpoint requests derived from the declared service endpoint
@@ -252,6 +259,10 @@ The current `codexw` implementation now reflects that model partially:
       - optional bounded read timeout
       - responses are parsed into structured Redis reply types instead of left as raw socket bytes
     - descriptive-only recipes are still valid and remain attach-only instead of invokable
+  - recipe actions now support placeholder substitution using `{{name}}` syntax driven by declared parameter values
+    - operator path: `:ps run <job> <recipe> {"name":"value"}`
+    - model path: `background_shell_invoke_recipe` with optional `args` object
+    - defaults are applied automatically, missing required args fail early, and unknown args are rejected instead of being silently ignored
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
   - `:ps unalias <name>` removes that alias

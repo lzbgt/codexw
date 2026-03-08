@@ -99,6 +99,19 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                                 "name": {"type": "string"},
                                 "description": {"type": "string"},
                                 "example": {"type": "string"},
+                                "parameters": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {"type": "string"},
+                                            "description": {"type": "string"},
+                                            "default": {"type": "string"},
+                                            "required": {"type": "boolean"}
+                                        },
+                                        "required": ["name"]
+                                    }
+                                },
                                 "action": {
                                     "type": "object",
                                     "properties": {
@@ -181,7 +194,13 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                 "type": "object",
                 "properties": {
                     "jobId": {"type": "string"},
-                    "recipe": {"type": "string"}
+                    "recipe": {"type": "string"},
+                    "args": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": ["string", "number", "boolean"]
+                        }
+                    }
                 },
                 "required": ["jobId", "recipe"]
             }
@@ -1048,6 +1067,76 @@ mod tests {
         assert!(rendered.contains("Action: redis PING expect=\"PONG\" timeout=500ms"));
         assert!(rendered.contains("Type: simple-string"));
         assert!(rendered.contains("Value: PONG"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_invoke_recipe_supports_parameter_args() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("local addr");
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut request = [0_u8; 4096];
+            let bytes = std::io::Read::read(&mut stream, &mut request).expect("read request");
+            let request = String::from_utf8_lossy(&request[..bytes]);
+            assert_eq!(request, "*2\r\n$3\r\nGET\r\n$5\r\nalpha\r\n");
+            std::io::Write::write_all(&mut stream, b"$5\r\nvalue\r\n").expect("write response");
+        });
+
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "redis",
+                    "endpoint": format!("tcp://{addr}"),
+                    "recipes": [
+                        {
+                            "name": "get",
+                            "description": "Get one cache entry",
+                            "parameters": [
+                                {
+                                    "name": "key",
+                                    "required": true
+                                }
+                            ],
+                            "action": {
+                                "type": "redis",
+                                "command": ["GET", "{{key}}"],
+                                "expectSubstring": "value",
+                                "readTimeoutMs": 500
+                            }
+                        }
+                    ]
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        let invoke_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_invoke_recipe",
+                "arguments": {
+                    "jobId": "bg-1",
+                    "recipe": "get",
+                    "args": {
+                        "key": "alpha"
+                    }
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(invoke_result["success"], true);
+        let rendered = invoke_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("invoke text");
+        assert!(rendered.contains("Action: redis GET alpha"));
+        assert!(rendered.contains("Value: value"));
         let _ = manager.terminate_all_running();
     }
 
