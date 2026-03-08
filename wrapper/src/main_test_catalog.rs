@@ -1,3 +1,10 @@
+use crate::catalog_views::extract_file_search_paths;
+use crate::catalog_views::extract_thread_ids;
+use crate::catalog_views::render_apps_list;
+use crate::catalog_views::render_experimental_features_list;
+use crate::catalog_views::render_fuzzy_file_search_results;
+use crate::catalog_views::render_models_list;
+use crate::catalog_views::render_thread_list;
 use crate::commands::builtin_command_names;
 use crate::commands::builtin_help_lines;
 use crate::commands::quote_if_needed;
@@ -6,14 +13,7 @@ use crate::history::latest_conversation_history_items;
 use crate::history::seed_resumed_state_from_turns;
 use crate::input::AppCatalogEntry;
 use crate::state::AppState;
-use crate::views::extract_file_search_paths;
-use crate::views::extract_thread_ids;
-use crate::views::render_apps_list;
-use crate::views::render_experimental_features_list;
-use crate::views::render_fuzzy_file_search_results;
-use crate::views::render_models_list;
-use crate::views::render_rate_limit_lines;
-use crate::views::render_thread_list;
+use crate::status_views::render_rate_limit_lines;
 use serde_json::Value;
 use serde_json::json;
 

@@ -1,18 +1,18 @@
 use crate::Cli;
+use crate::collaboration::CollaborationModePreset;
+use crate::collaboration::extract_collaboration_mode_presets;
 use crate::collaboration::render_collaboration_modes;
 use crate::collaboration::summarize_active_collaboration_mode;
+use crate::model_session::extract_models;
+use crate::model_session::render_personality_options;
 use crate::model_session::summarize_active_personality;
-use crate::session::CollaborationModePreset;
-use crate::session::extract_collaboration_mode_presets;
-use crate::session::extract_models;
-use crate::session::render_personality_options;
-use crate::session::render_prompt_status;
-use crate::session::render_realtime_item;
-use crate::session::render_status_snapshot;
-use crate::views::build_tool_user_input_response;
-use crate::views::render_reasoning_item;
-use crate::views::summarize_terminal_interaction;
-use crate::views::summarize_thread_status_for_display;
+use crate::session_prompt_status::render_prompt_status;
+use crate::session_realtime::render_realtime_item;
+use crate::session_snapshot::render_status_snapshot;
+use crate::transcript_render::build_tool_user_input_response;
+use crate::transcript_render::render_reasoning_item;
+use crate::transcript_summary::summarize_terminal_interaction;
+use crate::transcript_summary::summarize_thread_status_for_display;
 use serde_json::json;
 
 #[test]

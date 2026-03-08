@@ -35,7 +35,6 @@ mod requests;
 mod responses;
 mod rpc;
 mod runtime;
-mod session;
 mod session_prompt_status;
 mod session_realtime;
 mod session_snapshot;
@@ -45,8 +44,9 @@ mod status_views;
 mod transcript_render;
 mod transcript_summary;
 mod transcript_views;
-mod views;
 
+#[cfg(test)]
+mod editor_tests;
 #[cfg(test)]
 mod input_tests;
 #[cfg(test)]

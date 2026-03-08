@@ -51,7 +51,7 @@ The runtime has thirteen main layers.
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
 
 8. Session and turn orchestration
-   `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, `session_snapshot.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, and status snapshot generation. Production code now imports these concrete modules directly; `session.rs` is effectively test-facing compatibility glue and `session_status.rs` remains the small status facade.
+   `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, `session_snapshot.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, and status snapshot generation. `session_status.rs` remains the small status facade over the split session prompt/realtime/snapshot helpers.
 
 9. App runtime loop
    `app.rs` owns process wiring, the main event loop, and keyboard-event dispatch for the live interactive session.
@@ -60,22 +60,21 @@ The runtime has thirteen main layers.
    `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
 
 11. View and transcript rendering helpers
-   `views.rs`, `catalog_views.rs`, `status_views.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. Production code now imports the concrete catalog/status/transcript modules directly; `views.rs` and `transcript_views.rs` remain narrow compatibility facades for stable shared imports and tests.
+   `catalog_views.rs`, `status_views.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `transcript_views.rs` remains a narrow compatibility facade over the split transcript render and summary helpers.
 
 12. Human input handling
-   `editor.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `dispatch.rs`, and `dispatch_commands.rs` are compatibility facades over those splits.
+   `editor.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, `dispatch_command_utils.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, command dispatch, slash/file completion, mention decoding, attachment handling, catalog-driven mention resolution, and structured app-server user input construction. `input.rs`, `dispatch.rs`, and `dispatch_commands.rs` are compatibility facades over those splits.
 
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
 
-Session feature helpers are split across `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `session.rs` kept as test-facing compatibility glue and `session_status.rs` kept as the thin status facade.
+Session feature helpers are split across `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `session_status.rs` kept as the thin status facade.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers live in `app.rs`: backend/session startup, the top-level runtime loop, and input-key dispatch.
 Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
 Catalog display helpers live in `catalog_views.rs`: app/skill/model/MCP/thread listings and search-result rendering.
 Status display helpers live in `status_views.rs`: permission/config/account/rate-limit/token formatting plus generic value summarization.
 Transcript display helpers are split across `transcript_render.rs` and `transcript_summary.rs`, with `transcript_views.rs` kept as a thin compatibility facade over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
-Compatibility re-exports live in `views.rs`: stable import surface primarily for tests and a small shared runtime surface over the split display modules.
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
@@ -395,8 +394,6 @@ The biggest known limits are architectural, not accidental.
   App and skill catalog parsing for app-server payloads.
 - `wrapper/src/history.rs`
   Resume-preview extraction, resumed objective/reply seeding, and resumed conversation rendering.
-- `wrapper/src/views.rs`
-  Compatibility facade re-exporting the split display helpers.
 - `wrapper/src/catalog_views.rs`
   Catalog and list rendering for apps, skills, models, MCP servers, threads, and file-search results.
 - `wrapper/src/status_views.rs`
@@ -471,6 +468,8 @@ The biggest known limits are architectural, not accidental.
   Prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion helpers.
 - `wrapper/src/editor.rs`
   Inline line editor and editing semantics.
+- `wrapper/src/editor_tests.rs`
+  Crate-level regression tests for the inline editor.
 - `wrapper/src/output.rs`
   Prompt redraw, committed output, prompt visibility, output ordering.
 - `wrapper/src/render.rs`
