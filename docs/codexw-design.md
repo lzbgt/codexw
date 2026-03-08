@@ -369,13 +369,23 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_commands.rs`
   Slash-command completion, ordering, help-line, and quoting regression tests.
 - `wrapper/src/main_test_runtime.rs`
-  Runtime/editor/completion normalization and feedback-argument regression tests.
+  Compatibility hub for split runtime/editor/completion regression tests.
+- `wrapper/src/main_test_runtime_completion.rs`
+  Slash/file completion, builtin-command detection, and prompt visibility regression tests.
+- `wrapper/src/main_test_runtime_cli.rs`
+  CLI normalization, feedback parsing, and quoting regression tests.
 - `wrapper/src/main_test_session.rs`
   Compatibility hub for the split session-oriented regression tests.
 - `wrapper/src/main_test_session_render.rs`
   Tool-user-input, reasoning, terminal-interaction, and realtime-item rendering regression tests.
 - `wrapper/src/main_test_session_state.rs`
-  Session status, collaboration, personality, realtime-status, and thread-status regression tests.
+  Compatibility hub for split session-state/status regression tests.
+- `wrapper/src/main_test_session_collaboration.rs`
+  Collaboration preset extraction, rendering, and prompt-status regression tests.
+- `wrapper/src/main_test_session_models.rs`
+  Model/personality extraction and status-snapshot regression tests.
+- `wrapper/src/main_test_session_status.rs`
+  Thread-status, prompt-status, and realtime-status snapshot regression tests.
 - `wrapper/src/app.rs`
   Top-level runtime loop and backend wiring.
 - `wrapper/src/app_input.rs`
