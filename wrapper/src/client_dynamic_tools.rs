@@ -250,6 +250,18 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             }
         }),
         json!({
+            "name": "background_shell_set_alias",
+            "description": "Assign or clear a stable in-session alias for a background shell job by jobId, alias, or @capability. Pass `alias=null` to clear the current alias.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"},
+                    "alias": {"type": ["string", "null"]}
+                },
+                "required": ["jobId", "alias"]
+            }
+        }),
+        json!({
             "name": "background_shell_list_capabilities",
             "description": "List the reusable service capability registry, optionally filtered to healthy, missing, booting, or ambiguous capability states.",
             "inputSchema": {
@@ -512,6 +524,10 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
             .orchestration
             .background_shells
             .send_input_from_tool(arguments),
+        "background_shell_set_alias" => state
+            .orchestration
+            .background_shells
+            .update_alias_from_tool(arguments),
         "background_shell_list_capabilities" => state
             .orchestration
             .background_shells

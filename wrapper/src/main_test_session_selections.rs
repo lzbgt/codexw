@@ -582,6 +582,7 @@ fn new_thread_requests_advertise_client_dynamic_tools() {
             "background_shell_start",
             "background_shell_poll",
             "background_shell_send",
+            "background_shell_set_alias",
             "background_shell_list_capabilities",
             "background_shell_list_services",
             "background_shell_update_service",

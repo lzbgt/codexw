@@ -914,6 +914,46 @@ impl BackgroundShellManager {
         Ok(job_id)
     }
 
+    pub(crate) fn clear_job_alias_for_job(&self, job_id: &str) -> Result<(), String> {
+        let job = self.lookup_job(job_id)?;
+        let mut state = job.lock().expect("background shell job lock");
+        state.alias = None;
+        Ok(())
+    }
+
+    pub(crate) fn update_alias_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments
+            .as_object()
+            .ok_or_else(|| "background_shell_set_alias expects an object argument".to_string())?;
+        let job_id = object
+            .get("jobId")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_set_alias requires `jobId`".to_string())?;
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        match object.get("alias") {
+            Some(serde_json::Value::Null) => {
+                self.clear_job_alias_for_job(&resolved_job_id)?;
+                Ok(format!(
+                    "Cleared alias for background shell job {resolved_job_id}."
+                ))
+            }
+            Some(serde_json::Value::String(alias)) => {
+                self.set_job_alias(&resolved_job_id, alias)?;
+                Ok(format!(
+                    "Aliased background shell job {resolved_job_id} as {}.",
+                    validate_alias(alias)?
+                ))
+            }
+            Some(_) => {
+                Err("background_shell_set_alias `alias` must be a string or null".to_string())
+            }
+            None => Err("background_shell_set_alias requires `alias`".to_string()),
+        }
+    }
+
     pub(crate) fn poll_job(
         &self,
         job_id: &str,
