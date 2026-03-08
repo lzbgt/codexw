@@ -5,6 +5,7 @@ mod collaboration;
 mod commands;
 mod commands_catalog;
 mod commands_completion;
+mod commands_match;
 mod commands_metadata;
 mod dispatch;
 mod dispatch_command_session;

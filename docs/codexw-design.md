@@ -39,7 +39,7 @@ The runtime has thirteen main layers.
    `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/thread_lifecycle.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, and `requests/command_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. The older bootstrap/session request facades are gone; production code now imports the concrete helpers directly through `requests.rs`.
 
 4. Inbound event handling
-   `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, and `notification_turns.rs` are compatibility/router facades over the split inbound handlers.
+   `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, `notification_item_completion.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, delta/status buffering, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, and `notification_turns.rs` are compatibility/router facades over the split inbound handlers.
 
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
@@ -80,12 +80,12 @@ Catalog helpers live in `catalog.rs`: app and skill list extraction for the curr
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
 Command catalog helpers live in `commands_catalog.rs`: builtin command entries and stable command-name ordering.
 Command metadata helpers live in `commands_metadata.rs`: command descriptions and help-line generation over the shared command catalog.
-Command completion helpers live in `commands_completion.rs`: slash completion, fuzzy scoring, prefix logic, and generic quoting helpers.
+Command completion helpers live in `commands_completion.rs` and `commands_match.rs`: slash completion rendering stays in the facade while cursor parsing, fuzzy scoring, and prefix logic live in the extracted matcher module.
 Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, and `dispatch_command_session.rs` kept as thin compatibility facades for imports and tests.
 Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` and `input/input_decode.rs` kept as thin compatibility facades for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
 Response helpers are split across `response_success.rs` and `response_error.rs`, with `responses.rs` kept as a thin compatibility facade for JSON-RPC success/error handling of pending outbound requests.
-Notification helpers are split across `notification_realtime.rs`, `notification_turn_lifecycle.rs`, and `notification_turn_items.rs`, with `notifications.rs` and `notification_turns.rs` kept as thin compatibility facades over realtime, turn, item, and status notifications plus auto-continue turn chaining.
+Notification helpers are split across `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, and `notification_item_completion.rs`, with `notifications.rs` and `notification_turns.rs` kept as thin compatibility facades over realtime, turn, item, and status notifications plus auto-continue turn chaining.
 
 ## Process Model
 
@@ -388,7 +388,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/notification_turn_lifecycle.rs`
   Skill-change, turn lifecycle, and auto-continue notification handling.
 - `wrapper/src/notification_turn_items.rs`
-  Turn item, diff/plan, process-delta, and completion rendering notification handling.
+  Thin router for split turn-item update and completion handlers.
+- `wrapper/src/notification_item_updates.rs`
+  Turn-item delta/status updates, verbose event reporting, and live status buffering.
+- `wrapper/src/notification_item_completion.rs`
+  Turn-item completion rendering for assistant text, commands, file changes, reasoning, and tool items.
 - `wrapper/src/notification_turns.rs`
   Compatibility facade routing turn notifications to lifecycle and item handlers.
 - `wrapper/src/catalog.rs`
@@ -444,7 +448,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/commands_metadata.rs`
   Command descriptions and help-line generation over the shared command catalog.
 - `wrapper/src/commands_completion.rs`
-  Slash completion, fuzzy scoring, prefix helpers, and quote-if-needed rendering.
+  Slash-completion facade and candidate rendering over the split command-matching helpers.
+- `wrapper/src/commands_match.rs`
+  Slash-command cursor parsing, fuzzy scoring, and longest-common-prefix helpers.
 - `wrapper/src/input.rs`
   Compatibility facade for the split input layer.
 - `wrapper/src/input/input_types.rs`
