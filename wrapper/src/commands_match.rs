@@ -19,18 +19,16 @@ pub(crate) fn longest_common_prefix<S: AsRef<str>>(values: &[S]) -> String {
     prefix
 }
 
-pub(crate) fn slash_command_at_cursor<'a>(
-    buffer: &'a str,
+pub(crate) fn slash_command_at_cursor(
+    buffer: &str,
     cursor_byte: usize,
-) -> Option<(usize, usize, &'a str)> {
+) -> Option<(usize, usize, &str)> {
     let first_line_end = buffer.find('\n').unwrap_or(buffer.len());
     if cursor_byte > first_line_end {
         return None;
     }
     let first_line = &buffer[..first_line_end];
-    let Some(stripped) = first_line.strip_prefix('/') else {
-        return None;
-    };
+    let stripped = first_line.strip_prefix('/')?;
     let name_end = stripped
         .char_indices()
         .find(|(_, ch)| ch.is_whitespace())

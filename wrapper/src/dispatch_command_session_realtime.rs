@@ -28,7 +28,8 @@ pub(crate) fn handle_realtime_command(
         return Ok(Some(true));
     };
     if args.is_empty() || matches!(args[0], "status" | "show") {
-        return Ok(None);
+        output.block_stdout("Realtime", &render_realtime_status(state))?;
+        return Ok(Some(true));
     }
     match args[0] {
         "start" => {

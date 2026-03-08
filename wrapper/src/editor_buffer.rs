@@ -6,6 +6,10 @@ use crate::editor::grapheme_is_whitespace;
 use crate::editor::grapheme_to_byte_index;
 
 impl LineEditor {
+    fn current_line_range(&self) -> (usize, usize) {
+        (self.current_line_start(), self.current_line_end())
+    }
+
     fn current_line_start(&self) -> usize {
         let graphemes = self.buffer.graphemes(true).collect::<Vec<_>>();
         let mut start = self.cursor_chars.min(graphemes.len());
@@ -77,6 +81,38 @@ impl LineEditor {
 
     pub fn move_end(&mut self) {
         self.cursor_chars = self.current_line_end();
+    }
+
+    pub fn move_up(&mut self) {
+        let graphemes = self.buffer.graphemes(true).collect::<Vec<_>>();
+        let (current_start, _) = self.current_line_range();
+        if current_start == 0 {
+            return;
+        }
+
+        let target_col = self.cursor_chars.saturating_sub(current_start);
+        let previous_end = current_start.saturating_sub(1);
+        let mut previous_start = previous_end;
+        while previous_start > 0 && graphemes[previous_start - 1] != "\n" {
+            previous_start -= 1;
+        }
+        self.cursor_chars = previous_start + target_col.min(previous_end - previous_start);
+    }
+
+    pub fn move_down(&mut self) {
+        let graphemes = self.buffer.graphemes(true).collect::<Vec<_>>();
+        let (current_start, current_end) = self.current_line_range();
+        if current_end >= graphemes.len() {
+            return;
+        }
+
+        let target_col = self.cursor_chars.saturating_sub(current_start);
+        let next_start = current_end + 1;
+        let mut next_end = next_start;
+        while next_end < graphemes.len() && graphemes[next_end] != "\n" {
+            next_end += 1;
+        }
+        self.cursor_chars = next_start + target_col.min(next_end - next_start);
     }
 
     pub fn clear_to_start(&mut self) {

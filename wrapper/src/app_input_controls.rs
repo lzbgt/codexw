@@ -10,6 +10,7 @@ use crate::app_input_editor::handle_submit;
 use crate::app_input_interrupt::handle_ctrl_c;
 use crate::app_input_interrupt::handle_escape;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn handle_control_key(
     key: InputKey,
     cli: &Cli,
@@ -24,8 +25,13 @@ pub(crate) fn handle_control_key(
         InputKey::Esc => handle_escape(state, editor, output, writer, accepts_input),
         InputKey::CtrlC => handle_ctrl_c(state, editor, output, writer),
         InputKey::Enter => {
-            let continue_running = handle_submit(cli, resolved_cwd, state, editor, output, writer)?;
-            Ok(Some(continue_running))
+            if accepts_input {
+                let continue_running =
+                    handle_submit(cli, resolved_cwd, state, editor, output, writer)?;
+                Ok(Some(continue_running))
+            } else {
+                Ok(Some(true))
+            }
         }
         _ => Ok(None),
     }

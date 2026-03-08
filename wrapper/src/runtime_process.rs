@@ -14,11 +14,12 @@ pub(crate) struct StartMode {
 }
 
 pub(crate) fn normalize_cli(mut cli: Cli) -> Cli {
-    if cli.resume.is_none() && matches!(cli.prompt.first().map(String::as_str), Some("resume")) {
-        if let Some(thread_id) = cli.prompt.get(1).cloned() {
-            cli.resume = Some(thread_id);
-            cli.prompt.drain(0..2);
-        }
+    if cli.resume.is_none()
+        && matches!(cli.prompt.first().map(String::as_str), Some("resume"))
+        && let Some(thread_id) = cli.prompt.get(1).cloned()
+    {
+        cli.resume = Some(thread_id);
+        cli.prompt.drain(0..2);
     }
     cli
 }

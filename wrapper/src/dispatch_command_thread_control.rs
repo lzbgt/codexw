@@ -13,6 +13,7 @@ use crate::requests::send_turn_interrupt;
 use crate::state::AppState;
 use crate::state::thread_id;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn try_handle_thread_control_command(
     command: &str,
     _args: &[&str],

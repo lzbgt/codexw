@@ -12,9 +12,18 @@ pub(crate) fn handle_runtime_error(
     output: &mut Output,
 ) -> Result<bool> {
     match pending {
-        PendingRequest::StartRealtime { .. }
-        | PendingRequest::AppendRealtimeText { .. }
-        | PendingRequest::StopRealtime => {
+        PendingRequest::StartRealtime { .. } => {
+            state.realtime_active = false;
+            state.realtime_session_id = None;
+            state.realtime_started_at = None;
+            state.realtime_prompt = None;
+            output.line_stderr("[realtime] request failed")?;
+            output.line_stderr(format!(
+                "[server-error] {}",
+                serde_json::to_string_pretty(error)?
+            ))?;
+        }
+        PendingRequest::AppendRealtimeText { .. } | PendingRequest::StopRealtime => {
             output.line_stderr("[realtime] request failed")?;
             output.line_stderr(format!(
                 "[server-error] {}",

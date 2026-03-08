@@ -30,8 +30,20 @@ pub(crate) fn handle_editor_key(
         InputKey::Right => editor.move_right(),
         InputKey::Home | InputKey::CtrlA => editor.move_home(),
         InputKey::End | InputKey::CtrlE => editor.move_end(),
-        InputKey::Up => editor.history_prev(),
-        InputKey::Down => editor.history_next(),
+        InputKey::Up => {
+            if editor.is_multiline() {
+                editor.move_up();
+            } else {
+                editor.history_prev();
+            }
+        }
+        InputKey::Down => {
+            if editor.is_multiline() {
+                editor.move_down();
+            } else {
+                editor.history_next();
+            }
+        }
         InputKey::Tab => handle_tab_completion(editor, state, resolved_cwd, output)?,
         InputKey::CtrlU => editor.clear_to_start(),
         InputKey::CtrlW => editor.delete_prev_word(),
@@ -124,6 +136,10 @@ pub(crate) fn handle_submit(
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<bool> {
+    if state.active_exec_process_id.is_some() {
+        return Ok(true);
+    }
+
     match editor.submit() {
         EditorEvent::Submit(line) => {
             output.commit_prompt(&line)?;

@@ -40,6 +40,7 @@ fn send_initial_thread_prompt(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn handle_loaded_thread(
     result: &Value,
     cli: &Cli,

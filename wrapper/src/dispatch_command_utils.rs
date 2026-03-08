@@ -25,9 +25,7 @@ pub(crate) fn parse_feedback_args(args: &[String]) -> Option<FeedbackCommand> {
             _ => filtered.push(arg.as_str()),
         }
     }
-    let Some(first) = filtered.first() else {
-        return None;
-    };
+    let first = filtered.first()?;
     let classification = normalize_feedback_classification(first)?;
     let reason = join_prompt(
         &filtered[1..]

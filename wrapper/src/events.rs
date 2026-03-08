@@ -45,6 +45,8 @@ mod notification_realtime;
 
 #[cfg(test)]
 pub(crate) use crate::event_request_approvals::params_auto_approval_result;
+#[cfg(test)]
+pub(crate) use notification_realtime::handle_realtime_notification;
 
 pub(crate) fn process_server_line(
     line: String,
@@ -130,6 +132,7 @@ fn handle_response_error(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_response_success(
     result: Value,
     pending: PendingRequest,
@@ -165,6 +168,7 @@ fn handle_response_success(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_bootstrap_response_success(
     result: &Value,
     pending: &PendingRequest,

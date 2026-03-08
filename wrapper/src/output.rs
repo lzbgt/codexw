@@ -27,6 +27,15 @@ pub struct Output {
     pub(crate) prompt_rows: usize,
     pub(crate) prompt_cursor_row: usize,
     pub(crate) status_rows: usize,
+    last_frame: Option<PromptFrame>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PromptFrame {
+    status: Option<String>,
+    lines: Vec<String>,
+    cursor_row: usize,
+    cursor_col: usize,
 }
 
 impl Output {
@@ -111,13 +120,28 @@ impl Output {
             .unwrap_or(120);
         let (lines, cursor_row, cursor_col) =
             render_prompt_lines(prompt, buffer, cursor_chars, terminal_width);
+        let status_line = self
+            .status
+            .as_deref()
+            .map(|status| fit_status_line(status, terminal_width));
+        let next_frame = PromptFrame {
+            status: status_line.clone(),
+            lines: lines.clone(),
+            cursor_row,
+            cursor_col,
+        };
+        if (self.prompt_rows > 0 || self.status_rows > 0)
+            && self.last_frame.as_ref() == Some(&next_frame)
+        {
+            return Ok(());
+        }
+
         let mut stderr = io::stderr();
         if self.prompt_rows > 0 || self.status_rows > 0 {
             self.hide_ui()?;
         }
-        if let Some(status) = self.status.as_deref() {
-            let fitted = fit_status_line(status, terminal_width);
-            write!(stderr, "\r{}\x1b[K\r\n", render_line_to_ansi(&fitted))?;
+        if let Some(status) = status_line.as_deref() {
+            write!(stderr, "\r{}\x1b[K\r\n", render_line_to_ansi(status))?;
             self.status_rows = 1;
         } else {
             self.status_rows = 0;
@@ -136,6 +160,7 @@ impl Output {
         stderr.flush()?;
         self.prompt_rows = lines.len();
         self.prompt_cursor_row = cursor_row;
+        self.last_frame = Some(next_frame);
         Ok(())
     }
 

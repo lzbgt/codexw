@@ -5,10 +5,7 @@ use crate::history_text::sanitize_history_text;
 use crate::state::AppState;
 use crate::state::get_string;
 
-pub(crate) fn latest_conversation_history_items<'a>(
-    turns: &'a [Value],
-    limit: usize,
-) -> Vec<&'a Value> {
+pub(crate) fn latest_conversation_history_items(turns: &[Value], limit: usize) -> Vec<&Value> {
     let mut items = Vec::with_capacity(limit);
     for turn in turns.iter().rev() {
         if let Some(turn_items) = turn.get("items").and_then(Value::as_array) {

@@ -63,7 +63,7 @@ pub(crate) fn render_command_text(body: &str) -> Text<'static> {
                 || line.starts_with("[stdout]")
                 || line.starts_with("[stderr]")
             {
-                Line::from(style_status_line(line))
+                style_status_line(line)
             } else if let Some((label, value)) = split_kv_label(line) {
                 Line::from(vec![
                     Span::styled(

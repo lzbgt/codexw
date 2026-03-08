@@ -12,6 +12,7 @@ use crate::state::AppState;
 use crate::state::summarize_text;
 use crate::state::thread_id;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn try_handle_thread_review_command(
     command: &str,
     args: &[&str],

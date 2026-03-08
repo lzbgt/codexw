@@ -187,6 +187,7 @@ pub(crate) fn handle_command(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn try_handle_thread_workspace_command(
     command: &str,
     args: &[&str],

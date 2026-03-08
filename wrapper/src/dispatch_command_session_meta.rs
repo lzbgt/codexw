@@ -11,6 +11,7 @@ use crate::requests::send_logout_account;
 use crate::state::AppState;
 use crate::state::summarize_text;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn try_handle_session_meta_command(
     command: &str,
     args: &[&str],

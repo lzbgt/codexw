@@ -125,6 +125,26 @@ fn home_and_end_stay_within_current_multiline_segment() {
 }
 
 #[test]
+fn up_and_down_move_within_multiline_draft_instead_of_history() {
+    let mut editor = LineEditor::default();
+    editor.insert_str("alpha\nbeta\ngamma");
+    editor.move_home();
+    assert_eq!(editor.cursor_chars(), "alpha\nbeta\n".chars().count());
+    editor.move_up();
+    assert_eq!(editor.cursor_chars(), "alpha\n".chars().count());
+
+    editor.move_up();
+    assert_eq!(editor.cursor_chars(), 0);
+
+    editor.move_down();
+    assert_eq!(editor.cursor_chars(), "alpha\n".chars().count());
+
+    editor.move_end();
+    editor.move_down();
+    assert_eq!(editor.cursor_chars(), "alpha\nbeta\ngamm".chars().count());
+}
+
+#[test]
 fn ctrl_u_clears_only_current_multiline_segment_prefix() {
     let mut editor = LineEditor::default();
     editor.insert_str("alpha\nbeta");

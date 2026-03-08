@@ -15,7 +15,7 @@ pub(crate) fn summarize_thread_status_for_display(params: &Value) -> Option<Stri
         return None;
     }
 
-    if flags.iter().any(|flag| *flag == "waitingOnApproval") {
+    if flags.contains(&"waitingOnApproval") {
         return Some("waiting on approval".to_string());
     }
 

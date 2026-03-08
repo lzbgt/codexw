@@ -1,3 +1,5 @@
+use crate::Cli;
+use crate::app_input_editor::handle_submit;
 use crate::app_input_editor::try_complete_file_token;
 use crate::app_input_interrupt::handle_ctrl_c;
 use crate::app_input_interrupt::handle_escape;
@@ -131,4 +133,48 @@ fn escape_preserves_draft_while_interrupting_active_turn() {
         handle_escape(&mut state, &mut editor, &mut output, &mut writer, true).expect("escape");
     assert!(result.is_none());
     assert_eq!(editor.buffer(), "first\nsecond");
+}
+
+#[test]
+fn submit_is_ignored_while_local_command_is_active() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    state.active_exec_process_id = Some("proc-1".to_string());
+
+    let cli = crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        prompt: Vec::new(),
+    });
+
+    let mut editor = LineEditor::default();
+    editor.insert_str("should stay buffered");
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    let continue_running = handle_submit(
+        &cli,
+        "/tmp",
+        &mut state,
+        &mut editor,
+        &mut output,
+        &mut writer,
+    )
+    .expect("submit");
+
+    assert!(continue_running);
+    assert_eq!(editor.buffer(), "should stay buffered");
+    assert_eq!(editor.history.len(), 0);
 }

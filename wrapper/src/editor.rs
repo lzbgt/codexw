@@ -35,6 +35,11 @@ impl LineEditor {
     pub fn cursor_byte_index(&self) -> usize {
         grapheme_to_byte_index(&self.buffer, self.cursor_chars)
     }
+
+    pub(crate) fn is_multiline(&self) -> bool {
+        self.buffer.contains('\n')
+    }
+
     pub(crate) fn grapheme_len(&self) -> usize {
         grapheme_count(&self.buffer)
     }

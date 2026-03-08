@@ -13,6 +13,7 @@ use crate::state::AppState;
 use crate::status_config::render_permissions_snapshot;
 use crate::transcript_completion_render::render_pending_attachments;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn try_handle_session_status_command(
     command: &str,
     args: &[&str],

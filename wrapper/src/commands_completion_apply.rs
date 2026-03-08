@@ -15,10 +15,7 @@ pub(crate) fn try_complete_slash_command(
     buffer: &str,
     cursor_byte: usize,
 ) -> Option<SlashCompletionResult> {
-    let Some((command_start, command_end, prefix)) = slash_command_at_cursor(buffer, cursor_byte)
-    else {
-        return None;
-    };
+    let (command_start, command_end, prefix) = slash_command_at_cursor(buffer, cursor_byte)?;
 
     let mut prefix_matches = builtin_command_names()
         .into_iter()

@@ -136,6 +136,8 @@ mod main_test_session_model_catalog;
 #[cfg(test)]
 mod main_test_session_personality_status;
 #[cfg(test)]
+mod main_test_session_realtime;
+#[cfg(test)]
 mod main_test_session_render;
 #[cfg(test)]
 mod main_test_session_status;

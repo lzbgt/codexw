@@ -83,6 +83,7 @@ pub(crate) fn handle_realtime_notification(
             state.realtime_active = false;
             state.realtime_session_id = None;
             state.realtime_started_at = None;
+            state.realtime_prompt = None;
             if let Some(reason) = reason {
                 output.line_stderr(format!("[realtime] closed: {reason}"))?;
             } else {
