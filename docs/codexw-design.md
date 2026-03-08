@@ -356,7 +356,9 @@ The biggest known limits are architectural, not accidental.
 ## File Map
 
 - `wrapper/src/main.rs`
-  Thin entrypoint plus tests.
+  Thin entrypoint, module wiring, CLI flag definitions, and `main()`.
+- `wrapper/src/main_tests.rs`
+  Crate-level regression tests for CLI normalization, completions, rendering summaries, and cross-module behaviors.
 - `wrapper/src/app.rs`
   Top-level runtime loop, backend wiring, and input-key dispatch.
 - `wrapper/src/policy.rs`
