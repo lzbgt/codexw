@@ -405,7 +405,7 @@ fn ready_status_mentions_blocking_prereqs_services_and_terminals() {
 
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("blocked on 1 prerequisite shell"));
-    assert!(rendered.contains("1 service"));
+    assert!(rendered.contains("1 service untracked"));
     assert!(rendered.contains("1 terminal"));
     assert!(rendered.contains("/ps to view"));
     let _ = state.background_shells.terminate_all_running();
@@ -476,7 +476,7 @@ fn status_overview_reports_orchestration_breakdown() {
 
     let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
     assert!(rendered.contains(
-        "orchestration   main=1 deps_blocking=0 deps_sidecar=2 waits=0 sidecar_agents=1 exec_prereqs=0 exec_sidecars=1 exec_services=0 agents_live=1 agents_cached=2"
+        "orchestration   main=1 deps_blocking=0 deps_sidecar=2 waits=0 sidecar_agents=1 exec_prereqs=0 exec_sidecars=1 exec_services=0 services_ready=0 services_booting=0 services_untracked=0 agents_live=1 agents_cached=2"
     ));
     assert!(rendered.contains("active=1"));
     assert!(rendered.contains("idle=1"));
@@ -521,7 +521,9 @@ fn status_runtime_reports_background_classes() {
 
     let rendered = render_status_runtime(&cli, &state).join("\n");
     assert!(rendered.contains("background      4"));
-    assert!(rendered.contains("background cls  prereqs=1 shell_sidecars=1 services=1 terminals=1"));
+    assert!(rendered.contains(
+        "background cls  prereqs=1 shell_sidecars=1 services=1 services_ready=0 services_booting=0 services_untracked=1 terminals=1"
+    ));
     let _ = state.background_shells.terminate_all_running();
 }
 

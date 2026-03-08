@@ -5,6 +5,7 @@ use serde_json::Value;
 
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellJobSnapshot;
+use crate::background_shells::BackgroundShellServiceReadiness;
 use crate::orchestration_view::CachedAgentThreadSummary;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -252,6 +253,15 @@ pub(crate) fn running_shell_count_by_intent(
     intent: BackgroundShellIntent,
 ) -> usize {
     state.background_shells.running_count_by_intent(intent)
+}
+
+pub(crate) fn running_service_count_by_readiness(
+    state: &AppState,
+    readiness: BackgroundShellServiceReadiness,
+) -> usize {
+    state
+        .background_shells
+        .running_service_count_by_readiness(readiness)
 }
 
 fn known_agent_thread_ids(state: &AppState) -> BTreeSet<String> {

@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::background_shells::BackgroundShellIntent;
+use crate::background_shells::BackgroundShellServiceReadiness;
 use crate::background_terminals::render_background_terminals;
 use crate::background_terminals::server_background_terminal_count;
 use crate::orchestration_registry::LiveAgentTaskSummary;
@@ -9,6 +10,7 @@ use crate::orchestration_registry::active_wait_task_count;
 use crate::orchestration_registry::blocking_dependency_count;
 use crate::orchestration_registry::main_agent_state_label;
 use crate::orchestration_registry::orchestration_dependency_edges;
+use crate::orchestration_registry::running_service_count_by_readiness;
 use crate::orchestration_registry::running_shell_count_by_intent;
 use crate::orchestration_registry::sidecar_dependency_count;
 use crate::orchestration_registry::task_role;
@@ -57,7 +59,7 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
     let snapshot = orchestration_snapshot(state);
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -66,6 +68,9 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
         running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
         running_shell_count_by_intent(state, BackgroundShellIntent::Service),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
         snapshot.live_agent_tasks.len(),
         snapshot.cached_agent_threads.len(),
         if agent_counts.is_empty() {
@@ -89,7 +94,7 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
     }
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     Some(format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} agent_tasks={} shells={} thread_terms={} agents={}{}",
         main_agent_state_label(state),
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -98,6 +103,9 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
         running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
         running_shell_count_by_intent(state, BackgroundShellIntent::Service),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
         snapshot.live_agent_tasks.len(),
         snapshot.background_shell_jobs,
         snapshot.thread_background_terminals,
@@ -115,9 +123,21 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
     let sidecars = active_sidecar_agent_task_count(state)
         + running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
-    let services = running_shell_count_by_intent(state, BackgroundShellIntent::Service);
+    let services_ready =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+    let services_booting =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+    let services_untracked =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
     let terminals = server_background_terminal_count(state);
-    if waits == 0 && prereqs == 0 && sidecars == 0 && services == 0 && terminals == 0 {
+    if waits == 0
+        && prereqs == 0
+        && sidecars == 0
+        && services_ready == 0
+        && services_booting == 0
+        && services_untracked == 0
+        && terminals == 0
+    {
         return None;
     }
 
@@ -144,8 +164,23 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
     if sidecars > 0 {
         parts.push(pluralize(sidecars, "sidecar", "sidecars"));
     }
-    if services > 0 {
-        parts.push(pluralize(services, "service", "services"));
+    if services_booting > 0 {
+        parts.push(format!(
+            "{} booting",
+            pluralize(services_booting, "service", "services")
+        ));
+    }
+    if services_ready > 0 {
+        parts.push(format!(
+            "{} ready",
+            pluralize(services_ready, "service", "services")
+        ));
+    }
+    if services_untracked > 0 {
+        parts.push(format!(
+            "{} untracked",
+            pluralize(services_untracked, "service", "services")
+        ));
     }
     if terminals > 0 {
         parts.push(pluralize(terminals, "terminal", "terminals"));
@@ -159,12 +194,17 @@ pub(crate) fn orchestration_background_summary(state: &AppState) -> Option<Strin
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
     let sidecars = running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
     let services = running_shell_count_by_intent(state, BackgroundShellIntent::Service);
+    let ready = running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+    let booting =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+    let untracked =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
     let terminals = server_background_terminal_count(state);
     if prereqs == 0 && sidecars == 0 && services == 0 && terminals == 0 {
         None
     } else {
         Some(format!(
-            "prereqs={prereqs} shell_sidecars={sidecars} services={services} terminals={terminals}"
+            "prereqs={prereqs} shell_sidecars={sidecars} services={services} services_ready={ready} services_booting={booting} services_untracked={untracked} terminals={terminals}"
         ))
     }
 }
@@ -260,11 +300,14 @@ fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<Stri
         main_line.push_str(&format!(" | {waiting_on}"));
     }
     main_line.push_str(&format!(
-        " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} | deps blocking={} sidecar={}",
+        " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} (ready={} booting={} untracked={}) | deps blocking={} sidecar={}",
         active_sidecar_agent_task_count(state),
         running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
         running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
         running_shell_count_by_intent(state, BackgroundShellIntent::Service),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
         blocking_dependency_count(state),
         sidecar_dependency_count(state)
     ));
@@ -434,6 +477,9 @@ mod tests {
         assert!(summary.contains("exec_prereqs=0"));
         assert!(summary.contains("exec_sidecars=0"));
         assert!(summary.contains("exec_services=0"));
+        assert!(summary.contains("services_ready=0"));
+        assert!(summary.contains("services_booting=0"));
+        assert!(summary.contains("services_untracked=0"));
         assert!(summary.contains("agents_live=0"));
         assert!(summary.contains("agents_cached=2"));
         assert!(summary.contains("active=1"));
@@ -492,13 +538,14 @@ mod tests {
 
         let suffix = orchestration_prompt_suffix(&state).expect("prompt suffix");
         assert!(suffix.contains("blocked on 1 agent wait and 1 prerequisite shell"));
-        assert!(suffix.contains("1 service"));
+        assert!(suffix.contains("1 service untracked"));
         assert!(suffix.contains("1 terminal"));
         assert!(suffix.contains("/ps to view"));
         let background = orchestration_background_summary(&state).expect("background summary");
         assert!(background.contains("prereqs=1"));
         assert!(background.contains("shell_sidecars=0"));
         assert!(background.contains("services=1"));
+        assert!(background.contains("services_untracked=1"));
         assert!(background.contains("terminals=1"));
         let _ = state.background_shells.terminate_all_running();
     }
@@ -551,7 +598,7 @@ mod tests {
         let rendered = render_orchestration_workers(&state);
         assert!(rendered.contains("Main agent state: blocked | waiting on agent agent-1"));
         assert!(rendered.contains(
-            "sidecar agents=1 | exec prereqs=0 | exec sidecars=0 | exec services=0 | deps blocking=1 sidecar=1"
+            "sidecar agents=1 | exec prereqs=0 | exec sidecars=0 | exec services=0 (ready=0 booting=0 untracked=0) | deps blocking=1 sidecar=1"
         ));
         assert!(rendered.contains("Dependencies:"));
         assert!(rendered.contains("main -> agent:agent-1  [wait, blocking]"));
@@ -629,12 +676,71 @@ mod tests {
         assert!(services.contains("Local background shell jobs:"));
         assert!(services.contains("intent   service"));
         assert!(services.contains("label    dev server"));
+        assert!(services.contains("service  untracked"));
         assert!(!services.contains("intent   prerequisite"));
 
         let terminals = render_orchestration_workers_with_filter(&state, WorkerFilter::Terminals);
         assert!(terminals.contains("Server-observed background terminals:"));
         assert!(terminals.contains("python worker.py"));
         assert!(!terminals.contains("Local background shell jobs:"));
+        let _ = state.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn orchestration_service_counts_distinguish_ready_booting_and_untracked() {
+        let mut state = crate::state::AppState::new(true, false);
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": if cfg!(windows) {
+                        "echo READY && ping -n 2 127.0.0.1 >NUL"
+                    } else {
+                        "printf 'READY\\n'; sleep 0.4"
+                    },
+                    "intent": "service",
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start ready service");
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start booting service");
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({"command": "sleep 0.4", "intent": "service"}),
+                "/tmp",
+            )
+            .expect("start untracked service");
+
+        for _ in 0..40 {
+            let summary = orchestration_background_summary(&state).expect("background summary");
+            if summary.contains("services_ready=1") {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+
+        let summary = orchestration_overview_summary(&state);
+        assert!(summary.contains("exec_services=3"));
+        assert!(summary.contains("services_ready=1"));
+        assert!(summary.contains("services_booting=1"));
+        assert!(summary.contains("services_untracked=1"));
+
+        let suffix = orchestration_prompt_suffix(&state).expect("prompt suffix");
+        assert!(suffix.contains("1 service ready"));
+        assert!(suffix.contains("1 service booting"));
+        assert!(suffix.contains("1 service untracked"));
         let _ = state.background_shells.terminate_all_running();
     }
 }

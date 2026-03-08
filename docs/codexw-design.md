@@ -199,6 +199,7 @@ The current `codexw` implementation now reflects that model partially:
   - `observation` for non-blocking sidecar execution such as tests, searches, or crawls
   - `service` for reusable long-lived helpers such as dev servers
   - optional `label` text for operator-facing status and `/ps` output
+  - optional `readyPattern` text for service jobs, so the wrapper can promote them from `booting` to `ready` when logs match a concrete milestone
 - live `collabAgentToolCall` items are now tracked as in-turn cognitive work:
   - active collab-agent calls are kept in a live registry while the turn is running
   - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
@@ -215,6 +216,10 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps send <jobId|alias|n> <text>` sends targeted stdin back into one wrapper-owned shell job without blocking the turn
   - `:ps terminate <jobId|n>` stops one wrapper-owned shell job without touching the others
   - job references accept either stable ids like `bg-2`, session-local aliases, or the current 1-based sorted shell index
+- service shells now have explicit readiness state when the job declared `readyPattern`:
+  - `booting` while the process is running but the ready pattern has not been observed yet
+  - `ready` once output matches the declared pattern
+  - `untracked` when the job is a service shell but no readiness contract was declared
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
   - `:ps unalias <name>` removes that alias
@@ -234,6 +239,7 @@ The current `codexw` implementation now reflects that model partially:
   - live execution-prerequisite count from wrapper background shells marked `prerequisite`
   - live execution-sidecar count from wrapper background shells marked `observation`
   - live execution-service count from wrapper background shells marked `service`
+  - live ready, booting, and untracked service-shell counts within that execution-service class
   - live collab-agent task count from the current turn
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
   - wrapper-owned background shell count
@@ -241,11 +247,12 @@ The current `codexw` implementation now reflects that model partially:
 - the ready prompt now consumes the same orchestration state:
   - it reports when the main agent is blocked on prerequisite shells or agent waits
   - it distinguishes sidecars, reusable services, and server terminals instead of showing only a flat background-task count
+  - reusable services can now surface as `booting`, `ready`, or `untracked` directly in that prompt suffix
   - it keeps `/ps` and `/clean` as the action hints for inspecting or stopping async work
 - that orchestration state is now actionable from `/ps` itself, not just visible:
   - the full worker view remains the default
   - filtered `/ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
-- `/status` runtime output also exposes a compact `background cls` line with the shell-intent and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking or merely observational
+- `/status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
 
 The next architectural step, if deeper orchestration is needed, is a unified worker/task registry that gives the wrapper one internal model for:
 
@@ -450,7 +457,7 @@ Current user-facing capabilities include:
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
 - backend-backed `/agent` and `/multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
-- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_list`, `background_shell_terminate`)
+- client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_list`, `background_shell_terminate`), including service readiness contracts via `readyPattern`
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
 - live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with scoped cleanup for local shell classes and backend-tracked terminals

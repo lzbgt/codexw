@@ -50,6 +50,23 @@ impl BackgroundShellIntent {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BackgroundShellServiceReadiness {
+    Booting,
+    Ready,
+    Untracked,
+}
+
+impl BackgroundShellServiceReadiness {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Booting => "booting",
+            Self::Ready => "ready",
+            Self::Untracked => "untracked",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct BackgroundShellOrigin {
     pub(crate) source_thread_id: Option<String>,
@@ -77,6 +94,8 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) intent: BackgroundShellIntent,
     pub(crate) label: Option<String>,
     pub(crate) alias: Option<String>,
+    pub(crate) ready_pattern: Option<String>,
+    pub(crate) service_readiness: Option<BackgroundShellServiceReadiness>,
     pub(crate) origin: BackgroundShellOrigin,
     pub(crate) status: String,
     pub(crate) exit_code: Option<i32>,
@@ -93,6 +112,8 @@ struct BackgroundShellJobState {
     intent: BackgroundShellIntent,
     label: Option<String>,
     alias: Option<String>,
+    ready_pattern: Option<String>,
+    service_ready: bool,
     origin: BackgroundShellOrigin,
     stdin: Option<ChildStdin>,
     status: BackgroundShellJobStatus,
@@ -145,6 +166,13 @@ impl BackgroundShellManager {
         )?;
         let intent = parse_background_shell_intent(object.get("intent"))?;
         let label = parse_background_shell_label(object.get("label"));
+        let ready_pattern = parse_background_shell_ready_pattern(object.get("readyPattern"))?;
+        if ready_pattern.is_some() && intent != BackgroundShellIntent::Service {
+            return Err(
+                "background_shell_start `readyPattern` is only supported when `intent=service`"
+                    .to_string(),
+            );
+        }
         let job_id = format!(
             "bg-{}",
             self.inner.next_job_id.fetch_add(1, Ordering::Relaxed) + 1
@@ -171,6 +199,8 @@ impl BackgroundShellManager {
             intent,
             label: label.clone(),
             alias: None,
+            ready_pattern: ready_pattern.clone(),
+            service_ready: false,
             origin: origin.clone(),
             stdin: Some(stdin),
             status: BackgroundShellJobStatus::Running,
@@ -212,6 +242,12 @@ impl BackgroundShellManager {
         ];
         if let Some(label) = label {
             lines.insert(4, format!("Label: {label}"));
+        }
+        if let Some(ready_pattern) = ready_pattern.as_deref() {
+            lines.push(format!("Ready pattern: {ready_pattern}"));
+            lines.push("Service state: booting".to_string());
+        } else if intent == BackgroundShellIntent::Service {
+            lines.push("Service state: untracked".to_string());
         }
         lines.push(format!(
             "Use background_shell_poll with {{\"jobId\":\"{job_id}\"}} to inspect output while continuing other work."
@@ -263,6 +299,12 @@ impl BackgroundShellManager {
         if let Some(alias) = state.alias.as_deref() {
             lines.push(format!("Alias: {alias}"));
         }
+        if let Some(ready_pattern) = state.ready_pattern.as_deref() {
+            lines.push(format!("Ready pattern: {ready_pattern}"));
+        }
+        if let Some(service_readiness) = service_readiness_for_state(&state) {
+            lines.push(format!("Service state: {}", service_readiness.as_str()));
+        }
         if let Some(source_thread_id) = state.origin.source_thread_id.as_deref() {
             lines.push(format!("Source thread: {source_thread_id}"));
         }
@@ -312,6 +354,9 @@ impl BackgroundShellManager {
             }
             if let Some(alias) = snapshot.alias.as_deref() {
                 line.push_str(&format!("  alias={alias}"));
+            }
+            if let Some(service_readiness) = snapshot.service_readiness {
+                line.push_str(&format!("  service={}", service_readiness.as_str()));
             }
             if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
                 line.push_str(&format!("  source={source_thread_id}"));
@@ -483,6 +528,21 @@ impl BackgroundShellManager {
             .count()
     }
 
+    pub(crate) fn running_service_count_by_readiness(
+        &self,
+        readiness: BackgroundShellServiceReadiness,
+    ) -> usize {
+        self.snapshots()
+            .into_iter()
+            .filter(|job| {
+                job.exit_code.is_none()
+                    && job.status == "running"
+                    && job.intent == BackgroundShellIntent::Service
+                    && job.service_readiness == Some(readiness)
+            })
+            .count()
+    }
+
     pub(crate) fn job_count(&self) -> usize {
         self.inner
             .jobs
@@ -561,6 +621,12 @@ impl BackgroundShellManager {
             }
             if let Some(alias) = snapshot.alias.as_deref() {
                 lines.push(format!("    alias    {alias}"));
+            }
+            if let Some(ready_pattern) = snapshot.ready_pattern.as_deref() {
+                lines.push(format!("    ready on {ready_pattern}"));
+            }
+            if let Some(service_readiness) = snapshot.service_readiness {
+                lines.push(format!("    service  {}", service_readiness.as_str()));
             }
             lines.push(format!("    lines    {}", snapshot.total_lines));
             if let Some(source_thread_id) = snapshot.origin.source_thread_id.as_deref() {
@@ -688,6 +754,23 @@ fn parse_background_shell_label(value: Option<&serde_json::Value>) -> Option<Str
         .map(ToOwned::to_owned)
 }
 
+fn parse_background_shell_ready_pattern(
+    value: Option<&serde_json::Value>,
+) -> Result<Option<String>, String> {
+    match value {
+        None => Ok(None),
+        Some(raw) => raw
+            .as_str()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+            .map(Some)
+            .ok_or_else(|| {
+                "background_shell_start `readyPattern` must be a non-empty string".to_string()
+            }),
+    }
+}
+
 fn validate_alias(alias: &str) -> Result<String, String> {
     let alias = alias.trim();
     if alias.is_empty() {
@@ -767,6 +850,12 @@ fn append_output_line(
     let mut state = job.lock().expect("background shell job lock");
     state.total_lines += 1;
     let cursor = state.total_lines;
+    if !state.service_ready
+        && let Some(pattern) = state.ready_pattern.as_deref()
+        && (line.contains(pattern) || text.contains(pattern))
+    {
+        state.service_ready = true;
+    }
     state
         .lines
         .push_back(BackgroundShellOutputLine { cursor, text });
@@ -795,6 +884,8 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         intent: state.intent,
         label: state.label.clone(),
         alias: state.alias.clone(),
+        ready_pattern: state.ready_pattern.clone(),
+        service_readiness: service_readiness_for_state(&state),
         origin: state.origin.clone(),
         status: status_label(&state.status).to_string(),
         exit_code: exit_code(&state.status),
@@ -810,6 +901,19 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
             .map(|line| summarize_line(&line.text))
             .collect(),
     }
+}
+
+fn service_readiness_for_state(
+    state: &BackgroundShellJobState,
+) -> Option<BackgroundShellServiceReadiness> {
+    if state.intent != BackgroundShellIntent::Service {
+        return None;
+    }
+    Some(match state.ready_pattern.as_deref() {
+        Some(_) if state.service_ready => BackgroundShellServiceReadiness::Ready,
+        Some(_) => BackgroundShellServiceReadiness::Booting,
+        None => BackgroundShellServiceReadiness::Untracked,
+    })
 }
 
 fn summarize_line(line: &str) -> String {
@@ -872,6 +976,7 @@ mod tests {
     use super::BackgroundShellIntent;
     use super::BackgroundShellManager;
     use super::BackgroundShellOrigin;
+    use super::BackgroundShellServiceReadiness;
     use serde_json::json;
     use std::thread;
     use std::time::Duration;
@@ -884,6 +989,16 @@ mod tests {
     #[cfg(windows)]
     fn interactive_echo_command() -> &'static str {
         "more"
+    }
+
+    #[cfg(unix)]
+    fn service_ready_command() -> &'static str {
+        "printf 'booting\\nREADY\\n'; sleep 0.4"
+    }
+
+    #[cfg(windows)]
+    fn service_ready_command() -> &'static str {
+        "echo booting && echo READY && ping -n 2 127.0.0.1 >NUL"
     }
 
     #[test]
@@ -984,6 +1099,57 @@ mod tests {
         assert!(rendered.contains("Source thread: thread-agent-1"));
         assert!(rendered.contains("Source call: call-77"));
         let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_shell_ready_pattern_transitions_from_booting_to_ready() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": service_ready_command(),
+                    "intent": "service",
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start ready-pattern service shell");
+
+        let mut rendered = String::new();
+        for _ in 0..40 {
+            rendered = manager
+                .poll_from_tool(&json!({"jobId": "bg-1"}))
+                .expect("poll service shell");
+            if rendered.contains("Service state: ready") {
+                break;
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+
+        assert!(rendered.contains("Ready pattern: READY"));
+        assert!(rendered.contains("Service state: ready"));
+        assert_eq!(
+            manager.running_service_count_by_readiness(BackgroundShellServiceReadiness::Ready),
+            1
+        );
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn ready_pattern_requires_service_intent() {
+        let manager = BackgroundShellManager::default();
+        let err = manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.1",
+                    "intent": "observation",
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect_err("readyPattern should require service intent");
+        assert!(err.contains("readyPattern"));
+        assert_eq!(manager.job_count(), 0);
     }
 
     #[test]
