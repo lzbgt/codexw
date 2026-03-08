@@ -4,8 +4,11 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::commands::builtin_help_lines;
-use crate::dispatch_command_session;
-use crate::dispatch_command_thread;
+use crate::dispatch_command_session_control;
+use crate::dispatch_command_session_info;
+use crate::dispatch_command_thread_actions;
+use crate::dispatch_command_thread_navigation;
+use crate::dispatch_command_thread_workspace;
 use crate::dispatch_command_utils;
 use crate::editor::LineEditor;
 use crate::output::Output;
@@ -41,7 +44,21 @@ pub(crate) fn handle_command(
         }
         "quit" | "q" | "exit" => Ok(false),
         _ => {
-            if let Some(result) = dispatch_command_thread::try_handle_thread_command(
+            if let Some(result) =
+                dispatch_command_thread_navigation::try_handle_thread_navigation_command(
+                    command,
+                    &args,
+                    cli,
+                    resolved_cwd,
+                    state,
+                    editor,
+                    output,
+                    writer,
+                )?
+            {
+                return Ok(result);
+            }
+            if let Some(result) = dispatch_command_thread_actions::try_handle_thread_action_command(
                 command,
                 &args,
                 cli,
@@ -53,7 +70,21 @@ pub(crate) fn handle_command(
             )? {
                 return Ok(result);
             }
-            if let Some(result) = dispatch_command_session::try_handle_session_command(
+            if let Some(result) =
+                dispatch_command_thread_workspace::try_handle_thread_workspace_command(
+                    command,
+                    &args,
+                    cli,
+                    resolved_cwd,
+                    state,
+                    editor,
+                    output,
+                    writer,
+                )?
+            {
+                return Ok(result);
+            }
+            if let Some(result) = dispatch_command_session_info::try_handle_session_info_command(
                 command,
                 &args,
                 cli,
@@ -63,6 +94,20 @@ pub(crate) fn handle_command(
                 output,
                 writer,
             )? {
+                return Ok(result);
+            }
+            if let Some(result) =
+                dispatch_command_session_control::try_handle_session_control_command(
+                    command,
+                    &args,
+                    cli,
+                    resolved_cwd,
+                    state,
+                    editor,
+                    output,
+                    writer,
+                )?
+            {
                 return Ok(result);
             }
             output.line_stderr(format!("[session] unknown command: {command}"))?;

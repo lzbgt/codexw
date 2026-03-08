@@ -10,12 +10,13 @@ use crate::rpc::RpcResponse;
 use crate::runtime_process::StartMode;
 use crate::state::AppState;
 
-#[path = "response_error.rs"]
-mod response_error;
+#[path = "response_error_runtime.rs"]
+mod response_error_runtime;
+#[path = "response_error_session.rs"]
+mod response_error_session;
 #[path = "response_success.rs"]
 mod response_success;
 
-use response_error::handle_response_error_impl;
 use response_success::handle_response_success;
 
 pub(crate) fn handle_response(
@@ -54,5 +55,15 @@ pub(crate) fn handle_response_error(
     state: &mut AppState,
     output: &mut Output,
 ) -> Result<()> {
-    handle_response_error_impl(error, pending, state, output)
+    if let Some(pending) = pending.as_ref()
+        && (response_error_session::handle_session_error(&error, pending, state, output)?
+            || response_error_runtime::handle_runtime_error(&error, pending, state, output)?)
+    {
+        return Ok(());
+    }
+    output.line_stderr(format!(
+        "[server-error] {}",
+        serde_json::to_string_pretty(&error)?
+    ))?;
+    Ok(())
 }

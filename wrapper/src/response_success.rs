@@ -8,24 +8,26 @@ use crate::state::AppState;
 use serde_json::Value;
 use std::process::ChildStdin;
 
-#[path = "response_bootstrap_catalog.rs"]
-mod response_bootstrap_catalog;
+#[path = "response_bootstrap_catalog_state.rs"]
+mod response_bootstrap_catalog_state;
+#[path = "response_bootstrap_catalog_views.rs"]
+mod response_bootstrap_catalog_views;
 #[path = "response_bootstrap_init.rs"]
 mod response_bootstrap_init;
 #[path = "response_threads.rs"]
 mod response_threads;
 
-use response_bootstrap_catalog::handle_account_loaded;
-use response_bootstrap_catalog::handle_apps_loaded;
-use response_bootstrap_catalog::handle_collaboration_modes_loaded;
-use response_bootstrap_catalog::handle_config_loaded;
-use response_bootstrap_catalog::handle_experimental_features_loaded;
-use response_bootstrap_catalog::handle_fuzzy_file_search;
-use response_bootstrap_catalog::handle_mcp_servers_loaded;
-use response_bootstrap_catalog::handle_models_loaded;
-use response_bootstrap_catalog::handle_rate_limits_loaded;
-use response_bootstrap_catalog::handle_skills_loaded;
-use response_bootstrap_catalog::handle_threads_listed;
+use response_bootstrap_catalog_state::handle_account_loaded;
+use response_bootstrap_catalog_state::handle_apps_loaded;
+use response_bootstrap_catalog_state::handle_collaboration_modes_loaded;
+use response_bootstrap_catalog_state::handle_models_loaded;
+use response_bootstrap_catalog_state::handle_rate_limits_loaded;
+use response_bootstrap_catalog_state::handle_skills_loaded;
+use response_bootstrap_catalog_views::handle_config_loaded;
+use response_bootstrap_catalog_views::handle_experimental_features_loaded;
+use response_bootstrap_catalog_views::handle_fuzzy_file_search;
+use response_bootstrap_catalog_views::handle_mcp_servers_loaded;
+use response_bootstrap_catalog_views::handle_threads_listed;
 use response_bootstrap_init::handle_feedback_success;
 use response_bootstrap_init::handle_initialize_success;
 use response_bootstrap_init::handle_logout_success;
