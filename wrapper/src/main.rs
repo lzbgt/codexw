@@ -1,5 +1,6 @@
 mod app;
 mod catalog;
+mod catalog_views;
 mod commands;
 mod dispatch;
 mod editor;
@@ -19,6 +20,8 @@ mod rpc;
 mod runtime;
 mod session;
 mod state;
+mod status_views;
+mod transcript_views;
 mod views;
 
 use anyhow::Result;

@@ -60,7 +60,7 @@ The runtime has thirteen main layers.
    `history.rs` owns resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering.
 
 11. View and transcript rendering helpers
-   `views.rs` owns app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
+   `views.rs`, `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries.
 
 12. Human input handling
    `editor.rs`, `input.rs`, `dispatch.rs`, and `prompting.rs` implement the inline editor, command dispatch, slash/file completion, mention decoding, attachment handling, prompt visibility rules, and structured app-server user input construction.
@@ -72,7 +72,10 @@ Session feature helpers live in `session.rs`: model metadata parsing, personalit
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers live in `app.rs`: backend/session startup, the top-level runtime loop, and input-key dispatch.
 Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
-Display helpers live in `views.rs`: formatted thread/model/app output, approval/request summaries, and item-completion rendering blocks.
+Catalog display helpers live in `catalog_views.rs`: app/skill/model/MCP/thread listings and search-result rendering.
+Status display helpers live in `status_views.rs`: permission/config/account/rate-limit/token formatting plus generic value summarization.
+Transcript display helpers live in `transcript_views.rs`: item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
+Compatibility re-exports live in `views.rs`: stable import surface over the split display modules.
 Runtime helpers live in `runtime.rs`: backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers live in `state.rs`: `AppState`, pending request ids, streamed delta accumulation, attachment ownership, and common text/path helper functions used across modules.
@@ -368,7 +371,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/history.rs`
   Resume-preview extraction, resumed objective/reply seeding, and resumed conversation rendering.
 - `wrapper/src/views.rs`
-  Catalog/status/thread rendering helpers plus approval, request, and item-completion summaries.
+  Compatibility facade re-exporting the split display helpers.
+- `wrapper/src/catalog_views.rs`
+  Catalog and list rendering for apps, skills, models, MCP servers, threads, and file-search results.
+- `wrapper/src/status_views.rs`
+  Permission/config/account/rate-limit/token formatting plus generic JSON value summarization.
+- `wrapper/src/transcript_views.rs`
+  Item completion blocks, plan/reasoning rendering, and approval/request/status summarizers.
 - `wrapper/src/requests.rs`
   Outbound JSON-RPC request builders plus pending-request types for initialize, thread, turn, command, review, catalog, and realtime actions.
 - `wrapper/src/rpc.rs`
