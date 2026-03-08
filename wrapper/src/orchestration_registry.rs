@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 
 use serde_json::Value;
 
+use crate::background_shells::BackgroundShellJobSnapshot;
 use crate::orchestration_view::CachedAgentThreadSummary;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -16,6 +18,14 @@ pub(crate) struct LiveAgentTaskSummary {
     pub(crate) receiver_thread_ids: Vec<String>,
     pub(crate) prompt: Option<String>,
     pub(crate) agent_statuses: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct OrchestrationDependencyEdge {
+    pub(crate) from: String,
+    pub(crate) to: String,
+    pub(crate) kind: String,
+    pub(crate) blocking: bool,
 }
 
 pub(crate) fn active_wait_task_count(state: &AppState) -> usize {
@@ -40,6 +50,20 @@ pub(crate) fn main_agent_state_label(state: &AppState) -> &'static str {
     } else {
         "runnable"
     }
+}
+
+pub(crate) fn blocking_dependency_count(state: &AppState) -> usize {
+    orchestration_dependency_edges(state)
+        .into_iter()
+        .filter(|edge| edge.blocking)
+        .count()
+}
+
+pub(crate) fn sidecar_dependency_count(state: &AppState) -> usize {
+    orchestration_dependency_edges(state)
+        .into_iter()
+        .filter(|edge| !edge.blocking)
+        .count()
 }
 
 pub(crate) fn wait_dependency_summary(state: &AppState) -> Option<String> {
@@ -94,6 +118,60 @@ pub(crate) fn task_role(task: &LiveAgentTaskSummary) -> &'static str {
     }
 }
 
+pub(crate) fn orchestration_dependency_edges(state: &AppState) -> Vec<OrchestrationDependencyEdge> {
+    let mut seen = BTreeSet::new();
+    let mut edges = Vec::new();
+    for task in state.live_agent_tasks.values() {
+        match task_role(task) {
+            "blocked" | "sidecar" => {
+                for receiver in &task.receiver_thread_ids {
+                    let edge = OrchestrationDependencyEdge {
+                        from: "main".to_string(),
+                        to: format!("agent:{receiver}"),
+                        kind: task.tool.clone(),
+                        blocking: task_role(task) == "blocked",
+                    };
+                    let dedupe = (
+                        edge.from.clone(),
+                        edge.to.clone(),
+                        edge.kind.clone(),
+                        edge.blocking,
+                    );
+                    if seen.insert(dedupe) {
+                        edges.push(edge);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    for shell in running_background_shells(state) {
+        let edge = OrchestrationDependencyEdge {
+            from: "main".to_string(),
+            to: format!("shell:{}", shell.id),
+            kind: "backgroundShell".to_string(),
+            blocking: false,
+        };
+        let dedupe = (
+            edge.from.clone(),
+            edge.to.clone(),
+            edge.kind.clone(),
+            edge.blocking,
+        );
+        if seen.insert(dedupe) {
+            edges.push(edge);
+        }
+    }
+    edges.sort_by(|left, right| {
+        left.from
+            .cmp(&right.from)
+            .then_with(|| right.blocking.cmp(&left.blocking))
+            .then_with(|| left.to.cmp(&right.to))
+            .then_with(|| left.kind.cmp(&right.kind))
+    });
+    edges
+}
+
 pub(crate) fn track_collab_agent_task_started(state: &mut AppState, item: &Value) {
     let Some(task) = parse_live_agent_task(item) else {
         return;
@@ -140,6 +218,15 @@ fn parse_live_agent_task(item: &Value) -> Option<LiveAgentTaskSummary> {
         prompt,
         agent_statuses,
     })
+}
+
+fn running_background_shells(state: &AppState) -> Vec<BackgroundShellJobSnapshot> {
+    state
+        .background_shells
+        .snapshots()
+        .into_iter()
+        .filter(|job| job.status == "running")
+        .collect()
 }
 
 fn is_active_wait_task(task: &LiveAgentTaskSummary) -> bool {
@@ -213,7 +300,10 @@ mod tests {
 
     use super::active_sidecar_agent_task_count;
     use super::active_wait_task_count;
+    use super::blocking_dependency_count;
     use super::main_agent_state_label;
+    use super::orchestration_dependency_edges;
+    use super::sidecar_dependency_count;
     use super::task_role;
     use super::track_collab_agent_task_completed;
     use super::track_collab_agent_task_started;
@@ -336,5 +426,58 @@ mod tests {
             .insert(spawn_task.id.clone(), spawn_task);
         assert_eq!(active_sidecar_agent_task_count(&state), 1);
         assert_eq!(main_agent_state_label(&state), "blocked");
+    }
+
+    #[test]
+    fn dependency_edges_include_wait_sidecars_and_running_background_shells() {
+        let mut state = crate::state::AppState::new(true, false);
+        state.live_agent_tasks.insert(
+            "wait-1".to_string(),
+            LiveAgentTaskSummary {
+                id: "wait-1".to_string(),
+                tool: "wait".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["thread-agent-1".to_string()],
+                prompt: None,
+                agent_statuses: BTreeMap::new(),
+            },
+        );
+        state.live_agent_tasks.insert(
+            "spawn-1".to_string(),
+            LiveAgentTaskSummary {
+                id: "spawn-1".to_string(),
+                tool: "spawnAgent".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["thread-agent-2".to_string()],
+                prompt: None,
+                agent_statuses: BTreeMap::new(),
+            },
+        );
+        state
+            .background_shells
+            .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+            .expect("start background shell");
+
+        let edges = orchestration_dependency_edges(&state);
+        assert!(
+            edges
+                .iter()
+                .any(|edge| edge.to == "agent:thread-agent-1" && edge.blocking)
+        );
+        assert!(
+            edges
+                .iter()
+                .any(|edge| edge.to == "agent:thread-agent-2" && !edge.blocking)
+        );
+        assert!(
+            edges
+                .iter()
+                .any(|edge| edge.to == "shell:bg-1" && !edge.blocking)
+        );
+        assert_eq!(blocking_dependency_count(&state), 1);
+        assert_eq!(sidecar_dependency_count(&state), 2);
+        let _ = state.background_shells.terminate_all_running();
     }
 }

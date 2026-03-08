@@ -5,7 +5,10 @@ use crate::background_terminals::server_background_terminal_count;
 use crate::orchestration_registry::LiveAgentTaskSummary;
 use crate::orchestration_registry::active_sidecar_agent_task_count;
 use crate::orchestration_registry::active_wait_task_count;
+use crate::orchestration_registry::blocking_dependency_count;
 use crate::orchestration_registry::main_agent_state_label;
+use crate::orchestration_registry::orchestration_dependency_edges;
+use crate::orchestration_registry::sidecar_dependency_count;
 use crate::orchestration_registry::task_role;
 use crate::orchestration_registry::wait_dependency_summary;
 use crate::state::AppState;
@@ -42,8 +45,10 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
     let snapshot = orchestration_snapshot(state);
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     format!(
-        "main={} waits={} sidecar_agents={} exec_sidecars={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_sidecars={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
+        blocking_dependency_count(state),
+        sidecar_dependency_count(state),
         active_wait_task_count(state),
         active_sidecar_agent_task_count(state),
         state.background_shells.running_count(),
@@ -70,8 +75,10 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
     }
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     Some(format!(
-        "main={} waits={} sidecar_agents={} exec_sidecars={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_sidecars={} agent_tasks={} shells={} thread_terms={} agents={}{}",
         main_agent_state_label(state),
+        blocking_dependency_count(state),
+        sidecar_dependency_count(state),
         active_wait_task_count(state),
         active_sidecar_agent_task_count(state),
         state.background_shells.running_count(),
@@ -96,11 +103,28 @@ pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
         main_line.push_str(&format!(" | {waiting_on}"));
     }
     main_line.push_str(&format!(
-        " | sidecar agents={} | exec sidecars={}",
+        " | sidecar agents={} | exec sidecars={} | deps blocking={} sidecar={}",
         active_sidecar_agent_task_count(state),
-        state.background_shells.running_count()
+        state.background_shells.running_count(),
+        blocking_dependency_count(state),
+        sidecar_dependency_count(state)
     ));
     lines.push(main_line);
+    let dependencies = orchestration_dependency_edges(state);
+    if !dependencies.is_empty() {
+        lines.push(String::new());
+        lines.push("Dependencies:".to_string());
+        for (index, edge) in dependencies.iter().enumerate() {
+            lines.push(format!(
+                "{:>2}. {} -> {}  [{}{}]",
+                index + 1,
+                edge.from,
+                edge.to,
+                edge.kind,
+                if edge.blocking { ", blocking" } else { "" }
+            ));
+        }
+    }
     if !state.live_agent_tasks.is_empty() {
         if !lines.is_empty() {
             lines.push(String::new());
@@ -229,6 +253,8 @@ mod tests {
         ];
         let summary = orchestration_overview_summary(&state);
         assert!(summary.contains("main=1"));
+        assert!(summary.contains("deps_blocking=0"));
+        assert!(summary.contains("deps_sidecar=0"));
         assert!(summary.contains("waits=0"));
         assert!(summary.contains("sidecar_agents=0"));
         assert!(summary.contains("exec_sidecars=0"));
@@ -291,7 +317,12 @@ mod tests {
 
         let rendered = render_orchestration_workers(&state);
         assert!(rendered.contains("Main agent state: blocked | waiting on agent agent-1"));
-        assert!(rendered.contains("sidecar agents=1 | exec sidecars=0"));
+        assert!(
+            rendered.contains("sidecar agents=1 | exec sidecars=0 | deps blocking=1 sidecar=1")
+        );
+        assert!(rendered.contains("Dependencies:"));
+        assert!(rendered.contains("main -> agent:agent-1  [wait, blocking]"));
+        assert!(rendered.contains("main -> agent:agent-1  [spawnAgent]"));
         assert!(rendered.contains("Live agent tasks:"));
         assert!(rendered.contains("spawnAgent  [inProgress]  thread-main -> agent-1"));
         assert!(rendered.contains("wait  [inProgress]  thread-main -> agent-1"));

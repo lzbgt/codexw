@@ -200,6 +200,7 @@ The current `codexw` implementation now reflects that model partially:
 - `/ps` renders the tracked worker snapshot: cached cognitive workers from `/agent` or `/multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
 - `/status` now reports an orchestration breakdown with:
   - `main=1`
+  - blocking and sidecar dependency-edge counts derived from the live orchestration graph
   - live wait count from in-progress `wait` collab calls
   - live sidecar-agent count from `spawnAgent` / `sendInput` / `resumeAgent`
   - live execution-sidecar count from wrapper background shells that are still running
@@ -216,6 +217,7 @@ The next architectural step, if deeper orchestration is needed, is a unified wor
 - dependency and wait state
 
 That registry would let `/multi-agents`, `/ps`, ready status, and transcript summaries read from one orchestration state model rather than several feature-specific trackers.
+`codexw` now also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus `main -> shell:*` edges for running wrapper-owned background shell jobs. `/ps` renders those edges directly so the orchestration view is not just counters.
 
 Two design choices matter here:
 
