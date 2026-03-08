@@ -2,11 +2,12 @@ use std::process::ChildStdin;
 
 use anyhow::Result;
 use serde_json::Value;
-use serde_json::json;
 
-use super::PendingRequest;
-use super::send_json;
-use crate::rpc::OutgoingRequest;
+#[path = "thread_realtime.rs"]
+mod thread_realtime;
+#[path = "thread_review.rs"]
+mod thread_review;
+
 use crate::state::AppState;
 
 pub(crate) fn send_thread_realtime_start(
@@ -15,25 +16,7 @@ pub(crate) fn send_thread_realtime_start(
     thread_id: String,
     prompt: String,
 ) -> Result<()> {
-    let request_id = state.next_request_id();
-    state.pending.insert(
-        request_id.clone(),
-        PendingRequest::StartRealtime {
-            prompt: prompt.clone(),
-        },
-    );
-    send_json(
-        writer,
-        &OutgoingRequest {
-            id: request_id,
-            method: "thread/realtime/start",
-            params: json!({
-                "threadId": thread_id,
-                "prompt": prompt,
-                "sessionId": state.realtime_session_id.clone(),
-            }),
-        },
-    )
+    thread_realtime::send_thread_realtime_start(writer, state, thread_id, prompt)
 }
 
 pub(crate) fn send_thread_realtime_append_text(
@@ -42,22 +25,7 @@ pub(crate) fn send_thread_realtime_append_text(
     thread_id: String,
     text: String,
 ) -> Result<()> {
-    let request_id = state.next_request_id();
-    state.pending.insert(
-        request_id.clone(),
-        PendingRequest::AppendRealtimeText { text: text.clone() },
-    );
-    send_json(
-        writer,
-        &OutgoingRequest {
-            id: request_id,
-            method: "thread/realtime/appendText",
-            params: json!({
-                "threadId": thread_id,
-                "text": text,
-            }),
-        },
-    )
+    thread_realtime::send_thread_realtime_append_text(writer, state, thread_id, text)
 }
 
 pub(crate) fn send_thread_realtime_stop(
@@ -65,20 +33,7 @@ pub(crate) fn send_thread_realtime_stop(
     state: &mut AppState,
     thread_id: String,
 ) -> Result<()> {
-    let request_id = state.next_request_id();
-    state
-        .pending
-        .insert(request_id.clone(), PendingRequest::StopRealtime);
-    send_json(
-        writer,
-        &OutgoingRequest {
-            id: request_id,
-            method: "thread/realtime/stop",
-            params: json!({
-                "threadId": thread_id,
-            }),
-        },
-    )
+    thread_realtime::send_thread_realtime_stop(writer, state, thread_id)
 }
 
 pub(crate) fn send_start_review(
@@ -88,21 +43,5 @@ pub(crate) fn send_start_review(
     review_target: Value,
     target_description: String,
 ) -> Result<()> {
-    let request_id = state.next_request_id();
-    state.pending.insert(
-        request_id.clone(),
-        PendingRequest::StartReview { target_description },
-    );
-    send_json(
-        writer,
-        &OutgoingRequest {
-            id: request_id,
-            method: "review/start",
-            params: json!({
-                "threadId": thread_id,
-                "delivery": "inline",
-                "target": review_target,
-            }),
-        },
-    )
+    thread_review::send_start_review(writer, state, thread_id, review_target, target_description)
 }
