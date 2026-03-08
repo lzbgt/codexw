@@ -434,7 +434,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     issue.capability
                 ),
                 format!(
-                    "Run `:ps provide <jobId|alias|n> <@capability...|none>` to reassign one or more running providers before falling back to cleanup for @{}.",
+                    "Run `:ps provide <jobId|alias|n> <@other.role|none>` to remove or replace @{} on one or more running providers before falling back to cleanup.",
                     issue.capability
                 ),
                 "Run `:ps depend <jobId|alias|n> <@capability...|none>` if the blocked shell should be retargeted to a different dependency role."
@@ -454,8 +454,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     issue.capability
                 ),
                 format!(
-                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{}\"]}}` to reassign one or more running providers before falling back to cleanup.",
-                    issue.capability
+                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}}` to remove or replace the conflicting reusable role before falling back to cleanup."
                 ),
                 "Use `background_shell_update_dependencies {\"jobId\":\"<jobId|alias|n>\",\"dependsOnCapabilities\":[\"@other.role\"]}` if the blocked shell should be retargeted to a different dependency role."
                     .to_string(),
@@ -541,7 +540,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
             ActionAudience::Operator => vec![
                 format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
                 format!(
-                    "Run `:ps provide <jobId|alias|n> <@capability...|none>` to reassign one or more running providers before falling back to cleanup for @{capability}."
+                    "Run `:ps provide <jobId|alias|n> <@other.role|none>` to remove or replace @{capability} on one or more running providers before falling back to cleanup."
                 ),
                 format!(
                     "Run `:clean services @{capability}` to clear the ambiguous reusable role."
@@ -553,7 +552,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect providers and consumers."
                 ),
                 format!(
-                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{capability}\"]}}` to reassign one or more running providers before falling back to cleanup."
+                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}}` to remove or replace the conflicting reusable role before falling back to cleanup."
                 ),
                 format!(
                     "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the ambiguous reusable role."
@@ -774,7 +773,7 @@ fn action_lines_for_capability(
         (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Operator) => vec![
             format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
             format!(
-                "Run `:ps provide <jobId|alias|n> <@capability...|none>` to reassign one or more running providers before falling back to cleanup for @{capability}."
+                "Run `:ps provide <jobId|alias|n> <@other.role|none>` to remove or replace @{capability} on one or more running providers before falling back to cleanup."
             ),
             format!("Run `:clean services @{capability}` to clear the ambiguous reusable role."),
             format!("Run `:ps services @{capability}` to verify the surviving providers."),
@@ -784,7 +783,7 @@ fn action_lines_for_capability(
                 "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect providers and consumers."
             ),
             format!(
-                "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{capability}\"]}}` to reassign one or more running providers before falling back to cleanup."
+                "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}}` to remove or replace the conflicting reusable role before falling back to cleanup."
             ),
             format!(
                 "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the ambiguous reusable role."

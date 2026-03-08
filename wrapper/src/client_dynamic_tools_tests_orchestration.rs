@@ -217,7 +217,10 @@ fn orchestration_suggest_actions_returns_concrete_tool_steps() {
     assert!(text.contains("Suggested actions:"));
     assert!(text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}"));
     assert!(text.contains(
-        "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
+        "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}"
+    ));
+    assert!(text.contains(
+        "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}"
     ));
     assert!(
         text.contains(
