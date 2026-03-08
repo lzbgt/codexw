@@ -58,6 +58,8 @@ pub(crate) fn handle_loaded_thread(
     let thread_id = get_string(result, &["thread", "id"])
         .context(thread_field_context)?
         .to_string();
+    state.current_rollout_path =
+        get_string(result, &["thread", "path"]).map(std::path::PathBuf::from);
     state.thread_id = Some(thread_id.clone());
     output.line_stderr(format!("[thread] {status_label} {thread_id}"))?;
     if render_history {

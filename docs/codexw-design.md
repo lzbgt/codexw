@@ -324,6 +324,7 @@ Current user-facing capabilities include:
 - in-session numbered permissions presets for `/approvals` and `/permissions`, backed by `turn/start.approvalPolicy`, `turn/start.sandboxPolicy`, and matching thread/local-command overrides
 - local runtime toggles for `/fast` service-tier selection and `/theme` syntax-highlighting theme selection, both aligned with persisted Codex config state
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
+- native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
 - backend-backed background-terminal cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes

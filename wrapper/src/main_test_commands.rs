@@ -35,16 +35,15 @@ fn help_lines_are_derived_from_command_metadata() {
 fn slash_catalog_hides_unimplemented_native_placeholders() {
     let visible = builtin_visible_command_names();
     assert!(visible.contains(&"init"));
+    assert!(visible.contains(&"rollout"));
     assert!(!visible.contains(&"agent"));
     assert!(!visible.contains(&"multi-agents"));
-    assert!(!visible.contains(&"rollout"));
     assert!(!visible.contains(&"setup-default-sandbox"));
     assert!(!visible.contains(&"sandbox-add-read-dir"));
 
     let rendered = render_slash_completion_candidates("", &builtin_visible_command_names(), false);
     assert!(!rendered.contains("/agent"));
     assert!(!rendered.contains("/multi-agents"));
-    assert!(!rendered.contains("/rollout"));
     assert!(!rendered.contains("/setup-default-sandbox"));
     assert!(!rendered.contains("/sandbox-add-read-dir"));
     assert!(builtin_command_names().contains(&"agent"));
@@ -56,7 +55,7 @@ fn help_hides_unimplemented_native_placeholders() {
     assert!(!rendered.contains(":agent"));
     assert!(!rendered.contains(":multi-agents"));
     assert!(rendered.contains(":init"));
-    assert!(!rendered.contains(":rollout"));
+    assert!(rendered.contains(":rollout"));
     assert!(!rendered.contains(":setup-default-sandbox"));
     assert!(!rendered.contains(":sandbox-add-read-dir"));
 }

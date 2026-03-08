@@ -7,6 +7,7 @@ use serde_json::json;
 
 use crate::Cli;
 use crate::dispatch_command_session_meta::INIT_PROMPT;
+use crate::dispatch_command_session_meta::current_rollout_message;
 use crate::dispatch_submit_commands::try_handle_prefixed_submission;
 use crate::editor::LineEditor;
 use crate::model_catalog::extract_models;
@@ -445,4 +446,23 @@ fn init_command_skips_existing_agents_file() {
     let requests = read_recorded_requests(&mut child, writer, &path);
     assert!(requests.is_empty());
     assert!(state.pending.is_empty());
+}
+
+#[test]
+fn rollout_message_uses_current_path_when_available() {
+    let mut state = AppState::new(true, false);
+    state.current_rollout_path = Some(std::path::PathBuf::from("/tmp/codex-rollout.jsonl"));
+    assert_eq!(
+        current_rollout_message(&state),
+        "Current rollout path: /tmp/codex-rollout.jsonl"
+    );
+}
+
+#[test]
+fn rollout_message_explains_missing_path() {
+    let state = AppState::new(true, false);
+    assert_eq!(
+        current_rollout_message(&state),
+        "Rollout path is not available yet."
+    );
 }

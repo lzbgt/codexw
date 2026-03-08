@@ -61,6 +61,7 @@ pub(crate) struct AppState {
     pub(crate) objective: Option<String>,
     pub(crate) last_agent_message: Option<String>,
     pub(crate) last_turn_diff: Option<String>,
+    pub(crate) current_rollout_path: Option<PathBuf>,
     pub(crate) last_token_usage: Option<serde_json::Value>,
     pub(crate) account_info: Option<serde_json::Value>,
     pub(crate) rate_limits: Option<serde_json::Value>,
@@ -109,6 +110,7 @@ impl AppState {
             objective: None,
             last_agent_message: None,
             last_turn_diff: None,
+            current_rollout_path: None,
             last_token_usage: None,
             account_info: None,
             rate_limits: None,
@@ -156,6 +158,7 @@ impl AppState {
         self.process_output_buffers.clear();
         self.active_turn_id = None;
         self.active_exec_process_id = None;
+        self.current_rollout_path = None;
         self.realtime_active = false;
         self.realtime_session_id = None;
         self.realtime_last_error = None;

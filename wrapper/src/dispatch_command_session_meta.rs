@@ -80,7 +80,15 @@ pub(crate) fn try_handle_session_meta_command(
             }
             handle_init_command(cli, resolved_cwd, state, output, writer)?
         }
-        "agent" | "multi-agents" | "rollout" | "sandbox-add-read-dir" | "setup-default-sandbox" => {
+        "rollout" => {
+            if !args.is_empty() {
+                output.line_stderr("[session] usage: :rollout")?;
+                return Ok(Some(true));
+            }
+            output.line_stderr(current_rollout_message(state))?;
+            true
+        }
+        "agent" | "multi-agents" | "sandbox-add-read-dir" | "setup-default-sandbox" => {
             output.line_stderr(format!(
                 "[session] /{command} is recognized, but this inline client does not yet implement the native Codex popup/workflow for it"
             ))?;
@@ -140,4 +148,12 @@ fn handle_init_command(
         send_thread_start(writer, state, cli, resolved_cwd, Some(prompt))?;
     }
     Ok(true)
+}
+
+pub(crate) fn current_rollout_message(state: &AppState) -> String {
+    state
+        .current_rollout_path
+        .as_ref()
+        .map(|path| format!("Current rollout path: {}", path.display()))
+        .unwrap_or_else(|| "Rollout path is not available yet.".to_string())
 }
