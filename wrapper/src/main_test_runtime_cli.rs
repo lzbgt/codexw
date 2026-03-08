@@ -1,4 +1,5 @@
 use crate::Cli;
+use crate::app::build_resume_command;
 use crate::commands_completion_render::quote_if_needed;
 use crate::dispatch_command_utils::parse_feedback_args;
 use crate::runtime_process::normalize_cli;
@@ -89,5 +90,13 @@ fn quote_if_needed_leaves_simple_paths_unquoted() {
     assert_eq!(
         quote_if_needed("path with spaces.rs"),
         "\"path with spaces.rs\""
+    );
+}
+
+#[test]
+fn build_resume_command_includes_cwd_and_thread_id() {
+    assert_eq!(
+        build_resume_command("codexw", "/tmp/work tree", "thread-123"),
+        "codexw --cwd \"/tmp/work tree\" resume thread-123"
     );
 }

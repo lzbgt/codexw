@@ -8,28 +8,63 @@ pub(crate) enum PendingRequest {
     LoadSkills,
     LoadAccount,
     LogoutAccount,
-    UploadFeedback { classification: String },
+    UploadFeedback {
+        classification: String,
+    },
     LoadRateLimits,
-    LoadModels { action: ModelsAction },
+    LoadModels {
+        action: ModelsAction,
+    },
     LoadConfig,
     LoadMcpServers,
     LoadExperimentalFeatures,
-    LoadCollaborationModes { action: CollaborationModeAction },
-    ListThreads { search_term: Option<String> },
-    StartThread { initial_prompt: Option<String> },
-    ResumeThread { initial_prompt: Option<String> },
-    ForkThread { initial_prompt: Option<String> },
+    LoadCollaborationModes {
+        action: CollaborationModeAction,
+    },
+    ListThreads {
+        search_term: Option<String>,
+        cwd_filter: Option<String>,
+        allow_fallback_all: bool,
+    },
+    StartThread {
+        initial_prompt: Option<String>,
+    },
+    ResumeThread {
+        initial_prompt: Option<String>,
+    },
+    ForkThread {
+        initial_prompt: Option<String>,
+    },
     CompactThread,
-    RenameThread { name: String },
+    RenameThread {
+        name: String,
+    },
     CleanBackgroundTerminals,
-    StartRealtime { prompt: String },
-    AppendRealtimeText { text: String },
+    StartRealtime {
+        prompt: String,
+    },
+    AppendRealtimeText {
+        text: String,
+    },
     StopRealtime,
-    StartReview { target_description: String },
-    StartTurn { auto_generated: bool },
-    SteerTurn { display_text: String },
+    StartReview {
+        target_description: String,
+    },
+    StartTurn {
+        auto_generated: bool,
+    },
+    SteerTurn {
+        display_text: String,
+    },
     InterruptTurn,
-    ExecCommand { process_id: String, command: String },
-    TerminateExecCommand { process_id: String },
-    FuzzyFileSearch { query: String },
+    ExecCommand {
+        process_id: String,
+        command: String,
+    },
+    TerminateExecCommand {
+        process_id: String,
+    },
+    FuzzyFileSearch {
+        query: String,
+    },
 }

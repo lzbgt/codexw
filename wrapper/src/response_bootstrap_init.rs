@@ -50,7 +50,7 @@ pub(crate) fn handle_initialize_success(
                 output.line_stderr(
                     "[session] enter a listed number or thread id to resume, or use /new for a fresh thread",
                 )?;
-                send_list_threads(writer, state, resolved_cwd, None)?
+                send_list_threads(writer, state, Some(resolved_cwd), None, true)?
             }
             StartupThreadAction::Create => {
                 output.line_stderr("[thread] create")?;

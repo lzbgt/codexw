@@ -223,8 +223,20 @@ fn handle_bootstrap_response_success(
         PendingRequest::LoadMcpServers => {
             handle_mcp_servers_loaded(result, output)?;
         }
-        PendingRequest::ListThreads { search_term } => {
-            handle_threads_listed(result, search_term.as_deref(), state, output)?;
+        PendingRequest::ListThreads {
+            search_term,
+            cwd_filter,
+            allow_fallback_all,
+        } => {
+            handle_threads_listed(
+                result,
+                search_term.as_deref(),
+                cwd_filter.as_deref(),
+                *allow_fallback_all,
+                state,
+                output,
+                writer,
+            )?;
         }
         PendingRequest::FuzzyFileSearch { query } => {
             handle_fuzzy_file_search(result, query, state, output)?;

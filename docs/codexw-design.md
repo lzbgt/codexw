@@ -171,12 +171,16 @@ Supported forms include:
 
 When startup resume is invoked without a thread id, `codexw` does not create a new thread. It loads the recent thread list for the resolved cwd, sorts it newest-first by `updatedAt`, and exposes a prompt-local picker that accepts `/resume <n>`, a raw thread id, or a bare numeric selection.
 
+Because app-server applies the `cwd` filter as an exact match, `codexw` now retries `thread/list` without the cwd filter when that startup lookup is empty, so the resume picker still offers recent sessions instead of stalling on an empty exact-path match.
+
 On successful `thread/resume`, `codexw`:
 
 - resets thread-local state
 - stores the resumed thread id
 - renders a compact recent history preview
 - optionally starts a turn if a prompt was supplied
+
+When the inline client exits with an active thread id, it also prints a copy-pasteable `codexw --cwd <path> resume <thread-id>` hint so the session can be resumed directly.
 
 ### Interactive resume
 
