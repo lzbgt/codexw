@@ -39,7 +39,7 @@ The runtime has thirteen main layers.
    `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions. `requests.rs` is the compatibility facade over that split.
 
 4. Inbound event handling
-   `events.rs`, `responses.rs`, `notifications.rs`, `notification_realtime.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, and item-completion rendering. `notifications.rs` is the compatibility facade over the split notification handlers.
+   `events.rs`, `responses.rs`, `response_success.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, item-completion rendering, and response success/error paths. `responses.rs` and `notifications.rs` are compatibility facades over the split inbound handlers.
 
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
@@ -84,7 +84,7 @@ Command completion helpers live in `commands_completion.rs`: slash completion, f
 Command-dispatch helpers are split across `dispatch_submit.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `dispatch_command_utils.rs`, with `dispatch.rs` and `dispatch_commands.rs` kept as thin compatibility facades for imports and tests.
 Input helpers are split across `input/input_types.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, and `input/input_build.rs`, with `input.rs` kept as a thin compatibility facade for imports and `input_tests.rs` holding the crate-level regression suite.
 Prompt helpers live in `prompting.rs`: prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion.
-Response helpers live in `responses.rs`: JSON-RPC success/error handling for pending outbound requests.
+Response helpers are split across `response_success.rs` and `response_error.rs`, with `responses.rs` kept as a thin compatibility facade for JSON-RPC success/error handling of pending outbound requests.
 Notification helpers are split across `notification_realtime.rs` and `notification_turns.rs`, with `notifications.rs` kept as a thin compatibility facade over realtime, turn, item, and status notifications plus auto-continue turn chaining.
 
 ## Process Model
@@ -376,7 +376,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/events.rs`
   Inbound JSON-RPC routing plus server-request handling and approval helpers.
 - `wrapper/src/responses.rs`
-  JSON-RPC response handling and pending-request success/error resolution.
+  Compatibility facade for the split JSON-RPC response handlers.
+- `wrapper/src/response_success.rs`
+  Pending-request success handling, thread/session transitions, and post-response follow-up actions.
+- `wrapper/src/response_error.rs`
+  Pending-request error handling and recovery/reporting paths.
 - `wrapper/src/notifications.rs`
   Compatibility facade for the split notification handlers.
 - `wrapper/src/notification_realtime.rs`
