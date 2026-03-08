@@ -26,6 +26,22 @@ pub(crate) fn active_wait_task_count(state: &AppState) -> usize {
         .count()
 }
 
+pub(crate) fn active_sidecar_agent_task_count(state: &AppState) -> usize {
+    state
+        .live_agent_tasks
+        .values()
+        .filter(|task| task_role(task) == "sidecar")
+        .count()
+}
+
+pub(crate) fn main_agent_state_label(state: &AppState) -> &'static str {
+    if active_wait_task_count(state) > 0 {
+        "blocked"
+    } else {
+        "runnable"
+    }
+}
+
 pub(crate) fn wait_dependency_summary(state: &AppState) -> Option<String> {
     let waiting_on = wait_dependency_threads(state);
     match waiting_on.len() {
@@ -61,6 +77,21 @@ pub(crate) fn wait_dependency_threads(state: &AppState) -> Vec<String> {
     threads.sort();
     threads.dedup();
     threads
+}
+
+pub(crate) fn task_role(task: &LiveAgentTaskSummary) -> &'static str {
+    if is_active_wait_task(task) {
+        "blocked"
+    } else if task.status == "inProgress"
+        && matches!(
+            task.tool.as_str(),
+            "spawnAgent" | "sendInput" | "resumeAgent"
+        )
+    {
+        "sidecar"
+    } else {
+        "control"
+    }
 }
 
 pub(crate) fn track_collab_agent_task_started(state: &mut AppState, item: &Value) {
@@ -176,7 +207,14 @@ fn upsert_cached_agent_thread(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
+    use crate::orchestration_registry::LiveAgentTaskSummary;
+
+    use super::active_sidecar_agent_task_count;
     use super::active_wait_task_count;
+    use super::main_agent_state_label;
+    use super::task_role;
     use super::track_collab_agent_task_completed;
     use super::track_collab_agent_task_started;
     use super::wait_dependency_summary;
@@ -263,5 +301,40 @@ mod tests {
             wait_dependency_summary(&state).as_deref(),
             Some("waiting on agents thread-agent-1, thread-agent-2")
         );
+    }
+
+    #[test]
+    fn scheduler_role_helpers_distinguish_blocked_and_sidecar_work() {
+        let wait_task = LiveAgentTaskSummary {
+            id: "wait-1".to_string(),
+            tool: "wait".to_string(),
+            status: "inProgress".to_string(),
+            sender_thread_id: "thread-main".to_string(),
+            receiver_thread_ids: vec!["thread-agent-1".to_string()],
+            prompt: None,
+            agent_statuses: BTreeMap::new(),
+        };
+        let spawn_task = LiveAgentTaskSummary {
+            id: "spawn-1".to_string(),
+            tool: "spawnAgent".to_string(),
+            status: "inProgress".to_string(),
+            sender_thread_id: "thread-main".to_string(),
+            receiver_thread_ids: vec!["thread-agent-2".to_string()],
+            prompt: None,
+            agent_statuses: BTreeMap::new(),
+        };
+
+        assert_eq!(task_role(&wait_task), "blocked");
+        assert_eq!(task_role(&spawn_task), "sidecar");
+
+        let mut state = crate::state::AppState::new(true, false);
+        state
+            .live_agent_tasks
+            .insert(wait_task.id.clone(), wait_task);
+        state
+            .live_agent_tasks
+            .insert(spawn_task.id.clone(), spawn_task);
+        assert_eq!(active_sidecar_agent_task_count(&state), 1);
+        assert_eq!(main_agent_state_label(&state), "blocked");
     }
 }

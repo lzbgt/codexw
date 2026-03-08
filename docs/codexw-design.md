@@ -201,6 +201,8 @@ The current `codexw` implementation now reflects that model partially:
 - `/status` now reports an orchestration breakdown with:
   - `main=1`
   - live wait count from in-progress `wait` collab calls
+  - live sidecar-agent count from `spawnAgent` / `sendInput` / `resumeAgent`
+  - live execution-sidecar count from wrapper background shells that are still running
   - live collab-agent task count from the current turn
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
   - wrapper-owned background shell count

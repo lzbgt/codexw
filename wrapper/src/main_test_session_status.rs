@@ -434,7 +434,9 @@ fn status_overview_reports_orchestration_breakdown() {
         .expect("start background shell");
 
     let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
-    assert!(rendered.contains("orchestration   main=1 waits=0 agents_live=1 agents_cached=2"));
+    assert!(rendered.contains(
+        "orchestration   main=1 waits=0 sidecar_agents=1 exec_sidecars=1 agents_live=1 agents_cached=2"
+    ));
     assert!(rendered.contains("active=1"));
     assert!(rendered.contains("idle=1"));
     assert!(rendered.contains("bg_shells=1"));
