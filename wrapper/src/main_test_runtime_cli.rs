@@ -90,6 +90,44 @@ fn normalize_cli_supports_codex_style_resume_picker_startup() {
 }
 
 #[test]
+fn normalize_cli_disables_responses_websockets_by_default() {
+    let cli = normalize_cli(cli_with_defaults());
+    assert!(
+        cli.disable_features
+            .iter()
+            .any(|value| value == "responses_websockets")
+    );
+    assert!(
+        cli.disable_features
+            .iter()
+            .any(|value| value == "responses_websockets_v2")
+    );
+}
+
+#[test]
+fn normalize_cli_respects_explicit_websocket_enable_flags() {
+    let cli = normalize_cli(Cli {
+        enable_features: vec!["responses_websockets".to_string()],
+        ..cli_with_defaults()
+    });
+    assert!(
+        cli.enable_features
+            .iter()
+            .any(|value| value == "responses_websockets")
+    );
+    assert!(
+        !cli.disable_features
+            .iter()
+            .any(|value| value == "responses_websockets")
+    );
+    assert!(
+        cli.disable_features
+            .iter()
+            .any(|value| value == "responses_websockets_v2")
+    );
+}
+
+#[test]
 fn parse_cli_accepts_cwd_after_resume_for_picker_startup() {
     let cli = crate::parse_cli_from(["codexw", "resume", "--cwd", "/tmp/project"])
         .expect("parse reordered resume picker");

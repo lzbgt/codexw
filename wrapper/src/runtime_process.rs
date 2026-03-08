@@ -11,6 +11,8 @@ use anyhow::Result;
 
 use super::Cli;
 
+const WEBSOCKET_FEATURE_KEYS: [&str; 2] = ["responses_websockets", "responses_websockets_v2"];
+
 pub(crate) enum StartupThreadAction {
     Create,
     Resume(String),
@@ -33,6 +35,13 @@ pub(crate) fn normalize_cli(mut cli: Cli) -> Cli {
         } else {
             cli.resume_picker = true;
             cli.prompt.drain(0..1);
+        }
+    }
+    for feature in WEBSOCKET_FEATURE_KEYS {
+        let explicitly_enabled = cli.enable_features.iter().any(|value| value == feature);
+        let already_disabled = cli.disable_features.iter().any(|value| value == feature);
+        if !explicitly_enabled && !already_disabled {
+            cli.disable_features.push(feature.to_string());
         }
     }
     cli
