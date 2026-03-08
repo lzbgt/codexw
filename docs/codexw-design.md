@@ -60,7 +60,7 @@ The runtime has thirteen main layers.
    `history.rs`, `history_render.rs`, and `history_state.rs` own resumed-thread state seeding, compact conversation-history extraction, and resumed history rendering. `history.rs` is the thin facade over the split render/state helpers.
 
 11. View and transcript rendering helpers
-   `catalog_views.rs`, `catalog_lists.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `transcript_views.rs`, `transcript_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `status_views.rs`, and `transcript_views.rs` remain narrow compatibility facades over the split helpers.
+   `catalog_views.rs`, `catalog_lists.rs`, `catalog_app_views.rs`, `catalog_backend_views.rs`, `catalog_threads.rs`, `status_views.rs`, `status_config.rs`, `status_account.rs`, `status_limits.rs`, `status_rate_limits.rs`, `status_token_usage.rs`, `transcript_views.rs`, `transcript_render.rs`, `transcript_completion_render.rs`, `transcript_plan_render.rs`, and `transcript_summary.rs` own app-server-facing display helpers for catalogs, status summaries, thread listings, token/rate-limit rendering, item completion blocks, and approval/request summaries. `catalog_views.rs`, `catalog_lists.rs`, `status_views.rs`, `status_limits.rs`, `transcript_views.rs`, and `transcript_render.rs` remain narrow compatibility facades over the split helpers.
 
 12. Human input handling
    `editor.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode.rs`, `input/input_decode_mentions.rs`, `input/input_decode_inline.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_tokens.rs`, `input/input_resolve.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build.rs`, `dispatch.rs`, `dispatch_submit.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_thread_flow.rs`, `dispatch_command_thread_navigation.rs`, `dispatch_command_thread_actions.rs`, `dispatch_command_thread_workspace.rs`, `dispatch_command_session.rs`, `dispatch_command_session_info.rs`, `dispatch_command_session_control.rs`, `dispatch_command_session_modes.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_completion.rs`, `prompt_file_completions.rs`, and `prompting.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. `input.rs`, `input/input_decode.rs`, `input/input_resolve.rs`, `dispatch.rs`, `dispatch_commands.rs`, `dispatch_command_thread.rs`, `dispatch_command_session.rs`, and `prompting.rs` are compatibility facades over those splits.
@@ -72,9 +72,9 @@ Session feature helpers are split across `model_catalog.rs`, `model_personality.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers are split across `app.rs` and `app_input.rs`: `app.rs` owns backend/session startup and the top-level runtime loop, while `app_input.rs` owns input-key dispatch.
 Resume-preview helpers live across `history_render.rs` and `history_state.rs`, with `history.rs` kept as the thin facade for recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
-Catalog display helpers are split across `catalog_lists.rs` and `catalog_threads.rs`, with `catalog_views.rs` kept as the thin facade over app/skill/model/MCP display plus thread/search rendering.
-Status display helpers are split across `status_config.rs`, `status_account.rs`, and `status_limits.rs`, with `status_views.rs` kept as the thin facade plus the generic value summarizer.
-Transcript display helpers are split across `transcript_render.rs` and `transcript_summary.rs`, with `transcript_views.rs` kept as a thin compatibility facade over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
+Catalog display helpers are split across `catalog_app_views.rs`, `catalog_backend_views.rs`, and `catalog_threads.rs`, with `catalog_lists.rs` and `catalog_views.rs` kept as thin facades over app/skill/model/MCP display plus thread/search rendering.
+Status display helpers are split across `status_config.rs`, `status_account.rs`, `status_rate_limits.rs`, and `status_token_usage.rs`, with `status_views.rs` and `status_limits.rs` kept as thin facades plus the generic value summarizer.
+Transcript display helpers are split across `transcript_completion_render.rs`, `transcript_plan_render.rs`, and `transcript_summary.rs`, with `transcript_render.rs` and `transcript_views.rs` kept as thin compatibility facades over item completion blocks, plan/reasoning rendering, approval/request summaries, and thread-status summarization.
 Runtime helpers live across `runtime_process.rs` and `runtime_input.rs`, with `runtime.rs` kept as the thin facade over backend process startup, raw terminal mode, input mapping, and event-source threads.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers are split across `state_core.rs` and `state_helpers.rs`, with `state.rs` kept as the thin facade over `AppState`, buffer/state types, and common text/path helper functions used across modules.
@@ -408,7 +408,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/catalog_views.rs`
   Compatibility facade for the split catalog display helpers.
 - `wrapper/src/catalog_lists.rs`
-  Apps, skills, models, MCP servers, and experimental-feature rendering.
+  Compatibility facade for the split catalog list renderers.
+- `wrapper/src/catalog_app_views.rs`
+  Apps, skills, and experimental-feature rendering helpers.
+- `wrapper/src/catalog_backend_views.rs`
+  Models and MCP server rendering helpers.
 - `wrapper/src/catalog_threads.rs`
   Thread list, file-search rendering, and extracted id/path helpers.
 - `wrapper/src/status_views.rs`
@@ -418,11 +422,19 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/status_account.rs`
   Account summary rendering.
 - `wrapper/src/status_limits.rs`
-  Rate-limit, credit, token-usage, and reset-time rendering.
+  Compatibility facade for the split rate-limit and token-usage helpers.
+- `wrapper/src/status_rate_limits.rs`
+  Rate-limit window, credit, and reset-time rendering helpers.
+- `wrapper/src/status_token_usage.rs`
+  Token-usage summary rendering helpers.
 - `wrapper/src/transcript_views.rs`
   Compatibility facade re-exporting the split transcript render and summary helpers.
 - `wrapper/src/transcript_render.rs`
-  Item completion blocks, plan/reasoning rendering, and structured tool-user-input response building.
+  Compatibility facade for the split transcript render helpers.
+- `wrapper/src/transcript_completion_render.rs`
+  Command/file-change completion and pending-attachment rendering helpers.
+- `wrapper/src/transcript_plan_render.rs`
+  Plan, reasoning, and structured tool-user-input response helpers.
 - `wrapper/src/transcript_summary.rs`
   Approval/request/status summarizers, item-type humanization, and file-change/tool summary helpers.
 - `wrapper/src/session_status.rs`
