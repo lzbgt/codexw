@@ -36,7 +36,7 @@ The runtime has thirteen main layers.
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
 
 3. Outbound request construction
-   `requests.rs` owns JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions.
+   `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_requests.rs`, and `requests/session_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, thread, turn, command, review, catalog, and realtime actions. `requests.rs` is the compatibility facade over that split.
 
 4. Inbound event handling
    `events.rs`, `responses.rs`, and `notifications.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, and item-completion rendering.
@@ -379,7 +379,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/transcript_views.rs`
   Item completion blocks, plan/reasoning rendering, and approval/request/status summarizers.
 - `wrapper/src/requests.rs`
-  Outbound JSON-RPC request builders plus pending-request types for initialize, thread, turn, command, review, catalog, and realtime actions.
+  Compatibility facade for the split outbound-request layer.
+- `wrapper/src/requests/request_types.rs`
+  `PendingRequest` variants used to track in-flight JSON-RPC work.
+- `wrapper/src/requests/bootstrap_requests.rs`
+  Initialize, catalog, account, config, model, collaboration-mode, thread-list, and file-search request builders.
+- `wrapper/src/requests/session_requests.rs`
+  Thread, realtime, review, turn, and local command request builders.
 - `wrapper/src/rpc.rs`
   JSON-RPC wire types and line parsing.
 - `wrapper/src/input.rs`
