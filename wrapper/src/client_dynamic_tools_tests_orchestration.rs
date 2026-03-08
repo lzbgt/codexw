@@ -164,10 +164,10 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
         actions_text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
     );
     assert!(actions_text.contains(
-        "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
+        "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
     ));
     assert!(actions_text.contains(
-        "background_shell_update_dependencies {\"jobId\":\"<jobId|alias|@capability>\",\"dependsOnCapabilities\":[\"@other.role\"]}"
+        "background_shell_update_dependencies {\"jobId\":\"<jobId|alias|n>\",\"dependsOnCapabilities\":[\"@other.role\"]}"
     ));
     let _ = state
         .orchestration
@@ -217,7 +217,7 @@ fn orchestration_suggest_actions_returns_concrete_tool_steps() {
     assert!(text.contains("Suggested actions:"));
     assert!(text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}"));
     assert!(text.contains(
-        "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
+        "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
     ));
     assert!(
         text.contains(

@@ -1238,7 +1238,7 @@ mod tests {
         let rendered = render_orchestration_actions(&services);
         assert!(rendered.contains("Suggested actions:"));
         assert!(rendered.contains(":ps capabilities @api.http"));
-        assert!(rendered.contains(":ps provide <jobId|alias|@capability|n> <@capability...|none>"));
+        assert!(rendered.contains(":ps provide <jobId|alias|n> <@capability...|none>"));
         assert!(rendered.contains(":clean services @api.http"));
 
         let tool_rendered = render_orchestration_actions_for_tool(&services);
@@ -1248,7 +1248,7 @@ mod tests {
                 .contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
         );
         assert!(tool_rendered.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
         ));
         assert!(tool_rendered.contains(
             "background_shell_clean {\"scope\":\"services\",\"capability\":\"@api.http\"}"
@@ -1398,20 +1398,17 @@ mod tests {
 
         let operator_actions = render_orchestration_actions_for_capability(&blocked, "@api.http")
             .expect("focused operator actions");
-        assert!(operator_actions.contains(":ps provide <jobId|alias|@capability|n> @api.http"));
-        assert!(
-            operator_actions
-                .contains(":ps depend <jobId|alias|@capability|n> <@capability...|none>")
-        );
+        assert!(operator_actions.contains(":ps provide <jobId|alias|n> @api.http"));
+        assert!(operator_actions.contains(":ps depend <jobId|alias|n> <@capability...|none>"));
         assert!(operator_actions.contains(":clean blockers @api.http"));
 
         let tool_actions = render_orchestration_actions_for_tool_capability(&blocked, "@api.http")
             .expect("focused tool actions");
         assert!(tool_actions.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
         ));
         assert!(tool_actions.contains(
-            "background_shell_update_dependencies {\"jobId\":\"<jobId|alias|@capability>\",\"dependsOnCapabilities\":[\"@other.role\"]}"
+            "background_shell_update_dependencies {\"jobId\":\"<jobId|alias|n>\",\"dependsOnCapabilities\":[\"@other.role\"]}"
         ));
         assert!(tool_actions.contains(
             "background_shell_clean {\"scope\":\"blockers\",\"capability\":\"@api.http\"}"
