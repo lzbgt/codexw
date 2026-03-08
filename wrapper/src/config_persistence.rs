@@ -84,7 +84,12 @@ fn load_persisted_theme_from_home(codex_home: &Path) -> Result<Option<String>> {
     let doc = contents
         .parse::<DocumentMut>()
         .with_context(|| format!("failed to parse {}", config_path.display()))?;
-    Ok(doc["tui"]["theme"].as_str().map(ToString::to_string))
+    Ok(doc
+        .get("tui")
+        .and_then(Item::as_table)
+        .and_then(|table| table.get("theme"))
+        .and_then(Item::as_str)
+        .map(ToString::to_string))
 }
 
 fn edit_config<F>(codex_home_override: Option<&Path>, edit: F) -> Result<()>
@@ -247,14 +252,27 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         let codex_home = temp.path().join("codex-home");
 
+        persist_theme_selection(Some(&codex_home), "solarized-dark").expect("persist theme");
+
+        assert_eq!(
+            load_persisted_theme_from_home(&codex_home).expect("load theme"),
+            Some("solarized-dark".to_string())
+        );
+    }
+
+    #[test]
+    fn load_persisted_theme_ignores_configs_without_tui_table() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let codex_home = temp.path().join("codex-home");
+
         edit_config_at_home(&codex_home, |doc| {
-            doc["tui"]["theme"] = value("solarized-dark");
+            doc["model"] = value("gpt-5-codex");
         })
         .expect("write config");
 
         assert_eq!(
             load_persisted_theme_from_home(&codex_home).expect("load theme"),
-            Some("solarized-dark".to_string())
+            None
         );
     }
 
