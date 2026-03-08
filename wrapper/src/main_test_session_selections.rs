@@ -568,6 +568,8 @@ fn new_thread_requests_advertise_client_dynamic_tools() {
     assert_eq!(
         names,
         vec![
+            "workspace_list_dir",
+            "workspace_stat_path",
             "workspace_read_file",
             "workspace_find_files",
             "workspace_search_text"

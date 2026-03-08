@@ -13,6 +13,28 @@ const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", ".next", "dist", 
 pub(crate) fn dynamic_tool_specs() -> Value {
     Value::Array(vec![
         json!({
+            "name": "workspace_list_dir",
+            "description": "List files and directories under a workspace directory. Defaults to the workspace root.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": MAX_RESULTS}
+                }
+            }
+        }),
+        json!({
+            "name": "workspace_stat_path",
+            "description": "Inspect a workspace path and report whether it is a file or directory, plus basic metadata.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"}
+                },
+                "required": ["path"]
+            }
+        }),
+        json!({
             "name": "workspace_read_file",
             "description": "Read a UTF-8 text file from the current workspace. Supports optional 1-based startLine and endLine filters.",
             "inputSchema": {
@@ -59,6 +81,8 @@ pub(crate) fn execute_dynamic_tool_call(params: &Value, resolved_cwd: &str) -> V
         .unwrap_or("dynamic tool");
     let arguments = params.get("arguments").unwrap_or(&Value::Null);
     let result = match tool {
+        "workspace_list_dir" => workspace_list_dir(arguments, resolved_cwd),
+        "workspace_stat_path" => workspace_stat_path(arguments, resolved_cwd),
         "workspace_read_file" => workspace_read_file(arguments, resolved_cwd),
         "workspace_find_files" => workspace_find_files(arguments, resolved_cwd),
         "workspace_search_text" => workspace_search_text(arguments, resolved_cwd),
@@ -75,6 +99,91 @@ pub(crate) fn execute_dynamic_tool_call(params: &Value, resolved_cwd: &str) -> V
             "success": false
         }),
     }
+}
+
+fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Result<String, String> {
+    let object = arguments
+        .as_object()
+        .ok_or_else(|| "workspace_list_dir expects an object argument".to_string())?;
+    let root = workspace_root(resolved_cwd)?;
+    let target = object
+        .get("path")
+        .and_then(Value::as_str)
+        .map(|path| resolve_workspace_path(&root, path))
+        .transpose()?
+        .unwrap_or_else(|| root.clone());
+    let metadata = fs::metadata(&target)
+        .map_err(|err| format!("failed to stat `{}`: {err}", target.display()))?;
+    if !metadata.is_dir() {
+        return Err(format!("`{}` is not a directory", target.display()));
+    }
+    let limit = extract_limit(object.get("limit"));
+    let mut entries = fs::read_dir(&target)
+        .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?;
+    entries.sort_by_key(|entry| entry.file_name());
+    let total_entries = entries.len();
+
+    let relative = rel_display(&root, &target);
+    let mut rendered = vec![format!("Directory: {}", normalize_root_label(&relative))];
+    if entries.is_empty() {
+        rendered.push("(empty directory)".to_string());
+        return Ok(rendered.join("\n"));
+    }
+    for entry in entries.into_iter().take(limit) {
+        let path = entry.path();
+        let metadata = entry
+            .metadata()
+            .map_err(|err| format!("failed to stat `{}`: {err}", path.display()))?;
+        let kind = if metadata.is_dir() { "dir " } else { "file" };
+        let size = if metadata.is_file() {
+            format!("{} bytes", metadata.len())
+        } else {
+            "-".to_string()
+        };
+        rendered.push(format!("{kind}  {:<8} {}", size, rel_display(&root, &path)));
+    }
+    if rendered.len() == limit + 1 && total_entries > limit {
+        rendered.push(format!(
+            "... {} more entries omitted",
+            total_entries - limit
+        ));
+    }
+    Ok(rendered.join("\n"))
+}
+
+fn workspace_stat_path(arguments: &Value, resolved_cwd: &str) -> Result<String, String> {
+    let object = arguments
+        .as_object()
+        .ok_or_else(|| "workspace_stat_path expects an object argument".to_string())?;
+    let path = object
+        .get("path")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "workspace_stat_path requires `path`".to_string())?;
+    let root = workspace_root(resolved_cwd)?;
+    let target = resolve_workspace_path(&root, path)?;
+    let metadata = fs::metadata(&target)
+        .map_err(|err| format!("failed to stat `{}`: {err}", target.display()))?;
+    let relative = rel_display(&root, &target);
+    let kind = if metadata.is_dir() {
+        "directory"
+    } else if metadata.is_file() {
+        "file"
+    } else {
+        "other"
+    };
+    let mut rendered = vec![
+        format!("Path: {relative}"),
+        format!("Type: {kind}"),
+        format!("Size: {} bytes", metadata.len()),
+    ];
+    if let Ok(modified) = metadata.modified()
+        && let Ok(value) = modified.duration_since(std::time::UNIX_EPOCH)
+    {
+        rendered.push(format!("Modified: {}", value.as_secs()));
+    }
+    Ok(rendered.join("\n"))
 }
 
 fn workspace_read_file(arguments: &Value, resolved_cwd: &str) -> Result<String, String> {
@@ -293,6 +402,10 @@ fn rel_display(root: &Path, path: &Path) -> String {
         .to_string()
 }
 
+fn normalize_root_label(relative: &str) -> &str {
+    if relative.is_empty() { "." } else { relative }
+}
+
 fn extract_limit(limit: Option<&Value>) -> usize {
     limit
         .and_then(Value::as_u64)
@@ -319,11 +432,61 @@ mod tests {
         assert_eq!(
             names,
             vec![
+                "workspace_list_dir",
+                "workspace_stat_path",
                 "workspace_read_file",
                 "workspace_find_files",
                 "workspace_search_text"
             ]
         );
+    }
+
+    #[test]
+    fn workspace_list_dir_returns_sorted_entries() {
+        let workspace = tempfile::tempdir().expect("tempdir");
+        std::fs::create_dir_all(workspace.path().join("src")).expect("mkdir");
+        std::fs::write(workspace.path().join("a.txt"), "alpha").expect("write");
+        std::fs::write(workspace.path().join("src/lib.rs"), "pub fn demo() {}\n").expect("write");
+
+        let result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "workspace_list_dir",
+                "arguments": {"path": ".", "limit": 10}
+            }),
+            workspace.path().to_str().expect("utf8 path"),
+        );
+
+        assert_eq!(result["success"], true);
+        let text = result["contentItems"][0]["text"]
+            .as_str()
+            .expect("text output");
+        assert!(text.contains("Directory: ."));
+        assert!(text.contains("file  5 bytes"));
+        assert!(text.contains("a.txt"));
+        assert!(text.contains("dir   -"));
+        assert!(text.contains("src"));
+    }
+
+    #[test]
+    fn workspace_stat_path_reports_type_and_size() {
+        let workspace = tempfile::tempdir().expect("tempdir");
+        std::fs::write(workspace.path().join("hello.txt"), "alpha").expect("write");
+
+        let result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "workspace_stat_path",
+                "arguments": {"path": "hello.txt"}
+            }),
+            workspace.path().to_str().expect("utf8 path"),
+        );
+
+        assert_eq!(result["success"], true);
+        let text = result["contentItems"][0]["text"]
+            .as_str()
+            .expect("text output");
+        assert!(text.contains("Path: hello.txt"));
+        assert!(text.contains("Type: file"));
+        assert!(text.contains("Size: 5 bytes"));
     }
 
     #[test]
