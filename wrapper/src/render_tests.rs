@@ -162,6 +162,49 @@ fn long_command_output_is_abbreviated() {
 }
 
 #[test]
+fn long_file_change_diff_is_not_abbreviated() {
+    let long_diff = (1..=81)
+        .map(|index| format!("+line {index}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let body = render_file_change_completion(
+        &serde_json::json!({
+            "changes": [
+                {
+                    "kind": "update",
+                    "path": "docs/FOLLOW_TRADING.md",
+                    "diff": long_diff
+                }
+            ]
+        }),
+        "completed",
+        None,
+        false,
+    );
+    assert!(body.contains("update docs/FOLLOW_TRADING.md"));
+    assert!(body.contains("+line 21"));
+    assert!(body.contains("+line 81"));
+    assert!(!body.contains("\n...\n"));
+}
+
+#[test]
+fn long_file_change_output_fallback_is_not_abbreviated() {
+    let long_output = (1..=81)
+        .map(|index| format!("line {index}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let body = render_file_change_completion(
+        &serde_json::json!({}),
+        "completed",
+        Some(&long_output),
+        false,
+    );
+    assert!(body.contains("line 21"));
+    assert!(body.contains("line 81"));
+    assert!(!body.contains("\n...\n"));
+}
+
+#[test]
 fn long_tool_text_result_is_abbreviated() {
     let long_text = (1..=81)
         .map(|index| format!("line {index}"))

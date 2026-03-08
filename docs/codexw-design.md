@@ -303,6 +303,7 @@ It renders:
 The design goal is richer terminal output without switching to an alternate-screen viewport.
 
 To reduce transcript duplication, the client now prefers the transient status line over committed `[status] ...` chatter in scrollback, and it avoids emitting redundant "started" transcript blocks for commands and file changes that already produce a completed result block.
+For long raw textual output, the renderer now uses a default 80-line threshold and collapses oversized command/read/search-style results to the first 20 lines, `...`, and the last 20 lines. Structured file-change artifacts are excluded from that rule so diffs and update payloads remain fully reviewable, and `--verbose`/`--verbose-events` bypass the abbreviation entirely.
 
 ## Human-Facing Features
 

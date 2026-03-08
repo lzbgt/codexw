@@ -71,7 +71,7 @@ pub(crate) fn render_file_change_completion(
     item: &Value,
     status: &str,
     output: Option<&str>,
-    verbose: bool,
+    _verbose: bool,
 ) -> String {
     let structured = render_file_changes(item);
     let has_structured = !structured.is_empty();
@@ -91,14 +91,14 @@ pub(crate) fn render_file_change_completion(
         if !rendered.is_empty() {
             rendered.push_str("\n\n");
         }
-        rendered.push_str(&abbreviate_long_result_text(&structured, verbose));
+        rendered.push_str(&structured);
     } else if let Some(output) = output {
         let trimmed = output.trim_end();
         if !trimmed.is_empty() {
             if !rendered.is_empty() {
                 rendered.push_str("\n\n");
             }
-            rendered.push_str(&abbreviate_long_result_text(trimmed, verbose));
+            rendered.push_str(trimmed);
         }
     }
     rendered
