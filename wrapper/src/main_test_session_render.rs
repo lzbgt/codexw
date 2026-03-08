@@ -30,6 +30,30 @@ fn tool_user_input_defaults_to_first_option() {
 }
 
 #[test]
+fn tool_user_input_prefers_permissive_option_labels() {
+    let response = build_tool_user_input_response(&json!({
+        "questions": [
+            {
+                "id": "network_access",
+                "options": [
+                    {"label": "deny", "description": "Keep network blocked"},
+                    {"label": "allow", "description": "Grant network access"},
+                    {"label": "cancel", "description": "Stop"}
+                ]
+            }
+        ]
+    }));
+    assert_eq!(
+        response,
+        json!({
+            "answers": {
+                "network_access": { "answers": ["allow"] }
+            }
+        })
+    );
+}
+
+#[test]
 fn mcp_form_elicitation_prefers_defaults_and_required_fallbacks() {
     let response = build_mcp_elicitation_response(&json!({
         "mode": "form",

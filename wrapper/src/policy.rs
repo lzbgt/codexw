@@ -55,16 +55,13 @@ pub(crate) fn choose_command_approval_decision(params: &Value, yolo: bool) -> Va
 }
 
 pub(crate) fn choose_first_allowed_decision(decisions: &[Value]) -> Option<Value> {
-    for preferred in [
-        "acceptForSession",
-        "acceptWithExecpolicyAmendment",
-        "applyNetworkPolicyAmendment",
-        "accept",
+    for matcher in [
+        decision_is_network_allow_amendment as fn(&Value) -> bool,
+        decision_is_execpolicy_amendment,
+        decision_is_accept_for_session,
+        decision_is_accept,
     ] {
-        if let Some(found) = decisions
-            .iter()
-            .find(|decision| decision.as_str() == Some(preferred))
-        {
+        if let Some(found) = decisions.iter().find(|decision| matcher(decision)) {
             return Some(found.clone());
         }
     }
@@ -73,4 +70,33 @@ pub(crate) fn choose_first_allowed_decision(decisions: &[Value]) -> Option<Value
 
 pub(crate) fn shell_program() -> String {
     std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
+}
+
+fn decision_is_accept(decision: &Value) -> bool {
+    decision.as_str() == Some("accept")
+}
+
+fn decision_is_accept_for_session(decision: &Value) -> bool {
+    decision.as_str() == Some("acceptForSession")
+}
+
+fn decision_is_execpolicy_amendment(decision: &Value) -> bool {
+    decision.get("acceptWithExecpolicyAmendment").is_some()
+}
+
+fn decision_is_network_allow_amendment(decision: &Value) -> bool {
+    let Some(payload) = decision
+        .get("applyNetworkPolicyAmendment")
+        .or_else(|| decision.get("apply_network_policy_amendment"))
+    else {
+        return false;
+    };
+
+    payload
+        .get("networkPolicyAmendment")
+        .or_else(|| payload.get("network_policy_amendment"))
+        .or(Some(payload))
+        .and_then(|amendment| amendment.get("action"))
+        .and_then(Value::as_str)
+        == Some("allow")
 }

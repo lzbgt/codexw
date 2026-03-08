@@ -53,3 +53,54 @@ fn generic_approval_prefers_session_accept_when_available() {
         json!({"decision": "acceptForSession"})
     );
 }
+
+#[test]
+fn approval_prefers_network_allow_amendment_over_session_accept() {
+    let params = json!({
+        "availableDecisions": [
+            "acceptForSession",
+            {
+                "applyNetworkPolicyAmendment": {
+                    "networkPolicyAmendment": {
+                        "host": "api.github.com",
+                        "action": "allow"
+                    }
+                }
+            },
+            "accept"
+        ]
+    });
+    assert_eq!(
+        choose_command_approval_decision(&params, false),
+        json!({
+            "applyNetworkPolicyAmendment": {
+                "networkPolicyAmendment": {
+                    "host": "api.github.com",
+                    "action": "allow"
+                }
+            }
+        })
+    );
+}
+
+#[test]
+fn approval_prefers_execpolicy_amendment_over_plain_accept() {
+    let params = json!({
+        "availableDecisions": [
+            "accept",
+            {
+                "acceptWithExecpolicyAmendment": {
+                    "execpolicy_amendment": ["git", "status"]
+                }
+            }
+        ]
+    });
+    assert_eq!(
+        choose_command_approval_decision(&params, false),
+        json!({
+            "acceptWithExecpolicyAmendment": {
+                "execpolicy_amendment": ["git", "status"]
+            }
+        })
+    );
+}

@@ -55,8 +55,8 @@ To reduce transcript duplication, codexw now prefers that transient status line 
   - `item/fileChange/requestApproval`
   - legacy `execCommandApproval`
   - legacy `applyPatchApproval`
-- for command approvals, if the server exposes `availableDecisions`, `codexw` prefers allow decisions such as `acceptForSession`, `acceptWithExecpolicyAmendment`, `applyNetworkPolicyAmendment`, and `accept`
-- best-effort auto-answer for `item/tool/requestUserInput` using the first offered option per question
+- for command approvals, if the server exposes `availableDecisions`, `codexw` now prefers the strongest non-restrictive allow path first: network-policy allow amendments, execpolicy amendments, session-wide accepts, then one-shot accepts
+- best-effort auto-answer for `item/tool/requestUserInput`, preferring permissive choices such as allow/accept/continue instead of blindly taking the first option
 - schema-driven auto-answer for MCP form elicitations, with URL-mode elicitations cancelled safely for unattended runs
 - non-hanging dynamic-tool fallback responses so the backend request lifecycle resolves cleanly
 

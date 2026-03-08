@@ -344,9 +344,9 @@ That includes:
 
 - approval policy `never`
 - danger-full-access sandbox posture
-- automatic handling for command approvals
+- automatic handling for command approvals, preferring allow-amendment decisions when the backend offers them
 - automatic handling for file-change approvals
-- best-effort answers for backend user-input requests, including schema-driven MCP form replies
+- best-effort answers for backend user-input requests, preferring permissive option labels plus schema-driven MCP form replies
 
 This makes `codexw` suitable for unattended continuation workflows, while still allowing interactive steer input.
 
