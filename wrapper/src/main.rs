@@ -69,8 +69,6 @@ mod render_markdown_inline;
 mod render_markdown_links;
 mod render_markdown_styles;
 mod render_prompt;
-mod render_prompt_commit;
-mod render_prompt_layout;
 mod requests;
 mod response_bootstrap_catalog_state;
 mod response_bootstrap_catalog_views;
