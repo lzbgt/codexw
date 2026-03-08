@@ -3,7 +3,7 @@ use std::process::Stdio;
 
 use anyhow::Result;
 
-use crate::commands_metadata::builtin_command_names;
+use crate::commands_catalog::builtin_command_names;
 use crate::output::Output;
 
 pub(crate) struct FeedbackCommand {

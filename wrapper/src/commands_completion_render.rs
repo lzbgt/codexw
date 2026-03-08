@@ -1,4 +1,4 @@
-use crate::commands_metadata::builtin_command_description;
+use crate::commands_catalog::builtin_command_description;
 
 pub(crate) fn render_slash_completion_candidates(
     filter: &str,

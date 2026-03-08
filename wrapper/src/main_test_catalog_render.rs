@@ -1,6 +1,6 @@
-use crate::catalog_app_views::render_apps_list;
-use crate::catalog_app_views::render_experimental_features_list;
 use crate::catalog_backend_views::render_models_list;
+use crate::catalog_connector_views::render_apps_list;
+use crate::catalog_feature_views::render_experimental_features_list;
 use crate::input::AppCatalogEntry;
 use serde_json::json;
 

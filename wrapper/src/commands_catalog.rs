@@ -37,6 +37,25 @@ pub(crate) fn builtin_command_names() -> Vec<&'static str> {
         .collect()
 }
 
+pub(crate) fn builtin_help_lines() -> Vec<String> {
+    builtin_command_entries()
+        .iter()
+        .map(|entry| format!(":{:<26} {}", entry.help_syntax, entry.description))
+        .collect()
+}
+
+pub(crate) fn builtin_command_description(command: &str) -> &'static str {
+    builtin_command_entry(command)
+        .map(|entry| entry.description)
+        .unwrap_or("command")
+}
+
+fn builtin_command_entry(command: &str) -> Option<&'static BuiltinCommandEntry> {
+    builtin_command_entries()
+        .iter()
+        .find(|entry| entry.name == command)
+}
+
 fn builtin_command_rank(name: &str) -> usize {
     match name {
         "model" => 0,

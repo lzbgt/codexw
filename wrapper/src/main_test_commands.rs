@@ -1,7 +1,7 @@
+use crate::commands_catalog::builtin_command_names;
+use crate::commands_catalog::builtin_help_lines;
 use crate::commands_completion_render::quote_if_needed;
 use crate::commands_completion_render::render_slash_completion_candidates;
-use crate::commands_metadata::builtin_command_names;
-use crate::commands_metadata::builtin_help_lines;
 
 #[test]
 fn slash_completion_rendering_includes_descriptions() {

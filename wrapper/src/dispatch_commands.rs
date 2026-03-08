@@ -3,7 +3,7 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::commands_metadata::builtin_help_lines;
+use crate::commands_catalog::builtin_help_lines;
 use crate::dispatch_command_session_catalog_lists::try_handle_session_catalog_list_command;
 use crate::dispatch_command_session_catalog_models::try_handle_session_catalog_model_command;
 use crate::dispatch_command_session_collab::handle_collab_command;
@@ -12,8 +12,10 @@ use crate::dispatch_command_session_meta::try_handle_session_meta_command;
 use crate::dispatch_command_session_ps::handle_ps_command;
 use crate::dispatch_command_session_realtime::handle_realtime_command;
 use crate::dispatch_command_session_status::try_handle_session_status_command;
-use crate::dispatch_command_thread_actions;
-use crate::dispatch_command_thread_navigation;
+use crate::dispatch_command_thread_control::try_handle_thread_control_command;
+use crate::dispatch_command_thread_navigation_identity::try_handle_thread_identity_navigation;
+use crate::dispatch_command_thread_navigation_session::try_handle_thread_session_navigation;
+use crate::dispatch_command_thread_review::try_handle_thread_review_command;
 use crate::dispatch_command_thread_workspace;
 use crate::dispatch_command_utils;
 use crate::editor::LineEditor;
@@ -50,21 +52,41 @@ pub(crate) fn handle_command(
         }
         "quit" | "q" | "exit" => Ok(false),
         _ => {
-            if let Some(result) =
-                dispatch_command_thread_navigation::try_handle_thread_navigation_command(
-                    command,
-                    &args,
-                    cli,
-                    resolved_cwd,
-                    state,
-                    editor,
-                    output,
-                    writer,
-                )?
-            {
+            if let Some(result) = try_handle_thread_session_navigation(
+                command,
+                &args,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+            )? {
                 return Ok(result);
             }
-            if let Some(result) = dispatch_command_thread_actions::try_handle_thread_action_command(
+            if let Some(result) = try_handle_thread_identity_navigation(
+                command,
+                &args,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+            )? {
+                return Ok(result);
+            }
+            if let Some(result) = try_handle_thread_review_command(
+                command,
+                &args,
+                cli,
+                resolved_cwd,
+                state,
+                editor,
+                output,
+                writer,
+            )? {
+                return Ok(result);
+            }
+            if let Some(result) = try_handle_thread_control_command(
                 command,
                 &args,
                 cli,

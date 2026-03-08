@@ -1,7 +1,7 @@
+use crate::commands_catalog::builtin_command_names;
 use crate::commands_match::fuzzy_match_score;
 use crate::commands_match::longest_common_prefix;
 use crate::commands_match::slash_command_at_cursor;
-use crate::commands_metadata::builtin_command_names;
 use crate::editor::LineEditor;
 
 use crate::commands_completion_render::render_slash_completion_candidates;
