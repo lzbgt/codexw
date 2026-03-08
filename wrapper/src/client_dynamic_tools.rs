@@ -16,6 +16,7 @@ use crate::orchestration_view::orchestration_overview_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
 use crate::orchestration_view::render_orchestration_actions_for_tool;
 use crate::orchestration_view::render_orchestration_actions_for_tool_capability;
+use crate::orchestration_view::render_orchestration_blockers_for_capability;
 use crate::orchestration_view::render_orchestration_dependencies;
 use crate::orchestration_view::render_orchestration_guidance_for_capability;
 use crate::orchestration_view::render_orchestration_workers;
@@ -43,7 +44,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "orchestration_list_workers",
-            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, dependencies, agents, shells, services, capabilities, terminals, guidance, or actions. Guidance and actions may also be narrowed to one @capability.",
+            "description": "Render the current orchestration worker graph, optionally filtered to all, blockers, dependencies, agents, shells, services, capabilities, terminals, guidance, or actions. Blockers, guidance, and actions may also be narrowed to one @capability.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -492,11 +493,16 @@ fn render_orchestration_workers_for_tool(
     Ok(if matches!(filter, WorkerFilter::All) {
         if capability.is_some() {
             return Err(
-                "orchestration_list_workers `capability` is only supported with `filter=guidance` or `filter=actions`"
+                "orchestration_list_workers `capability` is only supported with `filter=blockers`, `filter=guidance`, or `filter=actions`"
                     .to_string(),
             );
         }
         render_orchestration_workers(state)
+    } else if matches!(filter, WorkerFilter::Blockers) {
+        match capability.as_deref() {
+            Some(capability) => render_orchestration_blockers_for_capability(state, capability)?,
+            None => render_orchestration_workers_with_filter(state, filter),
+        }
     } else if matches!(filter, WorkerFilter::Guidance) {
         match capability.as_deref() {
             Some(capability) => render_orchestration_guidance_for_capability(state, capability)?,
@@ -512,7 +518,7 @@ fn render_orchestration_workers_for_tool(
     } else {
         if capability.is_some() {
             return Err(
-                "orchestration_list_workers `capability` is only supported with `filter=guidance` or `filter=actions`"
+                "orchestration_list_workers `capability` is only supported with `filter=blockers`, `filter=guidance`, or `filter=actions`"
                     .to_string(),
             );
         }

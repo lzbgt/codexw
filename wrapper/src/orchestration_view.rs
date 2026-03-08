@@ -494,6 +494,20 @@ pub(crate) fn render_orchestration_guidance_for_capability(
     }
 }
 
+pub(crate) fn render_orchestration_blockers_for_capability(
+    state: &AppState,
+    capability_ref: &str,
+) -> Result<String, String> {
+    let capability = normalize_capability_ref(capability_ref)?;
+    Ok(render_orchestration_dependencies(
+        state,
+        &DependencySelection {
+            filter: DependencyFilter::Blocking,
+            capability: Some(capability),
+        },
+    ))
+}
+
 pub(crate) fn render_orchestration_actions(state: &AppState) -> String {
     let lines = action_lines(state, ActionAudience::Operator);
     if lines.is_empty() {
@@ -1035,7 +1049,10 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     "Run `:ps dependencies missing @{}` to inspect the blocked dependency edges.",
                     issue.capability
                 ),
-                "If the blocked shell is no longer needed, run `:clean blockers`.".to_string(),
+                format!(
+                    "If the blocked shell is no longer needed, run `:clean blockers @{}`.",
+                    issue.capability
+                ),
             ],
             ActionAudience::Tool => vec![
                 format!(
@@ -1046,7 +1063,10 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     "Use `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{}\"}}` to inspect the blocked dependency edges.",
                     issue.capability
                 ),
-                "Use `background_shell_clean {\"scope\":\"blockers\"}` to abandon the blocking prerequisite shells if they are no longer needed.".to_string(),
+                format!(
+                    "Use `background_shell_clean {{\"scope\":\"blockers\",\"capability\":\"@{}\"}}` to abandon the blocking prerequisite shells if they are no longer needed.",
+                    issue.capability
+                ),
             ],
         };
     }
@@ -1247,11 +1267,15 @@ fn action_lines_for_capability(
     {
         return Ok(match (issue.status, audience) {
             (BackgroundShellCapabilityDependencyState::Missing, ActionAudience::Operator) => vec![
-                format!("Run `:ps capabilities @{capability}` to inspect the missing provider map."),
+                format!(
+                    "Run `:ps capabilities @{capability}` to inspect the missing provider map."
+                ),
                 format!(
                     "Run `:ps dependencies missing @{capability}` to inspect the blocked dependency edges."
                 ),
-                "If the blocked shell is no longer needed, run `:clean blockers`.".to_string(),
+                format!(
+                    "If the blocked shell is no longer needed, run `:clean blockers @{capability}`."
+                ),
             ],
             (BackgroundShellCapabilityDependencyState::Missing, ActionAudience::Tool) => vec![
                 format!(
@@ -1260,15 +1284,21 @@ fn action_lines_for_capability(
                 format!(
                     "Use `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{capability}\"}}` to inspect the blocked dependency edges."
                 ),
-                "Use `background_shell_clean {\"scope\":\"blockers\"}` to abandon the blocking prerequisite shells if they are no longer needed.".to_string(),
-            ],
-            (BackgroundShellCapabilityDependencyState::Ambiguous, ActionAudience::Operator) => vec![
-                format!("Run `:ps capabilities @{capability}` to inspect the ambiguous provider set."),
                 format!(
-                    "Run `:clean services @{capability}` to clear the conflicting reusable role in one step."
+                    "Use `background_shell_clean {{\"scope\":\"blockers\",\"capability\":\"@{capability}\"}}` to abandon the blocking prerequisite shells if they are no longer needed."
                 ),
-                format!("Run `:ps services @{capability}` to inspect the remaining providers."),
             ],
+            (BackgroundShellCapabilityDependencyState::Ambiguous, ActionAudience::Operator) => {
+                vec![
+                    format!(
+                        "Run `:ps capabilities @{capability}` to inspect the ambiguous provider set."
+                    ),
+                    format!(
+                        "Run `:clean services @{capability}` to clear the conflicting reusable role in one step."
+                    ),
+                    format!("Run `:ps services @{capability}` to inspect the remaining providers."),
+                ]
+            }
             (BackgroundShellCapabilityDependencyState::Ambiguous, ActionAudience::Tool) => vec![
                 format!(
                     "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the ambiguous provider set."
@@ -1281,7 +1311,9 @@ fn action_lines_for_capability(
                 ),
             ],
             (BackgroundShellCapabilityDependencyState::Booting, ActionAudience::Operator) => vec![
-                format!("Run `:ps services booting @{capability}` to inspect the booting provider state."),
+                format!(
+                    "Run `:ps services booting @{capability}` to inspect the booting provider state."
+                ),
                 format!("Run `:ps wait @{capability} 5000` to wait on the capability provider."),
                 format!(
                     "Run `:ps dependencies booting @{capability}` to keep the dependency view focused."
@@ -1394,6 +1426,7 @@ mod tests {
     use super::render_orchestration_actions_for_capability;
     use super::render_orchestration_actions_for_tool;
     use super::render_orchestration_actions_for_tool_capability;
+    use super::render_orchestration_blockers_for_capability;
     use super::render_orchestration_guidance;
     use super::render_orchestration_guidance_for_capability;
     use super::render_orchestration_workers;
@@ -1950,5 +1983,49 @@ mod tests {
         assert!(tool_actions.contains("Suggested actions (@api.http):"));
         assert!(tool_actions.contains("background_shell_attach {\"jobId\":\"@api.http\"}"));
         let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn focused_blockers_can_target_one_capability() {
+        let blocked = crate::state::AppState::new(true, false);
+        blocked
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start api blocker");
+        blocked
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["db.redis"]
+                }),
+                "/tmp",
+            )
+            .expect("start db blocker");
+
+        let blockers =
+            render_orchestration_blockers_for_capability(&blocked, "@api.http").expect("focus");
+        assert!(blockers.contains("Dependencies (@api.http):"));
+        assert!(blockers.contains("shell:bg-1 -> capability:@api.http"));
+        assert!(!blockers.contains("db.redis"));
+
+        let operator_actions = render_orchestration_actions_for_capability(&blocked, "@api.http")
+            .expect("focused operator actions");
+        assert!(operator_actions.contains(":clean blockers @api.http"));
+
+        let tool_actions = render_orchestration_actions_for_tool_capability(&blocked, "@api.http")
+            .expect("focused tool actions");
+        assert!(tool_actions.contains(
+            "background_shell_clean {\"scope\":\"blockers\",\"capability\":\"@api.http\"}"
+        ));
+        let _ = blocked.background_shells.terminate_all_running();
     }
 }

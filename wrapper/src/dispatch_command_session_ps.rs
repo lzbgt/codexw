@@ -9,6 +9,7 @@ use crate::orchestration_view::DependencyFilter;
 use crate::orchestration_view::DependencySelection;
 use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::render_orchestration_actions_for_capability;
+use crate::orchestration_view::render_orchestration_blockers_for_capability;
 use crate::orchestration_view::render_orchestration_dependencies;
 use crate::orchestration_view::render_orchestration_guidance_for_capability;
 use crate::orchestration_view::render_orchestration_workers;
@@ -342,6 +343,22 @@ pub(crate) fn handle_ps_command(
             }
         };
         output.block_stdout("Actions", &rendered)?;
+    } else if matches!(action, Some("blockers" | "blocking" | "prereqs")) && args.len() > 1 {
+        let capability = match parse_ps_focus_capability(&args[1..], ":ps blockers") {
+            Ok(capability) => capability,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let rendered = match render_orchestration_blockers_for_capability(state, &capability) {
+            Ok(rendered) => rendered,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        output.block_stdout("Blockers", &rendered)?;
     } else if matches!(action, Some("terminate" | "stop" | "kill")) {
         let Some(reference) = args.get(1).copied() else {
             output.line_stderr("[session] usage: :ps terminate <jobId|alias|@capability|n>")?;
@@ -377,7 +394,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)

@@ -306,6 +306,58 @@ fn orchestration_list_workers_guidance_can_focus_one_capability() {
 }
 
 #[test]
+fn orchestration_list_workers_blockers_can_focus_one_capability() {
+    let state = AppState::new(true, false);
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "dependsOnCapabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start api blocker");
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "dependsOnCapabilities": ["db.redis"]
+            }),
+            "/tmp",
+        )
+        .expect("start db blocker");
+
+    let result = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_list_workers",
+            "arguments": {
+                "filter": "blockers",
+                "capability": "@api.http"
+            }
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("focused blockers text");
+    assert!(text.contains("Dependencies (@api.http):"));
+    assert!(text.contains("shell:bg-1 -> capability:@api.http"));
+    assert!(!text.contains("db.redis"));
+    let _ = state
+        .orchestration
+        .background_shells
+        .terminate_all_running();
+}
+
+#[test]
 fn orchestration_list_workers_rejects_capability_for_non_focus_filters() {
     let state = AppState::new(true, false);
     let result = execute_dynamic_tool_call_with_state(
@@ -324,7 +376,9 @@ fn orchestration_list_workers_rejects_capability_for_non_focus_filters() {
         result["contentItems"][0]["text"]
             .as_str()
             .expect("error")
-            .contains("only supported with `filter=guidance` or `filter=actions`")
+            .contains(
+                "only supported with `filter=blockers`, `filter=guidance`, or `filter=actions`"
+            )
     );
 }
 
