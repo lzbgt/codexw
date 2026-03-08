@@ -8,6 +8,7 @@ use crate::dispatch_command_session_ps::parse_ps_dependency_filter;
 use crate::dispatch_command_session_ps::parse_ps_dependency_selector;
 use crate::dispatch_command_session_ps::parse_ps_filter;
 use crate::dispatch_command_session_ps::parse_ps_service_issue_filter;
+use crate::dispatch_command_session_ps::parse_ps_service_selector;
 use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
@@ -687,6 +688,26 @@ fn ps_capability_filter_parser_accepts_issue_aliases() {
 }
 
 #[test]
+fn ps_service_selector_accepts_optional_capability_reference() {
+    use crate::background_shells::BackgroundShellServiceIssueClass;
+
+    assert_eq!(
+        parse_ps_service_selector(&["ready", "@api.http"]).expect("selector"),
+        (
+            Some(BackgroundShellServiceIssueClass::Ready),
+            Some("api.http".to_string()),
+        )
+    );
+    assert_eq!(
+        parse_ps_service_selector(&["@api.http"]).expect("selector"),
+        (None, Some("api.http".to_string()))
+    );
+    assert!(parse_ps_service_selector(&["ready", "weird"]).is_err());
+    assert!(parse_ps_service_selector(&["ready", "@bad!"]).is_err());
+    assert!(parse_ps_service_selector(&["ready", "@api.http", "@frontend.dev"]).is_err());
+}
+
+#[test]
 fn ps_service_filter_parser_accepts_issue_aliases() {
     use crate::background_shells::BackgroundShellServiceIssueClass;
 
@@ -1215,9 +1236,10 @@ fn ps_command_can_filter_service_shells_by_state() {
 
     let ready = state
         .background_shells
-        .render_service_shells_for_ps_filtered(Some(
-            crate::background_shells::BackgroundShellServiceIssueClass::Ready,
-        ))
+        .render_service_shells_for_ps_filtered(
+            Some(crate::background_shells::BackgroundShellServiceIssueClass::Ready),
+            None,
+        )
         .expect("ready services")
         .join("\n");
     assert!(ready.contains("ready svc"));
@@ -1235,9 +1257,10 @@ fn ps_command_can_filter_service_shells_by_state() {
 
     let booting = state
         .background_shells
-        .render_service_shells_for_ps_filtered(Some(
-            crate::background_shells::BackgroundShellServiceIssueClass::Booting,
-        ))
+        .render_service_shells_for_ps_filtered(
+            Some(crate::background_shells::BackgroundShellServiceIssueClass::Booting),
+            None,
+        )
         .expect("booting services")
         .join("\n");
     assert!(booting.contains("booting svc"));
@@ -1255,13 +1278,66 @@ fn ps_command_can_filter_service_shells_by_state() {
 
     let untracked = state
         .background_shells
-        .render_service_shells_for_ps_filtered(Some(
-            crate::background_shells::BackgroundShellServiceIssueClass::Untracked,
-        ))
+        .render_service_shells_for_ps_filtered(
+            Some(crate::background_shells::BackgroundShellServiceIssueClass::Untracked),
+            None,
+        )
         .expect("untracked services")
         .join("\n");
     assert!(untracked.contains("untracked svc"));
     assert!(!untracked.contains("booting svc"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_command_can_filter_service_shells_by_capability() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start api service");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "frontend svc",
+                "capabilities": ["frontend.dev"]
+            }),
+            "/tmp",
+        )
+        .expect("start frontend service");
+
+    handle_ps_command(
+        "services @api.http",
+        &["services", "@api.http"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render focused service shells");
+
+    let rendered = state
+        .background_shells
+        .render_service_shells_for_ps_filtered(None, Some("@api.http"))
+        .expect("service filter")
+        .join("\n");
+    assert!(rendered.contains("api svc"));
+    assert!(rendered.contains("api.http"));
+    assert!(!rendered.contains("frontend svc"));
     let _ = state.background_shells.terminate_all_running();
 }
 
@@ -1308,9 +1384,10 @@ fn ps_command_can_filter_conflicting_service_shells() {
 
     let rendered = state
         .background_shells
-        .render_service_shells_for_ps_filtered(Some(
-            crate::background_shells::BackgroundShellServiceIssueClass::Conflicts,
-        ))
+        .render_service_shells_for_ps_filtered(
+            Some(crate::background_shells::BackgroundShellServiceIssueClass::Conflicts),
+            None,
+        )
         .expect("conflict services")
         .join("\n");
     assert!(rendered.contains("conflict a"));

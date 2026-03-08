@@ -220,34 +220,40 @@ fn service_shell_views_can_filter_ready_booting_untracked_and_conflicting_jobs()
         .expect("wait for ready service");
 
     let ready = manager
-        .render_service_shells_for_ps_filtered(Some(super::BackgroundShellServiceIssueClass::Ready))
+        .render_service_shells_for_ps_filtered(
+            Some(super::BackgroundShellServiceIssueClass::Ready),
+            None,
+        )
         .expect("ready service render")
         .join("\n");
     assert!(ready.contains("ready svc"));
     assert!(!ready.contains("booting svc"));
 
     let booting = manager
-        .render_service_shells_for_ps_filtered(Some(
-            super::BackgroundShellServiceIssueClass::Booting,
-        ))
+        .render_service_shells_for_ps_filtered(
+            Some(super::BackgroundShellServiceIssueClass::Booting),
+            None,
+        )
         .expect("booting service render")
         .join("\n");
     assert!(booting.contains("booting svc"));
     assert!(!booting.contains("ready svc"));
 
     let untracked = manager
-        .render_service_shells_for_ps_filtered(Some(
-            super::BackgroundShellServiceIssueClass::Untracked,
-        ))
+        .render_service_shells_for_ps_filtered(
+            Some(super::BackgroundShellServiceIssueClass::Untracked),
+            None,
+        )
         .expect("untracked service render")
         .join("\n");
     assert!(untracked.contains("untracked svc"));
     assert!(!untracked.contains("booting svc"));
 
     let conflicts = manager
-        .render_service_shells_for_ps_filtered(Some(
-            super::BackgroundShellServiceIssueClass::Conflicts,
-        ))
+        .render_service_shells_for_ps_filtered(
+            Some(super::BackgroundShellServiceIssueClass::Conflicts),
+            None,
+        )
         .expect("conflicting service render")
         .join("\n");
     assert!(conflicts.contains("conflict a"));

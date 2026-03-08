@@ -249,14 +249,15 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_list_services",
-            "description": "List reusable service shell jobs, optionally filtered to ready, booting, untracked, or conflicting services.",
+            "description": "List reusable service shell jobs, optionally filtered to ready, booting, untracked, or conflicting services and optionally narrowed to one @capability.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "status": {
                         "type": "string",
                         "enum": ["all", "ready", "booting", "untracked", "conflicts"]
-                    }
+                    },
+                    "capability": {"type": "string"}
                 }
             }
         }),

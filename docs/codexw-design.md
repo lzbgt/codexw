@@ -227,7 +227,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps agents` for cognitive workers only
   - `:ps shells` for wrapper-owned local shell jobs only
   - `:ps services` for reusable service shells only
-    - `:ps services ready|booting|untracked|conflicts` filters the service-shell registry to one service-health class
+    - `:ps services ready|booting|untracked|conflicts [@capability]` filters the service-shell registry to one service-health class and can narrow it to one reusable role
   - `:ps capabilities` for the live capability-to-service index across reusable service shells
     - `:ps capabilities @api.http` drills into one capability directly and shows providers plus current consumers
     - `:ps capabilities healthy|missing|booting|ambiguous` filters the capability index to one health/issue class
@@ -330,7 +330,7 @@ The current `codexw` implementation now reflects that model partially:
   - `orchestration_status` mirrors the compact orchestration summary plus next-action hint
   - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, or `guidance`
   - `orchestration_list_dependencies` mirrors the focused dependency-edge view with optional filters such as `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`, plus an optional `capability` selector for one reusable role
-  - `background_shell_list_services` mirrors the focused reusable-service registry with optional filters such as `ready`, `booting`, `untracked`, or `conflicts`
+  - `background_shell_list_services` mirrors the focused reusable-service registry with optional filters such as `ready`, `booting`, `untracked`, or `conflicts`, plus an optional `capability` selector for one reusable role
 
 That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `/multi-agents`, `/ps`, ready status, and transcript summaries all read from that same model.
 `codexw` also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.

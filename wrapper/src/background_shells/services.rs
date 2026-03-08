@@ -194,11 +194,24 @@ impl BackgroundShellManager {
     pub(crate) fn render_service_shells_for_ps_filtered(
         &self,
         issue_filter: Option<BackgroundShellServiceIssueClass>,
+        capability_filter: Option<&str>,
     ) -> Option<Vec<String>> {
         let conflict_job_ids = self.service_conflicting_job_ids();
+        let capability_filter = capability_filter
+            .map(|capability| validate_service_capability(capability.trim_start_matches('@')))
+            .transpose()
+            .ok()?;
         let snapshots = self
             .running_service_snapshots()
             .into_iter()
+            .filter(|snapshot| {
+                capability_filter.as_ref().is_none_or(|capability| {
+                    snapshot
+                        .service_capabilities
+                        .iter()
+                        .any(|entry| entry == capability)
+                })
+            })
             .filter(|snapshot| match issue_filter {
                 None => true,
                 Some(BackgroundShellServiceIssueClass::Ready) => {
@@ -215,8 +228,8 @@ impl BackgroundShellManager {
                 }
             })
             .collect::<Vec<_>>();
-        let include_capability_index = issue_filter.is_none();
-        let include_conflict_summary = issue_filter.is_none()
+        let include_capability_index = issue_filter.is_none() && capability_filter.is_none();
+        let include_conflict_summary = issue_filter.is_none() && capability_filter.is_none()
             || matches!(
                 issue_filter,
                 Some(BackgroundShellServiceIssueClass::Conflicts)
@@ -339,7 +352,13 @@ impl BackgroundShellManager {
                 .and_then(serde_json::Value::as_str),
             "background_shell_list_services",
         )?;
-        self.render_service_shells_for_ps_filtered(issue_filter)
+        let capability_filter = object
+            .and_then(|object| object.get("capability"))
+            .and_then(serde_json::Value::as_str);
+        if let Some(capability) = capability_filter {
+            validate_service_capability(capability.trim_start_matches('@'))?;
+        }
+        self.render_service_shells_for_ps_filtered(issue_filter, capability_filter)
             .map(|lines| lines.join("\n"))
             .ok_or_else(|| "No service shells tracked right now.".to_string())
     }

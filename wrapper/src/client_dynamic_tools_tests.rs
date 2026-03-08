@@ -297,6 +297,80 @@ fn orchestration_list_dependencies_rejects_empty_capability_argument() {
 }
 
 #[test]
+fn background_shell_list_services_can_filter_by_capability() {
+    let manager = BackgroundShellManager::default();
+    execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_start",
+            "arguments": {
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"]
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+    execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_start",
+            "arguments": {
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "frontend svc",
+                "capabilities": ["frontend.dev"]
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_list_services",
+            "arguments": {
+                "capability": "@api.http"
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("service list text");
+    assert!(text.contains("api svc"));
+    assert!(text.contains("api.http"));
+    assert!(!text.contains("frontend svc"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn background_shell_list_services_rejects_invalid_capability() {
+    let manager = BackgroundShellManager::default();
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_list_services",
+            "arguments": {
+                "capability": "@bad!"
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    assert_eq!(result["success"], false);
+    assert!(
+        result["contentItems"][0]["text"]
+            .as_str()
+            .expect("error text")
+            .contains("background shell capability")
+    );
+}
+
+#[test]
 fn workspace_list_dir_returns_sorted_entries() {
     let workspace = tempfile::tempdir().expect("tempdir");
     std::fs::create_dir_all(workspace.path().join("src")).expect("mkdir");

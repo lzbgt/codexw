@@ -417,7 +417,7 @@ pub(crate) fn render_orchestration_workers_with_filter(
         WorkerFilter::Services => state
             .orchestration
             .background_shells
-            .render_service_shells_for_ps_filtered(None),
+            .render_service_shells_for_ps_filtered(None, None),
         WorkerFilter::Capabilities => state
             .orchestration
             .background_shells

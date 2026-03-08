@@ -270,19 +270,17 @@ pub(crate) fn handle_ps_command(
             output.block_stdout("Service Capabilities", &rendered)?;
         }
     } else if matches!(action, Some("services")) && args.len() > 1 {
-        let issue_filter = match parse_ps_service_issue_filter(args.get(1).copied()) {
-            Some(filter) => filter,
-            None => {
-                output.line_stderr(
-                    "[session] usage: :ps services [all|ready|booting|untracked|conflicts]",
-                )?;
+        let (issue_filter, capability_filter) = match parse_ps_service_selector(&args[1..]) {
+            Ok(selection) => selection,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
                 return Ok(true);
             }
         };
         let rendered = match state
             .orchestration
             .background_shells
-            .render_service_shells_for_ps_filtered(issue_filter)
+            .render_service_shells_for_ps_filtered(issue_filter, capability_filter.as_deref())
         {
             Some(rendered) => rendered.join("\n"),
             None => "No service shells tracked right now.".to_string(),
@@ -333,7 +331,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [guidance|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
@@ -518,6 +516,45 @@ pub(crate) fn parse_ps_service_issue_filter(
         }
         Some(_) => None,
     }
+}
+
+pub(crate) fn parse_ps_service_selector(
+    args: &[&str],
+) -> Result<(Option<BackgroundShellServiceIssueClass>, Option<String>), &'static str> {
+    let mut issue_filter = None;
+    let mut capability = None;
+
+    for arg in args.iter().copied() {
+        if let Some(raw_capability) = arg.strip_prefix('@') {
+            if raw_capability.is_empty()
+                || !is_valid_capability_ref(raw_capability)
+                || capability.replace(raw_capability.to_string()).is_some()
+            {
+                return Err(
+                    "usage: :ps services [all|ready|booting|untracked|conflicts] [@capability]",
+                );
+            }
+            continue;
+        }
+
+        let Some(parsed_filter) = parse_ps_service_issue_filter(Some(arg)) else {
+            return Err(
+                "usage: :ps services [all|ready|booting|untracked|conflicts] [@capability]",
+            );
+        };
+        if issue_filter.replace(parsed_filter).is_some() {
+            return Err(
+                "usage: :ps services [all|ready|booting|untracked|conflicts] [@capability]",
+            );
+        }
+    }
+
+    Ok((issue_filter.unwrap_or(None), capability))
+}
+
+fn is_valid_capability_ref(raw: &str) -> bool {
+    raw.chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_' | '/'))
 }
 
 pub(crate) fn parse_clean_target(action: Option<&str>) -> Option<CleanTarget> {
