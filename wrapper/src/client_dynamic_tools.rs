@@ -76,7 +76,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_start",
-            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `readyPattern`, `protocol`, `endpoint`, `attachHint`, and structured `recipes` so the wrapper can distinguish booting versus ready services and expose a reusable attach surface.",
+            "description": "Start a long-running shell command in the background so you can continue other work in the same turn. Use `intent=prerequisite` for critical-path work you will need before finishing, `intent=observation` for non-blocking sidecar work such as tests or searches, and `intent=service` for reusable long-lived helpers such as dev servers. Service jobs may also declare `readyPattern`, `protocol`, `endpoint`, `attachHint`, and structured `recipes` so the wrapper can distinguish booting versus ready services, expose a reusable attach surface, and invoke typed service recipes later.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -98,7 +98,21 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                             "properties": {
                                 "name": {"type": "string"},
                                 "description": {"type": "string"},
-                                "example": {"type": "string"}
+                                "example": {"type": "string"},
+                                "action": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["informational", "stdin", "http"]
+                                        },
+                                        "text": {"type": "string"},
+                                        "appendNewline": {"type": "boolean"},
+                                        "method": {"type": "string"},
+                                        "path": {"type": "string"},
+                                        "body": {"type": "string"}
+                                    }
+                                }
                             },
                             "required": ["name"]
                         }
@@ -142,6 +156,18 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                     "jobId": {"type": "string"}
                 },
                 "required": ["jobId"]
+            }
+        }),
+        json!({
+            "name": "background_shell_invoke_recipe",
+            "description": "Invoke a structured recipe declared by a service background shell job. Supports jobId or alias references.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"},
+                    "recipe": {"type": "string"}
+                },
+                "required": ["jobId", "recipe"]
             }
         }),
         json!({
@@ -190,6 +216,7 @@ pub(crate) fn execute_dynamic_tool_call(
         "background_shell_poll" => background_shells.poll_from_tool(arguments),
         "background_shell_send" => background_shells.send_input_from_tool(arguments),
         "background_shell_attach" => background_shells.attach_from_tool(arguments),
+        "background_shell_invoke_recipe" => background_shells.invoke_recipe_from_tool(arguments),
         "background_shell_list" => Ok(background_shells.list_from_tool()),
         "background_shell_terminate" => background_shells.terminate_from_tool(arguments),
         _ => Err(format!("unsupported client dynamic tool `{tool}`")),
@@ -565,6 +592,7 @@ mod tests {
                 "background_shell_poll",
                 "background_shell_send",
                 "background_shell_attach",
+                "background_shell_invoke_recipe",
                 "background_shell_list",
                 "background_shell_terminate"
             ]
@@ -705,7 +733,12 @@ mod tests {
                         {
                             "name": "health",
                             "description": "Check health",
-                            "example": "curl http://127.0.0.1:4000/health"
+                            "example": "curl http://127.0.0.1:4000/health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health"
+                            }
                         }
                     ]
                 }
@@ -734,7 +767,72 @@ mod tests {
         assert!(rendered.contains("Protocol: http"));
         assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
         assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
-        assert!(rendered.contains("health: Check health"));
+        assert!(rendered.contains("health [http GET /health]: Check health"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_invoke_recipe_runs_structured_service_action() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("local addr");
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut request = [0_u8; 4096];
+            let bytes = std::io::Read::read(&mut stream, &mut request).expect("read request");
+            let request = String::from_utf8_lossy(&request[..bytes]);
+            assert!(request.starts_with("GET /health HTTP/1.1\r\n"));
+            std::io::Write::write_all(
+                &mut stream,
+                b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
+            )
+            .expect("write response");
+        });
+
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": format!("http://{addr}"),
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health"
+                            }
+                        }
+                    ]
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        manager.set_job_alias("bg-1", "dev.api").expect("set alias");
+
+        let invoke_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_invoke_recipe",
+                "arguments": {
+                    "jobId": "dev.api",
+                    "recipe": "health"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(invoke_result["success"], true);
+        let rendered = invoke_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("invoke text");
+        assert!(rendered.contains("Action: http GET /health"));
+        assert!(rendered.contains("HTTP/1.1 200 OK"));
         let _ = manager.terminate_all_running();
     }
 

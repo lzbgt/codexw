@@ -705,7 +705,7 @@ mod tests {
 
     #[test]
     fn orchestration_service_counts_distinguish_ready_booting_and_untracked() {
-        let mut state = crate::state::AppState::new(true, false);
+        let state = crate::state::AppState::new(true, false);
         state
             .background_shells
             .start_from_tool(

@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::Read;
 use std::io::Write;
+use std::net::TcpStream;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::ChildStdin;
@@ -13,6 +15,7 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::thread;
+use url::Url;
 
 const DEFAULT_POLL_LIMIT: usize = 40;
 const MAX_POLL_LIMIT: usize = 200;
@@ -148,6 +151,21 @@ pub(crate) struct BackgroundShellInteractionRecipe {
     pub(crate) name: String,
     pub(crate) description: Option<String>,
     pub(crate) example: Option<String>,
+    pub(crate) action: BackgroundShellInteractionAction,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum BackgroundShellInteractionAction {
+    Informational,
+    Stdin {
+        text: String,
+        append_newline: bool,
+    },
+    Http {
+        method: String,
+        path: String,
+        body: Option<String>,
+    },
 }
 
 impl BackgroundShellManager {
@@ -354,7 +372,11 @@ impl BackgroundShellManager {
         if !state.interaction_recipes.is_empty() {
             lines.push("Recipes:".to_string());
             for recipe in &state.interaction_recipes {
-                let mut line = format!("- {}", recipe.name);
+                let mut line = format!(
+                    "- {} [{}]",
+                    recipe.name,
+                    interaction_action_summary(&recipe.action)
+                );
                 if let Some(description) = recipe.description.as_deref() {
                     line.push_str(&format!(": {description}"));
                 }
@@ -504,6 +526,27 @@ impl BackgroundShellManager {
         self.service_attachment_summary(&resolved_job_id)
     }
 
+    pub(crate) fn invoke_recipe_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments.as_object().ok_or_else(|| {
+            "background_shell_invoke_recipe expects an object argument".to_string()
+        })?;
+        let job_id = object
+            .get("jobId")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_invoke_recipe requires `jobId`".to_string())?;
+        let recipe_name = object
+            .get("recipe")
+            .and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| "background_shell_invoke_recipe requires `recipe`".to_string())?;
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        self.invoke_recipe(&resolved_job_id, recipe_name)
+    }
+
     pub(crate) fn resolve_job_reference(&self, reference: &str) -> Result<String, String> {
         let reference = reference.trim();
         if reference.is_empty() {
@@ -600,6 +643,14 @@ impl BackgroundShellManager {
 
     pub(crate) fn attach_for_operator(&self, job_id: &str) -> Result<String, String> {
         self.service_attachment_summary(job_id)
+    }
+
+    pub(crate) fn invoke_recipe_for_operator(
+        &self,
+        job_id: &str,
+        recipe_name: &str,
+    ) -> Result<String, String> {
+        self.invoke_recipe(job_id, recipe_name)
     }
 
     pub(crate) fn running_count(&self) -> usize {
@@ -840,7 +891,11 @@ impl BackgroundShellManager {
         if !state.interaction_recipes.is_empty() {
             lines.push("Recipes:".to_string());
             for recipe in &state.interaction_recipes {
-                let mut line = format!("- {}", recipe.name);
+                let mut line = format!(
+                    "- {} [{}]",
+                    recipe.name,
+                    interaction_action_summary(&recipe.action)
+                );
                 if let Some(description) = recipe.description.as_deref() {
                     line.push_str(&format!(": {description}"));
                 }
@@ -864,6 +919,68 @@ impl BackgroundShellManager {
             );
         }
         Ok(lines.join("\n"))
+    }
+
+    fn invoke_recipe(&self, job_id: &str, recipe_name: &str) -> Result<String, String> {
+        let (job_label, action, endpoint) = {
+            let job = self.lookup_job(job_id)?;
+            let state = job.lock().expect("background shell job lock");
+            if state.intent != BackgroundShellIntent::Service {
+                return Err(format!(
+                    "background shell job `{job_id}` is not a service shell"
+                ));
+            }
+            let recipe = state
+                .interaction_recipes
+                .iter()
+                .find(|recipe| recipe.name == recipe_name)
+                .cloned()
+                .ok_or_else(|| {
+                    format!("background shell job `{job_id}` has no recipe named `{recipe_name}`")
+                })?;
+            (
+                state.alias.clone().unwrap_or_else(|| state.id.clone()),
+                recipe.action,
+                state.service_endpoint.clone(),
+            )
+        };
+
+        match action {
+            BackgroundShellInteractionAction::Informational => Err(format!(
+                "recipe `{recipe_name}` on background shell job `{job_id}` is descriptive only and does not declare an executable action"
+            )),
+            BackgroundShellInteractionAction::Stdin {
+                text,
+                append_newline,
+            } => {
+                let bytes_written = self.send_input_to_job(job_id, &text, append_newline)?;
+                Ok(format!(
+                    "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nSent {bytes_written} byte{} to stdin.",
+                    interaction_action_summary(&BackgroundShellInteractionAction::Stdin {
+                        text,
+                        append_newline,
+                    }),
+                    if bytes_written == 1 { "" } else { "s" }
+                ))
+            }
+            BackgroundShellInteractionAction::Http { method, path, body } => {
+                let endpoint = endpoint.ok_or_else(|| {
+                    format!(
+                        "recipe `{recipe_name}` on background shell job `{job_id}` requires a service `endpoint`"
+                    )
+                })?;
+                let response = invoke_http_recipe(&endpoint, &method, &path, body.as_deref())?;
+                Ok(format!(
+                    "Invoked recipe `{recipe_name}` on background shell job {job_label}.\nAction: {}\nResponse:\n{}",
+                    interaction_action_summary(&BackgroundShellInteractionAction::Http {
+                        method,
+                        path,
+                        body,
+                    }),
+                    response
+                ))
+            }
+        }
     }
 }
 
@@ -976,13 +1093,94 @@ fn parse_background_shell_interaction_recipes(
             object.get("example"),
             &format!("recipes[{index}].example"),
         )?;
+        let action = parse_background_shell_interaction_action(object.get("action"), index)?;
         parsed.push(BackgroundShellInteractionRecipe {
             name,
             description,
             example,
+            action,
         });
     }
     Ok(parsed)
+}
+
+fn parse_background_shell_interaction_action(
+    value: Option<&serde_json::Value>,
+    index: usize,
+) -> Result<BackgroundShellInteractionAction, String> {
+    let Some(value) = value else {
+        return Ok(BackgroundShellInteractionAction::Informational);
+    };
+    let object = value.as_object().ok_or_else(|| {
+        format!("background_shell_start `recipes[{index}].action` must be an object")
+    })?;
+    let action_type = object
+        .get("type")
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            format!(
+                "background_shell_start `recipes[{index}].action.type` must be a non-empty string"
+            )
+        })?;
+    match action_type {
+        "stdin" => {
+            let text = object
+                .get("text")
+                .and_then(serde_json::Value::as_str)
+                .ok_or_else(|| {
+                    format!(
+                        "background_shell_start `recipes[{index}].action.text` must be a string"
+                    )
+                })?
+                .to_string();
+            let append_newline = object
+                .get("appendNewline")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(true);
+            Ok(BackgroundShellInteractionAction::Stdin {
+                text,
+                append_newline,
+            })
+        }
+        "http" => {
+            let method = object
+                .get("method")
+                .and_then(serde_json::Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| {
+                    format!("background_shell_start `recipes[{index}].action.method` must be a non-empty string")
+                })?
+                .to_ascii_uppercase();
+            let path = object
+                .get("path")
+                .and_then(serde_json::Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| {
+                    format!("background_shell_start `recipes[{index}].action.path` must be a non-empty string")
+                })?
+                .to_string();
+            let body = match object.get("body") {
+                None | Some(serde_json::Value::Null) => None,
+                Some(value) => Some(
+                    value
+                        .as_str()
+                        .ok_or_else(|| {
+                            format!("background_shell_start `recipes[{index}].action.body` must be a string")
+                        })?
+                        .to_string(),
+                ),
+            };
+            Ok(BackgroundShellInteractionAction::Http { method, path, body })
+        }
+        "info" | "informational" => Ok(BackgroundShellInteractionAction::Informational),
+        _ => Err(format!(
+            "background_shell_start `recipes[{index}].action.type` must be one of `stdin`, `http`, or `informational`"
+        )),
+    }
 }
 
 fn validate_alias(alias: &str) -> Result<String, String> {
@@ -1145,6 +1343,103 @@ fn summarize_line(line: &str) -> String {
     }
 }
 
+fn interaction_action_summary(action: &BackgroundShellInteractionAction) -> String {
+    match action {
+        BackgroundShellInteractionAction::Informational => "info".to_string(),
+        BackgroundShellInteractionAction::Stdin {
+            text,
+            append_newline,
+        } => {
+            let mut summary = format!("stdin \"{}\"", summarize_recipe_text(text));
+            if !append_newline {
+                summary.push_str(" no-newline");
+            }
+            summary
+        }
+        BackgroundShellInteractionAction::Http { method, path, .. } => {
+            format!("http {method} {path}")
+        }
+    }
+}
+
+fn summarize_recipe_text(text: &str) -> String {
+    const MAX_CHARS: usize = 40;
+    let sanitized = text.replace('\n', "\\n");
+    let mut chars = sanitized.chars();
+    let summary = chars.by_ref().take(MAX_CHARS).collect::<String>();
+    if chars.next().is_some() {
+        format!("{summary}...")
+    } else {
+        summary
+    }
+}
+
+fn invoke_http_recipe(
+    endpoint: &str,
+    method: &str,
+    path: &str,
+    body: Option<&str>,
+) -> Result<String, String> {
+    let base = Url::parse(endpoint)
+        .map_err(|err| format!("invalid background shell service endpoint `{endpoint}`: {err}"))?;
+    if base.scheme() != "http" {
+        return Err(format!(
+            "background shell service endpoint `{endpoint}` uses unsupported scheme `{}`; only plain http:// endpoints are currently invokable",
+            base.scheme()
+        ));
+    }
+    let request_url = base.join(path).map_err(|err| {
+        format!("failed to resolve recipe path `{path}` against endpoint `{endpoint}`: {err}")
+    })?;
+    let host = request_url
+        .host_str()
+        .ok_or_else(|| format!("background shell service endpoint `{endpoint}` has no host"))?;
+    let port = request_url
+        .port_or_known_default()
+        .ok_or_else(|| format!("background shell service endpoint `{endpoint}` has no port"))?;
+    let request_path = match request_url.query() {
+        Some(query) => format!("{}?{query}", request_url.path()),
+        None => request_url.path().to_string(),
+    };
+    let host_header = match request_url.port() {
+        Some(port)
+            if (request_url.scheme() == "http" && port != 80)
+                || (request_url.scheme() == "https" && port != 443) =>
+        {
+            format!("{host}:{port}")
+        }
+        _ => host.to_string(),
+    };
+    let payload = body.unwrap_or_default();
+    let mut request =
+        format!("{method} {request_path} HTTP/1.1\r\nHost: {host_header}\r\nConnection: close\r\n");
+    if body.is_some() {
+        request.push_str(&format!(
+            "Content-Length: {}\r\nContent-Type: text/plain; charset=utf-8\r\n",
+            payload.len()
+        ));
+    }
+    request.push_str("\r\n");
+    if body.is_some() {
+        request.push_str(payload);
+    }
+
+    let mut stream = TcpStream::connect((host, port))
+        .map_err(|err| format!("failed to connect to {host}:{port}: {err}"))?;
+    stream
+        .write_all(request.as_bytes())
+        .map_err(|err| format!("failed to write request to {host}:{port}: {err}"))?;
+    stream
+        .flush()
+        .map_err(|err| format!("failed to flush request to {host}:{port}: {err}"))?;
+
+    let mut response = Vec::new();
+    stream
+        .read_to_end(&mut response)
+        .map_err(|err| format!("failed to read response from {host}:{port}: {err}"))?;
+    Ok(String::from_utf8_lossy(&response).into_owned())
+}
+
 fn status_label(status: &BackgroundShellJobStatus) -> &str {
     match status {
         BackgroundShellJobStatus::Running => "running",
@@ -1196,6 +1491,9 @@ mod tests {
     use super::BackgroundShellOrigin;
     use super::BackgroundShellServiceReadiness;
     use serde_json::json;
+    use std::io::Read;
+    use std::io::Write;
+    use std::net::TcpListener;
     use std::thread;
     use std::time::Duration;
 
@@ -1217,6 +1515,36 @@ mod tests {
     #[cfg(windows)]
     fn service_ready_command() -> &'static str {
         "echo booting && echo READY && ping -n 2 127.0.0.1 >NUL"
+    }
+
+    fn spawn_test_http_server(
+        expected_method: &'static str,
+        expected_path: &'static str,
+        response_body: &'static str,
+    ) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("local addr");
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut request = [0_u8; 4096];
+            let bytes = stream.read(&mut request).expect("read request");
+            let request = String::from_utf8_lossy(&request[..bytes]);
+            let first_line = request.lines().next().expect("request line");
+            assert_eq!(
+                first_line,
+                format!("{expected_method} {expected_path} HTTP/1.1")
+            );
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                response_body.len(),
+                response_body
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+        format!("http://{addr}")
     }
 
     #[test]
@@ -1299,7 +1627,12 @@ mod tests {
                         {
                             "name": "health",
                             "description": "Check health",
-                            "example": "curl http://127.0.0.1:3000/health"
+                            "example": "curl http://127.0.0.1:3000/health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health"
+                            }
                         }
                     ]
                 }),
@@ -1337,7 +1670,7 @@ mod tests {
         assert!(rendered.contains("Endpoint: http://127.0.0.1:3000"));
         assert!(rendered.contains("Attach hint: Open the dev server in a browser"));
         assert!(rendered.contains("Recipes:"));
-        assert!(rendered.contains("health: Check health"));
+        assert!(rendered.contains("health [http GET /health]: Check health"));
         assert!(rendered.contains("Source thread: thread-agent-1"));
         assert!(rendered.contains("Source call: call-77"));
         let _ = manager.terminate_all_running();
@@ -1410,11 +1743,21 @@ mod tests {
                         {
                             "name": "health",
                             "description": "Check service health",
-                            "example": "curl http://127.0.0.1:4000/health"
+                            "example": "curl http://127.0.0.1:4000/health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health"
+                            }
                         },
                         {
                             "name": "metrics",
-                            "description": "Fetch metrics"
+                            "description": "Fetch metrics",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/metrics"
+                            }
                         }
                     ]
                 }),
@@ -1430,9 +1773,114 @@ mod tests {
         assert!(rendered.contains("Protocol: http"));
         assert!(rendered.contains("Endpoint: http://127.0.0.1:4000"));
         assert!(rendered.contains("Attach hint: Send HTTP requests to /health"));
-        assert!(rendered.contains("health: Check service health"));
+        assert!(rendered.contains("health [http GET /health]: Check service health"));
         assert!(rendered.contains("example: curl http://127.0.0.1:4000/health"));
-        assert!(rendered.contains("metrics: Fetch metrics"));
+        assert!(rendered.contains("metrics [http GET /metrics]: Fetch metrics"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_can_invoke_stdin_action() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": interactive_echo_command(),
+                    "intent": "service",
+                    "recipes": [
+                        {
+                            "name": "status",
+                            "description": "Ask the service for status",
+                            "action": {
+                                "type": "stdin",
+                                "text": "status"
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let rendered = manager
+            .invoke_recipe_for_operator("bg-1", "status")
+            .expect("invoke stdin recipe");
+        assert!(rendered.contains("Action: stdin \"status\""));
+        assert!(rendered.contains("Sent"));
+
+        let mut polled = String::new();
+        for _ in 0..40 {
+            polled = manager
+                .poll_job("bg-1", 0, 200)
+                .expect("poll shell directly");
+            if polled.contains("status") {
+                break;
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+        assert!(polled.contains("status"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn service_recipe_can_invoke_http_action() {
+        let endpoint = spawn_test_http_server("GET", "/health", "ok");
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "protocol": "http",
+                    "endpoint": endpoint,
+                    "recipes": [
+                        {
+                            "name": "health",
+                            "description": "Check service health",
+                            "action": {
+                                "type": "http",
+                                "method": "GET",
+                                "path": "/health"
+                            }
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let rendered = manager
+            .invoke_recipe_for_operator("bg-1", "health")
+            .expect("invoke http recipe");
+        assert!(rendered.contains("Action: http GET /health"));
+        assert!(rendered.contains("HTTP/1.1 200 OK"));
+        assert!(rendered.contains("ok"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn informational_recipe_cannot_be_invoked() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(
+                &json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "recipes": [
+                        {
+                            "name": "docs",
+                            "description": "Read the service docs first"
+                        }
+                    ]
+                }),
+                "/tmp",
+            )
+            .expect("start service shell");
+
+        let err = manager
+            .invoke_recipe_for_operator("bg-1", "docs")
+            .expect_err("informational recipe should not be invokable");
+        assert!(err.contains("descriptive only"));
         let _ = manager.terminate_all_running();
     }
 

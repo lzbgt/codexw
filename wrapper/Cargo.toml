@@ -19,6 +19,7 @@ tempfile = "3"
 toml_edit = "0.22"
 unicode-segmentation = "1"
 unicode-width = "0.2"
+url = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 codex-windows-sandbox = { path = "../ref/codex-rs/windows-sandbox-rs" }

@@ -79,6 +79,33 @@ pub(crate) fn handle_ps_command(
             }
         };
         output.block_stdout("Service Attachment", &rendered)?;
+    } else if matches!(action, Some("run" | "invoke")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe>")?;
+            return Ok(true);
+        };
+        let Some(recipe) = args.get(2).copied() else {
+            output.line_stderr("[session] usage: :ps run <jobId|alias|n> <recipe>")?;
+            return Ok(true);
+        };
+        let job_id = match state.background_shells.resolve_job_reference(reference) {
+            Ok(job_id) => job_id,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let rendered = match state
+            .background_shells
+            .invoke_recipe_for_operator(&job_id, recipe)
+        {
+            Ok(rendered) => rendered,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        output.block_stdout("Service Recipe", &rendered)?;
     } else if matches!(action, Some("poll" | "show" | "inspect")) {
         let Some(reference) = args.get(1).copied() else {
             output.line_stderr("[session] usage: :ps poll <jobId|alias|n>")?;
@@ -159,7 +186,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [blockers|agents|shells|services|terminals|attach|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [blockers|agents|shells|services|terminals|attach|run|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
