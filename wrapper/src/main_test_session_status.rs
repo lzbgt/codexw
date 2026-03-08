@@ -5,6 +5,7 @@ use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
 use crate::notification_item_status::handle_status_update;
+use crate::orchestration_registry::LiveAgentTaskSummary;
 use crate::orchestration_view::CachedAgentThreadSummary;
 use crate::output::Output;
 use crate::prompt_state::render_prompt_status;
@@ -140,6 +141,21 @@ fn resetting_thread_context_clears_stream_buffers() {
     state.last_agent_message = Some("reply".to_string());
     state.last_turn_diff = Some("diff".to_string());
     state.last_status_line = Some("running".to_string());
+    state.live_agent_tasks.insert(
+        "call-1".to_string(),
+        LiveAgentTaskSummary {
+            id: "call-1".to_string(),
+            tool: "spawnAgent".to_string(),
+            status: "inProgress".to_string(),
+            sender_thread_id: "thread-main".to_string(),
+            receiver_thread_ids: vec!["thread-agent-1".to_string()],
+            prompt: Some("inspect auth".to_string()),
+            agent_statuses: std::collections::BTreeMap::from([(
+                "thread-agent-1".to_string(),
+                "running".to_string(),
+            )]),
+        },
+    );
 
     state.reset_thread_context();
 
@@ -149,6 +165,7 @@ fn resetting_thread_context_clears_stream_buffers() {
     assert!(state.last_agent_message.is_none());
     assert!(state.last_turn_diff.is_none());
     assert!(state.last_status_line.is_none());
+    assert!(state.live_agent_tasks.is_empty());
     assert!(!state.startup_resume_picker);
 }
 
@@ -371,6 +388,21 @@ fn background_task_rendering_includes_local_background_shell_jobs() {
 #[test]
 fn status_overview_reports_orchestration_breakdown() {
     let mut state = crate::state::AppState::new(true, false);
+    state.live_agent_tasks.insert(
+        "call-1".to_string(),
+        LiveAgentTaskSummary {
+            id: "call-1".to_string(),
+            tool: "spawnAgent".to_string(),
+            status: "inProgress".to_string(),
+            sender_thread_id: "thread-main".to_string(),
+            receiver_thread_ids: vec!["agent-1".to_string()],
+            prompt: Some("inspect auth flow".to_string()),
+            agent_statuses: std::collections::BTreeMap::from([(
+                "agent-1".to_string(),
+                "running".to_string(),
+            )]),
+        },
+    );
     state.cached_agent_threads = vec![
         CachedAgentThreadSummary {
             id: "agent-1".to_string(),
@@ -402,10 +434,74 @@ fn status_overview_reports_orchestration_breakdown() {
         .expect("start background shell");
 
     let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
-    assert!(rendered.contains("orchestration   main=1 agents_cached=2"));
+    assert!(rendered.contains("orchestration   main=1 agents_live=1 agents_cached=2"));
     assert!(rendered.contains("active=1"));
     assert!(rendered.contains("idle=1"));
     assert!(rendered.contains("bg_shells=1"));
     assert!(rendered.contains("thread_terms=1"));
     let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn collab_agent_items_register_live_agent_tasks_and_cache_threads() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+
+    handle_status_update(
+        "item/started",
+        &json!({
+            "item": {
+                "type": "collabAgentToolCall",
+                "id": "call-1",
+                "tool": "spawnAgent",
+                "status": "inProgress",
+                "senderThreadId": "thread-main",
+                "receiverThreadIds": ["thread-agent-1"],
+                "prompt": "Inspect auth flow and report risks",
+                "agentsStates": {
+                    "thread-agent-1": {
+                        "status": "running",
+                        "message": "reviewing auth flow"
+                    }
+                }
+            }
+        }),
+        &cli,
+        &mut state,
+        &mut output,
+    )
+    .expect("handle collab start");
+
+    assert_eq!(state.live_agent_tasks.len(), 1);
+    assert_eq!(state.cached_agent_threads.len(), 1);
+    assert_eq!(state.cached_agent_threads[0].id, "thread-agent-1");
+    assert_eq!(state.cached_agent_threads[0].status, "running");
+
+    render_item_completed(
+        &cli,
+        &json!({
+            "item": {
+                "type": "collabAgentToolCall",
+                "id": "call-1",
+                "tool": "spawnAgent",
+                "status": "completed",
+                "senderThreadId": "thread-main",
+                "receiverThreadIds": ["thread-agent-1"],
+                "agentsStates": {
+                    "thread-agent-1": {
+                        "status": "completed",
+                        "message": "done"
+                    }
+                }
+            }
+        }),
+        &mut state,
+        &mut output,
+    )
+    .expect("complete collab call");
+
+    assert!(state.live_agent_tasks.is_empty());
+    assert_eq!(state.cached_agent_threads[0].status, "completed");
+    assert_eq!(state.cached_agent_threads[0].preview, "done");
 }

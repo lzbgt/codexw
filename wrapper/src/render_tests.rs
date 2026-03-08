@@ -7,6 +7,7 @@ use crate::transcript_completion_render::abbreviate_long_result_text;
 use crate::transcript_completion_render::render_command_completion;
 use crate::transcript_completion_render::render_file_change_completion;
 use crate::transcript_completion_render::render_local_command_completion;
+use crate::transcript_item_summary::humanize_item_type;
 use crate::transcript_item_summary::summarize_tool_item;
 
 fn strip_ansi(text: &str) -> String {
@@ -235,6 +236,14 @@ fn verbose_mode_preserves_full_long_result_text() {
     let abbreviated = abbreviate_long_result_text(&body, true);
     assert!(abbreviated.contains("line 21"));
     assert!(!abbreviated.contains("\n...\n"));
+}
+
+#[test]
+fn collab_agent_items_use_humanized_label() {
+    assert_eq!(
+        humanize_item_type("collabAgentToolCall"),
+        "Agent collaboration"
+    );
 }
 
 #[test]

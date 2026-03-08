@@ -193,9 +193,13 @@ The current `codexw` implementation now reflects that model partially:
   - `background_shell_poll`
   - `background_shell_list`
   - `background_shell_terminate`
+- live `collabAgentToolCall` items are now tracked as in-turn cognitive work:
+  - active collab-agent calls are kept in a live registry while the turn is running
+  - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
 - `/ps` renders the tracked worker snapshot: cached cognitive workers from `/agent` or `/multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
 - `/status` now reports an orchestration breakdown with:
   - `main=1`
+  - live collab-agent task count from the current turn
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
   - wrapper-owned background shell count
   - backend thread-terminal count
@@ -203,7 +207,7 @@ The current `codexw` implementation now reflects that model partially:
 The next architectural step, if deeper orchestration is needed, is a unified worker/task registry that gives the wrapper one internal model for:
 
 - main-agent work
-- sub-agent thread lifecycle
+- sub-agent thread lifecycle and collab call state
 - background shell lifecycle
 - dependency and wait state
 

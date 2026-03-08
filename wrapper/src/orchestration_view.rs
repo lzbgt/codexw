@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::background_terminals::render_background_terminals;
 use crate::background_terminals::server_background_terminal_count;
+use crate::orchestration_registry::LiveAgentTaskSummary;
 use crate::state::AppState;
 use crate::state::summarize_text;
 
@@ -17,6 +18,7 @@ pub(crate) struct CachedAgentThreadSummary {
 pub(crate) struct OrchestrationSnapshot {
     pub(crate) main_agents: usize,
     pub(crate) cached_agent_threads: Vec<CachedAgentThreadSummary>,
+    pub(crate) live_agent_tasks: Vec<LiveAgentTaskSummary>,
     pub(crate) background_shell_jobs: usize,
     pub(crate) thread_background_terminals: usize,
 }
@@ -25,6 +27,7 @@ pub(crate) fn orchestration_snapshot(state: &AppState) -> OrchestrationSnapshot 
     OrchestrationSnapshot {
         main_agents: 1,
         cached_agent_threads: state.cached_agent_threads.clone(),
+        live_agent_tasks: live_agent_tasks(state),
         background_shell_jobs: state.background_shells.job_count(),
         thread_background_terminals: server_background_terminal_count(state),
     }
@@ -34,8 +37,9 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
     let snapshot = orchestration_snapshot(state);
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     format!(
-        "main={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
+        snapshot.live_agent_tasks.len(),
         snapshot.cached_agent_threads.len(),
         if agent_counts.is_empty() {
             String::new()
@@ -49,7 +53,8 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
 
 pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> {
     let snapshot = orchestration_snapshot(state);
-    if snapshot.background_shell_jobs == 0
+    if snapshot.live_agent_tasks.is_empty()
+        && snapshot.background_shell_jobs == 0
         && snapshot.thread_background_terminals == 0
         && snapshot.cached_agent_threads.is_empty()
     {
@@ -57,7 +62,8 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
     }
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
     Some(format!(
-        "shells={} thread_terms={} agents={}{}",
+        "agent_tasks={} shells={} thread_terms={} agents={}{}",
+        snapshot.live_agent_tasks.len(),
         snapshot.background_shell_jobs,
         snapshot.thread_background_terminals,
         snapshot.cached_agent_threads.len(),
@@ -73,7 +79,42 @@ pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
     let background = render_background_terminals(state);
     let has_background = background != "No background terminals running.";
     let mut lines = Vec::new();
+    if !state.live_agent_tasks.is_empty() {
+        lines.push("Live agent tasks:".to_string());
+        for (index, task) in live_agent_tasks(state).iter().enumerate() {
+            let receiver_preview = if task.receiver_thread_ids.is_empty() {
+                "-".to_string()
+            } else {
+                task.receiver_thread_ids.join(", ")
+            };
+            let status_preview = if task.agent_statuses.is_empty() {
+                "-".to_string()
+            } else {
+                task.agent_statuses
+                    .iter()
+                    .map(|(thread_id, status)| format!("{thread_id}={status}"))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            };
+            lines.push(format!(
+                "{:>2}. {}  [{}]  {} -> {}",
+                index + 1,
+                task.tool,
+                task.status,
+                task.sender_thread_id,
+                receiver_preview
+            ));
+            lines.push(format!("    task     {}", task.id));
+            lines.push(format!("    agents   {status_preview}"));
+            if let Some(prompt) = task.prompt.as_deref() {
+                lines.push(format!("    prompt   {prompt}"));
+            }
+        }
+    }
     if !state.cached_agent_threads.is_empty() {
+        if !lines.is_empty() {
+            lines.push(String::new());
+        }
         lines.push("Cached agent threads:".to_string());
         for (index, agent) in state.cached_agent_threads.iter().enumerate() {
             let mut line = format!("{:>2}. {}  [{}]", index + 1, agent.id, agent.status);
@@ -99,6 +140,12 @@ pub(crate) fn render_orchestration_workers(state: &AppState) -> String {
     lines.join("\n")
 }
 
+fn live_agent_tasks(state: &AppState) -> Vec<LiveAgentTaskSummary> {
+    let mut tasks = state.live_agent_tasks.values().cloned().collect::<Vec<_>>();
+    tasks.sort_by(|left, right| left.id.cmp(&right.id));
+    tasks
+}
+
 fn summarize_agent_status_counts(agent_threads: &[CachedAgentThreadSummary]) -> String {
     if agent_threads.is_empty() {
         return String::new();
@@ -120,6 +167,10 @@ pub(crate) fn summarize_agent_preview(preview: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
+    use crate::orchestration_registry::LiveAgentTaskSummary;
+
     use super::CachedAgentThreadSummary;
     use super::orchestration_overview_summary;
     use super::orchestration_runtime_summary;
@@ -144,6 +195,7 @@ mod tests {
         ];
         let summary = orchestration_overview_summary(&state);
         assert!(summary.contains("main=1"));
+        assert!(summary.contains("agents_live=0"));
         assert!(summary.contains("agents_cached=2"));
         assert!(summary.contains("active=1"));
         assert!(summary.contains("idle=1"));
@@ -158,6 +210,18 @@ mod tests {
     #[test]
     fn orchestration_worker_rendering_includes_cached_agents_and_background_tasks() {
         let mut state = crate::state::AppState::new(true, false);
+        state.live_agent_tasks.insert(
+            "call-1".to_string(),
+            LiveAgentTaskSummary {
+                id: "call-1".to_string(),
+                tool: "spawnAgent".to_string(),
+                status: "inProgress".to_string(),
+                sender_thread_id: "thread-main".to_string(),
+                receiver_thread_ids: vec!["agent-1".to_string()],
+                prompt: Some("inspect auth".to_string()),
+                agent_statuses: BTreeMap::from([("agent-1".to_string(), "running".to_string())]),
+            },
+        );
         state.cached_agent_threads = vec![CachedAgentThreadSummary {
             id: "agent-1".to_string(),
             status: "active".to_string(),
@@ -177,6 +241,8 @@ mod tests {
         );
 
         let rendered = render_orchestration_workers(&state);
+        assert!(rendered.contains("Live agent tasks:"));
+        assert!(rendered.contains("spawnAgent  [inProgress]  thread-main -> agent-1"));
         assert!(rendered.contains("Cached agent threads:"));
         assert!(rendered.contains("agent-1  [active]"));
         assert!(rendered.contains("inspect auth"));

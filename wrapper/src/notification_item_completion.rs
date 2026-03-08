@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::Cli;
 use crate::background_terminals::clear_completed_command_item;
+use crate::orchestration_registry::track_collab_agent_task_completed;
 use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
@@ -94,6 +95,9 @@ pub(crate) fn render_item_completed(
             }
         }
         "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" => {
+            if item_type == "collabAgentToolCall" {
+                track_collab_agent_task_completed(state, item);
+            }
             output.finish_stream()?;
             output.block_stdout(
                 &format!("{} complete", humanize_item_type(item_type)),

@@ -31,6 +31,10 @@ pub(crate) fn humanize_item_type(item_type: &str) -> String {
         "commandExecution" => "Command".to_string(),
         "localShellCall" => "Local shell".to_string(),
         "fileChange" => "File change".to_string(),
+        "mcpToolCall" => "MCP tool".to_string(),
+        "dynamicToolCall" => "Dynamic tool".to_string(),
+        "collabAgentToolCall" => "Agent collaboration".to_string(),
+        "webSearch" => "Web search".to_string(),
         other => other.to_string(),
     }
 }
