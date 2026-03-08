@@ -14,6 +14,23 @@ use super::terminate_jobs;
 use super::validate_service_capability;
 
 impl BackgroundShellManager {
+    pub(crate) fn set_running_dependency_capabilities(
+        &self,
+        job_id: &str,
+        capabilities: &[String],
+    ) -> Result<Vec<String>, String> {
+        let normalized = normalize_service_capabilities(capabilities)?;
+        let job = self.lookup_job(job_id)?;
+        let mut state = job.lock().expect("background shell job lock");
+        if !matches!(state.status, BackgroundShellJobStatus::Running) {
+            return Err(format!(
+                "background shell job `{job_id}` is not running; only running jobs can change dependency capabilities"
+            ));
+        }
+        state.dependency_capabilities = normalized.clone();
+        Ok(normalized)
+    }
+
     pub(crate) fn set_running_service_label(
         &self,
         job_id: &str,
@@ -86,6 +103,20 @@ impl BackgroundShellManager {
         ))
     }
 
+    pub(crate) fn update_dependency_capabilities_for_operator(
+        &self,
+        reference: &str,
+        capabilities: &[String],
+    ) -> Result<String, String> {
+        let resolved_job_id = self.resolve_job_reference(reference)?;
+        let normalized =
+            self.set_running_dependency_capabilities(&resolved_job_id, capabilities)?;
+        Ok(render_dependency_capability_update_summary(
+            &resolved_job_id,
+            &normalized,
+        ))
+    }
+
     pub(crate) fn update_service_from_tool(
         &self,
         arguments: &serde_json::Value,
@@ -101,6 +132,7 @@ impl BackgroundShellManager {
             Some(parse_service_capabilities_argument(
                 object.get("capabilities"),
                 "background_shell_update_service",
+                "capabilities",
             )?)
         } else {
             None
@@ -134,6 +166,31 @@ impl BackgroundShellManager {
             &resolved_job_id,
             normalized_capabilities.as_deref(),
             normalized_label,
+        ))
+    }
+
+    pub(crate) fn update_dependencies_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments.as_object().ok_or_else(|| {
+            "background_shell_update_dependencies expects an object argument".to_string()
+        })?;
+        let job_id = object
+            .get("jobId")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "background_shell_update_dependencies requires `jobId`".to_string())?;
+        let capabilities = parse_service_capabilities_argument(
+            object.get("dependsOnCapabilities"),
+            "background_shell_update_dependencies",
+            "dependsOnCapabilities",
+        )?;
+        let resolved_job_id = self.resolve_job_reference(job_id)?;
+        let normalized =
+            self.set_running_dependency_capabilities(&resolved_job_id, &capabilities)?;
+        Ok(render_dependency_capability_update_summary(
+            &resolved_job_id,
+            &normalized,
         ))
     }
 
@@ -818,11 +875,12 @@ fn normalize_service_label_update(label: Option<String>) -> Result<Option<String
 fn parse_service_capabilities_argument(
     value: Option<&serde_json::Value>,
     context: &str,
+    field_name: &str,
 ) -> Result<Vec<String>, String> {
-    let value = value.ok_or_else(|| format!("{context} requires `capabilities`"))?;
+    let value = value.ok_or_else(|| format!("{context} requires `{field_name}`"))?;
     let array = value
         .as_array()
-        .ok_or_else(|| format!("{context} `capabilities` must be an array"))?;
+        .ok_or_else(|| format!("{context} `{field_name}` must be an array"))?;
     let raw = array
         .iter()
         .enumerate()
@@ -830,7 +888,7 @@ fn parse_service_capabilities_argument(
             value
                 .as_str()
                 .map(str::to_string)
-                .ok_or_else(|| format!("{context} `capabilities[{index}]` must be a string"))
+                .ok_or_else(|| format!("{context} `{field_name}[{index}]` must be a string"))
         })
         .collect::<Result<Vec<_>, _>>()?;
     normalize_service_capabilities(&raw)
@@ -883,6 +941,21 @@ fn render_service_metadata_update_summary(
         format!(
             "Updated service metadata for background shell job {job_id}: {}.",
             parts.join("; ")
+        )
+    }
+}
+
+fn render_dependency_capability_update_summary(job_id: &str, capabilities: &[String]) -> String {
+    if capabilities.is_empty() {
+        format!("Cleared dependency capabilities for background shell job {job_id}.")
+    } else {
+        format!(
+            "Updated dependency capabilities for background shell job {job_id}: {}",
+            capabilities
+                .iter()
+                .map(|capability| format!("@{capability}"))
+                .collect::<Vec<_>>()
+                .join(", ")
         )
     }
 }

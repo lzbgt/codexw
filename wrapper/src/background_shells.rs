@@ -298,9 +298,12 @@ impl BackgroundShellManager {
         )?;
         let intent = parse_background_shell_intent(object.get("intent"))?;
         let label = parse_background_shell_label(object.get("label"));
-        let service_capabilities = parse_background_shell_capabilities(object.get("capabilities"))?;
-        let dependency_capabilities =
-            parse_background_shell_capabilities(object.get("dependsOnCapabilities"))?;
+        let service_capabilities =
+            parse_background_shell_capabilities(object.get("capabilities"), "capabilities")?;
+        let dependency_capabilities = parse_background_shell_capabilities(
+            object.get("dependsOnCapabilities"),
+            "dependsOnCapabilities",
+        )?;
         let service_protocol =
             parse_background_shell_optional_string(object.get("protocol"), "protocol")?;
         let service_endpoint =
@@ -1503,17 +1506,18 @@ fn parse_background_shell_ready_pattern(
 
 fn parse_background_shell_capabilities(
     value: Option<&serde_json::Value>,
+    field_name: &str,
 ) -> Result<Vec<String>, String> {
     let Some(value) = value else {
         return Ok(Vec::new());
     };
     let array = value
         .as_array()
-        .ok_or_else(|| "background_shell_start `capabilities` must be an array".to_string())?;
+        .ok_or_else(|| format!("background_shell_start `{field_name}` must be an array"))?;
     let mut capabilities = Vec::with_capacity(array.len());
     for (index, item) in array.iter().enumerate() {
         let raw = item.as_str().ok_or_else(|| {
-            format!("background_shell_start `capabilities[{index}]` must be a string")
+            format!("background_shell_start `{field_name}[{index}]` must be a string")
         })?;
         capabilities.push(validate_service_capability(raw)?);
     }

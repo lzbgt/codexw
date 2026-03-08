@@ -221,6 +221,34 @@ fn running_service_label_can_be_updated_without_restart() {
 }
 
 #[test]
+fn running_dependency_capabilities_can_be_updated_without_restart() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "label": "api blocker",
+                "dependsOnCapabilities": ["api.http"]
+            }),
+            "/tmp",
+        )
+        .expect("start blocker");
+
+    let updated = manager
+        .set_running_dependency_capabilities("bg-1", &["db.redis".to_string()])
+        .expect("update dependency capabilities");
+    assert_eq!(updated, vec!["db.redis".to_string()]);
+
+    let rendered = manager
+        .poll_from_tool(&json!({"jobId": "bg-1"}))
+        .expect("poll updated blocker");
+    assert!(rendered.contains("Depends on capabilities: @db.redis"));
+    assert!(!rendered.contains("Depends on capabilities: @api.http"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn service_shell_views_can_filter_ready_booting_untracked_and_conflicting_jobs() {
     let manager = BackgroundShellManager::default();
     manager

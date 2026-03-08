@@ -271,6 +271,31 @@ pub(crate) fn handle_ps_command(
             Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
+    } else if matches!(action, Some("depend" | "requires")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr(
+                "[session] usage: :ps depend <jobId|alias|@capability|n> <@capability...|none>",
+            )?;
+            return Ok(true);
+        };
+        let capabilities = match parse_ps_capability_list(
+            &args[2..],
+            ":ps depend <jobId|alias|@capability|n> <@capability...|none>",
+        ) {
+            Ok(capabilities) => capabilities,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        match state
+            .orchestration
+            .background_shells
+            .update_dependency_capabilities_for_operator(reference, &capabilities)
+        {
+            Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        }
     } else if matches!(action, Some("relabel")) {
         let Some((reference, label)) = parse_ps_relabel_args(raw_args) else {
             output.line_stderr(
@@ -431,7 +456,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|relabel <jobId|alias|@capability|n> <label|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|depend <jobId|alias|@capability|n> <@capability...|none>|relabel <jobId|alias|@capability|n> <label|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)
@@ -560,11 +585,9 @@ pub(crate) fn parse_ps_focus_capability(args: &[&str], context: &str) -> Result<
     Ok(capability.to_string())
 }
 
-fn parse_ps_provide_capabilities(args: &[&str]) -> Result<Vec<String>, String> {
+fn parse_ps_capability_list(args: &[&str], usage: &str) -> Result<Vec<String>, String> {
     if args.is_empty() {
-        return Err(
-            "usage: :ps provide <jobId|alias|@capability|n> <@capability...|none>".to_string(),
-        );
+        return Err(format!("usage: {usage}"));
     }
     if args.len() == 1 && matches!(args[0], "none" | "-") {
         return Ok(Vec::new());
@@ -572,20 +595,23 @@ fn parse_ps_provide_capabilities(args: &[&str]) -> Result<Vec<String>, String> {
     let mut capabilities = Vec::with_capacity(args.len());
     for raw in args {
         let Some(capability) = raw.strip_prefix('@') else {
-            return Err(
-                "usage: :ps provide <jobId|alias|@capability|n> <@capability...|none>".to_string(),
-            );
+            return Err(format!("usage: {usage}"));
         };
         if capability.is_empty() || !is_valid_capability_ref(capability) {
-            return Err(
-                "usage: :ps provide <jobId|alias|@capability|n> <@capability...|none>".to_string(),
-            );
+            return Err(format!("usage: {usage}"));
         }
         capabilities.push(capability.to_string());
     }
     capabilities.sort();
     capabilities.dedup();
     Ok(capabilities)
+}
+
+fn parse_ps_provide_capabilities(args: &[&str]) -> Result<Vec<String>, String> {
+    parse_ps_capability_list(
+        args,
+        ":ps provide <jobId|alias|@capability|n> <@capability...|none>",
+    )
 }
 
 pub(crate) fn parse_ps_dependency_filter(action: Option<&str>) -> Option<DependencyFilter> {

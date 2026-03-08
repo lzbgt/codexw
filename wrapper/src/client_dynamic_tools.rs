@@ -295,6 +295,21 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             }
         }),
         json!({
+            "name": "background_shell_update_dependencies",
+            "description": "Update the declared dependsOnCapabilities set for a running background shell job by jobId, alias, or @capability. This retargets orchestration dependency edges without restarting the underlying job.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "jobId": {"type": "string"},
+                    "dependsOnCapabilities": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                },
+                "required": ["jobId", "dependsOnCapabilities"]
+            }
+        }),
+        json!({
             "name": "background_shell_inspect_capability",
             "description": "Inspect one reusable service capability and show its current providers, provider metadata, and consumers. Accepts `capability` with or without the leading @.",
             "inputSchema": {
@@ -442,6 +457,10 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
             .orchestration
             .background_shells
             .update_service_from_tool(arguments),
+        "background_shell_update_dependencies" => state
+            .orchestration
+            .background_shells
+            .update_dependencies_from_tool(arguments),
         "background_shell_inspect_capability" => state
             .orchestration
             .background_shells
