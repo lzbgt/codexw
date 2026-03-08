@@ -77,6 +77,10 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         .orchestration
         .background_shells
         .service_capability_conflict_count();
+    let services_conflicted = state
+        .orchestration
+        .background_shells
+        .service_conflicting_job_count();
     let cap_deps_missing = state
         .orchestration
         .background_shells
@@ -94,7 +98,7 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         .background_shells
         .unique_service_capability_count();
     format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} cap_deps_missing={} cap_deps_booting={} cap_deps_ambiguous={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} services_conflicted={} service_caps={} service_cap_conflicts={} cap_deps_missing={} cap_deps_booting={} cap_deps_ambiguous={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -106,6 +110,7 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+        services_conflicted,
         service_caps,
         service_cap_conflicts,
         cap_deps_missing,
@@ -137,6 +142,10 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         .orchestration
         .background_shells
         .service_capability_conflict_count();
+    let services_conflicted = state
+        .orchestration
+        .background_shells
+        .service_conflicting_job_count();
     let cap_deps_missing = state
         .orchestration
         .background_shells
@@ -154,7 +163,7 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         .background_shells
         .unique_service_capability_count();
     Some(format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_caps={} service_cap_conflicts={} cap_deps_missing={} cap_deps_booting={} cap_deps_ambiguous={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} services_conflicted={} service_caps={} service_cap_conflicts={} cap_deps_missing={} cap_deps_booting={} cap_deps_ambiguous={} agent_tasks={} shells={} thread_terms={} agents={}{}",
         main_agent_state_label(state),
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -166,6 +175,7 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+        services_conflicted,
         service_caps,
         service_cap_conflicts,
         cap_deps_missing,
@@ -198,6 +208,10 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
     let services_untracked =
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
+    let services_conflicted = state
+        .orchestration
+        .background_shells
+        .service_conflicting_job_count();
     let service_caps = state
         .orchestration
         .background_shells
@@ -221,6 +235,7 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
         && services_ready == 0
         && services_booting == 0
         && services_untracked == 0
+        && services_conflicted == 0
         && cap_deps_missing == 0
         && cap_deps_booting == 0
         && cap_deps_ambiguous == 0
@@ -270,6 +285,12 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
             pluralize(services_untracked, "service", "services")
         ));
     }
+    if services_conflicted > 0 {
+        parts.push(format!(
+            "{} conflicted",
+            pluralize(services_conflicted, "service", "services")
+        ));
+    }
     if service_caps > 0 {
         parts.push(format!(
             "{}",
@@ -302,6 +323,10 @@ pub(crate) fn orchestration_background_summary(state: &AppState) -> Option<Strin
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
     let untracked =
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
+    let conflicted = state
+        .orchestration
+        .background_shells
+        .service_conflicting_job_count();
     let cap_deps_missing = state
         .orchestration
         .background_shells
@@ -318,6 +343,7 @@ pub(crate) fn orchestration_background_summary(state: &AppState) -> Option<Strin
     if prereqs == 0
         && sidecars == 0
         && services == 0
+        && conflicted == 0
         && cap_deps_missing == 0
         && cap_deps_booting == 0
         && cap_deps_ambiguous == 0
@@ -326,7 +352,7 @@ pub(crate) fn orchestration_background_summary(state: &AppState) -> Option<Strin
         None
     } else {
         Some(format!(
-            "prereqs={prereqs} shell_sidecars={sidecars} services={services} services_ready={ready} services_booting={booting} services_untracked={untracked} cap_deps_missing={cap_deps_missing} cap_deps_booting={cap_deps_booting} cap_deps_ambiguous={cap_deps_ambiguous} terminals={terminals}"
+            "prereqs={prereqs} shell_sidecars={sidecars} services={services} services_ready={ready} services_booting={booting} services_untracked={untracked} services_conflicted={conflicted} cap_deps_missing={cap_deps_missing} cap_deps_booting={cap_deps_booting} cap_deps_ambiguous={cap_deps_ambiguous} terminals={terminals}"
         ))
     }
 }
@@ -385,7 +411,7 @@ pub(crate) fn render_orchestration_workers_with_filter(
         WorkerFilter::Services => state
             .orchestration
             .background_shells
-            .render_for_ps_filtered(Some(BackgroundShellIntent::Service)),
+            .render_service_shells_for_ps_filtered(None),
         WorkerFilter::Capabilities => state
             .orchestration
             .background_shells
@@ -470,7 +496,7 @@ fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<Stri
             main_line.push_str(&format!(" | {waiting_on}"));
         }
         main_line.push_str(&format!(
-            " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} (ready={} booting={} untracked={}) | deps blocking={} sidecar={}",
+            " | sidecar agents={} | exec prereqs={} | exec sidecars={} | exec services={} (ready={} booting={} untracked={} conflicted={}) | deps blocking={} sidecar={}",
             active_sidecar_agent_task_count(state),
             running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
             running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
@@ -478,6 +504,10 @@ fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<Stri
             running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
             running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
             running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+            state
+                .orchestration
+                .background_shells
+                .service_conflicting_job_count(),
             blocking_dependency_count(state),
             sidecar_dependency_count(state)
         ));
@@ -837,6 +867,7 @@ mod tests {
         assert!(summary.contains("services_ready=0"));
         assert!(summary.contains("services_booting=0"));
         assert!(summary.contains("services_untracked=0"));
+        assert!(summary.contains("services_conflicted=0"));
         assert!(summary.contains("service_caps=0"));
         assert!(summary.contains("service_cap_conflicts=0"));
         assert!(summary.contains("agents_live=0"));
@@ -958,7 +989,7 @@ mod tests {
         let rendered = render_orchestration_workers(&state);
         assert!(rendered.contains("Main agent state: blocked | waiting on agent agent-1"));
         assert!(rendered.contains(
-            "sidecar agents=1 | exec prereqs=0 | exec sidecars=0 | exec services=0 (ready=0 booting=0 untracked=0) | deps blocking=1 sidecar=1"
+            "sidecar agents=1 | exec prereqs=0 | exec sidecars=0 | exec services=0 (ready=0 booting=0 untracked=0 conflicted=0) | deps blocking=1 sidecar=1"
         ));
         assert!(rendered.contains("Dependencies:"));
         assert!(rendered.contains("main -> agent:agent-1  [wait, blocking]"));
@@ -1129,6 +1160,7 @@ mod tests {
         assert!(summary.contains("services_ready=1"));
         assert!(summary.contains("services_booting=1"));
         assert!(summary.contains("services_untracked=1"));
+        assert!(summary.contains("services_conflicted=0"));
         assert!(summary.contains("service_caps=0"));
         assert!(summary.contains("service_cap_conflicts=0"));
 

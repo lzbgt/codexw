@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::background_shells::BackgroundShellIntent;
+use crate::background_shells::BackgroundShellServiceIssueClass;
 use crate::orchestration_view::DependencyFilter;
 use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::render_orchestration_dependencies;
@@ -267,6 +268,25 @@ pub(crate) fn handle_ps_command(
             };
             output.block_stdout("Service Capabilities", &rendered)?;
         }
+    } else if matches!(action, Some("services")) && args.len() > 1 {
+        let issue_filter = match parse_ps_service_issue_filter(args.get(1).copied()) {
+            Some(filter) => filter,
+            None => {
+                output.line_stderr(
+                    "[session] usage: :ps services [all|ready|booting|untracked|conflicts]",
+                )?;
+                return Ok(true);
+            }
+        };
+        let rendered = match state
+            .orchestration
+            .background_shells
+            .render_service_shells_for_ps_filtered(issue_filter)
+        {
+            Some(rendered) => rendered.join("\n"),
+            None => "No service shells tracked right now.".to_string(),
+        };
+        output.block_stdout("Service Shells", &rendered)?;
     } else if matches!(action, Some("dependencies" | "deps")) && args.len() > 1 {
         let dependency_filter = match parse_ps_dependency_filter(args.get(1).copied()) {
             Some(filter) => filter,
@@ -314,7 +334,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance|blockers|dependencies|agents|shells|services|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [guidance|blockers|dependencies|agents|shells|services [all|ready|booting|untracked|conflicts]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
@@ -443,6 +463,21 @@ pub(crate) fn parse_ps_capability_issue_filter(
         Some("ambiguous") | Some("conflict") | Some("conflicts") => Some(Some(
             crate::background_shells::BackgroundShellCapabilityIssueClass::Ambiguous,
         )),
+        Some(_) => None,
+    }
+}
+
+pub(crate) fn parse_ps_service_issue_filter(
+    action: Option<&str>,
+) -> Option<Option<BackgroundShellServiceIssueClass>> {
+    match action {
+        None | Some("all") => Some(None),
+        Some("ready") | Some("healthy") => Some(Some(BackgroundShellServiceIssueClass::Ready)),
+        Some("booting") => Some(Some(BackgroundShellServiceIssueClass::Booting)),
+        Some("untracked") => Some(Some(BackgroundShellServiceIssueClass::Untracked)),
+        Some("ambiguous") | Some("conflict") | Some("conflicts") => {
+            Some(Some(BackgroundShellServiceIssueClass::Conflicts))
+        }
         Some(_) => None,
     }
 }

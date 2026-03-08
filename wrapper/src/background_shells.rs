@@ -246,6 +246,14 @@ pub(crate) enum BackgroundShellCapabilityIssueClass {
     Ambiguous,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BackgroundShellServiceIssueClass {
+    Ready,
+    Booting,
+    Untracked,
+    Conflicts,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct BackgroundShellCapabilityDependencySummary {
     pub(crate) job_id: String,
@@ -948,6 +956,23 @@ impl BackgroundShellManager {
         conflicts
     }
 
+    fn service_conflicting_job_ids(&self) -> BTreeSet<String> {
+        let mut by_capability = BTreeMap::<String, Vec<String>>::new();
+        for snapshot in self.running_service_snapshots() {
+            for capability in &snapshot.service_capabilities {
+                by_capability
+                    .entry(capability.clone())
+                    .or_default()
+                    .push(snapshot.id.clone());
+            }
+        }
+        by_capability
+            .into_iter()
+            .filter(|(_, job_ids)| job_ids.len() > 1)
+            .flat_map(|(_, job_ids)| job_ids)
+            .collect()
+    }
+
     pub(crate) fn unique_service_capability_count(&self) -> usize {
         self.service_capability_index().len()
     }
@@ -1060,6 +1085,10 @@ impl BackgroundShellManager {
         self.service_capability_conflicts().len()
     }
 
+    pub(crate) fn service_conflicting_job_count(&self) -> usize {
+        self.service_conflicting_job_ids().len()
+    }
+
     pub(crate) fn job_count(&self) -> usize {
         self.inner
             .jobs
@@ -1118,6 +1147,56 @@ impl BackgroundShellManager {
             .into_iter()
             .filter(|snapshot| intent_filter.is_none_or(|intent| snapshot.intent == intent))
             .collect::<Vec<_>>();
+        self.render_snapshots_for_ps(
+            snapshots,
+            matches!(intent_filter, None | Some(BackgroundShellIntent::Service)),
+            matches!(intent_filter, None | Some(BackgroundShellIntent::Service)),
+        )
+    }
+
+    pub(crate) fn render_service_shells_for_ps_filtered(
+        &self,
+        issue_filter: Option<BackgroundShellServiceIssueClass>,
+    ) -> Option<Vec<String>> {
+        let conflict_job_ids = self.service_conflicting_job_ids();
+        let snapshots = self
+            .running_service_snapshots()
+            .into_iter()
+            .filter(|snapshot| match issue_filter {
+                None => true,
+                Some(BackgroundShellServiceIssueClass::Ready) => {
+                    snapshot.service_readiness == Some(BackgroundShellServiceReadiness::Ready)
+                }
+                Some(BackgroundShellServiceIssueClass::Booting) => {
+                    snapshot.service_readiness == Some(BackgroundShellServiceReadiness::Booting)
+                }
+                Some(BackgroundShellServiceIssueClass::Untracked) => {
+                    snapshot.service_readiness == Some(BackgroundShellServiceReadiness::Untracked)
+                }
+                Some(BackgroundShellServiceIssueClass::Conflicts) => {
+                    conflict_job_ids.contains(&snapshot.id)
+                }
+            })
+            .collect::<Vec<_>>();
+        let include_capability_index = issue_filter.is_none();
+        let include_conflict_summary = issue_filter.is_none()
+            || matches!(
+                issue_filter,
+                Some(BackgroundShellServiceIssueClass::Conflicts)
+            );
+        self.render_snapshots_for_ps(
+            snapshots,
+            include_capability_index,
+            include_conflict_summary,
+        )
+    }
+
+    fn render_snapshots_for_ps(
+        &self,
+        snapshots: Vec<BackgroundShellJobSnapshot>,
+        include_capability_index: bool,
+        include_conflict_summary: bool,
+    ) -> Option<Vec<String>> {
         if snapshots.is_empty() {
             return None;
         }
@@ -1191,11 +1270,16 @@ impl BackgroundShellManager {
                 ));
             }
         }
-        if matches!(intent_filter, None | Some(BackgroundShellIntent::Service)) {
+        if include_capability_index {
             if let Some(capability_lines) = self.render_service_capability_index_lines() {
                 lines.extend(capability_lines);
             }
-            let conflicts = self.service_capability_conflicts();
+        }
+        if include_conflict_summary {
+            let conflicts = self
+                .service_capability_conflicts()
+                .into_iter()
+                .collect::<Vec<_>>();
             if !conflicts.is_empty() {
                 lines.push("Capability conflicts:".to_string());
                 for (capability, jobs) in conflicts {
@@ -1208,6 +1292,22 @@ impl BackgroundShellManager {
 
     pub(crate) fn render_service_capabilities_for_ps(&self) -> Option<Vec<String>> {
         self.render_service_capabilities_for_ps_filtered(None)
+    }
+
+    pub(crate) fn list_services_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments.as_object();
+        let issue_filter = parse_service_issue_filter(
+            object
+                .and_then(|object| object.get("status"))
+                .and_then(serde_json::Value::as_str),
+            "background_shell_list_services",
+        )?;
+        self.render_service_shells_for_ps_filtered(issue_filter)
+            .map(|lines| lines.join("\n"))
+            .ok_or_else(|| "No service shells tracked right now.".to_string())
     }
 
     pub(crate) fn render_service_capabilities_for_ps_filtered(
@@ -1839,6 +1939,24 @@ fn parse_capability_issue_filter(
         }
         Some(other) => Err(format!(
             "{context} `status` must be one of `all`, `healthy`, `missing`, `booting`, or `ambiguous`, got `{other}`"
+        )),
+    }
+}
+
+fn parse_service_issue_filter(
+    raw: Option<&str>,
+    context: &str,
+) -> Result<Option<BackgroundShellServiceIssueClass>, String> {
+    match raw {
+        None | Some("all") => Ok(None),
+        Some("ready") | Some("healthy") => Ok(Some(BackgroundShellServiceIssueClass::Ready)),
+        Some("booting") => Ok(Some(BackgroundShellServiceIssueClass::Booting)),
+        Some("untracked") => Ok(Some(BackgroundShellServiceIssueClass::Untracked)),
+        Some("conflicts") | Some("conflict") | Some("ambiguous") => {
+            Ok(Some(BackgroundShellServiceIssueClass::Conflicts))
+        }
+        Some(other) => Err(format!(
+            "{context} `status` must be one of `all`, `ready`, `booting`, `untracked`, or `conflicts`, got `{other}`"
         )),
     }
 }

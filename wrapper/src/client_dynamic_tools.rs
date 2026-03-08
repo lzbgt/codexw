@@ -242,6 +242,19 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             }
         }),
         json!({
+            "name": "background_shell_list_services",
+            "description": "List reusable service shell jobs, optionally filtered to ready, booting, untracked, or conflicting services.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": ["all", "ready", "booting", "untracked", "conflicts"]
+                    }
+                }
+            }
+        }),
+        json!({
             "name": "background_shell_inspect_capability",
             "description": "Inspect one reusable service capability and show its current providers, provider metadata, and consumers. Accepts `capability` with or without the leading @.",
             "inputSchema": {
@@ -364,6 +377,10 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
             .orchestration
             .background_shells
             .list_capabilities_from_tool(arguments),
+        "background_shell_list_services" => state
+            .orchestration
+            .background_shells
+            .list_services_from_tool(arguments),
         "background_shell_inspect_capability" => state
             .orchestration
             .background_shells
@@ -839,6 +856,7 @@ mod tests {
                 "background_shell_poll",
                 "background_shell_send",
                 "background_shell_list_capabilities",
+                "background_shell_list_services",
                 "background_shell_inspect_capability",
                 "background_shell_attach",
                 "background_shell_wait_ready",
@@ -851,7 +869,7 @@ mod tests {
 
     #[test]
     fn orchestration_status_reports_worker_and_guidance_summary() {
-        let mut state = AppState::new(true, false);
+        let state = AppState::new(true, false);
         state
             .orchestration
             .background_shells
@@ -889,7 +907,7 @@ mod tests {
 
     #[test]
     fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() {
-        let mut state = AppState::new(true, false);
+        let state = AppState::new(true, false);
         state
             .orchestration
             .background_shells
@@ -961,7 +979,7 @@ mod tests {
 
     #[test]
     fn orchestration_list_dependencies_supports_issue_filters() {
-        let mut state = AppState::new(true, false);
+        let state = AppState::new(true, false);
         state
             .orchestration
             .background_shells
@@ -1365,6 +1383,125 @@ mod tests {
             .as_str()
             .expect("list text");
         assert!(rendered.contains("@api.http -> bg-1"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_list_services_can_filter_service_states() {
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": if cfg!(windows) {
+                        "ping -n 2 127.0.0.1 >NUL && echo READY && ping -n 2 127.0.0.1 >NUL"
+                    } else {
+                        "sleep 0.15; printf 'READY\\n'; sleep 0.3"
+                    },
+                    "intent": "service",
+                    "label": "booting svc",
+                    "capabilities": ["svc.booting"],
+                    "readyPattern": "READY"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": if cfg!(windows) {
+                        "echo READY && ping -n 2 127.0.0.1 >NUL"
+                    } else {
+                        "printf 'READY\\n'; sleep 0.3"
+                    },
+                    "intent": "service",
+                    "label": "ready svc",
+                    "capabilities": ["svc.ready"],
+                    "readyPattern": "READY"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "label": "untracked svc",
+                    "capabilities": ["svc.untracked"]
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        let wait_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_wait_ready",
+                "arguments": {
+                    "jobId": "bg-2",
+                    "timeoutMs": 2_000
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        assert_eq!(wait_result["success"], true);
+
+        let ready_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_list_services",
+                "arguments": {
+                    "status": "ready"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        assert_eq!(ready_result["success"], true);
+        let ready_text = ready_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("ready text");
+        assert!(ready_text.contains("ready svc"));
+        assert!(!ready_text.contains("booting svc"));
+
+        let booting_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_list_services",
+                "arguments": {
+                    "status": "booting"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        assert_eq!(booting_result["success"], true);
+        let booting_text = booting_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("booting text");
+        assert!(booting_text.contains("booting svc"));
+        assert!(!booting_text.contains("ready svc"));
+
+        let untracked_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_list_services",
+                "arguments": {
+                    "status": "untracked"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+        assert_eq!(untracked_result["success"], true);
+        let untracked_text = untracked_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("untracked text");
+        assert!(untracked_text.contains("untracked svc"));
+        assert!(!untracked_text.contains("ready svc"));
         let _ = manager.terminate_all_running();
     }
 

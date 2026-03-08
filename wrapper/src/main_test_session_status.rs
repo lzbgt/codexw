@@ -6,6 +6,7 @@ use crate::dispatch_command_session_ps::parse_clean_target;
 use crate::dispatch_command_session_ps::parse_ps_capability_issue_filter;
 use crate::dispatch_command_session_ps::parse_ps_dependency_filter;
 use crate::dispatch_command_session_ps::parse_ps_filter;
+use crate::dispatch_command_session_ps::parse_ps_service_issue_filter;
 use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
 use crate::notification_item_completion::render_item_completed;
@@ -478,7 +479,7 @@ fn status_overview_reports_orchestration_breakdown() {
 
     let rendered = render_status_overview(&test_cli(), "/tmp/project", &state).join("\n");
     assert!(rendered.contains(
-        "orchestration   main=1 deps_blocking=0 deps_sidecar=2 waits=0 sidecar_agents=1 exec_prereqs=0 exec_sidecars=1 exec_services=0 services_ready=0 services_booting=0 services_untracked=0 service_caps=0 service_cap_conflicts=0 cap_deps_missing=0 cap_deps_booting=0 cap_deps_ambiguous=0 agents_live=1 agents_cached=2"
+        "orchestration   main=1 deps_blocking=0 deps_sidecar=2 waits=0 sidecar_agents=1 exec_prereqs=0 exec_sidecars=1 exec_services=0 services_ready=0 services_booting=0 services_untracked=0 services_conflicted=0 service_caps=0 service_cap_conflicts=0 cap_deps_missing=0 cap_deps_booting=0 cap_deps_ambiguous=0 agents_live=1 agents_cached=2"
     ));
     assert!(rendered.contains("active=1"));
     assert!(rendered.contains("idle=1"));
@@ -524,7 +525,7 @@ fn status_runtime_reports_background_classes() {
     let rendered = render_status_runtime(&cli, &state).join("\n");
     assert!(rendered.contains("background      4"));
     assert!(rendered.contains(
-        "background cls  prereqs=1 shell_sidecars=1 services=1 services_ready=0 services_booting=0 services_untracked=1 cap_deps_missing=0 cap_deps_booting=0 cap_deps_ambiguous=0 terminals=1"
+        "background cls  prereqs=1 shell_sidecars=1 services=1 services_ready=0 services_booting=0 services_untracked=1 services_conflicted=0 cap_deps_missing=0 cap_deps_booting=0 cap_deps_ambiguous=0 terminals=1"
     ));
     assert!(rendered.contains("next action     Main agent is blocked on 1 prerequisite shell."));
     let _ = state.background_shells.terminate_all_running();
@@ -659,6 +660,39 @@ fn ps_capability_filter_parser_accepts_issue_aliases() {
         Some(Some(BackgroundShellCapabilityIssueClass::Ambiguous))
     );
     assert_eq!(parse_ps_capability_issue_filter(Some("weird")), None);
+}
+
+#[test]
+fn ps_service_filter_parser_accepts_issue_aliases() {
+    use crate::background_shells::BackgroundShellServiceIssueClass;
+
+    assert_eq!(parse_ps_service_issue_filter(None), Some(None));
+    assert_eq!(parse_ps_service_issue_filter(Some("all")), Some(None));
+    assert_eq!(
+        parse_ps_service_issue_filter(Some("ready")),
+        Some(Some(BackgroundShellServiceIssueClass::Ready))
+    );
+    assert_eq!(
+        parse_ps_service_issue_filter(Some("healthy")),
+        Some(Some(BackgroundShellServiceIssueClass::Ready))
+    );
+    assert_eq!(
+        parse_ps_service_issue_filter(Some("booting")),
+        Some(Some(BackgroundShellServiceIssueClass::Booting))
+    );
+    assert_eq!(
+        parse_ps_service_issue_filter(Some("untracked")),
+        Some(Some(BackgroundShellServiceIssueClass::Untracked))
+    );
+    assert_eq!(
+        parse_ps_service_issue_filter(Some("conflicts")),
+        Some(Some(BackgroundShellServiceIssueClass::Conflicts))
+    );
+    assert_eq!(
+        parse_ps_service_issue_filter(Some("ambiguous")),
+        Some(Some(BackgroundShellServiceIssueClass::Conflicts))
+    );
+    assert_eq!(parse_ps_service_issue_filter(Some("weird")), None);
 }
 
 #[test]
@@ -1032,6 +1066,180 @@ fn ps_command_can_filter_capability_index_by_issue_class() {
         .expect("capability filter")
         .join("\n");
     assert!(rendered.contains("@api.http -> <missing provider> [missing]"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_command_can_filter_service_shells_by_state() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": if cfg!(windows) {
+                    "ping -n 2 127.0.0.1 >NUL && echo READY && ping -n 2 127.0.0.1 >NUL"
+                } else {
+                    "sleep 0.15; printf 'READY\\n'; sleep 0.3"
+                },
+                "intent": "service",
+                "label": "booting svc",
+                "capabilities": ["svc.booting"],
+                "readyPattern": "READY"
+            }),
+            "/tmp",
+        )
+        .expect("start booting service shell");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": if cfg!(windows) {
+                    "echo READY && ping -n 2 127.0.0.1 >NUL"
+                } else {
+                    "printf 'READY\\n'; sleep 0.3"
+                },
+                "intent": "service",
+                "label": "ready svc",
+                "capabilities": ["svc.ready"],
+                "readyPattern": "READY"
+            }),
+            "/tmp",
+        )
+        .expect("start ready service shell");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "untracked svc",
+                "capabilities": ["svc.untracked"]
+            }),
+            "/tmp",
+        )
+        .expect("start untracked service shell");
+
+    state
+        .background_shells
+        .wait_ready_for_operator("bg-2", 2_000)
+        .expect("wait for ready service");
+
+    handle_ps_command(
+        "services ready",
+        &["services", "ready"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render ready service shells");
+
+    let ready = state
+        .background_shells
+        .render_service_shells_for_ps_filtered(Some(
+            crate::background_shells::BackgroundShellServiceIssueClass::Ready,
+        ))
+        .expect("ready services")
+        .join("\n");
+    assert!(ready.contains("ready svc"));
+    assert!(!ready.contains("booting svc"));
+
+    handle_ps_command(
+        "services booting",
+        &["services", "booting"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render booting service shells");
+
+    let booting = state
+        .background_shells
+        .render_service_shells_for_ps_filtered(Some(
+            crate::background_shells::BackgroundShellServiceIssueClass::Booting,
+        ))
+        .expect("booting services")
+        .join("\n");
+    assert!(booting.contains("booting svc"));
+    assert!(!booting.contains("ready svc"));
+
+    handle_ps_command(
+        "services untracked",
+        &["services", "untracked"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render untracked service shells");
+
+    let untracked = state
+        .background_shells
+        .render_service_shells_for_ps_filtered(Some(
+            crate::background_shells::BackgroundShellServiceIssueClass::Untracked,
+        ))
+        .expect("untracked services")
+        .join("\n");
+    assert!(untracked.contains("untracked svc"));
+    assert!(!untracked.contains("booting svc"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_command_can_filter_conflicting_service_shells() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "conflict a",
+                "capabilities": ["svc.conflict"]
+            }),
+            "/tmp",
+        )
+        .expect("start first conflicting service");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "conflict b",
+                "capabilities": ["svc.conflict"]
+            }),
+            "/tmp",
+        )
+        .expect("start second conflicting service");
+
+    handle_ps_command(
+        "services conflicts",
+        &["services", "conflicts"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render conflicting service shells");
+
+    let rendered = state
+        .background_shells
+        .render_service_shells_for_ps_filtered(Some(
+            crate::background_shells::BackgroundShellServiceIssueClass::Conflicts,
+        ))
+        .expect("conflict services")
+        .join("\n");
+    assert!(rendered.contains("conflict a"));
+    assert!(rendered.contains("conflict b"));
+    assert!(rendered.contains("Capability conflicts:"));
     let _ = state.background_shells.terminate_all_running();
 }
 

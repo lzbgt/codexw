@@ -195,6 +195,7 @@ The current `codexw` implementation now reflects that model partially:
   - `background_shell_poll`
   - `background_shell_send`
   - `background_shell_list_capabilities`
+  - `background_shell_list_services`
   - `background_shell_attach`
   - `background_shell_wait_ready`
   - `background_shell_invoke_recipe`
@@ -226,6 +227,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps agents` for cognitive workers only
   - `:ps shells` for wrapper-owned local shell jobs only
   - `:ps services` for reusable service shells only
+    - `:ps services ready|booting|untracked|conflicts` filters the service-shell registry to one service-health class
   - `:ps capabilities` for the live capability-to-service index across reusable service shells
     - `:ps capabilities @api.http` drills into one capability directly and shows providers plus current consumers
     - `:ps capabilities healthy|missing|booting|ambiguous` filters the capability index to one health/issue class
@@ -280,6 +282,7 @@ The current `codexw` implementation now reflects that model partially:
     - explicit wait is also available through `:ps wait ...` and `background_shell_wait_ready`
     - `background_shell_invoke_recipe.waitForReadyMs` can lengthen or disable that auto-wait (`0` disables it)
   - capability conflicts are surfaced proactively in service listings, the dedicated capability index, and orchestration guidance, so the wrapper shows `@capability` ambiguity before later reuse fails at resolution time
+  - service-shell listings can now also be filtered directly by health/conflict state (`ready`, `booting`, `untracked`, `conflicts`) instead of forcing the operator or model to scan the full reusable-service registry
   - the capability index also shows current consumers of each capability when running jobs declare `dependsOnCapabilities`, so provider and consumer sides of reusable service roles are visible in one place
   - the model-facing dynamic tool layer now includes capability inspection too, so orchestration can inspect one reusable service role directly without scraping the whole shell list
   - the model-facing dynamic tool layer now also includes filtered capability listing, so orchestration can ask for only missing, booting, ambiguous, or healthy service roles instead of scraping the full reusable-service registry
@@ -304,6 +307,7 @@ The current `codexw` implementation now reflects that model partially:
   - live execution-sidecar count from wrapper background shells marked `observation`
   - live execution-service count from wrapper background shells marked `service`
   - live ready, booting, and untracked service-shell counts within that execution-service class
+  - live conflicted-service count for reusable helpers that currently participate in capability collisions
   - live collab-agent task count from the current turn
   - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
   - wrapper-owned background shell count
@@ -312,6 +316,7 @@ The current `codexw` implementation now reflects that model partially:
   - it reports when the main agent is blocked on prerequisite shells or agent waits
   - it distinguishes sidecars, reusable services, and server terminals instead of showing only a flat background-task count
   - reusable services can now surface as `booting`, `ready`, or `untracked` directly in that prompt suffix
+  - reusable services can also surface as `conflicted` when capability reuse is ambiguous
   - it keeps `/ps` and `/clean` as the action hints for inspecting or stopping async work
 - that orchestration state is now actionable from `/ps` itself, not just visible:
   - the full worker view remains the default
@@ -319,11 +324,13 @@ The current `codexw` implementation now reflects that model partially:
   - `/ps guidance` now uses the same graph to emit a highest-priority next-step hint instead of only another raw worker listing
 - `/status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
 - that compact summary now also carries capability-dependency issue counts (`cap_deps_missing`, `cap_deps_booting`, `cap_deps_ambiguous`), so durable service dependency health is visible without opening the detailed capability registry
+- that compact summary now also carries conflicted-service counts, so capability-collision health is visible without opening the detailed service registry
 - `/status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives operator guidance as well as raw counts and dependency edges
 - the same orchestration graph is now available to the model-side dynamic tool layer too:
   - `orchestration_status` mirrors the compact orchestration summary plus next-action hint
   - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, or `guidance`
   - `orchestration_list_dependencies` mirrors the focused dependency-edge view with optional filters such as `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`
+  - `background_shell_list_services` mirrors the focused reusable-service registry with optional filters such as `ready`, `booting`, `untracked`, or `conflicts`
 
 That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `/multi-agents`, `/ps`, ready status, and transcript summaries all read from that same model.
 `codexw` also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.
