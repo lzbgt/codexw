@@ -283,6 +283,15 @@ fn service_capability_reference_errors_when_ambiguous() {
     assert!(err.contains("ambiguous"));
     assert!(err.contains("bg-1"));
     assert!(err.contains("bg-2"));
+    let listed = manager.list_from_tool();
+    assert!(listed.contains("Capability conflicts:"));
+    assert!(listed.contains("@api -> bg-1, bg-2"));
+    let services = manager
+        .render_for_ps_filtered(Some(BackgroundShellIntent::Service))
+        .expect("service rendering");
+    let rendered = services.join("\n");
+    assert!(rendered.contains("Capability conflicts:"));
+    assert!(rendered.contains("@api -> bg-1, bg-2"));
     let _ = manager.terminate_all_running();
 }
 

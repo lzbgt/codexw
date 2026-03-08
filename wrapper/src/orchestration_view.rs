@@ -59,8 +59,12 @@ pub(crate) fn orchestration_snapshot(state: &AppState) -> OrchestrationSnapshot 
 pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
     let snapshot = orchestration_snapshot(state);
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
+    let service_cap_conflicts = state
+        .orchestration
+        .background_shells
+        .service_capability_conflict_count();
     format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_cap_conflicts={} agents_live={} agents_cached={}{} bg_shells={} thread_terms={}",
         snapshot.main_agents,
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -72,6 +76,7 @@ pub(crate) fn orchestration_overview_summary(state: &AppState) -> String {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+        service_cap_conflicts,
         snapshot.live_agent_tasks.len(),
         snapshot.cached_agent_threads.len(),
         if agent_counts.is_empty() {
@@ -94,8 +99,12 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         return None;
     }
     let agent_counts = summarize_agent_status_counts(&snapshot.cached_agent_threads);
+    let service_cap_conflicts = state
+        .orchestration
+        .background_shells
+        .service_capability_conflict_count();
     Some(format!(
-        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} agent_tasks={} shells={} thread_terms={} agents={}{}",
+        "main={} deps_blocking={} deps_sidecar={} waits={} sidecar_agents={} exec_prereqs={} exec_sidecars={} exec_services={} services_ready={} services_booting={} services_untracked={} service_cap_conflicts={} agent_tasks={} shells={} thread_terms={} agents={}{}",
         main_agent_state_label(state),
         blocking_dependency_count(state),
         sidecar_dependency_count(state),
@@ -107,6 +116,7 @@ pub(crate) fn orchestration_runtime_summary(state: &AppState) -> Option<String> 
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting),
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked),
+        service_cap_conflicts,
         snapshot.live_agent_tasks.len(),
         snapshot.background_shell_jobs,
         snapshot.thread_background_terminals,
@@ -468,6 +478,10 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
     let sidecar_agents = active_sidecar_agent_task_count(state);
     let shell_sidecars = running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
+    let capability_conflicts = state
+        .orchestration
+        .background_shells
+        .service_capability_conflicts();
     let ready_services =
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
     let booting_services =
@@ -492,6 +506,18 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
             ),
             "Inspect /ps blockers to see the blocking agent dependencies.".to_string(),
             "Use /multi-agents to refresh or switch into the relevant agent thread.".to_string(),
+        ];
+    }
+    if !capability_conflicts.is_empty() {
+        let conflict_count = capability_conflicts.len();
+        let first = &capability_conflicts[0].0;
+        return vec![
+            format!(
+                "{} detected across service capabilities.",
+                pluralize(conflict_count, "capability conflict is", "capability conflicts are")
+            ),
+            format!("Resolve ambiguous reuse targets such as @{first} before relying on capability-based attachment."),
+            "Use /ps services to inspect the conflicting jobs and assign more specific capabilities.".to_string(),
         ];
     }
     if ready_services > 0 {
@@ -595,6 +621,7 @@ mod tests {
         assert!(summary.contains("services_ready=0"));
         assert!(summary.contains("services_booting=0"));
         assert!(summary.contains("services_untracked=0"));
+        assert!(summary.contains("service_cap_conflicts=0"));
         assert!(summary.contains("agents_live=0"));
         assert!(summary.contains("agents_cached=2"));
         assert!(summary.contains("active=1"));
@@ -869,6 +896,7 @@ mod tests {
         assert!(summary.contains("services_ready=1"));
         assert!(summary.contains("services_booting=1"));
         assert!(summary.contains("services_untracked=1"));
+        assert!(summary.contains("service_cap_conflicts=0"));
 
         let suffix = orchestration_prompt_suffix(&state).expect("prompt suffix");
         assert!(suffix.contains("1 service ready"));
@@ -936,6 +964,38 @@ mod tests {
         );
         let sidecar_hint = orchestration_guidance_summary(&sidecar).expect("sidecar guidance");
         assert!(sidecar_hint.contains("running without blocking"));
+    }
+
+    #[test]
+    fn orchestration_guidance_surfaces_service_capability_conflicts_before_ready_reuse() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start first service");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start second service");
+        let hint = orchestration_guidance_summary(&services).expect("conflict guidance");
+        assert!(hint.contains("capability conflict"));
+        let rendered = render_orchestration_guidance(&services);
+        assert!(rendered.contains("@api.http"));
+        let _ = services.background_shells.terminate_all_running();
     }
 
     #[test]

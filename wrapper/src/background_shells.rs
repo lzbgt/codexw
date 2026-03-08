@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::io::BufRead;
@@ -531,6 +532,13 @@ impl BackgroundShellManager {
             "Use background_shell_poll with a jobId to inspect logs while continuing other work."
                 .to_string(),
         );
+        let conflicts = self.service_capability_conflicts();
+        if !conflicts.is_empty() {
+            lines.push("Capability conflicts:".to_string());
+            for (capability, jobs) in conflicts {
+                lines.push(format!("@{capability} -> {}", jobs.join(", ")));
+            }
+        }
         lines.join("\n")
     }
 
@@ -809,6 +817,41 @@ impl BackgroundShellManager {
             .count()
     }
 
+    pub(crate) fn service_capability_conflicts(&self) -> Vec<(String, Vec<String>)> {
+        let mut index = BTreeMap::<String, Vec<String>>::new();
+        for snapshot in self
+            .snapshots()
+            .into_iter()
+            .filter(|job| job.intent == BackgroundShellIntent::Service)
+        {
+            let job_ref = snapshot
+                .alias
+                .as_deref()
+                .map(|alias| format!("{} ({alias})", snapshot.id))
+                .unwrap_or_else(|| snapshot.id.clone());
+            for capability in snapshot.service_capabilities {
+                index.entry(capability).or_default().push(job_ref.clone());
+            }
+        }
+        let mut conflicts = index
+            .into_iter()
+            .filter_map(|(capability, mut jobs)| {
+                if jobs.len() < 2 {
+                    None
+                } else {
+                    jobs.sort();
+                    Some((capability, jobs))
+                }
+            })
+            .collect::<Vec<_>>();
+        conflicts.sort_by(|left, right| left.0.cmp(&right.0));
+        conflicts
+    }
+
+    pub(crate) fn service_capability_conflict_count(&self) -> usize {
+        self.service_capability_conflicts().len()
+    }
+
     pub(crate) fn job_count(&self) -> usize {
         self.inner
             .jobs
@@ -927,6 +970,15 @@ impl BackgroundShellManager {
                     "    output   {}",
                     snapshot.recent_lines.join(" | ")
                 ));
+            }
+        }
+        if matches!(intent_filter, None | Some(BackgroundShellIntent::Service)) {
+            let conflicts = self.service_capability_conflicts();
+            if !conflicts.is_empty() {
+                lines.push("Capability conflicts:".to_string());
+                for (capability, jobs) in conflicts {
+                    lines.push(format!("    @{capability} -> {}", jobs.join(", ")));
+                }
             }
         }
         Some(lines)

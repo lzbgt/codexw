@@ -270,6 +270,7 @@ The current `codexw` implementation now reflects that model partially:
   - executable network recipes (`http`, `tcp`, `redis`) now automatically wait for service readiness when the service declared `readyPattern`
     - explicit wait is also available through `:ps wait ...` and `background_shell_wait_ready`
     - `background_shell_invoke_recipe.waitForReadyMs` can lengthen or disable that auto-wait (`0` disables it)
+  - capability conflicts are surfaced proactively in service listings and orchestration guidance, so the wrapper shows `@capability` ambiguity before later reuse fails at resolution time
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
   - `:ps unalias <name>` removes that alias
