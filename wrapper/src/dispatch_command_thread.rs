@@ -1,5 +1,7 @@
-#[path = "dispatch_command_thread_flow.rs"]
-mod dispatch_command_thread_flow;
+#[path = "dispatch_command_thread_actions.rs"]
+mod dispatch_command_thread_actions;
+#[path = "dispatch_command_thread_navigation.rs"]
+mod dispatch_command_thread_navigation;
 #[path = "dispatch_command_thread_workspace.rs"]
 mod dispatch_command_thread_workspace;
 
@@ -22,7 +24,19 @@ pub(crate) fn try_handle_thread_command(
     output: &mut Output,
     writer: &mut ChildStdin,
 ) -> Result<Option<bool>> {
-    if let Some(result) = dispatch_command_thread_flow::try_handle_thread_flow_command(
+    if let Some(result) = dispatch_command_thread_navigation::try_handle_thread_navigation_command(
+        command,
+        args,
+        cli,
+        resolved_cwd,
+        state,
+        editor,
+        output,
+        writer,
+    )? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = dispatch_command_thread_actions::try_handle_thread_action_command(
         command,
         args,
         cli,

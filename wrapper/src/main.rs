@@ -14,7 +14,6 @@ mod collaboration_preset;
 mod commands;
 mod commands_catalog;
 mod commands_completion;
-mod commands_entries;
 mod commands_entry_session_catalog;
 mod commands_entry_session_modes;
 mod commands_match;
