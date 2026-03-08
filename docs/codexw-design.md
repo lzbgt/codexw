@@ -192,6 +192,7 @@ The current `codexw` implementation now reflects that model partially:
   - `background_shell_start`
   - `background_shell_poll`
   - `background_shell_send`
+  - `background_shell_list_capabilities`
   - `background_shell_attach`
   - `background_shell_wait_ready`
   - `background_shell_invoke_recipe`
@@ -223,6 +224,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps services` for reusable service shells only
   - `:ps capabilities` for the live capability-to-service index across reusable service shells
     - `:ps capabilities @api.http` drills into one capability directly and shows providers plus current consumers
+    - `:ps capabilities healthy|missing|booting|ambiguous` filters the capability index to one health/issue class
   - `:ps terminals` for backend-observed terminals only
 - `/ps` also has per-job local-shell actions now:
   - `:ps attach <jobId|alias|@capability|n>` renders the structured attachment metadata for one service shell job
@@ -276,6 +278,7 @@ The current `codexw` implementation now reflects that model partially:
   - capability conflicts are surfaced proactively in service listings, the dedicated capability index, and orchestration guidance, so the wrapper shows `@capability` ambiguity before later reuse fails at resolution time
   - the capability index also shows current consumers of each capability when running jobs declare `dependsOnCapabilities`, so provider and consumer sides of reusable service roles are visible in one place
   - the model-facing dynamic tool layer now includes capability inspection too, so orchestration can inspect one reusable service role directly without scraping the whole shell list
+  - the model-facing dynamic tool layer now also includes filtered capability listing, so orchestration can ask for only missing, booting, ambiguous, or healthy service roles instead of scraping the full reusable-service registry
   - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job

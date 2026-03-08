@@ -185,6 +185,19 @@ pub(crate) fn dynamic_tool_specs() -> Value {
             }
         }),
         json!({
+            "name": "background_shell_list_capabilities",
+            "description": "List the reusable service capability registry, optionally filtered to healthy, missing, booting, or ambiguous capability states.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": ["all", "healthy", "missing", "booting", "ambiguous"]
+                    }
+                }
+            }
+        }),
+        json!({
             "name": "background_shell_inspect_capability",
             "description": "Inspect one reusable service capability and show its current providers, provider metadata, and consumers. Accepts `capability` with or without the leading @.",
             "inputSchema": {
@@ -282,6 +295,9 @@ pub(crate) fn execute_dynamic_tool_call(
         ),
         "background_shell_poll" => background_shells.poll_from_tool(arguments),
         "background_shell_send" => background_shells.send_input_from_tool(arguments),
+        "background_shell_list_capabilities" => {
+            background_shells.list_capabilities_from_tool(arguments)
+        }
         "background_shell_inspect_capability" => {
             background_shells.inspect_capability_from_tool(arguments)
         }
@@ -662,6 +678,7 @@ mod tests {
                 "background_shell_start",
                 "background_shell_poll",
                 "background_shell_send",
+                "background_shell_list_capabilities",
                 "background_shell_inspect_capability",
                 "background_shell_attach",
                 "background_shell_wait_ready",
@@ -910,6 +927,74 @@ mod tests {
         assert!(rendered.contains("endpoint http://127.0.0.1:4000"));
         assert!(rendered.contains("recipes  1"));
         assert!(rendered.contains("bg-2 (integration test)  [satisfied]  blocking=yes"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_list_capabilities_can_filter_issue_classes() {
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        let inspect_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_list_capabilities",
+                "arguments": {
+                    "status": "missing"
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(inspect_result["success"], true);
+        let rendered = inspect_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("list text");
+        assert!(rendered.contains("@api.http -> <missing provider> [missing]"));
+        assert!(rendered.contains("used by bg-1 [missing]"));
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_list_capabilities_accepts_missing_arguments_object() {
+        let manager = BackgroundShellManager::default();
+        execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_start",
+                "arguments": {
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        let inspect_result = execute_dynamic_tool_call(
+            &json!({
+                "tool": "background_shell_list_capabilities"
+            }),
+            "/tmp",
+            &manager,
+        );
+
+        assert_eq!(inspect_result["success"], true);
+        let rendered = inspect_result["contentItems"][0]["text"]
+            .as_str()
+            .expect("list text");
+        assert!(rendered.contains("@api.http -> bg-1"));
         let _ = manager.terminate_all_running();
     }
 

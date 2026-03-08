@@ -238,6 +238,14 @@ impl BackgroundShellCapabilityDependencyState {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BackgroundShellCapabilityIssueClass {
+    Healthy,
+    Missing,
+    Booting,
+    Ambiguous,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct BackgroundShellCapabilityDependencySummary {
     pub(crate) job_id: String,
@@ -686,6 +694,23 @@ impl BackgroundShellManager {
         Ok(self
             .render_single_service_capability_for_ps(capability)?
             .join("\n"))
+    }
+
+    pub(crate) fn list_capabilities_from_tool(
+        &self,
+        arguments: &serde_json::Value,
+    ) -> Result<String, String> {
+        let object = arguments.as_object();
+        let issue_filter = parse_capability_issue_filter(
+            object
+                .and_then(|object| object.get("status"))
+                .and_then(serde_json::Value::as_str),
+            "background_shell_list_capabilities",
+        )?;
+        let rendered = self
+            .render_service_capabilities_for_ps_filtered(issue_filter)
+            .ok_or_else(|| "No reusable service capabilities tracked right now.".to_string())?;
+        Ok(rendered.join("\n"))
     }
 
     pub(crate) fn wait_ready_from_tool(
@@ -1182,43 +1207,46 @@ impl BackgroundShellManager {
     }
 
     pub(crate) fn render_service_capabilities_for_ps(&self) -> Option<Vec<String>> {
-        let capability_index = self.service_capability_index();
-        let mut consumer_index = BTreeMap::<String, Vec<String>>::new();
-        for dependency in self.capability_dependency_summaries() {
-            let consumer = dependency_consumer_display(&dependency);
-            consumer_index
-                .entry(dependency.capability)
-                .or_default()
-                .push(format!("{consumer} [{}]", dependency.status.as_str()));
-        }
-        let mut capabilities = capability_index
-            .iter()
-            .map(|(capability, _)| capability.clone())
-            .collect::<BTreeSet<_>>();
-        capabilities.extend(consumer_index.keys().cloned());
-        if capabilities.is_empty() {
+        self.render_service_capabilities_for_ps_filtered(None)
+    }
+
+    pub(crate) fn render_service_capabilities_for_ps_filtered(
+        &self,
+        issue_filter: Option<BackgroundShellCapabilityIssueClass>,
+    ) -> Option<Vec<String>> {
+        let entries = self
+            .capability_issue_entries()
+            .into_iter()
+            .filter(|(_, issue, _)| issue_filter.is_none_or(|wanted| *issue == wanted))
+            .collect::<Vec<_>>();
+        if entries.is_empty() {
             return None;
         }
         let mut lines = vec!["Service capability index:".to_string()];
-        for (index, capability) in capabilities.iter().enumerate() {
-            let jobs = capability_index
-                .iter()
-                .find(|(entry, _)| entry == capability)
-                .map(|(_, jobs)| jobs.clone())
-                .unwrap_or_default();
-            let qualifier = if jobs.len() > 1 { "  [conflict]" } else { "" };
+        for (index, (capability, issue, consumers)) in entries.iter().enumerate() {
+            let providers = self
+                .running_service_providers_for_capability(capability)
+                .into_iter()
+                .map(|provider| provider_display(&provider))
+                .collect::<Vec<_>>();
+            let qualifier = match issue {
+                BackgroundShellCapabilityIssueClass::Healthy => "",
+                BackgroundShellCapabilityIssueClass::Missing => " [missing]",
+                BackgroundShellCapabilityIssueClass::Booting => " [booting]",
+                BackgroundShellCapabilityIssueClass::Ambiguous => " [conflict]",
+            };
             lines.push(format!(
                 "{:>2}. @{} -> {}{}",
                 index + 1,
                 capability,
-                if jobs.is_empty() {
+                if providers.is_empty() {
                     "<missing provider>".to_string()
                 } else {
-                    jobs.join(", ")
+                    providers.join(", ")
                 },
                 qualifier
             ));
-            if let Some(consumers) = consumer_index.get(capability) {
+            if !consumers.is_empty() {
                 lines.push(format!("    used by {}", consumers.join(", ")));
             }
         }
@@ -1376,15 +1404,13 @@ impl BackgroundShellManager {
             .collect()
     }
 
-    fn render_service_capability_index_lines(&self) -> Option<Vec<String>> {
+    fn capability_issue_entries(
+        &self,
+    ) -> Vec<(String, BackgroundShellCapabilityIssueClass, Vec<String>)> {
         let capability_index = self.service_capability_index();
         let mut consumer_index = BTreeMap::<String, Vec<String>>::new();
         for dependency in self.capability_dependency_summaries() {
-            let consumer = dependency
-                .job_alias
-                .as_deref()
-                .map(|alias| format!("{} ({alias})", dependency.job_id))
-                .unwrap_or_else(|| dependency.job_id.clone());
+            let consumer = dependency_consumer_display(&dependency);
             consumer_index
                 .entry(dependency.capability)
                 .or_default()
@@ -1395,25 +1421,56 @@ impl BackgroundShellManager {
             .map(|(capability, _)| capability.clone())
             .collect::<BTreeSet<_>>();
         capabilities.extend(consumer_index.keys().cloned());
-        if capabilities.is_empty() {
+        let mut entries = Vec::new();
+        for capability in capabilities {
+            let issue = self.capability_issue_class(&capability);
+            let consumers = consumer_index.remove(&capability).unwrap_or_default();
+            entries.push((capability, issue, consumers));
+        }
+        entries
+    }
+
+    fn capability_issue_class(&self, capability: &str) -> BackgroundShellCapabilityIssueClass {
+        let providers = self.running_service_providers_for_capability(capability);
+        if providers.is_empty() {
+            return BackgroundShellCapabilityIssueClass::Missing;
+        }
+        if providers.len() > 1 {
+            return BackgroundShellCapabilityIssueClass::Ambiguous;
+        }
+        if providers[0].service_readiness == Some(BackgroundShellServiceReadiness::Booting) {
+            return BackgroundShellCapabilityIssueClass::Booting;
+        }
+        BackgroundShellCapabilityIssueClass::Healthy
+    }
+
+    fn render_service_capability_index_lines(&self) -> Option<Vec<String>> {
+        let entries = self.capability_issue_entries();
+        if entries.is_empty() {
             return None;
         }
         let mut lines = vec!["Capability index:".to_string()];
-        for capability in capabilities {
-            let jobs = capability_index
-                .iter()
-                .find(|(entry, _)| *entry == capability)
-                .map(|(_, jobs)| jobs.clone())
-                .unwrap_or_default();
+        for (capability, issue, consumers) in entries {
+            let providers = self
+                .running_service_providers_for_capability(&capability)
+                .into_iter()
+                .map(|provider| provider_display(&provider))
+                .collect::<Vec<_>>();
             lines.push(format!(
-                "    @{capability} -> {}",
-                if jobs.is_empty() {
+                "    @{capability} -> {}{}",
+                if providers.is_empty() {
                     "<missing provider>".to_string()
                 } else {
-                    jobs.join(", ")
-                }
+                    providers.join(", ")
+                },
+                match issue {
+                    BackgroundShellCapabilityIssueClass::Healthy => "",
+                    BackgroundShellCapabilityIssueClass::Missing => " [missing]",
+                    BackgroundShellCapabilityIssueClass::Booting => " [booting]",
+                    BackgroundShellCapabilityIssueClass::Ambiguous => " [conflict]",
+                },
             ));
-            if let Some(consumers) = consumer_index.get(&capability) {
+            if !consumers.is_empty() {
                 lines.push(format!("      used by {}", consumers.join(", ")));
             }
         }
@@ -1765,6 +1822,24 @@ fn provider_display(snapshot: &BackgroundShellJobSnapshot) -> String {
         format!("{} ({label})", snapshot.id)
     } else {
         snapshot.id.clone()
+    }
+}
+
+fn parse_capability_issue_filter(
+    raw: Option<&str>,
+    context: &str,
+) -> Result<Option<BackgroundShellCapabilityIssueClass>, String> {
+    match raw {
+        None | Some("all") => Ok(None),
+        Some("healthy") | Some("ok") => Ok(Some(BackgroundShellCapabilityIssueClass::Healthy)),
+        Some("missing") => Ok(Some(BackgroundShellCapabilityIssueClass::Missing)),
+        Some("booting") => Ok(Some(BackgroundShellCapabilityIssueClass::Booting)),
+        Some("ambiguous") | Some("conflicts") | Some("conflict") => {
+            Ok(Some(BackgroundShellCapabilityIssueClass::Ambiguous))
+        }
+        Some(other) => Err(format!(
+            "{context} `status` must be one of `all`, `healthy`, `missing`, `booting`, or `ambiguous`, got `{other}`"
+        )),
     }
 }
 

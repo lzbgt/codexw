@@ -3,6 +3,7 @@ use crate::background_terminals::background_terminal_count;
 use crate::background_terminals::render_background_terminals;
 use crate::dispatch_command_session_ps::handle_ps_command;
 use crate::dispatch_command_session_ps::parse_clean_target;
+use crate::dispatch_command_session_ps::parse_ps_capability_issue_filter;
 use crate::dispatch_command_session_ps::parse_ps_filter;
 use crate::events::handle_realtime_notification;
 use crate::notification_item_buffers::handle_buffer_update;
@@ -572,6 +573,39 @@ fn ps_filter_parser_accepts_worker_class_aliases() {
 }
 
 #[test]
+fn ps_capability_filter_parser_accepts_issue_aliases() {
+    use crate::background_shells::BackgroundShellCapabilityIssueClass;
+
+    assert_eq!(parse_ps_capability_issue_filter(None), Some(None));
+    assert_eq!(parse_ps_capability_issue_filter(Some("all")), Some(None));
+    assert_eq!(
+        parse_ps_capability_issue_filter(Some("healthy")),
+        Some(Some(BackgroundShellCapabilityIssueClass::Healthy))
+    );
+    assert_eq!(
+        parse_ps_capability_issue_filter(Some("ok")),
+        Some(Some(BackgroundShellCapabilityIssueClass::Healthy))
+    );
+    assert_eq!(
+        parse_ps_capability_issue_filter(Some("missing")),
+        Some(Some(BackgroundShellCapabilityIssueClass::Missing))
+    );
+    assert_eq!(
+        parse_ps_capability_issue_filter(Some("booting")),
+        Some(Some(BackgroundShellCapabilityIssueClass::Booting))
+    );
+    assert_eq!(
+        parse_ps_capability_issue_filter(Some("ambiguous")),
+        Some(Some(BackgroundShellCapabilityIssueClass::Ambiguous))
+    );
+    assert_eq!(
+        parse_ps_capability_issue_filter(Some("conflicts")),
+        Some(Some(BackgroundShellCapabilityIssueClass::Ambiguous))
+    );
+    assert_eq!(parse_ps_capability_issue_filter(Some("weird")), None);
+}
+
+#[test]
 fn clean_target_parser_accepts_scoped_cleanup_aliases() {
     use crate::dispatch_command_session_ps::CleanTarget;
 
@@ -903,6 +937,45 @@ fn ps_command_can_render_single_service_capability_detail() {
     assert!(rendered.contains("Providers:"));
     assert!(rendered.contains("bg-1  [untracked]"));
     assert!(rendered.contains("bg-2  [satisfied]  blocking=yes"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_command_can_filter_capability_index_by_issue_class() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "dependsOnCapabilities": ["api.http"],
+            }),
+            "/tmp",
+        )
+        .expect("start dependent shell");
+
+    handle_ps_command(
+        "capabilities missing",
+        &["capabilities", "missing"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render filtered capability index");
+
+    let rendered = state
+        .background_shells
+        .render_service_capabilities_for_ps_filtered(Some(
+            crate::background_shells::BackgroundShellCapabilityIssueClass::Missing,
+        ))
+        .expect("capability filter")
+        .join("\n");
+    assert!(rendered.contains("@api.http -> <missing provider> [missing]"));
     let _ = state.background_shells.terminate_all_running();
 }
 

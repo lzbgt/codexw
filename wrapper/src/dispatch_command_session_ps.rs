@@ -235,14 +235,35 @@ pub(crate) fn handle_ps_command(
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
     } else if matches!(action, Some("capabilities" | "caps" | "cap")) && args.len() > 1 {
-        let capability_ref = args[1];
-        match state
-            .orchestration
-            .background_shells
-            .render_single_service_capability_for_ps(capability_ref)
-        {
-            Ok(rendered) => output.block_stdout("Service Capability", &rendered.join("\n"))?,
-            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        let selector = args[1];
+        if selector.starts_with('@') {
+            match state
+                .orchestration
+                .background_shells
+                .render_single_service_capability_for_ps(selector)
+            {
+                Ok(rendered) => output.block_stdout("Service Capability", &rendered.join("\n"))?,
+                Err(err) => output.line_stderr(format!("[session] {err}"))?,
+            }
+        } else {
+            let issue_filter = match parse_ps_capability_issue_filter(Some(selector)) {
+                Some(filter) => filter,
+                None => {
+                    output.line_stderr(
+                        "[session] usage: :ps capabilities [@capability|healthy|missing|booting|ambiguous]",
+                    )?;
+                    return Ok(true);
+                }
+            };
+            let rendered = match state
+                .orchestration
+                .background_shells
+                .render_service_capabilities_for_ps_filtered(issue_filter)
+            {
+                Some(rendered) => rendered.join("\n"),
+                None => "No reusable service capabilities tracked right now.".to_string(),
+            };
+            output.block_stdout("Service Capabilities", &rendered)?;
         }
     } else if matches!(action, Some("terminate" | "stop" | "kill")) {
         let Some(reference) = args.get(1).copied() else {
@@ -279,7 +300,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance|blockers|agents|shells|services|capabilities [@capability]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [guidance|blockers|agents|shells|services|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
@@ -371,6 +392,27 @@ pub(crate) fn parse_ps_filter(action: Option<&str>) -> Option<WorkerFilter> {
         Some("capabilities") | Some("caps") | Some("cap") => Some(WorkerFilter::Capabilities),
         Some("terminals") => Some(WorkerFilter::Terminals),
         Some("clean") => None,
+        Some(_) => None,
+    }
+}
+
+pub(crate) fn parse_ps_capability_issue_filter(
+    action: Option<&str>,
+) -> Option<Option<crate::background_shells::BackgroundShellCapabilityIssueClass>> {
+    match action {
+        None | Some("all") => Some(None),
+        Some("healthy") | Some("ok") => Some(Some(
+            crate::background_shells::BackgroundShellCapabilityIssueClass::Healthy,
+        )),
+        Some("missing") => Some(Some(
+            crate::background_shells::BackgroundShellCapabilityIssueClass::Missing,
+        )),
+        Some("booting") => Some(Some(
+            crate::background_shells::BackgroundShellCapabilityIssueClass::Booting,
+        )),
+        Some("ambiguous") | Some("conflict") | Some("conflicts") => Some(Some(
+            crate::background_shells::BackgroundShellCapabilityIssueClass::Ambiguous,
+        )),
         Some(_) => None,
     }
 }

@@ -359,7 +359,7 @@ fn service_capability_index_lists_running_service_roles() {
         .expect("render capability index")
         .join("\n");
     assert!(rendered.contains("Service capability index:"));
-    assert!(rendered.contains("@api.http -> bg-1, bg-2  [conflict]"));
+    assert!(rendered.contains("@api.http -> bg-1, bg-2 [conflict]"));
     assert!(rendered.contains("@frontend.dev -> bg-1"));
     assert!(rendered.contains("@worker.queue -> bg-2"));
     let _ = manager.terminate_all_running();
