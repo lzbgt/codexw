@@ -42,7 +42,6 @@ pub(crate) fn handle_ctrl_c(
     writer: &mut ChildStdin,
 ) -> Result<Option<bool>> {
     if state.turn_running {
-        editor.clear();
         if let Some(turn_id) = state.active_turn_id.clone() {
             let current_thread_id = thread_id(state)?.to_string();
             output.line_stderr("[interrupt] interrupting active turn")?;
@@ -52,7 +51,6 @@ pub(crate) fn handle_ctrl_c(
             return Ok(Some(false));
         }
     } else if let Some(process_id) = state.active_exec_process_id.clone() {
-        editor.clear();
         output.line_stderr("[interrupt] terminating active local command")?;
         send_command_exec_terminate(writer, state, process_id)?;
     } else if matches!(editor.ctrl_c(), EditorEvent::CtrlC) {

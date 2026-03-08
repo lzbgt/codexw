@@ -40,9 +40,9 @@ fn backspace_removes_previous_newline_boundary() {
 fn delete_removes_next_newline_boundary() {
     let mut editor = LineEditor::default();
     editor.insert_str("ab\ncd");
-    editor.move_home();
-    editor.move_right();
-    editor.move_right();
+    editor.move_left();
+    editor.move_left();
+    editor.move_left();
     editor.delete();
     assert_eq!(editor.buffer(), "abcd");
     assert_eq!(editor.cursor_chars(), 2);
@@ -103,6 +103,36 @@ fn ctrl_u_clears_to_start_of_line() {
     editor.clear_to_start();
     assert_eq!(editor.buffer(), "ld");
     assert_eq!(editor.cursor_chars(), 0);
+}
+
+#[test]
+fn home_and_end_stay_within_current_multiline_segment() {
+    let mut editor = LineEditor::default();
+    editor.insert_str("alpha\nbeta\ngamma");
+    editor.move_left();
+    editor.move_left();
+    editor.move_left();
+    editor.move_left();
+    editor.move_left();
+    editor.move_left();
+    editor.move_left();
+
+    editor.move_home();
+    assert_eq!(editor.cursor_chars(), "alpha\n".chars().count());
+
+    editor.move_end();
+    assert_eq!(editor.cursor_chars(), "alpha\nbeta".chars().count());
+}
+
+#[test]
+fn ctrl_u_clears_only_current_multiline_segment_prefix() {
+    let mut editor = LineEditor::default();
+    editor.insert_str("alpha\nbeta");
+    editor.move_left();
+    editor.move_left();
+    editor.clear_to_start();
+    assert_eq!(editor.buffer(), "alpha\nta");
+    assert_eq!(editor.cursor_chars(), "alpha\n".chars().count());
 }
 
 #[test]

@@ -26,92 +26,125 @@ pub(crate) fn render_committed_prompt(buffer: &str) -> String {
     rendered_lines.join("\n")
 }
 
-pub(crate) fn render_prompt_line(
+pub(crate) fn render_prompt_lines(
     prompt_label: &str,
     buffer: &str,
     cursor_chars: usize,
     terminal_width: usize,
-) -> (String, usize) {
+) -> (Vec<String>, usize, usize) {
     let prefix = if prompt_label.trim().is_empty() {
         "> ".to_string()
     } else {
         format!("{prompt_label}> ")
     };
     let prefix_width = UnicodeWidthStr::width(prefix.as_str());
+    let continuation_prefix = " ".repeat(prefix_width.max(2));
     let available_chars = terminal_width.saturating_sub(prefix_width).max(1);
     let display_buffer = preview_prompt_buffer(buffer);
-    let (visible_buffer, visible_cursor_chars) =
-        fit_prompt_buffer(&display_buffer, cursor_chars, available_chars);
-    let line = text_to_ansi(&Text::from(Line::from(vec![
-        Span::styled(
-            prefix,
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::raw(visible_buffer),
-    ])));
+    let (visible_lines, cursor_row, visible_cursor_chars) =
+        wrap_prompt_buffer(&display_buffer, cursor_chars, available_chars);
+
+    let mut rendered = Vec::with_capacity(visible_lines.len());
+    for (idx, visible_buffer) in visible_lines.into_iter().enumerate() {
+        let prompt_prefix = if idx == 0 {
+            prefix.clone()
+        } else {
+            continuation_prefix.clone()
+        };
+        rendered.push(text_to_ansi(&Text::from(Line::from(vec![
+            Span::styled(
+                prompt_prefix,
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(visible_buffer),
+        ]))));
+    }
     let cursor_col = prefix_width + visible_cursor_chars;
-    (line, cursor_col)
+    (rendered, cursor_row, cursor_col)
+}
+
+pub(crate) fn fit_status_line(status: &str, terminal_width: usize) -> String {
+    if terminal_width == 0 {
+        return String::new();
+    }
+
+    let graphemes = UnicodeSegmentation::graphemes(status, true).collect::<Vec<_>>();
+    let total_width = grapheme_slice_width(&graphemes);
+    if total_width <= terminal_width {
+        return status.to_string();
+    }
+
+    if terminal_width <= 3 {
+        return ".".repeat(terminal_width);
+    }
+
+    let mut visible = String::new();
+    let mut used = 0;
+    let budget = terminal_width - 3;
+    for grapheme in graphemes {
+        let width = UnicodeWidthStr::width(grapheme);
+        if used + width > budget {
+            break;
+        }
+        visible.push_str(grapheme);
+        used += width;
+    }
+    visible.push_str("...");
+    visible
 }
 
 fn preview_prompt_buffer(buffer: &str) -> String {
     buffer
         .chars()
-        .map(|ch| if ch == '\n' { '↩' } else { ch })
+        .map(|ch| if ch == '\n' { '⏎' } else { ch })
         .collect()
 }
 
-fn fit_prompt_buffer(buffer: &str, cursor_chars: usize, available_chars: usize) -> (String, usize) {
+fn wrap_prompt_buffer(
+    buffer: &str,
+    cursor_chars: usize,
+    available_chars: usize,
+) -> (Vec<String>, usize, usize) {
     let graphemes = UnicodeSegmentation::graphemes(buffer, true).collect::<Vec<_>>();
-    let total_width = grapheme_slice_width(&graphemes);
     let cursor = cursor_chars.min(graphemes.len());
-    if total_width <= available_chars {
-        return (
-            buffer.to_string(),
-            grapheme_slice_width(&graphemes[..cursor]).min(available_chars),
-        );
+    let line_width = available_chars.max(1);
+
+    if graphemes.is_empty() {
+        return (vec![String::new()], 0, 0);
     }
 
-    if available_chars <= 3 {
-        return (".".repeat(available_chars), available_chars);
-    }
+    let mut lines = Vec::new();
+    let mut current = String::new();
+    let mut current_width = 0;
+    let mut cursor_row = 0;
+    let mut cursor_col = 0;
 
-    let window_width = available_chars - 3;
-    let mut start = cursor;
-    let mut width_before_cursor = 0;
-    while start > 0 {
-        let next_width = UnicodeWidthStr::width(graphemes[start - 1]);
-        if width_before_cursor + next_width > window_width {
-            break;
+    for (idx, grapheme) in graphemes.iter().enumerate() {
+        if idx == cursor {
+            cursor_row = lines.len();
+            cursor_col = current_width.min(line_width);
         }
-        start -= 1;
-        width_before_cursor += next_width;
-    }
 
-    let mut end = start;
-    let mut visible_width = 0;
-    while end < graphemes.len() {
-        let next_width = UnicodeWidthStr::width(graphemes[end]);
-        if visible_width + next_width > window_width {
-            break;
+        let grapheme_width = UnicodeWidthStr::width(*grapheme).max(1);
+        if current_width > 0 && current_width + grapheme_width > line_width {
+            lines.push(current);
+            current = String::new();
+            current_width = 0;
         }
-        visible_width += next_width;
-        end += 1;
-    }
-    if end == start && end < graphemes.len() {
-        end += 1;
+
+        current.push_str(grapheme);
+        current_width += grapheme_width;
     }
 
-    let body = graphemes[start..end].concat();
-    let mut visible = String::from("...");
-    visible.push_str(&body);
-    let cursor_in_visible = if start == 0 {
-        grapheme_slice_width(&graphemes[..cursor])
-    } else {
-        3 + grapheme_slice_width(&graphemes[start..cursor])
-    };
-    (visible, cursor_in_visible.min(available_chars))
+    if cursor == graphemes.len() {
+        cursor_row = lines.len();
+        cursor_col = current_width.min(line_width);
+    }
+
+    lines.push(current);
+    (lines, cursor_row, cursor_col)
 }
 
 fn grapheme_slice_width(graphemes: &[&str]) -> usize {

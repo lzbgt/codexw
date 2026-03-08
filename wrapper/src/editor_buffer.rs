@@ -6,6 +6,24 @@ use crate::editor::grapheme_is_whitespace;
 use crate::editor::grapheme_to_byte_index;
 
 impl LineEditor {
+    fn current_line_start(&self) -> usize {
+        let graphemes = self.buffer.graphemes(true).collect::<Vec<_>>();
+        let mut start = self.cursor_chars.min(graphemes.len());
+        while start > 0 && graphemes[start - 1] != "\n" {
+            start -= 1;
+        }
+        start
+    }
+
+    fn current_line_end(&self) -> usize {
+        let graphemes = self.buffer.graphemes(true).collect::<Vec<_>>();
+        let mut end = self.cursor_chars.min(graphemes.len());
+        while end < graphemes.len() && graphemes[end] != "\n" {
+            end += 1;
+        }
+        end
+    }
+
     pub fn insert_char(&mut self, ch: char) {
         let byte_index = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
         self.buffer.insert(byte_index, ch);
@@ -54,20 +72,22 @@ impl LineEditor {
     }
 
     pub fn move_home(&mut self) {
-        self.cursor_chars = 0;
+        self.cursor_chars = self.current_line_start();
     }
 
     pub fn move_end(&mut self) {
-        self.cursor_chars = self.grapheme_len();
+        self.cursor_chars = self.current_line_end();
     }
 
     pub fn clear_to_start(&mut self) {
-        if self.cursor_chars == 0 {
+        let start = self.current_line_start();
+        if self.cursor_chars == start {
             return;
         }
-        let end = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
-        self.buffer.replace_range(0..end, "");
-        self.cursor_chars = 0;
+        let start_byte = grapheme_to_byte_index(&self.buffer, start);
+        let end_byte = grapheme_to_byte_index(&self.buffer, self.cursor_chars);
+        self.buffer.replace_range(start_byte..end_byte, "");
+        self.cursor_chars = start;
         self.history_index = None;
     }
 

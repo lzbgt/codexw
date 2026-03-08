@@ -16,15 +16,17 @@ use crate::render_block_markdown::tint_text;
 use crate::render_block_structured::render_command_text;
 use crate::render_block_structured::render_diff_text;
 use crate::render_block_structured::render_plain_text;
+use crate::render_prompt::fit_status_line;
 use crate::render_prompt::render_committed_prompt;
-use crate::render_prompt::render_prompt_line;
+use crate::render_prompt::render_prompt_lines;
 
 #[derive(Default)]
 pub struct Output {
     pub(crate) prompt: Option<String>,
     pub(crate) status: Option<String>,
-    pub(crate) prompt_visible: bool,
-    pub(crate) status_visible: bool,
+    pub(crate) prompt_rows: usize,
+    pub(crate) prompt_cursor_row: usize,
+    pub(crate) status_rows: usize,
 }
 
 impl Output {
@@ -51,8 +53,9 @@ impl Output {
             write_crlf(&mut stderr, &render_committed_prompt(buffer))?;
             stderr.flush()?;
         }
-        self.prompt_visible = false;
-        self.status_visible = false;
+        self.prompt_rows = 0;
+        self.prompt_cursor_row = 0;
+        self.status_rows = 0;
         Ok(())
     }
 
@@ -106,38 +109,66 @@ impl Output {
         let terminal_width = terminal::size()
             .map(|(width, _)| width as usize)
             .unwrap_or(120);
-        let (line, cursor_col) = render_prompt_line(prompt, buffer, cursor_chars, terminal_width);
+        let (lines, cursor_row, cursor_col) =
+            render_prompt_lines(prompt, buffer, cursor_chars, terminal_width);
         let mut stderr = io::stderr();
-        if self.prompt_visible || self.status_visible {
+        if self.prompt_rows > 0 || self.status_rows > 0 {
             self.hide_ui()?;
         }
         if let Some(status) = self.status.as_deref() {
-            write!(stderr, "\r{}\x1b[K\r\n", render_line_to_ansi(status))?;
-            self.status_visible = true;
+            let fitted = fit_status_line(status, terminal_width);
+            write!(stderr, "\r{}\x1b[K\r\n", render_line_to_ansi(&fitted))?;
+            self.status_rows = 1;
         } else {
-            self.status_visible = false;
+            self.status_rows = 0;
         }
-        write!(stderr, "\r{line}\x1b[K")?;
+        for (idx, line) in lines.iter().enumerate() {
+            if idx > 0 {
+                write!(stderr, "\r\n")?;
+            }
+            write!(stderr, "\r{line}\x1b[K")?;
+        }
+        let down_from_cursor = lines.len().saturating_sub(1).saturating_sub(cursor_row);
+        if down_from_cursor > 0 {
+            write!(stderr, "\x1b[{down_from_cursor}A")?;
+        }
         write!(stderr, "\r\x1b[{cursor_col}C")?;
         stderr.flush()?;
-        self.prompt_visible = true;
+        self.prompt_rows = lines.len();
+        self.prompt_cursor_row = cursor_row;
         Ok(())
     }
 
     pub(crate) fn hide_ui(&mut self) -> io::Result<()> {
-        if !self.prompt_visible && !self.status_visible {
+        if self.prompt_rows == 0 && self.status_rows == 0 {
             return Ok(());
         }
         let mut stderr = io::stderr();
-        if self.prompt_visible {
+        if self.prompt_rows > 0 {
+            let down = self
+                .prompt_rows
+                .saturating_sub(1)
+                .saturating_sub(self.prompt_cursor_row);
+            if down > 0 {
+                write!(stderr, "\x1b[{down}B")?;
+            }
             write!(stderr, "{CLEAR_LINE}")?;
+            for _ in 1..self.prompt_rows {
+                write!(stderr, "\x1b[1A{CLEAR_LINE}")?;
+            }
         }
-        if self.status_visible {
-            write!(stderr, "\x1b[1A{CLEAR_LINE}\r")?;
+        if self.status_rows > 0 {
+            if self.prompt_rows > 0 {
+                write!(stderr, "\x1b[1A{CLEAR_LINE}")?;
+            } else {
+                write!(stderr, "{CLEAR_LINE}")?;
+            }
         }
+        write!(stderr, "\r")?;
         stderr.flush()?;
-        self.prompt_visible = false;
-        self.status_visible = false;
+        self.prompt_rows = 0;
+        self.prompt_cursor_row = 0;
+        self.status_rows = 0;
         Ok(())
     }
 }
