@@ -7,12 +7,14 @@ use crate::Cli;
 use crate::app_input_controls::handle_control_key;
 use crate::app_input_editing::handle_editing_key;
 use crate::commands_completion_render::quote_if_needed;
+use crate::config_persistence::load_persisted_theme;
 use crate::dispatch_command_utils::join_prompt;
 use crate::editor::LineEditor;
 use crate::events::process_server_line;
 use crate::output::Output;
 use crate::prompt_state::prompt_accepts_input;
 use crate::prompt_state::update_prompt;
+use crate::render_markdown_code::set_theme;
 use crate::requests::send_initialize;
 use crate::runtime_event_sources::AppEvent;
 use crate::runtime_event_sources::RawModeGuard;
@@ -50,6 +52,12 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     let mut writer = stdin;
     let mut state = AppState::new(cli.auto_continue, cli.raw_json);
     let mut editor = LineEditor::default();
+
+    match load_persisted_theme() {
+        Ok(Some(theme_name)) => set_theme(&theme_name),
+        Ok(None) => {}
+        Err(err) => output.line_stderr(format!("[session] failed to load saved theme: {err:#}"))?,
+    }
 
     output.line_stderr("[session] connecting to codex app-server")?;
     send_initialize(&mut writer, &mut state, &cli, !cli.no_experimental_api)?;
@@ -157,7 +165,7 @@ fn handle_input_key(
 ) -> Result<bool> {
     let accepts_input = prompt_accepts_input(state);
     if let Some(continue_running) = handle_control_key(
-        key,
+        &key,
         cli,
         resolved_cwd,
         state,
@@ -168,6 +176,6 @@ fn handle_input_key(
     )? {
         return Ok(continue_running);
     }
-    handle_editing_key(key, resolved_cwd, state, editor, output, accepts_input)?;
+    handle_editing_key(&key, resolved_cwd, state, editor, output, accepts_input)?;
     Ok(true)
 }

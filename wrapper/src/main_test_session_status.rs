@@ -1,9 +1,12 @@
 use crate::Cli;
 use crate::prompt_state::render_prompt_status;
+use crate::session_prompt_status_active::spinner_frame;
 use crate::session_snapshot_overview::render_status_overview;
 use crate::session_snapshot_runtime::render_status_runtime;
 use crate::transcript_status_summary::summarize_thread_status_for_display;
 use serde_json::json;
+use std::time::Duration;
+use std::time::Instant;
 
 #[test]
 fn thread_status_summary_prefers_human_flags() {
@@ -29,6 +32,14 @@ fn prompt_status_uses_active_detail_when_present() {
     state.last_status_line = Some("waiting on approval".to_string());
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("waiting on approval"));
+}
+
+#[test]
+fn active_spinner_uses_codex_bullet_frames() {
+    assert_eq!(spinner_frame(None), "•");
+    let now = Instant::now();
+    assert_eq!(spinner_frame(Some(now - Duration::from_millis(100))), "•");
+    assert_eq!(spinner_frame(Some(now - Duration::from_millis(700))), "◦");
 }
 
 #[test]

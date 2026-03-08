@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::Cli;
 use crate::catalog_backend_views::render_models_list;
+use crate::config_persistence::persist_personality_selection;
 use crate::model_catalog::effective_model_entry;
 use crate::model_catalog::extract_models;
 use crate::output::Output;
@@ -38,6 +39,12 @@ pub(crate) fn apply_personality_selection(
         state.active_personality = None;
         state.session_overrides.personality = Some(None);
         output.line_stderr("[session] personality cleared; using backend default")?;
+        if let Err(err) = persist_personality_selection(state.codex_home_override.as_deref(), None)
+        {
+            output.line_stderr(format!(
+                "[session] failed to save personality selection: {err:#}"
+            ))?;
+        }
         return Ok(());
     }
     if !matches!(normalized.as_str(), "none" | "friendly" | "pragmatic") {
@@ -60,6 +67,13 @@ pub(crate) fn apply_personality_selection(
         "[session] personality set to {}",
         personality_label(&normalized)
     ))?;
+    if let Err(err) =
+        persist_personality_selection(state.codex_home_override.as_deref(), Some(&normalized))
+    {
+        output.line_stderr(format!(
+            "[session] failed to save personality selection: {err:#}"
+        ))?;
+    }
     Ok(())
 }
 

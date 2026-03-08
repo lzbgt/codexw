@@ -2,14 +2,14 @@ use crate::state::AppState;
 use std::time::Instant;
 
 pub(crate) fn spinner_frame(started_at: Option<Instant>) -> &'static str {
-    const FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
-    let idx = started_at
-        .map(|start| {
-            ((Instant::now().saturating_duration_since(start).as_millis() / 100) as usize)
-                % FRAMES.len()
-        })
+    let elapsed_millis = started_at
+        .map(|start| Instant::now().saturating_duration_since(start).as_millis())
         .unwrap_or(0);
-    FRAMES[idx]
+    if (elapsed_millis / 600).is_multiple_of(2) {
+        "•"
+    } else {
+        "◦"
+    }
 }
 
 pub(crate) fn format_elapsed(started_at: Option<Instant>) -> String {

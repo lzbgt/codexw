@@ -12,7 +12,7 @@ use crate::app_input_interrupt::handle_escape;
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn handle_control_key(
-    key: InputKey,
+    key: &InputKey,
     cli: &Cli,
     resolved_cwd: &str,
     state: &mut AppState,

@@ -16,14 +16,15 @@ use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 
 pub(crate) fn handle_editor_key(
-    key: InputKey,
+    key: &InputKey,
     resolved_cwd: &str,
     state: &mut AppState,
     editor: &mut LineEditor,
     output: &mut Output,
 ) -> Result<()> {
     match key {
-        InputKey::Char(ch) => editor.insert_char(ch),
+        InputKey::Char(ch) => editor.insert_char(*ch),
+        InputKey::Paste(text) => editor.insert_str(text),
         InputKey::Backspace => editor.backspace(),
         InputKey::Delete => editor.delete(),
         InputKey::Left => editor.move_left(),

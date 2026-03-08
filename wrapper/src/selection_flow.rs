@@ -1,6 +1,9 @@
 use anyhow::Result;
 
 use crate::Cli;
+use crate::config_persistence::persist_model_selection;
+use crate::config_persistence::persist_service_tier_selection;
+use crate::config_persistence::persist_theme_selection;
 use crate::model_catalog::ModelCatalogEntry;
 use crate::model_catalog::effective_model_id;
 use crate::model_personality_actions::apply_personality_selection;
@@ -196,6 +199,14 @@ pub(crate) fn toggle_fast_mode(state: &mut AppState, output: &mut Output) -> Res
         "[session] fast mode {}",
         if enable_fast { "enabled" } else { "disabled" }
     ))?;
+    if let Err(err) = persist_service_tier_selection(
+        state.codex_home_override.as_deref(),
+        if enable_fast { Some("fast") } else { None },
+    ) {
+        output.line_stderr(format!(
+            "[session] failed to save service tier selection: {err:#}"
+        ))?;
+    }
     Ok(())
 }
 
@@ -213,6 +224,9 @@ pub(crate) fn apply_theme_choice(
     set_theme(&theme_name);
     state.pending_selection = None;
     output.line_stderr(format!("[session] theme set to {theme_name}"))?;
+    if let Err(err) = persist_theme_selection(state.codex_home_override.as_deref(), &theme_name) {
+        output.line_stderr(format!("[session] failed to save theme selection: {err:#}"))?;
+    }
     Ok(true)
 }
 
@@ -228,6 +242,10 @@ pub(crate) fn apply_model_choice(
         state.session_overrides.reasoning_effort = Some(None);
         state.pending_selection = None;
         output.line_stderr("[session] model reset to backend default")?;
+        if let Err(err) = persist_model_selection(state.codex_home_override.as_deref(), None, None)
+        {
+            output.line_stderr(format!("[session] failed to save model selection: {err:#}"))?;
+        }
         return Ok(true);
     }
 
@@ -568,6 +586,13 @@ fn apply_model_and_effort(
             "[session] model set to {} ({})",
             model.display_name, model.id
         ))?;
+    }
+    if let Err(err) = persist_model_selection(
+        state.codex_home_override.as_deref(),
+        Some(&model.id),
+        effort,
+    ) {
+        output.line_stderr(format!("[session] failed to save model selection: {err:#}"))?;
     }
     Ok(())
 }

@@ -8,7 +8,7 @@ use crate::state::AppState;
 use crate::app_input_editor::handle_editor_key;
 
 pub(crate) fn handle_editing_key(
-    key: InputKey,
+    key: &InputKey,
     resolved_cwd: &str,
     state: &mut AppState,
     editor: &mut LineEditor,
@@ -17,6 +17,7 @@ pub(crate) fn handle_editing_key(
 ) -> Result<()> {
     match key {
         InputKey::Char(_)
+        | InputKey::Paste(_)
         | InputKey::Backspace
         | InputKey::Delete
         | InputKey::Left

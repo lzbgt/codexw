@@ -18,6 +18,7 @@ mod commands_completion_render;
 mod commands_entry_session_catalog;
 mod commands_entry_session_modes;
 mod commands_match;
+mod config_persistence;
 mod dispatch_command_session_catalog_lists;
 mod dispatch_command_session_catalog_models;
 mod dispatch_command_session_collab;

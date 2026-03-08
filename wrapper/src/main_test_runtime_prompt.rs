@@ -9,6 +9,7 @@ use crate::output::Output;
 use crate::prompt_state::prompt_accepts_input;
 use crate::prompt_state::prompt_is_visible;
 use crate::requests::PendingRequest;
+use crate::runtime_keys::InputKey;
 use crate::state::AppState;
 use std::process::Command;
 use std::process::Stdio;
@@ -96,6 +97,47 @@ fn prompt_visibility_and_input_follow_runtime_state() {
     state.active_exec_process_id = Some("proc-1".to_string());
     assert!(prompt_is_visible(&state));
     assert!(!prompt_accepts_input(&state));
+}
+
+#[test]
+fn pasted_multiline_text_is_buffered_without_submit() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+
+    crate::app_input_editing::handle_editing_key(
+        &InputKey::Paste("first\nsecond".to_string()),
+        "/tmp",
+        &mut state,
+        &mut editor,
+        &mut output,
+        true,
+    )
+    .expect("paste");
+
+    assert_eq!(editor.buffer(), "first\nsecond");
+    assert_eq!(editor.history.len(), 0);
+}
+
+#[test]
+fn pasted_text_is_ignored_when_prompt_input_is_disabled() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+
+    crate::app_input_editing::handle_editing_key(
+        &InputKey::Paste("hidden".to_string()),
+        "/tmp",
+        &mut state,
+        &mut editor,
+        &mut output,
+        false,
+    )
+    .expect("paste");
+
+    assert!(editor.buffer().is_empty());
 }
 
 fn spawn_sink_stdin() -> std::process::ChildStdin {

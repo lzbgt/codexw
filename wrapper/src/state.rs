@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Instant;
 
 use crate::collaboration_preset::CollaborationModePreset;
@@ -78,6 +79,7 @@ pub(crate) struct AppState {
     pub(crate) last_listed_thread_ids: Vec<String>,
     pub(crate) last_file_search_paths: Vec<String>,
     pub(crate) last_status_line: Option<String>,
+    pub(crate) codex_home_override: Option<PathBuf>,
     pub(crate) session_overrides: SessionOverrides,
     pub(crate) pending_selection: Option<PendingSelection>,
     pub(crate) resume_exit_hint_emitted: bool,
@@ -125,6 +127,7 @@ impl AppState {
             last_listed_thread_ids: Vec::new(),
             last_file_search_paths: Vec::new(),
             last_status_line: None,
+            codex_home_override: None,
             session_overrides: SessionOverrides::default(),
             pending_selection: None,
             resume_exit_hint_emitted: false,

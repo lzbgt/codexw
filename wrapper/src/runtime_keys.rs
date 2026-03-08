@@ -2,9 +2,10 @@ use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum InputKey {
     Char(char),
+    Paste(String),
     Esc,
     Backspace,
     Delete,

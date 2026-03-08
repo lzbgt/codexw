@@ -320,9 +320,9 @@ Current user-facing capabilities include:
 - real collaboration-mode controls through `/plan` and `/collab`, backed by `collaborationMode/list` plus `turn/start.collaborationMode`
 - backend-backed `/experimental` listing through `experimentalFeature/list`
 - backend-backed text realtime controls through `/realtime start|send|stop`, backed by `thread/realtime/*`
-- startup-warmed model metadata plus in-session numbered pickers for `/model` and `/personality`, backed by `model/list` and `turn/start` overrides
+- startup-warmed model metadata plus in-session numbered pickers for `/model` and `/personality`, backed by `model/list`, `turn/start` overrides, and persisted `config.toml` defaults
 - in-session numbered permissions presets for `/approvals` and `/permissions`, backed by `turn/start.approvalPolicy`, `turn/start.sandboxPolicy`, and matching thread/local-command overrides
-- local runtime toggles for `/fast` service-tier selection and `/theme` syntax-highlighting theme selection
+- local runtime toggles for `/fast` service-tier selection and `/theme` syntax-highlighting theme selection, both aligned with persisted Codex config state
 - backend-backed background-terminal cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
