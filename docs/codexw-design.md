@@ -39,7 +39,7 @@ The runtime has thirteen main layers.
    `requests.rs`, `requests/request_types.rs`, `requests/bootstrap_init.rs`, `requests/bootstrap_account.rs`, `requests/bootstrap_catalog.rs`, `requests/bootstrap_search.rs`, `requests/thread_switch.rs`, `requests/thread_maintenance.rs`, `requests/thread_activity.rs`, `requests/turn_requests.rs`, and `requests/command_requests.rs` own JSON-RPC request building and pending-request bookkeeping for initialize, account/catalog bootstrap, thread lifecycle, turn, command, review, and realtime actions. `bootstrap_catalog.rs` and `thread_lifecycle.rs` are now thin compatibility facades over the split concrete helpers, and production code imports the concrete request surface through `requests.rs`.
 
 4. Inbound event handling
-   `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, `notification_item_completion.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, delta/status buffering, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, and `notification_turns.rs` are compatibility/router facades over the split inbound handlers.
+   `events.rs`, `responses.rs`, `response_success.rs`, `response_bootstrap.rs`, `response_threads.rs`, `response_thread_switch.rs`, `response_thread_activity.rs`, `response_error.rs`, `notifications.rs`, `notification_realtime.rs`, `notification_turn_lifecycle.rs`, `notification_turn_items.rs`, `notification_item_updates.rs`, `notification_item_completion.rs`, and `notification_turns.rs` own inbound JSON-RPC routing, response handling, notification handling, approval-request handling, realtime events, turn/item events, delta/status buffering, item-completion rendering, and response success/error paths. `responses.rs`, `notifications.rs`, `response_success.rs`, `notification_turns.rs`, and `response_threads.rs` are compatibility/router facades over the split inbound handlers.
 
 5. Catalog parsing
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
@@ -51,7 +51,7 @@ The runtime has thirteen main layers.
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
 
 8. Session and turn orchestration
-   `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, `session_snapshot.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, and status snapshot generation. `session_status.rs` remains the small status facade over the split session prompt/realtime/snapshot helpers.
+   `model_session.rs`, `model_catalog.rs`, `model_personality.rs`, `collaboration.rs`, `collaboration_preset.rs`, `collaboration_actions.rs`, `session_prompt_status.rs`, `session_realtime.rs`, `session_snapshot.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, and status snapshot generation. `model_session.rs`, `collaboration.rs`, and `session_status.rs` remain the small facades over the split helpers.
 
 9. App runtime loop
    `app.rs` and `app_input.rs` own process wiring, the main event loop, and keyboard-event dispatch for the live interactive session. `app.rs` now holds the top-level loop, while `app_input.rs` owns the normalized input-key handler.
@@ -68,7 +68,7 @@ The runtime has thirteen main layers.
 13. Human output handling
    `output.rs`, `render.rs`, `render_prompt.rs`, `render_blocks.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path. `render.rs` and `render_blocks.rs` are compatibility facades over that split.
 
-Session feature helpers are split across `model_session.rs`, `collaboration.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `session_status.rs` kept as the thin status facade.
+Session feature helpers are split across `model_catalog.rs`, `model_personality.rs`, `collaboration_preset.rs`, `collaboration_actions.rs`, `session_prompt_status.rs`, `session_realtime.rs`, and `session_snapshot.rs`, with `model_session.rs`, `collaboration.rs`, and `session_status.rs` kept as thin facades.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers are split across `app.rs` and `app_input.rs`: `app.rs` owns backend/session startup and the top-level runtime loop, while `app_input.rs` owns input-key dispatch.
 Resume-preview helpers live across `history_render.rs` and `history_state.rs`, with `history.rs` kept as the thin facade for recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.
@@ -459,7 +459,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/response_bootstrap.rs`
   Successful initialize, catalog/config/account, and discovery response handling.
 - `wrapper/src/response_threads.rs`
-  Successful thread, realtime, review, turn, and local-command response handling.
+  Compatibility facade for the split thread/realtime/turn/local-command response layer.
+- `wrapper/src/response_thread_switch.rs`
+  Successful thread start, resume, fork, resumed-history rendering, and initial prompt handoff.
+- `wrapper/src/response_thread_activity.rs`
+  Successful realtime, review, turn, interrupt, and local-command response handling.
 - `wrapper/src/commands.rs`
   Compatibility facade for the split command metadata/completion layer.
 - `wrapper/src/commands_entries.rs`
@@ -510,6 +514,18 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/prompt_completion.rs`
 - `wrapper/src/prompting.rs`
   Prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion helpers.
+- `wrapper/src/model_catalog.rs`
+  Model catalog extraction and effective-model selection.
+- `wrapper/src/model_personality.rs`
+  Personality rendering, validation, and model/personality action handling.
+- `wrapper/src/model_session.rs`
+  Compatibility facade for the split model catalog and personality helpers.
+- `wrapper/src/collaboration_preset.rs`
+  Collaboration preset extraction, summaries, and selector matching.
+- `wrapper/src/collaboration_actions.rs`
+  Active collaboration-mode value/label rendering and collaboration-mode action application.
+- `wrapper/src/collaboration.rs`
+  Compatibility facade for the split collaboration preset/action helpers.
 - `wrapper/src/editor.rs`
   Inline line editor and editing semantics.
 - `wrapper/src/editor_graphemes.rs`

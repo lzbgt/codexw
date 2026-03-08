@@ -1,20 +1,25 @@
 use std::process::ChildStdin;
-use std::time::Instant;
 
-use anyhow::Context;
 use anyhow::Result;
 use serde_json::Value;
 
 use crate::Cli;
-use crate::history::render_resumed_history;
-use crate::input::build_turn_input;
 use crate::output::Output;
 use crate::requests::PendingRequest;
-use crate::requests::send_turn_start;
+use crate::response_thread_activity::handle_exec_command;
+use crate::response_thread_activity::handle_realtime_append;
+use crate::response_thread_activity::handle_realtime_start;
+use crate::response_thread_activity::handle_realtime_stop;
+use crate::response_thread_activity::handle_review_start;
+use crate::response_thread_activity::handle_terminate_exec_command;
+use crate::response_thread_activity::handle_turn_interrupt;
+use crate::response_thread_activity::handle_turn_start;
+use crate::response_thread_activity::handle_turn_steer;
+use crate::response_thread_switch::handle_forked_thread;
+use crate::response_thread_switch::handle_resumed_thread;
+use crate::response_thread_switch::handle_started_thread;
 use crate::state::AppState;
-use crate::state::get_string;
 use crate::state::summarize_text;
-use crate::transcript_render::render_local_command_completion;
 
 pub(crate) fn handle_thread_response_success(
     result: &Value,
@@ -27,93 +32,37 @@ pub(crate) fn handle_thread_response_success(
 ) -> Result<bool> {
     match pending {
         PendingRequest::StartThread { initial_prompt } => {
-            state.pending_thread_switch = false;
-            state.reset_thread_context();
-            let thread_id = get_string(result, &["thread", "id"])
-                .context("thread/start missing thread.id")?
-                .to_string();
-            state.thread_id = Some(thread_id.clone());
-            output.line_stderr(format!("[thread] started {thread_id}"))?;
-            if let Some(text) = initial_prompt {
-                let submission = build_turn_input(
-                    text,
-                    resolved_cwd,
-                    &[],
-                    &[],
-                    &state.apps,
-                    &state.plugins,
-                    &state.skills,
-                );
-                send_turn_start(
-                    writer,
-                    state,
-                    cli,
-                    resolved_cwd,
-                    thread_id,
-                    submission,
-                    false,
-                )?;
-            }
+            handle_started_thread(
+                result,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+                initial_prompt.as_deref(),
+            )?;
         }
         PendingRequest::ResumeThread { initial_prompt } => {
-            state.pending_thread_switch = false;
-            state.reset_thread_context();
-            let thread_id = get_string(result, &["thread", "id"])
-                .context("thread/resume missing thread.id")?
-                .to_string();
-            state.thread_id = Some(thread_id.clone());
-            output.line_stderr(format!("[thread] resumed {thread_id}"))?;
-            render_resumed_history(result, state, output)?;
-            if let Some(text) = initial_prompt {
-                let submission = build_turn_input(
-                    text,
-                    resolved_cwd,
-                    &[],
-                    &[],
-                    &state.apps,
-                    &state.plugins,
-                    &state.skills,
-                );
-                send_turn_start(
-                    writer,
-                    state,
-                    cli,
-                    resolved_cwd,
-                    thread_id,
-                    submission,
-                    false,
-                )?;
-            }
+            handle_resumed_thread(
+                result,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+                initial_prompt.as_deref(),
+            )?;
         }
         PendingRequest::ForkThread { initial_prompt } => {
-            state.pending_thread_switch = false;
-            state.reset_thread_context();
-            let thread_id = get_string(result, &["thread", "id"])
-                .context("thread/fork missing thread.id")?
-                .to_string();
-            state.thread_id = Some(thread_id.clone());
-            output.line_stderr(format!("[thread] forked to {thread_id}"))?;
-            render_resumed_history(result, state, output)?;
-            if let Some(text) = initial_prompt {
-                let submission = build_turn_input(
-                    text,
-                    resolved_cwd,
-                    &[],
-                    &[],
-                    &state.apps,
-                    &state.plugins,
-                    &state.skills,
-                );
-                send_turn_start(
-                    writer,
-                    state,
-                    cli,
-                    resolved_cwd,
-                    thread_id,
-                    submission,
-                    false,
-                )?;
-            }
+            handle_forked_thread(
+                result,
+                cli,
+                resolved_cwd,
+                state,
+                output,
+                writer,
+                initial_prompt.as_deref(),
+            )?;
         }
         PendingRequest::CompactThread => {
             output.line_stderr("[thread] compaction requested")?;
@@ -125,82 +74,34 @@ pub(crate) fn handle_thread_response_success(
             output.line_stderr("[thread] background terminal cleanup requested")?;
         }
         PendingRequest::StartRealtime { prompt } => {
-            state.realtime_prompt = Some(prompt.clone());
-            output.line_stderr("[realtime] start requested")?;
+            handle_realtime_start(state, output, prompt)?;
         }
         PendingRequest::AppendRealtimeText { text } => {
-            output.line_stderr(format!("[realtime] sent {}", summarize_text(text)))?;
+            handle_realtime_append(output, text)?;
         }
         PendingRequest::StopRealtime => {
-            output.line_stderr("[realtime] stop requested")?;
+            handle_realtime_stop(output)?;
         }
         PendingRequest::StartReview { target_description } => {
-            state.turn_running = true;
-            state.activity_started_at = Some(Instant::now());
-            state.reset_turn_stream_state();
-            output.line_stderr(format!(
-                "[review] started {}",
-                summarize_text(target_description)
-            ))?;
+            handle_review_start(state, output, target_description)?;
         }
         PendingRequest::StartTurn { auto_generated } => {
-            let turn_id = get_string(result, &["turn", "id"])
-                .context("turn/start missing turn.id")?
-                .to_string();
-            state.active_turn_id = Some(turn_id.clone());
-            state.turn_running = true;
-            state.activity_started_at = Some(Instant::now());
-            state.reset_turn_stream_state();
-            if *auto_generated {
-                output.line_stderr("[auto] starting follow-up turn")?;
-            }
+            handle_turn_start(result, state, output, *auto_generated)?;
         }
         PendingRequest::SteerTurn { display_text } => {
-            let turn_id = get_string(result, &["turnId"])
-                .context("turn/steer missing turnId")?
-                .to_string();
-            state.active_turn_id = Some(turn_id);
-            output.line_stderr(format!("[steer] {}", summarize_text(display_text)))?;
+            handle_turn_steer(result, state, output, display_text)?;
         }
         PendingRequest::InterruptTurn => {
-            output.line_stderr("[interrupt] requested")?;
+            handle_turn_interrupt(output)?;
         }
         PendingRequest::ExecCommand {
             process_id,
             command,
         } => {
-            let exit_code = result
-                .get("exitCode")
-                .and_then(Value::as_i64)
-                .map(|value| value.to_string())
-                .unwrap_or_else(|| "-".to_string());
-            let buffer = state
-                .process_output_buffers
-                .remove(process_id)
-                .unwrap_or_default();
-            let stdout = if buffer.stdout.trim().is_empty() {
-                get_string(result, &["stdout"]).unwrap_or("").to_string()
-            } else {
-                buffer.stdout
-            };
-            let stderr = if buffer.stderr.trim().is_empty() {
-                get_string(result, &["stderr"]).unwrap_or("").to_string()
-            } else {
-                buffer.stderr
-            };
-            state.active_exec_process_id = None;
-            state.activity_started_at = None;
-            state.last_status_line = None;
-            output.block_stdout(
-                "Local command",
-                &render_local_command_completion(command, &exit_code, &stdout, &stderr),
-            )?;
+            handle_exec_command(result, state, output, process_id, command)?;
         }
         PendingRequest::TerminateExecCommand { process_id } => {
-            if state.active_exec_process_id.as_deref() == Some(process_id.as_str()) {
-                state.activity_started_at = None;
-                output.line_stderr("[interrupt] local command termination requested")?;
-            }
+            handle_terminate_exec_command(state, output, process_id)?;
         }
         _ => return Ok(false),
     }
