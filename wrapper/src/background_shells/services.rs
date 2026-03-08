@@ -255,41 +255,46 @@ impl BackgroundShellManager {
             None
         };
         let label = if object.contains_key("label") {
-            Some(parse_service_label_argument(
+            Some(parse_service_string_update_argument(
                 object.get("label"),
                 "background_shell_update_service",
+                "label",
             )?)
         } else {
             None
         };
         let protocol = if object.contains_key("protocol") {
-            Some(parse_service_label_argument(
+            Some(parse_service_string_update_argument(
                 object.get("protocol"),
                 "background_shell_update_service",
+                "protocol",
             )?)
         } else {
             None
         };
         let endpoint = if object.contains_key("endpoint") {
-            Some(parse_service_label_argument(
+            Some(parse_service_string_update_argument(
                 object.get("endpoint"),
                 "background_shell_update_service",
+                "endpoint",
             )?)
         } else {
             None
         };
         let attach_hint = if object.contains_key("attachHint") {
-            Some(parse_service_label_argument(
+            Some(parse_service_string_update_argument(
                 object.get("attachHint"),
                 "background_shell_update_service",
+                "attachHint",
             )?)
         } else {
             None
         };
         let ready_pattern = if object.contains_key("readyPattern") {
-            Some(parse_service_label_argument(
+            Some(parse_service_string_update_argument(
                 object.get("readyPattern"),
                 "background_shell_update_service",
+                "readyPattern",
             )?)
         } else {
             None
@@ -1079,9 +1084,12 @@ fn parse_service_capabilities_argument(
     field_name: &str,
 ) -> Result<Vec<String>, String> {
     let value = value.ok_or_else(|| format!("{context} requires `{field_name}`"))?;
+    if matches!(value, serde_json::Value::Null) {
+        return Ok(Vec::new());
+    }
     let array = value
         .as_array()
-        .ok_or_else(|| format!("{context} `{field_name}` must be an array"))?;
+        .ok_or_else(|| format!("{context} `{field_name}` must be an array or null"))?;
     let raw = array
         .iter()
         .enumerate()
@@ -1095,17 +1103,18 @@ fn parse_service_capabilities_argument(
     normalize_service_capabilities(&raw)
 }
 
-fn parse_service_label_argument(
+fn parse_service_string_update_argument(
     value: Option<&serde_json::Value>,
     context: &str,
+    field_name: &str,
 ) -> Result<Option<String>, String> {
     match value {
         Some(serde_json::Value::Null) => Ok(None),
         Some(serde_json::Value::String(label)) => {
             normalize_service_label_update(Some(label.to_string()))
         }
-        Some(_) => Err(format!("{context} `label` must be a string or null")),
-        None => Err(format!("{context} requires `label`")),
+        Some(_) => Err(format!("{context} `{field_name}` must be a string or null")),
+        None => Err(format!("{context} requires `{field_name}`")),
     }
 }
 

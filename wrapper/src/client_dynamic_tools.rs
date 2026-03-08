@@ -153,7 +153,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
                     },
                     "label": {"type": "string"},
                     "capabilities": {
-                        "type": "array",
+                        "type": ["array", "null"],
                         "items": {"type": "string"}
                     },
                     "dependsOnCapabilities": {
@@ -278,7 +278,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_update_service",
-            "description": "Update mutable metadata for a running service background shell job by jobId, alias, or @capability. Supports replacing declared reusable capabilities and updating or clearing the live service label, protocol, endpoint, attach hint, readyPattern, and structured recipes.",
+            "description": "Update mutable metadata for a running service background shell job by jobId, alias, or @capability. Supports replacing or clearing declared reusable capabilities and updating or clearing the live service label, protocol, endpoint, attach hint, readyPattern, and structured recipes.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -363,13 +363,13 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "background_shell_update_dependencies",
-            "description": "Update the declared dependsOnCapabilities set for a running background shell job by jobId, alias, or @capability. This retargets orchestration dependency edges without restarting the underlying job.",
+            "description": "Update or clear the declared dependsOnCapabilities set for a running background shell job by jobId, alias, or @capability. This retargets orchestration dependency edges without restarting the underlying job.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "jobId": {"type": "string"},
                     "dependsOnCapabilities": {
-                        "type": "array",
+                        "type": ["array", "null"],
                         "items": {"type": "string"}
                     }
                 },

@@ -392,6 +392,49 @@ fn background_shell_update_service_can_update_contract_metadata() {
 }
 
 #[test]
+fn background_shell_update_service_can_clear_capabilities_with_null() {
+    let manager = BackgroundShellManager::default();
+    execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_start",
+            "arguments": {
+                "command": "sleep 0.4",
+                "intent": "service",
+                "label": "api svc",
+                "capabilities": ["api.http"]
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_update_service",
+            "arguments": {
+                "jobId": "bg-1",
+                "capabilities": null
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("update text");
+    assert!(text.contains("cleared reusable capabilities"));
+
+    let rendered = manager
+        .render_service_capabilities_for_ps_filtered(None)
+        .map(|lines| lines.join("\n"))
+        .unwrap_or_default();
+    assert!(!rendered.contains("@api.http"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn background_shell_update_dependencies_can_retarget_running_job() {
     let manager = BackgroundShellManager::default();
     execute_dynamic_tool_call(
@@ -431,6 +474,83 @@ fn background_shell_update_dependencies_can_retarget_running_job() {
         .poll_from_tool(&json!({"jobId": "bg-1"}))
         .expect("poll updated blocker");
     assert!(rendered.contains("Depends on capabilities: @db.redis"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn background_shell_update_dependencies_can_clear_with_null() {
+    let manager = BackgroundShellManager::default();
+    execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_start",
+            "arguments": {
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "label": "api blocker",
+                "dependsOnCapabilities": ["api.http"]
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_update_dependencies",
+            "arguments": {
+                "jobId": "bg-1",
+                "dependsOnCapabilities": null
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("update text");
+    assert!(text.contains("Cleared dependency capabilities"));
+
+    let rendered = manager
+        .poll_from_tool(&json!({"jobId": "bg-1"}))
+        .expect("poll updated blocker");
+    assert!(!rendered.contains("Depends on capabilities:"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn background_shell_update_service_reports_field_specific_validation_errors() {
+    let manager = BackgroundShellManager::default();
+    execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_start",
+            "arguments": {
+                "command": "sleep 0.4",
+                "intent": "service"
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "background_shell_update_service",
+            "arguments": {
+                "jobId": "bg-1",
+                "protocol": 123
+            }
+        }),
+        "/tmp",
+        &manager,
+    );
+
+    assert_eq!(result["success"], false);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("error text");
+    assert!(text.contains("`protocol` must be a string or null"));
     let _ = manager.terminate_all_running();
 }
 
