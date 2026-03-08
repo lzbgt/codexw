@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::commands::quote_if_needed;
+use crate::dispatch_command_thread_common::require_idle_turn;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_fuzzy_file_search;
@@ -58,15 +59,12 @@ pub(crate) fn try_handle_thread_workspace_command(
             true
         }
         "clear" => {
-            if state.turn_running {
-                output.line_stderr(
-                    "[session] wait for the current turn to finish or interrupt it first",
-                )?;
-                true
-            } else {
+            if require_idle_turn(state, output)? {
                 output.clear_screen()?;
                 output.line_stderr("[thread] creating new thread after clear")?;
                 crate::requests::send_thread_start(writer, state, cli, resolved_cwd, None)?;
+                true
+            } else {
                 true
             }
         }

@@ -8,6 +8,7 @@ mod thread_activity;
 mod thread_lifecycle;
 mod thread_maintenance;
 mod thread_switch;
+mod thread_switch_common;
 mod turn_requests;
 
 use std::io::Write;

@@ -4,6 +4,7 @@ use anyhow::Result;
 use serde_json::json;
 
 use crate::Cli;
+use crate::dispatch_command_thread_common::require_idle_turn;
 use crate::editor::LineEditor;
 use crate::output::Output;
 use crate::requests::send_clean_background_terminals;
@@ -27,11 +28,7 @@ pub(crate) fn try_handle_thread_action_command(
 ) -> Result<Option<bool>> {
     let result = match command {
         "compact" => {
-            if state.turn_running {
-                output.line_stderr(
-                    "[session] wait for the current turn to finish or interrupt it first",
-                )?;
-            } else {
+            if require_idle_turn(state, output)? {
                 let current_thread_id = thread_id(state)?.to_string();
                 output.line_stderr("[thread] requesting compaction")?;
                 send_thread_compact(writer, state, current_thread_id)?;
@@ -39,11 +36,7 @@ pub(crate) fn try_handle_thread_action_command(
             true
         }
         "review" => {
-            if state.turn_running {
-                output.line_stderr(
-                    "[session] wait for the current turn to finish or interrupt it first",
-                )?;
-            } else {
+            if require_idle_turn(state, output)? {
                 let current_thread_id = thread_id(state)?.to_string();
                 let trimmed_args = args.join(" ");
                 let trimmed_args = trimmed_args.trim();

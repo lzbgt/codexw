@@ -3,6 +3,8 @@ use std::process::ChildStdin;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::dispatch_command_thread_common::require_idle_turn;
+use crate::dispatch_command_thread_common::resolve_cached_thread_reference;
 use crate::dispatch_command_utils::join_prompt;
 use crate::editor::LineEditor;
 use crate::output::Output;
@@ -26,32 +28,19 @@ pub(crate) fn try_handle_thread_navigation_command(
 ) -> Result<Option<bool>> {
     let result = match command {
         "new" => {
-            if state.turn_running {
-                output.line_stderr(
-                    "[session] wait for the current turn to finish or interrupt it first",
-                )?;
-            } else {
+            if require_idle_turn(state, output)? {
                 output.line_stderr("[session] creating new thread")?;
                 send_thread_start(writer, state, cli, resolved_cwd, None)?;
             }
             true
         }
         "resume" => {
-            if state.turn_running {
-                output.line_stderr(
-                    "[session] wait for the current turn to finish or interrupt it first",
-                )?;
+            if !require_idle_turn(state, output)? {
+                // Guard already reported the active turn.
             } else if let Some(first_arg) = args.first() {
-                let thread_id = if let Ok(index) = first_arg.parse::<usize>() {
-                    match state.last_listed_thread_ids.get(index.saturating_sub(1)) {
-                        Some(thread_id) => thread_id.clone(),
-                        None => {
-                            output.line_stderr("[session] no cached thread at that index; run /threads or /resume first")?;
-                            return Ok(Some(true));
-                        }
-                    }
-                } else {
-                    (*first_arg).to_string()
+                let Some(thread_id) = resolve_cached_thread_reference(first_arg, state, output)?
+                else {
+                    return Ok(Some(true));
                 };
                 output.line_stderr(format!("[session] resuming thread {thread_id}"))?;
                 send_thread_resume(
@@ -71,11 +60,7 @@ pub(crate) fn try_handle_thread_navigation_command(
             true
         }
         "fork" => {
-            if state.turn_running {
-                output.line_stderr(
-                    "[session] wait for the current turn to finish or interrupt it first",
-                )?;
-            } else {
+            if require_idle_turn(state, output)? {
                 let current_thread_id = thread_id(state)?.to_string();
                 let initial_prompt =
                     join_prompt(&args.iter().map(|s| (*s).to_string()).collect::<Vec<_>>());
