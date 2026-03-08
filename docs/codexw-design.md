@@ -324,13 +324,14 @@ Current user-facing capabilities include:
 - in-session numbered permissions presets for `/approvals` and `/permissions`, backed by `turn/start.approvalPolicy`, `turn/start.sandboxPolicy`, and matching thread/local-command overrides
 - local runtime toggles for `/fast` service-tier selection and `/theme` syntax-highlighting theme selection, both aligned with persisted Codex config state
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
+- backend-backed `/agent` and `/multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
 - backend-backed background-terminal cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns
 
-Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but model selection, permissions presets, theme selection, fast-mode toggling, collaboration-mode switching, experimental-feature discovery, personality selection, background-terminal cleanup, and a text-only realtime flow are no longer in that category. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
+Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but model selection, permissions presets, theme selection, fast-mode toggling, collaboration-mode switching, agent-thread switching, experimental-feature discovery, personality selection, background-terminal cleanup, and a text-only realtime flow are no longer in that category. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
 
 ## Approval and Automation Posture
 

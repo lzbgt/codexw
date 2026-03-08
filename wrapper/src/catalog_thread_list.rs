@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+use crate::requests::ThreadListView;
 use crate::state::get_string;
 use crate::state::summarize_text;
 
@@ -39,12 +40,21 @@ pub(crate) fn should_fallback_to_all_workspaces(
     cwd_filter.is_some() && search_term.is_none() && thread_list_is_empty(result)
 }
 
-pub(crate) fn render_thread_list(result: &Value, search_term: Option<&str>) -> String {
+pub(crate) fn render_thread_list(
+    result: &Value,
+    search_term: Option<&str>,
+    view: ThreadListView,
+) -> String {
     let threads = sorted_threads(result);
     if threads.is_empty() {
-        return match search_term {
-            Some(search_term) => format!("No threads matched \"{search_term}\"."),
-            None => "No threads found for the current workspace.".to_string(),
+        return match (view, search_term) {
+            (ThreadListView::Agents, _) => "No agents available yet.".to_string(),
+            (ThreadListView::Threads, Some(search_term)) => {
+                format!("No threads matched \"{search_term}\".")
+            }
+            (ThreadListView::Threads, None) => {
+                "No threads found for the current workspace.".to_string()
+            }
         };
     }
     let mut lines = Vec::new();
@@ -66,7 +76,11 @@ pub(crate) fn render_thread_list(result: &Value, search_term: Option<&str>) -> S
             summarize_text(preview)
         )
     }));
-    lines.push("Use /resume <n> to resume one of these threads.".to_string());
+    let footer = match view {
+        ThreadListView::Threads => "Use /resume <n> to resume one of these threads.",
+        ThreadListView::Agents => "Use /resume <n> to switch to one of these agent threads.",
+    };
+    lines.push(footer.to_string());
     lines.join("\n")
 }
 

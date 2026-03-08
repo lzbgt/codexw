@@ -1,6 +1,12 @@
 use crate::collaboration_apply::CollaborationModeAction;
 use crate::model_personality_actions::ModelsAction;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ThreadListView {
+    Threads,
+    Agents,
+}
+
 #[derive(Debug)]
 pub(crate) enum PendingRequest {
     Initialize,
@@ -24,6 +30,8 @@ pub(crate) enum PendingRequest {
     ListThreads {
         search_term: Option<String>,
         cwd_filter: Option<String>,
+        source_kinds: Option<Vec<String>>,
+        view: ThreadListView,
     },
     StartThread {
         initial_prompt: Option<String>,

@@ -121,8 +121,5 @@ fn builtin_command_rank(name: &str) -> usize {
 }
 
 fn is_hidden_builtin_command(name: &str) -> bool {
-    matches!(
-        name,
-        "agent" | "multi-agents" | "sandbox-add-read-dir" | "setup-default-sandbox"
-    )
+    matches!(name, "sandbox-add-read-dir" | "setup-default-sandbox")
 }

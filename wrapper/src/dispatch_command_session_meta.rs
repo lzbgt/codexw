@@ -10,6 +10,7 @@ use crate::editor::LineEditor;
 use crate::input::build_turn_input;
 use crate::output::Output;
 use crate::requests::send_feedback_upload;
+use crate::requests::send_list_agent_threads;
 use crate::requests::send_logout_account;
 use crate::requests::send_thread_start;
 use crate::requests::send_turn_start;
@@ -88,7 +89,16 @@ pub(crate) fn try_handle_session_meta_command(
             output.line_stderr(current_rollout_message(state))?;
             true
         }
-        "agent" | "multi-agents" | "sandbox-add-read-dir" | "setup-default-sandbox" => {
+        "agent" | "multi-agents" => {
+            if !args.is_empty() {
+                output.line_stderr(format!("[session] usage: :{command}"))?;
+                return Ok(Some(true));
+            }
+            output.line_stderr("[session] loading recent agent threads")?;
+            send_list_agent_threads(writer, state, Some(resolved_cwd))?;
+            true
+        }
+        "sandbox-add-read-dir" | "setup-default-sandbox" => {
             output.line_stderr(format!(
                 "[session] /{command} is recognized, but this inline client does not yet implement the native Codex popup/workflow for it"
             ))?;

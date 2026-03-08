@@ -12,7 +12,10 @@ use crate::notification_turn_completed::handle_turn_completed;
 use crate::notification_turn_started::handle_turn_started;
 use crate::output::Output;
 use crate::requests::PendingRequest;
+use crate::requests::ThreadListView;
+use crate::requests::send_list_agent_threads;
 use crate::requests::send_list_threads;
+use crate::requests::send_list_threads_with_view;
 use crate::response_bootstrap_catalog_state::handle_account_loaded;
 use crate::response_bootstrap_catalog_state::handle_apps_loaded;
 use crate::response_bootstrap_catalog_state::handle_collaboration_modes_loaded;
@@ -227,6 +230,8 @@ fn handle_bootstrap_response_success(
         PendingRequest::ListThreads {
             search_term,
             cwd_filter,
+            source_kinds,
+            view,
         } => {
             if crate::catalog_thread_list::should_fallback_to_all_workspaces(
                 result,
@@ -236,9 +241,22 @@ fn handle_bootstrap_response_success(
                 output.line_stderr(
                     "[session] no recent threads matched the current workspace; retrying across all workspaces",
                 )?;
-                send_list_threads(writer, state, None, search_term.clone())?;
+                if matches!(view, ThreadListView::Agents) && source_kinds.is_none() {
+                    send_list_agent_threads(writer, state, None)?;
+                } else if source_kinds.is_some() {
+                    send_list_threads_with_view(
+                        writer,
+                        state,
+                        None,
+                        search_term.clone(),
+                        source_kinds.clone(),
+                        *view,
+                    )?;
+                } else {
+                    send_list_threads(writer, state, None, search_term.clone())?;
+                }
             } else {
-                handle_threads_listed(result, search_term.as_deref(), state, output)?;
+                handle_threads_listed(result, search_term.as_deref(), *view, state, output)?;
             }
         }
         PendingRequest::FuzzyFileSearch { query } => {

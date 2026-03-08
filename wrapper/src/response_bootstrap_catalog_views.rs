@@ -8,6 +8,7 @@ use crate::catalog_file_search::render_fuzzy_file_search_results;
 use crate::catalog_thread_list::extract_thread_ids;
 use crate::catalog_thread_list::render_thread_list;
 use crate::output::Output;
+use crate::requests::ThreadListView;
 use crate::state::AppState;
 use crate::status_config::render_config_snapshot;
 
@@ -32,11 +33,16 @@ pub(crate) fn handle_mcp_servers_loaded(result: &Value, output: &mut Output) -> 
 pub(crate) fn handle_threads_listed(
     result: &Value,
     search_term: Option<&str>,
+    view: ThreadListView,
     state: &mut AppState,
     output: &mut Output,
 ) -> Result<()> {
     state.last_listed_thread_ids = extract_thread_ids(result);
-    Ok(output.block_stdout("Threads", &render_thread_list(result, search_term))?)
+    let title = match view {
+        ThreadListView::Threads => "Threads",
+        ThreadListView::Agents => "Multi-agents",
+    };
+    Ok(output.block_stdout(title, &render_thread_list(result, search_term, view))?)
 }
 
 pub(crate) fn handle_fuzzy_file_search(

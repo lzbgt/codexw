@@ -8,6 +8,7 @@ use crate::catalog_thread_list::thread_list_is_empty;
 use crate::events::process_server_line;
 use crate::output::Output;
 use crate::requests::PendingRequest;
+use crate::requests::ThreadListView;
 use crate::requests::thread_list_params;
 use crate::rpc::RequestId;
 use crate::state::AppState;
@@ -33,7 +34,7 @@ fn thread_list_is_numbered_and_extractable() {
             }
         ]
     });
-    let rendered = render_thread_list(&result, None);
+    let rendered = render_thread_list(&result, None, ThreadListView::Threads);
     assert!(rendered.contains(" 1. thr_newer"));
     assert!(rendered.contains(" 2. thr_older"));
     assert!(rendered.contains("Use /resume <n>"));
@@ -60,10 +61,10 @@ fn empty_workspace_thread_list_falls_back_to_all_workspaces() {
 
 #[test]
 fn all_workspace_thread_list_request_omits_cwd_filter() {
-    let workspace_scoped = thread_list_params(Some("/tmp/project"), None);
+    let workspace_scoped = thread_list_params(Some("/tmp/project"), None, None);
     assert_eq!(workspace_scoped["cwd"], "/tmp/project");
 
-    let all_workspaces = thread_list_params(None, None);
+    let all_workspaces = thread_list_params(None, None, None);
     assert!(all_workspaces.get("cwd").is_none());
 }
 
@@ -115,6 +116,8 @@ fn empty_workspace_resume_list_retries_without_cwd_filter() {
         PendingRequest::ListThreads {
             search_term: None,
             cwd_filter: Some("/tmp/project".to_string()),
+            source_kinds: None,
+            view: ThreadListView::Threads,
         },
     );
 
@@ -144,12 +147,33 @@ fn empty_workspace_resume_list_retries_without_cwd_filter() {
         PendingRequest::ListThreads {
             search_term,
             cwd_filter,
+            source_kinds,
+            view,
         } => {
             assert_eq!(search_term, &None);
             assert_eq!(cwd_filter, &None);
+            assert_eq!(source_kinds, &None);
+            assert_eq!(view, &ThreadListView::Threads);
         }
         other => panic!("expected fallback list request, got {other:?}"),
     }
+}
+
+#[test]
+fn agent_thread_list_rendering_uses_agent_wording() {
+    let result = json!({
+        "data": [
+            {
+                "id": "agent_thr",
+                "preview": "agent work",
+                "status": {"type": "idle"},
+                "updatedAt": 2
+            }
+        ]
+    });
+    let rendered = render_thread_list(&result, None, ThreadListView::Agents);
+    assert!(rendered.contains(" 1. agent_thr"));
+    assert!(rendered.contains("Use /resume <n> to switch to one of these agent threads."));
 }
 
 #[test]

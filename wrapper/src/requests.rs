@@ -32,12 +32,15 @@ pub(crate) use bootstrap_catalog_lists::send_load_skills;
 pub(crate) use bootstrap_init::send_initialize;
 pub(crate) use bootstrap_init::send_initialized;
 pub(crate) use bootstrap_search::send_fuzzy_file_search;
+pub(crate) use bootstrap_search::send_list_agent_threads;
 pub(crate) use bootstrap_search::send_list_threads;
+pub(crate) use bootstrap_search::send_list_threads_with_view;
 #[cfg(test)]
 pub(crate) use bootstrap_search::thread_list_params;
 pub(crate) use command_requests::send_command_exec;
 pub(crate) use command_requests::send_command_exec_terminate;
 pub(crate) use request_types::PendingRequest;
+pub(crate) use request_types::ThreadListView;
 pub(crate) use thread_maintenance::send_clean_background_terminals;
 pub(crate) use thread_maintenance::send_thread_compact;
 pub(crate) use thread_maintenance::send_thread_rename;

@@ -13,6 +13,7 @@ use crate::editor::LineEditor;
 use crate::model_catalog::extract_models;
 use crate::output::Output;
 use crate::requests::PendingRequest;
+use crate::requests::ThreadListView;
 use crate::state::AppState;
 use crate::state::PendingSelection;
 
@@ -465,4 +466,70 @@ fn rollout_message_explains_missing_path() {
         current_rollout_message(&state),
         "Rollout path is not available yet."
     );
+}
+
+#[test]
+fn agent_command_requests_filtered_agent_threads() {
+    let cli = build_cli();
+    let mut state = AppState::new(true, false);
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+    let (_temp, mut child, mut writer, path) = spawn_recording_stdin();
+
+    assert_eq!(
+        try_handle_prefixed_submission(
+            "/agent",
+            &cli,
+            "/tmp/project",
+            &mut state,
+            &mut editor,
+            &mut output,
+            &mut writer,
+        )
+        .expect("run agent command"),
+        Some(true)
+    );
+
+    let requests = read_recorded_requests(&mut child, writer, &path);
+    let request = requests.last().expect("request");
+    assert_eq!(request["method"], "thread/list");
+    assert_eq!(request["params"]["cwd"], "/tmp/project");
+    assert_eq!(
+        request["params"]["sourceKinds"],
+        json!(["subAgentThreadSpawn"])
+    );
+}
+
+#[test]
+fn multi_agents_command_tracks_agent_thread_view() {
+    let cli = build_cli();
+    let mut state = AppState::new(true, false);
+    let mut editor = LineEditor::default();
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    assert_eq!(
+        try_handle_prefixed_submission(
+            "/multi-agents",
+            &cli,
+            "/tmp/project",
+            &mut state,
+            &mut editor,
+            &mut output,
+            &mut writer,
+        )
+        .expect("run multi-agents command"),
+        Some(true)
+    );
+
+    let pending = state.pending.values().next().expect("pending request");
+    match pending {
+        PendingRequest::ListThreads {
+            source_kinds, view, ..
+        } => {
+            assert_eq!(source_kinds, &Some(vec!["subAgentThreadSpawn".to_string()]));
+            assert_eq!(view, &ThreadListView::Agents);
+        }
+        other => panic!("expected agent thread list request, got {other:?}"),
+    }
 }
