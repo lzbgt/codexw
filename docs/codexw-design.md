@@ -51,7 +51,7 @@ The runtime has thirteen main layers.
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
 
 8. Session and turn orchestration
-   `session.rs` owns model metadata, personality selection, collaboration mode handling, realtime state rendering, and status snapshot generation.
+   `model_session.rs`, `collaboration.rs`, and `session_status.rs` own model metadata, personality selection, collaboration mode handling, realtime state rendering, and status snapshot generation. `session.rs` is the compatibility facade over that split.
 
 9. App runtime loop
    `app.rs` owns process wiring, the main event loop, and keyboard-event dispatch for the live interactive session.
@@ -68,7 +68,7 @@ The runtime has thirteen main layers.
 13. Human output handling
    `output.rs` and `render.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a single-line prompt redraw path.
 
-Session feature helpers live in `session.rs`: model metadata parsing, personality selection, collaboration mode handling, realtime session rendering, and status snapshot/prompt-status generation.
+Session feature helpers are split across `model_session.rs`, `collaboration.rs`, and `session_status.rs`, with `session.rs` kept as a thin compatibility facade for imports and tests.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers live in `app.rs`: backend/session startup, the top-level runtime loop, and input-key dispatch.
 Resume-preview helpers live in `history.rs`: recent conversation extraction, resumed objective/last-reply seeding, and resumed transcript rendering.

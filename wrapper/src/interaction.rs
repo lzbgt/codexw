@@ -1,12 +1,5 @@
-pub(crate) use crate::dispatch::FeedbackCommand;
-pub(crate) use crate::dispatch::handle_command;
 pub(crate) use crate::dispatch::handle_user_input;
-pub(crate) use crate::dispatch::is_builtin_command;
 pub(crate) use crate::dispatch::join_prompt;
-pub(crate) use crate::dispatch::parse_feedback_args;
-pub(crate) use crate::prompting::FileCompletionResult;
 pub(crate) use crate::prompting::handle_tab_completion;
 pub(crate) use crate::prompting::prompt_accepts_input;
-pub(crate) use crate::prompting::prompt_is_visible;
-pub(crate) use crate::prompting::try_complete_file_token;
 pub(crate) use crate::prompting::update_prompt;
