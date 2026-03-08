@@ -36,6 +36,44 @@ pub(crate) fn handle_ps_command(
             output
                 .line_stderr("[session] usage: :ps clean [blockers|shells|services|terminals]")?;
         }
+    } else if matches!(action, Some("poll" | "show" | "inspect")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps poll <jobId|n>")?;
+            return Ok(true);
+        };
+        let job_id = match state.background_shells.resolve_job_reference(reference) {
+            Ok(job_id) => job_id,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        let rendered = match state.background_shells.poll_job(&job_id, 0, 200) {
+            Ok(rendered) => rendered,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        output.block_stdout("Background Shell", &rendered)?;
+    } else if matches!(action, Some("terminate" | "stop" | "kill")) {
+        let Some(reference) = args.get(1).copied() else {
+            output.line_stderr("[session] usage: :ps terminate <jobId|n>")?;
+            return Ok(true);
+        };
+        let job_id = match state.background_shells.resolve_job_reference(reference) {
+            Ok(job_id) => job_id,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
+                return Ok(true);
+            }
+        };
+        match state.background_shells.terminate_job_for_operator(&job_id) {
+            Ok(()) => output.line_stderr(format!(
+                "[thread] terminated local background shell job {job_id}"
+            ))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        }
     } else if let Some(filter) = parse_ps_filter(action) {
         let rendered = if matches!(filter, WorkerFilter::All) {
             render_orchestration_workers(state)
@@ -45,7 +83,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [blockers|agents|shells|services|terminals|clean]",
+            "[session] usage: :ps [blockers|agents|shells|services|terminals|clean|poll|terminate]",
         )?;
     }
     Ok(true)

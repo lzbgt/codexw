@@ -1,6 +1,7 @@
 use crate::Cli;
 use crate::background_terminals::background_terminal_count;
 use crate::background_terminals::render_background_terminals;
+use crate::dispatch_command_session_ps::handle_ps_command;
 use crate::dispatch_command_session_ps::parse_clean_target;
 use crate::dispatch_command_session_ps::parse_ps_filter;
 use crate::events::handle_realtime_notification;
@@ -17,6 +18,8 @@ use crate::session_snapshot_overview::render_status_overview;
 use crate::session_snapshot_runtime::render_status_runtime;
 use crate::transcript_status_summary::summarize_thread_status_for_display;
 use serde_json::json;
+use std::process::ChildStdin;
+use std::process::Command;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -191,6 +194,23 @@ fn test_cli() -> Cli {
         yolo: false,
         prompt: Vec::new(),
     })
+}
+
+fn spawn_sink_stdin() -> ChildStdin {
+    #[cfg(unix)]
+    let mut child = Command::new("cat")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .spawn()
+        .expect("spawn sink");
+    #[cfg(windows)]
+    let mut child = Command::new("cmd")
+        .args(["/C", "more >NUL"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .spawn()
+        .expect("spawn sink");
+    child.stdin.take().expect("child stdin")
 }
 
 #[test]
@@ -567,6 +587,48 @@ fn clean_target_parser_accepts_scoped_cleanup_aliases() {
     );
     assert_eq!(parse_clean_target(Some("agents")), None);
     assert_eq!(parse_clean_target(Some("unknown")), None);
+}
+
+#[test]
+fn ps_command_can_poll_and_terminate_specific_background_shell_jobs() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({"command": "printf 'alpha\\nbeta\\n'", "intent": "service"}),
+            "/tmp",
+        )
+        .expect("start pollable shell");
+    std::thread::sleep(Duration::from_millis(50));
+
+    handle_ps_command(&["poll", "1"], &cli, &mut state, &mut output, &mut writer)
+        .expect("poll background shell");
+
+    assert_eq!(state.background_shells.job_count(), 1);
+    let polled = state
+        .background_shells
+        .poll_job("bg-1", 0, 200)
+        .expect("poll shell directly");
+    assert!(polled.contains("Job: bg-1"));
+    assert!(polled.contains("alpha"));
+
+    handle_ps_command(
+        &["terminate", "bg-1"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("terminate background shell");
+
+    let after = state
+        .background_shells
+        .poll_job("bg-1", 0, 20)
+        .expect("poll after terminate");
+    assert!(after.contains("Status: terminated") || after.contains("Status: completed"));
 }
 
 #[test]

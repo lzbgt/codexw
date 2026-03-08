@@ -209,6 +209,10 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps shells` for wrapper-owned local shell jobs only
   - `:ps services` for reusable service shells only
   - `:ps terminals` for backend-observed terminals only
+- `/ps` also has per-job local-shell actions now:
+  - `:ps poll <jobId|n>` renders the full current poll snapshot for one wrapper-owned shell job
+  - `:ps terminate <jobId|n>` stops one wrapper-owned shell job without touching the others
+  - job references accept either stable ids like `bg-2` or the current 1-based sorted shell index
 - cleanup is now scoped along the same control boundary:
   - `:clean blockers` and `:ps clean blockers` terminate only wrapper-owned prerequisite shells
   - `:clean shells` terminates all wrapper-owned local shell jobs

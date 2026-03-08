@@ -326,6 +326,45 @@ impl BackgroundShellManager {
         ))
     }
 
+    pub(crate) fn resolve_job_reference(&self, reference: &str) -> Result<String, String> {
+        let reference = reference.trim();
+        if reference.is_empty() {
+            return Err("background shell job reference cannot be empty".to_string());
+        }
+        if reference.starts_with("bg-") {
+            self.lookup_job(reference)?;
+            return Ok(reference.to_string());
+        }
+        let index = reference
+            .parse::<usize>()
+            .map_err(|_| format!("unknown background shell job `{reference}`"))?;
+        if index == 0 {
+            return Err("background shell job index must be 1-based".to_string());
+        }
+        let snapshots = self.snapshots();
+        snapshots
+            .get(index - 1)
+            .map(|job| job.id.clone())
+            .ok_or_else(|| format!("unknown background shell job `{reference}`"))
+    }
+
+    pub(crate) fn poll_job(
+        &self,
+        job_id: &str,
+        after_line: u64,
+        limit: usize,
+    ) -> Result<String, String> {
+        self.poll_from_tool(&serde_json::json!({
+            "jobId": job_id,
+            "afterLine": after_line,
+            "limit": limit,
+        }))
+    }
+
+    pub(crate) fn terminate_job_for_operator(&self, job_id: &str) -> Result<(), String> {
+        self.terminate_job(job_id)
+    }
+
     pub(crate) fn running_count(&self) -> usize {
         self.snapshots()
             .into_iter()
@@ -830,6 +869,36 @@ mod tests {
             manager.running_count_by_intent(BackgroundShellIntent::Observation),
             1
         );
+        let _ = manager.terminate_all_running();
+    }
+
+    #[test]
+    fn background_shell_manager_resolves_job_references_by_id_and_index() {
+        let manager = BackgroundShellManager::default();
+        manager
+            .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+            .expect("start shell 1");
+        manager
+            .start_from_tool(
+                &json!({"command": "sleep 0.4", "intent": "service"}),
+                "/tmp",
+            )
+            .expect("start shell 2");
+
+        assert_eq!(
+            manager
+                .resolve_job_reference("bg-1")
+                .expect("resolve by id"),
+            "bg-1"
+        );
+        assert_eq!(
+            manager
+                .resolve_job_reference("2")
+                .expect("resolve by index"),
+            "bg-2"
+        );
+        assert!(manager.resolve_job_reference("0").is_err());
+        assert!(manager.resolve_job_reference("bg-9").is_err());
         let _ = manager.terminate_all_running();
     }
 }
