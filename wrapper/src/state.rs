@@ -122,6 +122,8 @@ impl AppState {
     }
 
     pub(crate) fn reset_thread_context(&mut self) {
+        self.reset_turn_stream_state();
+        self.process_output_buffers.clear();
         self.active_turn_id = None;
         self.active_exec_process_id = None;
         self.realtime_active = false;
@@ -134,10 +136,7 @@ impl AppState {
         self.started_turn_count = 0;
         self.completed_turn_count = 0;
         self.objective = None;
-        self.last_agent_message = None;
-        self.last_turn_diff = None;
         self.last_token_usage = None;
-        self.last_status_line = None;
         self.active_personality = None;
         self.active_collaboration_mode = None;
     }

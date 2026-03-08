@@ -89,3 +89,29 @@ fn status_snapshot_includes_realtime_fields() {
     assert!(rendered.contains("realtime prompt hello world"));
     assert!(rendered.contains("realtime error  bad gateway"));
 }
+
+#[test]
+fn resetting_thread_context_clears_stream_buffers() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.command_output_buffers.insert("cmd-1".to_string(), "out".to_string());
+    state.file_output_buffers.insert("file-1".to_string(), "diff".to_string());
+    state.process_output_buffers.insert(
+        "proc-1".to_string(),
+        crate::state::ProcessOutputBuffer {
+            stdout: "stdout".to_string(),
+            stderr: "stderr".to_string(),
+        },
+    );
+    state.last_agent_message = Some("reply".to_string());
+    state.last_turn_diff = Some("diff".to_string());
+    state.last_status_line = Some("running".to_string());
+
+    state.reset_thread_context();
+
+    assert!(state.command_output_buffers.is_empty());
+    assert!(state.file_output_buffers.is_empty());
+    assert!(state.process_output_buffers.is_empty());
+    assert!(state.last_agent_message.is_none());
+    assert!(state.last_turn_diff.is_none());
+    assert!(state.last_status_line.is_none());
+}
