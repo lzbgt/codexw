@@ -216,6 +216,9 @@ fn orchestration_suggest_actions_returns_concrete_tool_steps() {
         .expect("actions text");
     assert!(text.contains("Suggested actions:"));
     assert!(text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}"));
+    assert!(text.contains(
+        "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
+    ));
     assert!(
         text.contains(
             "background_shell_clean {\"scope\":\"services\",\"capability\":\"@api.http\"}"

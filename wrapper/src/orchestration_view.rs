@@ -1238,6 +1238,7 @@ mod tests {
         let rendered = render_orchestration_actions(&services);
         assert!(rendered.contains("Suggested actions:"));
         assert!(rendered.contains(":ps capabilities @api.http"));
+        assert!(rendered.contains(":ps provide <jobId|alias|@capability|n> <@capability...|none>"));
         assert!(rendered.contains(":clean services @api.http"));
 
         let tool_rendered = render_orchestration_actions_for_tool(&services);
@@ -1246,6 +1247,9 @@ mod tests {
             tool_rendered
                 .contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
         );
+        assert!(tool_rendered.contains(
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@api.http\"]}"
+        ));
         assert!(tool_rendered.contains(
             "background_shell_clean {\"scope\":\"services\",\"capability\":\"@api.http\"}"
         ));
