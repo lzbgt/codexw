@@ -27,6 +27,8 @@ Do not invent speculative work. Continue only from explicit requirements, concre
 - Prefer fundamental fixes over ad-hoc patches.
 - Keep documentation and implementation in sync.
 - When behavior or workflows change, update the relevant docs in the same turn.
+- Avoid repeatedly partial work on the same theme across many turns. If several adjacent cleanup or refactor steps are obvious and safe, batch them into one meaningful slice.
+- Do not stop mid-refactor or mid-cleanup just because one local change landed. If the same turn can safely finish the surrounding rewires, deletions, docs sync, and verification, do that before ending.
 - Run appropriate verification before ending the turn.
 - If code or docs changed, summarize `git diff --stat`, then commit and push when permitted.
 - Ask a clarifying question only when the choice materially affects correctness, security, destructive actions, or long-term architecture.
