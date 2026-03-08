@@ -17,6 +17,7 @@ pub(crate) fn try_complete_slash_command(
     commands_completion_apply::try_complete_slash_command(editor, buffer, cursor_byte)
 }
 
+#[cfg(test)]
 pub(crate) fn render_slash_completion_candidates(
     filter: &str,
     matches: &[&str],

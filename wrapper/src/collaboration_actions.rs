@@ -34,6 +34,7 @@ pub(crate) fn current_collaboration_mode_label(state: &AppState) -> Option<Strin
     collaboration_view::current_collaboration_mode_label(state)
 }
 
+#[cfg(test)]
 pub(crate) fn render_collaboration_modes(state: &AppState) -> String {
     collaboration_view::render_collaboration_modes(state)
 }
