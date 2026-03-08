@@ -94,6 +94,10 @@ mod transcript_views;
 #[cfg(test)]
 mod editor_tests;
 #[cfg(test)]
+mod input_test_build;
+#[cfg(test)]
+mod input_test_mentions;
+#[cfg(test)]
 mod input_tests;
 #[cfg(test)]
 mod main_tests;

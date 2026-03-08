@@ -1,6 +1,3 @@
-use std::path::Path;
-use std::path::PathBuf;
-
 use super::input_decode_tokens::is_file_token_char;
 use crate::input::input_types::PluginCatalogEntry;
 
@@ -81,23 +78,10 @@ pub(crate) fn expand_inline_file_mentions(
     out
 }
 
-pub(crate) fn mention_skill_path(path: &str) -> Option<String> {
-    if let Some(stripped) = path.strip_prefix("skill://")
-        && !stripped.is_empty()
-    {
-        return Some(stripped.to_string());
-    }
-    if path
-        .rsplit(['/', '\\'])
-        .next()
-        .is_some_and(|name| name.eq_ignore_ascii_case("SKILL.md"))
-    {
-        return Some(path.to_string());
-    }
-    None
-}
-
 fn resolve_file_mention_path(token: &str, resolved_cwd: &str) -> Option<String> {
+    use std::path::Path;
+    use std::path::PathBuf;
+
     let token = token.trim();
     if token.is_empty() {
         return None;
