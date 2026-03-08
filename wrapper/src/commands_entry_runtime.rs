@@ -48,7 +48,7 @@ pub(crate) const RUNTIME_COMMAND_ENTRIES: &[BuiltinCommandEntry] = &[
     },
     BuiltinCommandEntry {
         name: "ps",
-        help_syntax: "ps [guidance|blockers|dependencies|agents|shells|services [all|ready|booting|untracked|conflicts]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach <jobId|alias|@capability|n>|wait <jobId|alias|@capability|n> [timeoutMs]|run <jobId|alias|@capability|n> <recipe> [json-args]|poll <jobId|alias|@capability|n>|send <jobId|alias|@capability|n> <text>|terminate <jobId|alias|@capability|n>|alias <jobId|n> <name>|unalias <name>|clean [blockers|shells|services|terminals]]",
+        help_syntax: "ps [guidance|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach <jobId|alias|@capability|n>|wait <jobId|alias|@capability|n> [timeoutMs]|run <jobId|alias|@capability|n> <recipe> [json-args]|poll <jobId|alias|@capability|n>|send <jobId|alias|@capability|n> <text>|terminate <jobId|alias|@capability|n>|alias <jobId|n> <name>|unalias <name>|clean [blockers|shells|services|terminals]]",
         description: "list or stop tracked workers and background tasks",
     },
     BuiltinCommandEntry {

@@ -202,6 +202,28 @@ fn orchestration_list_dependencies_supports_issue_filters() {
         .as_str()
         .expect("sidecar dependency text");
     assert!(sidecar_text.contains("No sidecar dependency edges tracked right now."));
+
+    let focused = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_list_dependencies",
+            "arguments": {
+                "filter": "missing",
+                "capability": "@api.http"
+            }
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(focused["success"], true);
+    let focused_text = focused["contentItems"][0]["text"]
+        .as_str()
+        .expect("focused dependency text");
+    assert!(focused_text.contains("Dependencies (@api.http):"));
+    assert!(
+        focused_text.contains(
+            "shell:bg-1 -> capability:@api.http  [dependsOnCapability:missing, blocking]"
+        )
+    );
     let _ = state
         .orchestration
         .background_shells
@@ -249,6 +271,28 @@ fn orchestration_list_dependencies_rejects_unknown_filters() {
             .as_str()
             .expect("error")
             .contains("orchestration_list_dependencies `filter`")
+    );
+}
+
+#[test]
+fn orchestration_list_dependencies_rejects_empty_capability_argument() {
+    let state = AppState::new(true, false);
+    let result = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_list_dependencies",
+            "arguments": {
+                "capability": "@"
+            }
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(result["success"], false);
+    assert!(
+        result["contentItems"][0]["text"]
+            .as_str()
+            .expect("error")
+            .contains("orchestration_list_dependencies `capability`")
     );
 }
 

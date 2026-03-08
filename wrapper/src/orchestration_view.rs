@@ -43,6 +43,12 @@ pub(crate) enum DependencyFilter {
     Satisfied,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct DependencySelection {
+    pub(crate) filter: DependencyFilter,
+    pub(crate) capability: Option<String>,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct CachedAgentThreadSummary {
     pub(crate) id: String,
@@ -440,11 +446,11 @@ pub(crate) fn render_orchestration_workers_with_filter(
 
 pub(crate) fn render_orchestration_dependencies(
     state: &AppState,
-    filter: DependencyFilter,
+    selection: &DependencySelection,
 ) -> String {
-    let lines = render_dependency_section(state, filter);
+    let lines = render_dependency_section(state, selection);
     if lines.is_empty() {
-        return empty_dependency_filter_message(filter).to_string();
+        return empty_dependency_filter_message(selection).to_string();
     }
     lines.join("\n")
 }
@@ -513,12 +519,18 @@ fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<Stri
         ));
         lines.push(main_line);
     }
-    let dependency_filter = if matches!(filter, WorkerFilter::Blockers) {
-        DependencyFilter::Blocking
+    let dependency_selection = if matches!(filter, WorkerFilter::Blockers) {
+        DependencySelection {
+            filter: DependencyFilter::Blocking,
+            capability: None,
+        }
     } else {
-        DependencyFilter::All
+        DependencySelection {
+            filter: DependencyFilter::All,
+            capability: None,
+        }
     };
-    let dependency_lines = render_dependency_section(state, dependency_filter);
+    let dependency_lines = render_dependency_section(state, &dependency_selection);
     if !dependency_lines.is_empty() {
         if !lines.is_empty() {
             lines.push(String::new());
@@ -528,15 +540,18 @@ fn render_main_agent_section(state: &AppState, filter: WorkerFilter) -> Vec<Stri
     lines
 }
 
-fn render_dependency_section(state: &AppState, filter: DependencyFilter) -> Vec<String> {
+fn render_dependency_section(state: &AppState, selection: &DependencySelection) -> Vec<String> {
     let dependencies = orchestration_dependency_edges(state)
         .into_iter()
-        .filter(|edge| dependency_matches_filter(edge, filter))
+        .filter(|edge| dependency_matches_filter(edge, selection))
         .collect::<Vec<_>>();
     if dependencies.is_empty() {
         return Vec::new();
     }
-    let mut lines = vec!["Dependencies:".to_string()];
+    let mut lines = vec![match selection.capability.as_deref() {
+        Some(capability) => format!("Dependencies (@{capability}):"),
+        None => "Dependencies:".to_string(),
+    }];
     for (index, edge) in dependencies.iter().enumerate() {
         lines.push(format!(
             "{:>2}. {} -> {}  [{}{}]",
@@ -552,9 +567,9 @@ fn render_dependency_section(state: &AppState, filter: DependencyFilter) -> Vec<
 
 fn dependency_matches_filter(
     edge: &crate::orchestration_registry::OrchestrationDependencyEdge,
-    filter: DependencyFilter,
+    selection: &DependencySelection,
 ) -> bool {
-    match filter {
+    let filter_matches = match selection.filter {
         DependencyFilter::All => true,
         DependencyFilter::Blocking => edge.blocking,
         DependencyFilter::Sidecars => !edge.blocking,
@@ -562,6 +577,13 @@ fn dependency_matches_filter(
         DependencyFilter::Booting => edge.kind == "dependsOnCapability:booting",
         DependencyFilter::Ambiguous => edge.kind == "dependsOnCapability:ambiguous",
         DependencyFilter::Satisfied => edge.kind == "dependsOnCapability:satisfied",
+    };
+    if !filter_matches {
+        return false;
+    }
+    match selection.capability.as_deref() {
+        Some(capability) => edge.to == format!("capability:@{capability}"),
+        None => true,
     }
 }
 
@@ -663,8 +685,8 @@ fn empty_filter_message(filter: WorkerFilter) -> &'static str {
     }
 }
 
-fn empty_dependency_filter_message(filter: DependencyFilter) -> &'static str {
-    match filter {
+fn empty_dependency_filter_message(selection: &DependencySelection) -> String {
+    let base = match selection.filter {
         DependencyFilter::All => "No dependency edges tracked right now.",
         DependencyFilter::Blocking => "No blocking dependency edges tracked right now.",
         DependencyFilter::Sidecars => "No sidecar dependency edges tracked right now.",
@@ -672,6 +694,10 @@ fn empty_dependency_filter_message(filter: DependencyFilter) -> &'static str {
         DependencyFilter::Booting => "No booting capability dependencies tracked right now.",
         DependencyFilter::Ambiguous => "No ambiguous capability dependencies tracked right now.",
         DependencyFilter::Satisfied => "No satisfied capability dependencies tracked right now.",
+    };
+    match selection.capability.as_deref() {
+        Some(capability) => format!("{base} Capability selector: @{capability}."),
+        None => base.to_string(),
     }
 }
 
@@ -1173,7 +1199,7 @@ mod tests {
 
     #[test]
     fn orchestration_guidance_prefers_blockers_then_ready_services_then_sidecars() {
-        let mut blocked = crate::state::AppState::new(true, false);
+        let blocked = crate::state::AppState::new(true, false);
         blocked
             .background_shells
             .start_from_tool(

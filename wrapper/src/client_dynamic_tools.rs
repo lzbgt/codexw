@@ -9,6 +9,7 @@ use serde_json::json;
 use crate::background_shells::BackgroundShellManager;
 use crate::background_shells::BackgroundShellOrigin;
 use crate::orchestration_view::DependencyFilter;
+use crate::orchestration_view::DependencySelection;
 use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::orchestration_guidance_summary;
 use crate::orchestration_view::orchestration_overview_summary;
@@ -52,14 +53,15 @@ pub(crate) fn dynamic_tool_specs() -> Value {
         }),
         json!({
             "name": "orchestration_list_dependencies",
-            "description": "Render the current orchestration dependency graph, optionally filtered to all, blocking, sidecars, missing, booting, ambiguous, or satisfied dependency states.",
+            "description": "Render the current orchestration dependency graph, optionally filtered to all, blocking, sidecars, missing, booting, ambiguous, or satisfied dependency states and optionally narrowed to one @capability.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "filter": {
                         "type": "string",
                         "enum": ["all", "blocking", "sidecars", "missing", "booting", "ambiguous", "satisfied"]
-                    }
+                    },
+                    "capability": {"type": "string"}
                 }
             }
         }),
@@ -462,7 +464,15 @@ fn render_orchestration_dependencies_for_tool(
             .and_then(|object| object.get("filter"))
             .and_then(Value::as_str),
     )?;
-    Ok(render_orchestration_dependencies(state, filter))
+    let capability = parse_dependency_capability_for_tool(
+        object
+            .and_then(|object| object.get("capability"))
+            .and_then(Value::as_str),
+    )?;
+    Ok(render_orchestration_dependencies(
+        state,
+        &DependencySelection { filter, capability },
+    ))
 }
 
 fn parse_worker_filter_for_tool(raw: Option<&str>) -> Result<WorkerFilter, String> {
@@ -495,6 +505,20 @@ fn parse_dependency_filter_for_tool(raw: Option<&str>) -> Result<DependencyFilte
             "orchestration_list_dependencies `filter` must be one of `all`, `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`, got `{other}`"
         )),
     }
+}
+
+fn parse_dependency_capability_for_tool(raw: Option<&str>) -> Result<Option<String>, String> {
+    let Some(raw) = raw else {
+        return Ok(None);
+    };
+    let normalized = raw.trim().trim_start_matches('@');
+    if normalized.is_empty() {
+        return Err(
+            "orchestration_list_dependencies `capability` must be a non-empty capability name"
+                .to_string(),
+        );
+    }
+    Ok(Some(normalized.to_string()))
 }
 
 fn dynamic_tool_origin(params: &Value) -> BackgroundShellOrigin {

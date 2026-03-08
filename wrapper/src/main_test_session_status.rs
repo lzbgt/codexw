@@ -5,6 +5,7 @@ use crate::dispatch_command_session_ps::handle_ps_command;
 use crate::dispatch_command_session_ps::parse_clean_target;
 use crate::dispatch_command_session_ps::parse_ps_capability_issue_filter;
 use crate::dispatch_command_session_ps::parse_ps_dependency_filter;
+use crate::dispatch_command_session_ps::parse_ps_dependency_selector;
 use crate::dispatch_command_session_ps::parse_ps_filter;
 use crate::dispatch_command_session_ps::parse_ps_service_issue_filter;
 use crate::events::handle_realtime_notification;
@@ -630,6 +631,29 @@ fn ps_dependency_filter_parser_accepts_dependency_issue_aliases() {
 }
 
 #[test]
+fn ps_dependency_selector_accepts_optional_capability_reference() {
+    use crate::orchestration_view::DependencyFilter;
+    use crate::orchestration_view::DependencySelection;
+
+    assert_eq!(
+        parse_ps_dependency_selector(&["missing", "@api.http"]).expect("selector"),
+        DependencySelection {
+            filter: DependencyFilter::Missing,
+            capability: Some("api.http".to_string()),
+        }
+    );
+    assert_eq!(
+        parse_ps_dependency_selector(&["@api.http"]).expect("selector"),
+        DependencySelection {
+            filter: DependencyFilter::All,
+            capability: Some("api.http".to_string()),
+        }
+    );
+    assert!(parse_ps_dependency_selector(&["missing", "weird"]).is_err());
+    assert!(parse_ps_dependency_selector(&["missing", "@api.http", "@frontend.dev"]).is_err());
+}
+
+#[test]
 fn ps_capability_filter_parser_accepts_issue_aliases() {
     use crate::background_shells::BackgroundShellCapabilityIssueClass;
 
@@ -1066,6 +1090,58 @@ fn ps_command_can_filter_capability_index_by_issue_class() {
         .expect("capability filter")
         .join("\n");
     assert!(rendered.contains("@api.http -> <missing provider> [missing]"));
+    let _ = state.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ps_command_can_filter_dependencies_by_capability() {
+    let cli = test_cli();
+    let mut state = crate::state::AppState::new(true, false);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite",
+                "dependsOnCapabilities": ["api.http"],
+            }),
+            "/tmp",
+        )
+        .expect("start api dependent shell");
+    state
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "observation",
+                "dependsOnCapabilities": ["db.redis"],
+            }),
+            "/tmp",
+        )
+        .expect("start redis dependent shell");
+
+    handle_ps_command(
+        "dependencies missing @api.http",
+        &["dependencies", "missing", "@api.http"],
+        &cli,
+        &mut state,
+        &mut output,
+        &mut writer,
+    )
+    .expect("render filtered dependency view");
+
+    let rendered = crate::orchestration_view::render_orchestration_dependencies(
+        &state,
+        &crate::orchestration_view::DependencySelection {
+            filter: crate::orchestration_view::DependencyFilter::Missing,
+            capability: Some("api.http".to_string()),
+        },
+    );
+    assert!(rendered.contains("Dependencies (@api.http):"));
+    assert!(rendered.contains("shell:bg-1 -> capability:@api.http"));
+    assert!(!rendered.contains("db.redis"));
     let _ = state.background_shells.terminate_all_running();
 }
 

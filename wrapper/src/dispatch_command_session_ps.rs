@@ -6,6 +6,7 @@ use crate::Cli;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellServiceIssueClass;
 use crate::orchestration_view::DependencyFilter;
+use crate::orchestration_view::DependencySelection;
 use crate::orchestration_view::WorkerFilter;
 use crate::orchestration_view::render_orchestration_dependencies;
 use crate::orchestration_view::render_orchestration_workers;
@@ -288,16 +289,14 @@ pub(crate) fn handle_ps_command(
         };
         output.block_stdout("Service Shells", &rendered)?;
     } else if matches!(action, Some("dependencies" | "deps")) && args.len() > 1 {
-        let dependency_filter = match parse_ps_dependency_filter(args.get(1).copied()) {
-            Some(filter) => filter,
-            None => {
-                output.line_stderr(
-                    "[session] usage: :ps dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied]",
-                )?;
+        let selection = match parse_ps_dependency_selector(&args[1..]) {
+            Ok(selection) => selection,
+            Err(err) => {
+                output.line_stderr(format!("[session] {err}"))?;
                 return Ok(true);
             }
         };
-        let rendered = render_orchestration_dependencies(state, dependency_filter);
+        let rendered = render_orchestration_dependencies(state, &selection);
         output.block_stdout("Dependencies", &rendered)?;
     } else if matches!(action, Some("terminate" | "stop" | "kill")) {
         let Some(reference) = args.get(1).copied() else {
@@ -334,7 +333,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance|blockers|dependencies|agents|shells|services [all|ready|booting|untracked|conflicts]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
+            "[session] usage: :ps [guidance|blockers|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|clean]",
         )?;
     }
     Ok(true)
@@ -444,6 +443,45 @@ pub(crate) fn parse_ps_dependency_filter(action: Option<&str>) -> Option<Depende
         Some("satisfied") | Some("ready") => Some(DependencyFilter::Satisfied),
         Some(_) => None,
     }
+}
+
+pub(crate) fn parse_ps_dependency_selector(
+    args: &[&str],
+) -> Result<DependencySelection, &'static str> {
+    let mut filter = DependencyFilter::All;
+    let mut capability = None;
+
+    for arg in args.iter().copied() {
+        if let Some(raw_capability) = arg.strip_prefix('@') {
+            if raw_capability.is_empty() {
+                return Err(
+                    "usage: :ps dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]",
+                );
+            }
+            if capability.replace(raw_capability.to_string()).is_some() {
+                return Err(
+                    "usage: :ps dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]",
+                );
+            }
+            continue;
+        }
+
+        if let Some(parsed) = parse_ps_dependency_filter(Some(arg)) {
+            if !matches!(filter, DependencyFilter::All) {
+                return Err(
+                    "usage: :ps dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]",
+                );
+            }
+            filter = parsed;
+            continue;
+        }
+
+        return Err(
+            "usage: :ps dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]",
+        );
+    }
+
+    Ok(DependencySelection { filter, capability })
 }
 
 pub(crate) fn parse_ps_capability_issue_filter(
