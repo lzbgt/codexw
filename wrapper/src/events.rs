@@ -3,6 +3,7 @@ use serde_json::Value;
 use std::process::ChildStdin;
 
 use crate::Cli;
+use crate::config_persistence::persist_windows_sandbox_mode;
 use crate::event_request_approvals::handle_approval_request;
 use crate::event_request_tools::handle_tool_request;
 use crate::notification_item_buffers::handle_buffer_update;
@@ -218,6 +219,11 @@ fn handle_bootstrap_response_success(
         PendingRequest::LoadExperimentalFeatures => {
             handle_experimental_features_loaded(result, output)?;
         }
+        PendingRequest::WindowsSandboxSetupStart { mode } => {
+            output.line_stderr(format!(
+                "[session] Windows sandbox setup requested ({mode})"
+            ))?;
+        }
         PendingRequest::LoadCollaborationModes { action } => {
             handle_collaboration_modes_loaded(result, action.clone(), state, output)?;
         }
@@ -368,6 +374,31 @@ fn handle_notification(
     match notification.method.as_str() {
         "skills/changed" => {
             crate::requests::send_load_skills(writer, state, resolved_cwd)?;
+            return Ok(());
+        }
+        "windowsSandbox/setupCompleted" => {
+            let mode = notification
+                .params
+                .get("mode")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown");
+            let success = notification
+                .params
+                .get("success")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            let error = notification.params.get("error").and_then(Value::as_str);
+            if success {
+                persist_windows_sandbox_mode(state.codex_home_override.as_deref(), Some(mode))?;
+                output.line_stderr(format!(
+                    "[session] Windows sandbox setup completed successfully ({mode})"
+                ))?;
+            } else {
+                let detail = error.unwrap_or("unknown error");
+                output.line_stderr(format!(
+                    "[session] Windows sandbox setup failed ({mode}): {detail}"
+                ))?;
+            }
             return Ok(());
         }
         "turn/started" => {

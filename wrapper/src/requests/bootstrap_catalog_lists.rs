@@ -95,3 +95,29 @@ pub(crate) fn send_load_mcp_servers(writer: &mut ChildStdin, state: &mut AppStat
         },
     )
 }
+
+pub(crate) fn send_windows_sandbox_setup_start(
+    writer: &mut ChildStdin,
+    state: &mut AppState,
+    resolved_cwd: &str,
+    mode: &str,
+) -> Result<()> {
+    let request_id = state.next_request_id();
+    state.pending.insert(
+        request_id.clone(),
+        PendingRequest::WindowsSandboxSetupStart {
+            mode: mode.to_string(),
+        },
+    );
+    send_json(
+        writer,
+        &OutgoingRequest {
+            id: request_id,
+            method: "windowsSandbox/setupStart",
+            params: json!({
+                "mode": mode,
+                "cwd": resolved_cwd,
+            }),
+        },
+    )
+}

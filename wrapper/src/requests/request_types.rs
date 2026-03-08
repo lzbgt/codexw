@@ -24,6 +24,9 @@ pub(crate) enum PendingRequest {
     LoadConfig,
     LoadMcpServers,
     LoadExperimentalFeatures,
+    WindowsSandboxSetupStart {
+        mode: String,
+    },
     LoadCollaborationModes {
         action: CollaborationModeAction,
     },

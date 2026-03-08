@@ -29,6 +29,7 @@ pub(crate) use bootstrap_catalog_lists::send_load_config;
 pub(crate) use bootstrap_catalog_lists::send_load_experimental_features;
 pub(crate) use bootstrap_catalog_lists::send_load_mcp_servers;
 pub(crate) use bootstrap_catalog_lists::send_load_skills;
+pub(crate) use bootstrap_catalog_lists::send_windows_sandbox_setup_start;
 pub(crate) use bootstrap_init::send_initialize;
 pub(crate) use bootstrap_init::send_initialized;
 pub(crate) use bootstrap_search::send_fuzzy_file_search;

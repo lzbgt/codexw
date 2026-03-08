@@ -328,12 +328,13 @@ Current user-facing capabilities include:
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
 - read-only client dynamic tools on new threads via `thread/start.dynamicTools`, currently covering directory listing, path inspection, workspace file reads, file-path search, and text search
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
+- backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
 - backend-backed background-terminal cleanup through `/ps clean` and `thread/backgroundTerminals/clean`
 - `/diff`, `/apps`, `/skills`, `/models`, `/mcp`, `/threads`, `/feedback`, `/logout`, and related backend-backed commands
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns
 
-Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but the remaining command-level examples are now mostly the Windows sandbox setup/read-root workflows. Model selection, permissions presets, theme selection, fast-mode toggling, collaboration-mode switching, agent-thread switching, experimental-feature discovery, personality selection, background-terminal cleanup, client-side dynamic workspace tools, and a text-only realtime flow are no longer in that category. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
+Some native Codex slash commands still remain informational placeholders because app-server does not expose the same internal UI state or backend surfaces that the native upstream TUI uses, but the remaining command-level example is now mostly the Windows sandbox read-root workflow. Model selection, permissions presets, theme selection, fast-mode toggling, collaboration-mode switching, agent-thread switching, experimental-feature discovery, personality selection, Windows sandbox setup, background-terminal cleanup, client-side dynamic workspace tools, and a text-only realtime flow are no longer in that category. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only.
 
 ## Approval and Automation Posture
 
@@ -365,7 +366,7 @@ The biggest known limits are architectural, not accidental.
 
 - `codexw` is not the native upstream Codex TUI.
 - It depends only on app-server surfaces, so popup-heavy native workflows cannot always be reproduced exactly.
-- A small number of platform-specific commands can only explain their limitation because app-server does not expose the needed internal state, notably the Windows degraded-sandbox setup/read-root workflows.
+- A small number of platform-specific commands can only explain their limitation because app-server does not expose the needed internal state, notably the Windows additional read-root grant workflow.
 - Rendering is richer than plain logs, but it is still terminal-scrollback based rather than a full alternate-screen widget tree.
 
 ## File Map

@@ -14,6 +14,7 @@ use crate::requests::send_list_agent_threads;
 use crate::requests::send_logout_account;
 use crate::requests::send_thread_start;
 use crate::requests::send_turn_start;
+use crate::requests::send_windows_sandbox_setup_start;
 use crate::selection_flow::apply_theme_choice;
 use crate::selection_flow::open_theme_picker;
 use crate::selection_flow::toggle_fast_mode;
@@ -98,9 +99,23 @@ pub(crate) fn try_handle_session_meta_command(
             send_list_agent_threads(writer, state, Some(resolved_cwd))?;
             true
         }
-        "sandbox-add-read-dir" | "setup-default-sandbox" => {
+        "setup-default-sandbox" => {
+            if !args.is_empty() {
+                output.line_stderr("[session] usage: :setup-default-sandbox")?;
+                return Ok(Some(true));
+            }
+            if !cfg!(target_os = "windows") {
+                output
+                    .line_stderr("[session] /setup-default-sandbox is only available on Windows")?;
+                return Ok(Some(true));
+            }
+            output.line_stderr("[session] starting Windows sandbox setup (elevated)")?;
+            send_windows_sandbox_setup_start(writer, state, resolved_cwd, "elevated")?;
+            true
+        }
+        "sandbox-add-read-dir" => {
             output.line_stderr(format!(
-                "[session] /{command} is recognized, but this inline client does not yet implement the native Codex popup/workflow for it"
+                "[session] /{command} is Windows-only and app-server does not expose the additional read-root grant workflow used by the native TUI"
             ))?;
             true
         }

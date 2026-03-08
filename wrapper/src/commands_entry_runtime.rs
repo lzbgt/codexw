@@ -4,7 +4,7 @@ pub(crate) const RUNTIME_COMMAND_ENTRIES: &[BuiltinCommandEntry] = &[
     BuiltinCommandEntry {
         name: "setup-default-sandbox",
         help_syntax: "setup-default-sandbox",
-        description: "Windows-only sandbox setup workflow",
+        description: "start Windows sandbox setup workflow",
     },
     BuiltinCommandEntry {
         name: "sandbox-add-read-dir",
