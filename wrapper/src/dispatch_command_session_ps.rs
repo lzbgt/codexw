@@ -271,6 +271,21 @@ pub(crate) fn handle_ps_command(
             Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
             Err(err) => output.line_stderr(format!("[session] {err}"))?,
         }
+    } else if matches!(action, Some("relabel")) {
+        let Some((reference, label)) = parse_ps_relabel_args(raw_args) else {
+            output.line_stderr(
+                "[session] usage: :ps relabel <jobId|alias|@capability|n> <label|none>",
+            )?;
+            return Ok(true);
+        };
+        match state
+            .orchestration
+            .background_shells
+            .update_service_label_for_operator(reference, label)
+        {
+            Ok(summary) => output.line_stderr(format!("[thread] {summary}"))?,
+            Err(err) => output.line_stderr(format!("[session] {err}"))?,
+        }
     } else if matches!(action, Some("capabilities" | "caps" | "cap")) && args.len() > 1 {
         let selector = args[1];
         if selector.starts_with('@') {
@@ -416,7 +431,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|relabel <jobId|alias|@capability|n> <label|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)
@@ -459,6 +474,21 @@ fn parse_ps_run_args(raw_args: &str) -> Option<(&str, &str, Option<&str>)> {
             arg_tail.filter(|value| !value.is_empty()),
         ))
     }
+}
+
+fn parse_ps_relabel_args(raw_args: &str) -> Option<(&str, Option<String>)> {
+    let remainder = raw_args.trim_start().strip_prefix("relabel")?.trim_start();
+    let (reference, label) = remainder.split_once(char::is_whitespace)?;
+    let label = label.trim_start();
+    if reference.is_empty() || label.is_empty() {
+        return None;
+    }
+    let normalized = if matches!(label, "none" | "-") {
+        None
+    } else {
+        Some(label.to_string())
+    };
+    Some((reference, normalized))
 }
 
 fn parse_operator_recipe_args(

@@ -156,7 +156,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 "A blocking shell depends on missing service capability @{}.",
                 issue.capability
             ),
-            "Start or relabel the missing reusable service before waiting on the shell result."
+            "Start a service shell that provides the missing reusable role, or retarget an existing running service with :ps provide."
                 .to_string(),
             "Use /ps capabilities to inspect the live provider map and /ps blockers to inspect the blocked shell.".to_string(),
         ];
@@ -282,8 +282,9 @@ fn guidance_lines_for_capability(
         return Ok(match issue.status {
             BackgroundShellCapabilityDependencyState::Missing => vec![
                 format!("A blocking shell depends on missing service capability @{capability}."),
-                "Start or relabel the missing reusable service before waiting on the shell result."
-                    .to_string(),
+                format!(
+                    "Start a provider for @{capability} or retarget an existing running service with `:ps provide <job> @{capability}` before waiting on the shell result."
+                ),
                 format!(
                     "Use /ps capabilities @{capability} and /ps dependencies missing @{capability} to inspect the exact blocker."
                 ),
@@ -315,8 +316,9 @@ fn guidance_lines_for_capability(
             BackgroundShellCapabilityIssueClass::Missing => {
                 vec![
                     format!("Reusable service capability @{capability} has no running provider."),
-                    "Start or relabel a service shell so later work can attach to that reusable role."
-                        .to_string(),
+                    format!(
+                        "Start a provider for @{capability} or retarget an existing running service with `:ps provide <job> @{capability}`."
+                    ),
                     format!(
                         "Use /ps capabilities @{capability} to confirm the missing-provider state."
                     ),
@@ -674,13 +676,17 @@ fn action_lines_for_capability(
             format!(
                 "Run `:ps capabilities @{capability}` to confirm there is no running provider."
             ),
-            format!("Start or relabel a service shell so it provides `@{capability}`."),
+            format!(
+                "Run `:ps provide <jobId|alias|@capability|n> @{capability}` to retarget an existing running service, or start a new provider for that role."
+            ),
         ],
         (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Tool) => vec![
             format!(
                 "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to confirm there is no running provider."
             ),
-            "Start or relabel a reusable service so it provides that capability before attaching future work to it.".to_string(),
+            format!(
+                "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|@capability>\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
+            ),
         ],
         (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Operator) => vec![
             format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),

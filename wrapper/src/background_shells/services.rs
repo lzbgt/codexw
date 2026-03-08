@@ -14,6 +14,28 @@ use super::terminate_jobs;
 use super::validate_service_capability;
 
 impl BackgroundShellManager {
+    pub(crate) fn set_running_service_label(
+        &self,
+        job_id: &str,
+        label: Option<String>,
+    ) -> Result<Option<String>, String> {
+        let normalized = normalize_service_label_update(label)?;
+        let job = self.lookup_job(job_id)?;
+        let mut state = job.lock().expect("background shell job lock");
+        if !matches!(state.status, BackgroundShellJobStatus::Running) {
+            return Err(format!(
+                "background shell job `{job_id}` is not running; only running service jobs can change service metadata"
+            ));
+        }
+        if state.intent != BackgroundShellIntent::Service {
+            return Err(format!(
+                "background shell job `{job_id}` is not a service job; only running service jobs can change service metadata"
+            ));
+        }
+        state.label = normalized.clone();
+        Ok(normalized)
+    }
+
     pub(crate) fn set_running_service_capabilities(
         &self,
         job_id: &str,
@@ -36,6 +58,20 @@ impl BackgroundShellManager {
         Ok(normalized)
     }
 
+    pub(crate) fn update_service_label_for_operator(
+        &self,
+        reference: &str,
+        label: Option<String>,
+    ) -> Result<String, String> {
+        let resolved_job_id = self.resolve_job_reference(reference)?;
+        let normalized = self.set_running_service_label(&resolved_job_id, label)?;
+        Ok(render_service_metadata_update_summary(
+            &resolved_job_id,
+            None,
+            Some(normalized),
+        ))
+    }
+
     pub(crate) fn update_service_capabilities_for_operator(
         &self,
         reference: &str,
@@ -43,9 +79,10 @@ impl BackgroundShellManager {
     ) -> Result<String, String> {
         let resolved_job_id = self.resolve_job_reference(reference)?;
         let normalized = self.set_running_service_capabilities(&resolved_job_id, capabilities)?;
-        Ok(render_service_capability_update_summary(
+        Ok(render_service_metadata_update_summary(
             &resolved_job_id,
-            &normalized,
+            Some(&normalized),
+            None,
         ))
     }
 
@@ -60,15 +97,43 @@ impl BackgroundShellManager {
             .get("jobId")
             .and_then(serde_json::Value::as_str)
             .ok_or_else(|| "background_shell_update_service requires `jobId`".to_string())?;
-        let capabilities = parse_service_capabilities_argument(
-            object.get("capabilities"),
-            "background_shell_update_service",
-        )?;
+        let capabilities = if object.contains_key("capabilities") {
+            Some(parse_service_capabilities_argument(
+                object.get("capabilities"),
+                "background_shell_update_service",
+            )?)
+        } else {
+            None
+        };
+        let label = if object.contains_key("label") {
+            Some(parse_service_label_argument(
+                object.get("label"),
+                "background_shell_update_service",
+            )?)
+        } else {
+            None
+        };
+        if capabilities.is_none() && label.is_none() {
+            return Err(
+                "background_shell_update_service requires at least one of `capabilities` or `label`"
+                    .to_string(),
+            );
+        }
         let resolved_job_id = self.resolve_job_reference(job_id)?;
-        let normalized = self.set_running_service_capabilities(&resolved_job_id, &capabilities)?;
-        Ok(render_service_capability_update_summary(
+        let normalized_capabilities = match capabilities {
+            Some(capabilities) => {
+                Some(self.set_running_service_capabilities(&resolved_job_id, &capabilities)?)
+            }
+            None => None,
+        };
+        let normalized_label = match label {
+            Some(label) => Some(self.set_running_service_label(&resolved_job_id, label)?),
+            None => None,
+        };
+        Ok(render_service_metadata_update_summary(
             &resolved_job_id,
-            &normalized,
+            normalized_capabilities.as_deref(),
+            normalized_label,
         ))
     }
 
@@ -736,6 +801,20 @@ fn normalize_service_capabilities(capabilities: &[String]) -> Result<Vec<String>
     Ok(normalized)
 }
 
+fn normalize_service_label_update(label: Option<String>) -> Result<Option<String>, String> {
+    match label {
+        Some(label) => {
+            let trimmed = label.trim();
+            if trimmed.is_empty() {
+                Err("service label cannot be empty".to_string())
+            } else {
+                Ok(Some(trimmed.to_string()))
+            }
+        }
+        None => Ok(None),
+    }
+}
+
 fn parse_service_capabilities_argument(
     value: Option<&serde_json::Value>,
     context: &str,
@@ -757,17 +836,53 @@ fn parse_service_capabilities_argument(
     normalize_service_capabilities(&raw)
 }
 
-fn render_service_capability_update_summary(job_id: &str, capabilities: &[String]) -> String {
-    if capabilities.is_empty() {
-        format!("Cleared reusable service capabilities for background shell job {job_id}.")
+fn parse_service_label_argument(
+    value: Option<&serde_json::Value>,
+    context: &str,
+) -> Result<Option<String>, String> {
+    match value {
+        Some(serde_json::Value::Null) => Ok(None),
+        Some(serde_json::Value::String(label)) => {
+            normalize_service_label_update(Some(label.to_string()))
+        }
+        Some(_) => Err(format!("{context} `label` must be a string or null")),
+        None => Err(format!("{context} requires `label`")),
+    }
+}
+
+fn render_service_metadata_update_summary(
+    job_id: &str,
+    capabilities: Option<&[String]>,
+    label: Option<Option<String>>,
+) -> String {
+    let mut parts = Vec::new();
+    if let Some(capabilities) = capabilities {
+        if capabilities.is_empty() {
+            parts.push("cleared reusable capabilities".to_string());
+        } else {
+            parts.push(format!(
+                "reusable capabilities={}",
+                capabilities
+                    .iter()
+                    .map(|capability| format!("@{capability}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+    }
+    if let Some(label) = label {
+        match label {
+            Some(label) => parts.push(format!("label={label}")),
+            None => parts.push("cleared label".to_string()),
+        }
+    }
+
+    if parts.is_empty() {
+        format!("No service metadata changed for background shell job {job_id}.")
     } else {
         format!(
-            "Updated reusable service capabilities for background shell job {job_id}: {}",
-            capabilities
-                .iter()
-                .map(|capability| format!("@{capability}"))
-                .collect::<Vec<_>>()
-                .join(", ")
+            "Updated service metadata for background shell job {job_id}: {}.",
+            parts.join("; ")
         )
     }
 }

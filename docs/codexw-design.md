@@ -240,6 +240,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:ps send <jobId|alias|@capability|n> <text>` sends targeted stdin back into one wrapper-owned shell job without blocking the turn
   - `:ps terminate <jobId|alias|@capability|n>` stops one wrapper-owned shell job without touching the others
   - `:ps provide <jobId|alias|@capability|n> <@capability...|none>` replaces the declared reusable capability set on one running service shell without restarting the job
+  - `:ps relabel <jobId|alias|@capability|n> <label|none>` updates or clears the live service label on one running service shell without restarting the job
   - job references accept either stable ids like `bg-2`, session-local aliases, declared service capabilities prefixed with `@`, or the current 1-based sorted shell index
 - service shells now have explicit readiness state when the job declared `readyPattern`:
   - `booting` while the process is running but the ready pattern has not been observed yet
@@ -287,7 +288,7 @@ The current `codexw` implementation now reflects that model partially:
   - the capability index also shows current consumers of each capability when running jobs declare `dependsOnCapabilities`, so provider and consumer sides of reusable service roles are visible in one place
   - the model-facing dynamic tool layer now includes capability inspection too, so orchestration can inspect one reusable service role directly without scraping the whole shell list
   - the model-facing dynamic tool layer now also includes filtered capability listing, so orchestration can ask for only missing, booting, ambiguous, or healthy service roles instead of scraping the full reusable-service registry
-  - the model-facing dynamic tool layer now also includes service metadata mutation for running reusable helpers, so orchestration can replace a service shell's declared `capabilities` set through `background_shell_update_service` instead of forcing a restart when a reusable role needs to be retargeted
+  - the model-facing dynamic tool layer now also includes service metadata mutation for running reusable helpers, so orchestration can replace a service shell's declared `capabilities` set or live `label` through `background_shell_update_service` instead of forcing a restart when a reusable role needs to be retargeted or renamed
   - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
 - `/ps` also has in-session attachment naming now:
   - `:ps alias <jobId|n> <name>` assigns a stable alias to one local shell job
