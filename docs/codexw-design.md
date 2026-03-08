@@ -45,7 +45,7 @@ The runtime has thirteen main layers.
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
 
 6. Shared state and text/buffer helpers
-   `state.rs`, `state_model.rs`, `state_mutations.rs`, and `state_helpers.rs` own `AppState`, process-output buffering, attachment queues, request bookkeeping, request-id generation, state-reset/attachment mutations, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering. `state.rs` remains the shared runtime surface over the split state/helper modules.
+   `state.rs` and `state_helpers.rs` own `AppState`, process-output buffering, attachment queues, request bookkeeping, request-id generation, state reset/attachment mutations, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering. `state.rs` is now the concrete shared runtime surface instead of a thin facade over extra state files.
 
 7. Runtime policy
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
@@ -77,7 +77,7 @@ Status display helpers are split across `status_value.rs`, `status_config.rs`, `
 Transcript display helpers now live directly across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, without an extra transcript compatibility layer in the runtime path.
 Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, and event-source threads now imported directly from those concrete modules.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
-Shared state helpers are split across `state_model.rs`, `state_mutations.rs`, and `state_helpers.rs`, with `state.rs` kept as the thin facade over `AppState`, request-id generation, buffer/state types, and common text/path helper functions used across modules.
+Shared state helpers now live across `state.rs` and `state_helpers.rs`, with `state.rs` owning `AppState`, `ProcessOutputBuffer`, request-id generation, constructor/reset helpers, and attachment transfer behavior directly.
 Command catalog helpers are split across `commands_entry_session_catalog.rs`, `commands_entry_session_modes.rs`, `commands_entry_thread.rs`, `commands_entry_runtime.rs`, and `commands_catalog.rs`: grouped command-entry data lives in the `commands_entry_*` modules, and `commands_catalog.rs` assembles the shared table directly while keeping the public entrypoint and stable command-name ordering.
 Command metadata helpers now live directly in `commands_catalog.rs`: command descriptions, help-line generation, and stable command-name ordering over the shared command catalog.
 Command completion helpers live in `commands_completion_apply.rs`, `commands_completion_render.rs`, and `commands_match.rs`: completion application stays in the extracted apply helper, rendering and quoting stay in the render helper, and cursor parsing, fuzzy scoring, and prefix logic live in the matcher module.
@@ -627,11 +627,7 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/editor_graphemes.rs`
   Grapheme-aware byte-index, counting, and whitespace helpers used by the editor.
 - `wrapper/src/state.rs`
-  Compatibility facade for the split shared-state layer.
-- `wrapper/src/state_model.rs`
-  `AppState` and `ProcessOutputBuffer` state definitions.
-- `wrapper/src/state_mutations.rs`
-  `AppState` constructor, reset, and attachment transfer helpers.
+  `AppState`, `ProcessOutputBuffer`, request-id generation, constructor/reset helpers, and attachment transfer behavior.
 - `wrapper/src/state_helpers.rs`
   Shared state/text/buffer helper functions such as `thread_id`, `get_string`, delta buffering, status dedupe, and path canonicalization.
 - `wrapper/src/editor_tests.rs`
