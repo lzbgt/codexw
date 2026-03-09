@@ -207,7 +207,13 @@ fn orchestration_guidance_filter_uses_concrete_provider_ref_for_single_ready_ser
                 "intent": "service",
                 "capabilities": ["api.http"],
                 "readyPattern": "READY",
-                "recipes": [{"name": "health"}]
+                "recipes": [{
+                    "name": "health",
+                    "action": {
+                        "type": "stdin",
+                        "text": "health"
+                    }
+                }]
             }),
             "/tmp",
         )
@@ -237,6 +243,69 @@ fn orchestration_guidance_filter_uses_concrete_provider_ref_for_single_ready_ser
         guidance_text
             .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
     );
+    let _ = state
+        .orchestration
+        .background_shells
+        .terminate_all_running();
+}
+
+#[test]
+fn orchestration_guidance_filter_omits_invoke_for_descriptive_only_ready_service() {
+    let state = AppState::new(true, false);
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "printf 'READY\\n'; sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+                "readyPattern": "READY",
+                "recipes": [{
+                    "name": "docs",
+                    "description": "Read usage notes"
+                }]
+            }),
+            "/tmp",
+        )
+        .expect("start ready service with descriptive recipe");
+    state
+        .orchestration
+        .background_shells
+        .wait_ready_for_operator("bg-1", 1000)
+        .expect("wait for ready service");
+
+    let guidance = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_list_workers",
+            "arguments": {
+                "filter": "guidance"
+            }
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(guidance["success"], true);
+    let guidance_text = guidance["contentItems"][0]["text"]
+        .as_str()
+        .expect("guidance text");
+    assert!(guidance_text.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
+    assert!(!guidance_text.contains("background_shell_invoke_recipe"));
+
+    let actions = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_suggest_actions"
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(actions["success"], true);
+    let actions_text = actions["contentItems"][0]["text"]
+        .as_str()
+        .expect("actions text");
+    assert!(actions_text.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
+    assert!(!actions_text.contains("background_shell_invoke_recipe"));
+
     let _ = state
         .orchestration
         .background_shells
@@ -439,7 +508,14 @@ fn orchestration_suggest_actions_can_use_concrete_wait_for_booting_blocker_provi
                 "command": "sleep 0.4",
                 "intent": "service",
                 "capabilities": ["api.http"],
-                "readyPattern": "READY"
+                "readyPattern": "READY",
+                "recipes": [{
+                    "name": "health",
+                    "action": {
+                        "type": "stdin",
+                        "text": "health"
+                    }
+                }]
             }),
             "/tmp",
         )
@@ -567,7 +643,14 @@ fn orchestration_suggest_actions_can_use_concrete_provider_for_single_ready_serv
                 "command": "printf 'READY\\n'; sleep 0.4",
                 "intent": "service",
                 "capabilities": ["api.http"],
-                "readyPattern": "READY"
+                "readyPattern": "READY",
+                "recipes": [{
+                    "name": "health",
+                    "action": {
+                        "type": "stdin",
+                        "text": "health"
+                    }
+                }]
             }),
             "/tmp",
         )
@@ -592,7 +675,7 @@ fn orchestration_suggest_actions_can_use_concrete_provider_for_single_ready_serv
     assert!(text.contains("Suggested actions:"));
     assert!(text.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
     assert!(
-        text.contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"...\"}")
+        text.contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
     );
     let _ = state
         .orchestration

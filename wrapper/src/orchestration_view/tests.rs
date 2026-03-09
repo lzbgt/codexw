@@ -16,6 +16,7 @@ use super::render_orchestration_actions_for_tool_capability;
 use super::render_orchestration_blockers_for_capability;
 use super::render_orchestration_guidance;
 use super::render_orchestration_guidance_for_capability;
+use super::render_orchestration_guidance_for_tool;
 use super::render_orchestration_workers;
 use super::render_orchestration_workers_with_filter;
 
@@ -547,7 +548,13 @@ fn guidance_filter_uses_concrete_provider_ref_for_single_ready_service() {
                 "intent": "service",
                 "capabilities": ["api.http"],
                 "readyPattern": "READY",
-                "recipes": [{"name": "health"}]
+                "recipes": [{
+                    "name": "health",
+                    "action": {
+                        "type": "stdin",
+                        "text": "health"
+                    }
+                }]
             }),
             "/tmp",
         )
@@ -933,7 +940,13 @@ fn focused_ready_capability_actions_use_concrete_provider_ref() {
                 "intent": "service",
                 "capabilities": ["api.http"],
                 "readyPattern": "READY",
-                "recipes": [{"name": "health"}]
+                "recipes": [{
+                    "name": "health",
+                    "action": {
+                        "type": "stdin",
+                        "text": "health"
+                    }
+                }]
             }),
             "/tmp",
         )
@@ -969,7 +982,13 @@ fn actions_filter_uses_concrete_provider_ref_for_single_ready_service() {
                 "intent": "service",
                 "capabilities": ["api.http"],
                 "readyPattern": "READY",
-                "recipes": [{"name": "health"}]
+                "recipes": [{
+                    "name": "health",
+                    "action": {
+                        "type": "stdin",
+                        "text": "health"
+                    }
+                }]
             }),
             "/tmp",
         )
@@ -995,6 +1014,46 @@ fn actions_filter_uses_concrete_provider_ref_for_single_ready_service() {
     let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
     assert!(filtered.contains("Suggested actions:"));
     assert!(filtered.contains(":ps attach bg-1"));
+    let _ = services.background_shells.terminate_all_running();
+}
+
+#[test]
+fn ready_service_guidance_omits_invoke_step_when_only_descriptive_recipes_exist() {
+    let services = crate::state::AppState::new(true, false);
+    services
+        .background_shells
+        .start_from_tool(
+            &serde_json::json!({
+                "command": "printf 'READY\\n'; sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+                "readyPattern": "READY",
+                "recipes": [{"name": "docs", "description": "Read usage notes"}]
+            }),
+            "/tmp",
+        )
+        .expect("start ready service");
+    services
+        .background_shells
+        .wait_ready_for_operator("bg-1", 1000)
+        .expect("wait for ready service");
+
+    let operator_guidance = render_orchestration_guidance(&services);
+    assert!(operator_guidance.contains(":ps attach bg-1"));
+    assert!(!operator_guidance.contains(":ps run bg-1"));
+
+    let operator_actions = render_orchestration_actions(&services);
+    assert!(operator_actions.contains(":ps attach bg-1"));
+    assert!(!operator_actions.contains(":ps run bg-1"));
+
+    let tool_guidance = render_orchestration_guidance_for_tool(&services);
+    assert!(tool_guidance.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
+    assert!(!tool_guidance.contains("background_shell_invoke_recipe"));
+
+    let tool_actions = render_orchestration_actions_for_tool(&services);
+    assert!(tool_actions.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
+    assert!(!tool_actions.contains("background_shell_invoke_recipe"));
+
     let _ = services.background_shells.terminate_all_running();
 }
 
