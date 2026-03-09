@@ -17,6 +17,7 @@ fn turn_start_enqueues_local_api_command() {
             "/api/v1/turn/start",
             serde_json::json!({
                 "session_id": "sess_test",
+                "client_id": "client_web",
                 "input": { "text": "review this diff" }
             }),
         ),
@@ -46,6 +47,7 @@ fn session_scoped_turn_start_enqueues_local_api_command() {
         &post_json_request(
             "/api/v1/session/sess_test/turn/start",
             serde_json::json!({
+                "client_id": "client_web",
                 "input": { "text": "review this diff" }
             }),
         ),
@@ -78,6 +80,7 @@ fn turn_start_requires_attached_thread() {
             "/api/v1/turn/start",
             serde_json::json!({
                 "session_id": "sess_test",
+                "client_id": "client_web",
                 "input": { "text": "review this diff" }
             }),
         ),
@@ -98,7 +101,7 @@ fn turn_interrupt_enqueues_local_api_command() {
     let response = route_request(
         &post_json_request(
             "/api/v1/turn/interrupt",
-            serde_json::json!({ "session_id": "sess_test" }),
+            serde_json::json!({ "session_id": "sess_test", "client_id": "client_web" }),
         ),
         &sample_snapshot(),
         &queue,
@@ -120,7 +123,7 @@ fn session_scoped_turn_interrupt_enqueues_local_api_command() {
     let response = route_request(
         &post_json_request(
             "/api/v1/session/sess_test/turn/interrupt",
-            serde_json::json!({}),
+            serde_json::json!({ "client_id": "client_web" }),
         ),
         &sample_snapshot(),
         &queue,
@@ -136,5 +139,44 @@ fn session_scoped_turn_interrupt_enqueues_local_api_command() {
         Some(&LocalApiCommand::InterruptTurn {
             session_id: "sess_test".to_string(),
         })
+    );
+}
+
+#[test]
+fn session_scoped_turn_start_rejects_conflicting_attachment_client() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/turn/start",
+            serde_json::json!({
+                "client_id": "client_mobile",
+                "input": { "text": "review this diff" }
+            }),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 409);
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "attachment_conflict"
+    );
+}
+
+#[test]
+fn session_scoped_turn_interrupt_rejects_anonymous_request_when_lease_active() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/turn/interrupt",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 409);
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "attachment_conflict"
     );
 }

@@ -566,6 +566,44 @@ pub(super) fn attachment_has_active_conflicting_client(
     }
 }
 
+pub(super) fn parse_optional_client_id(
+    body: &Value,
+) -> Result<Option<String>, crate::local_api::server::HttpResponse> {
+    let Some(value) = body.get("client_id") else {
+        return Ok(None);
+    };
+    let Some(client_id) = value.as_str() else {
+        return Err(json_error_response(
+            400,
+            "validation_error",
+            "client_id must be a string",
+        ));
+    };
+    let trimmed = client_id.trim();
+    if trimmed.is_empty() {
+        return Err(json_error_response(
+            400,
+            "validation_error",
+            "client_id must not be empty",
+        ));
+    }
+    Ok(Some(trimmed.to_string()))
+}
+
+pub(super) fn enforce_attachment_lease_ownership(
+    snapshot: &LocalApiSnapshot,
+    requested_client_id: Option<&str>,
+) -> Result<(), crate::local_api::server::HttpResponse> {
+    if attachment_has_active_conflicting_client(snapshot, requested_client_id) {
+        return Err(json_error_response(
+            409,
+            "attachment_conflict",
+            "another client currently holds the active attachment lease",
+        ));
+    }
+    Ok(())
+}
+
 pub(super) fn now_unix_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

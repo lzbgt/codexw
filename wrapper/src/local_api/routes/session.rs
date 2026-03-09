@@ -7,12 +7,13 @@ use crate::local_api::control::enqueue_command;
 use crate::local_api::server::HttpRequest;
 use crate::local_api::snapshot::LocalApiSnapshot;
 
-use super::attachment_has_active_conflicting_client;
 use super::attachment_summary;
+use super::enforce_attachment_lease_ownership;
 use super::json_error_response;
 use super::json_ok_response;
 use super::json_request_body;
 use super::now_unix_ms;
+use super::parse_optional_client_id;
 use super::session_summary;
 
 pub(super) fn handle_session_new_route(
@@ -26,18 +27,14 @@ pub(super) fn handle_session_new_route(
     };
     let client_id = match parse_optional_client_id(&body) {
         Ok(value) => value,
-        Err(message) => return json_error_response(400, "validation_error", message),
+        Err(response) => return response,
     };
     let lease_seconds = match parse_optional_lease_seconds(&body) {
         Ok(value) => value,
         Err(message) => return json_error_response(400, "validation_error", message),
     };
-    if attachment_has_active_conflicting_client(snapshot, client_id.as_deref()) {
-        return json_error_response(
-            409,
-            "attachment_conflict",
-            "another client currently holds the active attachment lease",
-        );
+    if let Err(response) = enforce_attachment_lease_ownership(snapshot, client_id.as_deref()) {
+        return response;
     }
     if let Err(err) = enqueue_command(
         command_queue,
@@ -97,18 +94,14 @@ pub(super) fn handle_session_attach_route(
     }
     let client_id = match parse_optional_client_id(&body) {
         Ok(value) => value,
-        Err(message) => return json_error_response(400, "validation_error", message),
+        Err(response) => return response,
     };
     let lease_seconds = match parse_optional_lease_seconds(&body) {
         Ok(value) => value,
         Err(message) => return json_error_response(400, "validation_error", message),
     };
-    if attachment_has_active_conflicting_client(snapshot, client_id.as_deref()) {
-        return json_error_response(
-            409,
-            "attachment_conflict",
-            "another client currently holds the active attachment lease",
-        );
+    if let Err(response) = enforce_attachment_lease_ownership(snapshot, client_id.as_deref()) {
+        return response;
     }
     if let Err(err) = enqueue_command(
         command_queue,
@@ -159,7 +152,7 @@ pub(super) fn handle_attachment_renew_route(
     };
     let client_id = match parse_optional_client_id(&body) {
         Ok(value) => value,
-        Err(message) => return json_error_response(400, "validation_error", message),
+        Err(response) => return response,
     };
     let Some(lease_seconds) = (match parse_optional_lease_seconds(&body) {
         Ok(value) => value,
@@ -167,12 +160,8 @@ pub(super) fn handle_attachment_renew_route(
     }) else {
         return json_error_response(400, "validation_error", "missing lease_seconds");
     };
-    if attachment_has_active_conflicting_client(snapshot, client_id.as_deref()) {
-        return json_error_response(
-            409,
-            "attachment_conflict",
-            "another client currently holds the active attachment lease",
-        );
+    if let Err(response) = enforce_attachment_lease_ownership(snapshot, client_id.as_deref()) {
+        return response;
     }
     if let Err(err) = enqueue_command(
         command_queue,
@@ -216,14 +205,10 @@ pub(super) fn handle_attachment_release_route(
     };
     let client_id = match parse_optional_client_id(&body) {
         Ok(value) => value,
-        Err(message) => return json_error_response(400, "validation_error", message),
+        Err(response) => return response,
     };
-    if attachment_has_active_conflicting_client(snapshot, client_id.as_deref()) {
-        return json_error_response(
-            409,
-            "attachment_conflict",
-            "another client currently holds the active attachment lease",
-        );
+    if let Err(response) = enforce_attachment_lease_ownership(snapshot, client_id.as_deref()) {
+        return response;
     }
     if let Err(err) = enqueue_command(
         command_queue,
@@ -261,20 +246,6 @@ fn optional_json_request_body(
     } else {
         json_request_body(request)
     }
-}
-
-fn parse_optional_client_id(body: &Value) -> Result<Option<String>, &'static str> {
-    let Some(value) = body.get("client_id") else {
-        return Ok(None);
-    };
-    let Some(client_id) = value.as_str() else {
-        return Err("client_id must be a string");
-    };
-    let trimmed = client_id.trim();
-    if trimmed.is_empty() {
-        return Err("client_id must not be empty");
-    }
-    Ok(Some(trimmed.to_string()))
 }
 
 fn parse_optional_lease_seconds(body: &Value) -> Result<Option<u64>, &'static str> {

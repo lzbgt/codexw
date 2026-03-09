@@ -161,6 +161,10 @@ Current landed behavior:
 - `POST /api/v1/session/{session_id}/attachment/renew` and
   `POST /api/v1/session/{session_id}/attachment/release` now exist for explicit
   attachment lease management within the process-scoped session model
+- all mutating turn, shell, and service routes now enforce the active
+  attachment lease:
+  - optional `client_id` is accepted on those mutation routes
+  - anonymous or mismatched callers receive `409 attachment_conflict`
 - both routes enqueue onto the same runtime request path used by local
   thread-switch handling rather than inventing a second session model
 

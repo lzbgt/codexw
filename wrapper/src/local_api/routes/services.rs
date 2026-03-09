@@ -9,9 +9,11 @@ use crate::local_api::server::HttpRequest;
 use crate::local_api::snapshot::LocalApiSnapshot;
 
 use super::current_shell_value;
+use super::enforce_attachment_lease_ownership;
 use super::json_error_response;
 use super::json_ok_response;
 use super::json_request_body;
+use super::parse_optional_client_id;
 use super::resolve_shell_snapshot;
 
 pub(super) fn handle_services_route(
@@ -48,10 +50,22 @@ pub(super) fn handle_service_attach_route(
     reference: &str,
     session_id: &str,
 ) -> crate::local_api::server::HttpResponse {
-    if !request.body.is_empty() {
-        if let Err(response) = json_request_body(request) {
-            return response;
+    let body = if request.body.is_empty() {
+        json!({})
+    } else {
+        match json_request_body(request) {
+            Ok(value) => value,
+            Err(response) => return response,
         }
+    };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
     }
     let shell = match resolve_shell_snapshot(snapshot, reference) {
         Ok(shell) => shell,
@@ -67,6 +81,7 @@ pub(super) fn handle_service_attach_route(
             "interaction": {
                 "kind": "attach",
                 "reference": reference,
+                "requested_client_id": requested_client_id,
             },
             "attachment": attachment,
             "attachment_text": attachment,
@@ -101,6 +116,15 @@ pub(super) fn handle_service_wait_route(
             "request body must be a JSON object",
         );
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let mut arguments = serde_json::Map::new();
     arguments.insert("jobId".to_string(), Value::String(shell.id.clone()));
     let timeout_ms = object
@@ -121,6 +145,7 @@ pub(super) fn handle_service_wait_route(
                 "kind": "wait",
                 "reference": reference,
                 "timeout_ms": timeout_ms,
+                "requested_client_id": requested_client_id,
             },
             "result": result,
             "result_text": result,
@@ -157,6 +182,15 @@ pub(super) fn handle_service_run_route(
     if recipe.trim().is_empty() {
         return json_error_response(400, "validation_error", "recipe must not be empty");
     }
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let mut arguments = serde_json::Map::new();
     arguments.insert("jobId".to_string(), Value::String(shell.id.clone()));
     arguments.insert(
@@ -181,6 +215,7 @@ pub(super) fn handle_service_run_route(
             "interaction": {
                 "kind": "run",
                 "reference": reference,
+                "requested_client_id": requested_client_id,
             },
             "recipe": {
                 "name": recipe.trim(),
@@ -204,6 +239,15 @@ pub(super) fn handle_service_update_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let Some(object) = body.as_object_mut() else {
         return json_error_response(
             400,
@@ -227,6 +271,15 @@ pub(super) fn handle_dependency_update_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let Some(object) = body.as_object_mut() else {
         return json_error_response(
             400,
@@ -258,6 +311,15 @@ pub(super) fn handle_service_provide_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let Some(object) = body.as_object_mut() else {
         return json_error_response(
             400,
@@ -287,6 +349,15 @@ pub(super) fn handle_service_depend_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let Some(object) = body.as_object_mut() else {
         return json_error_response(
             400,
@@ -316,6 +387,15 @@ pub(super) fn handle_service_contract_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let Some(object) = body.as_object_mut() else {
         return json_error_response(
             400,
@@ -354,6 +434,15 @@ pub(super) fn handle_service_relabel_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let Some(object) = body.as_object_mut() else {
         return json_error_response(
             400,

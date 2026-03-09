@@ -735,6 +735,12 @@ That semantic event-stream milestone is now partially landed:
 - turn control is available in both global and session-scoped route forms, so a
   connector can remain inside one `/api/v1/session/{session_id}` namespace once
   attached
+- mutating local-API routes now honor the active attachment lease:
+  - turn start / interrupt
+  - shell start / send / terminate
+  - service provide / depend / contract / relabel
+  - service attach / wait / run
+  - anonymous or mismatched `client_id` calls now receive `409 attachment_conflict`
 
 The next concrete code step is now connector-facing API coverage above the
 implemented session, transcript, orchestration, shell, and service surface, not

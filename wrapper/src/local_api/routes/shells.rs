@@ -7,9 +7,11 @@ use crate::local_api::control::enqueue_command;
 use crate::local_api::server::HttpRequest;
 use crate::local_api::snapshot::LocalApiSnapshot;
 
+use super::enforce_attachment_lease_ownership;
 use super::json_error_response;
 use super::json_ok_response;
 use super::json_request_body;
+use super::parse_optional_client_id;
 use super::resolve_shell_snapshot;
 
 pub(super) fn handle_shells_route(
@@ -31,6 +33,15 @@ pub(super) fn handle_shell_start_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     let interaction_arguments = body.clone();
     let Some(object) = body.as_object() else {
         return json_error_response(
@@ -61,6 +72,7 @@ pub(super) fn handle_shell_start_route(
             "kind": "shell.start",
             "queued": true,
             "arguments": interaction_arguments,
+            "requested_client_id": requested_client_id,
         },
         "accepted": true,
         "queued": true,
@@ -111,6 +123,15 @@ pub(super) fn handle_shell_send_route(
     let Some(text) = object.get("text").and_then(Value::as_str) else {
         return json_error_response(400, "validation_error", "missing text");
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     if let Err(err) = enqueue_command(
         command_queue,
         LocalApiCommand::SendShellInput {
@@ -137,6 +158,7 @@ pub(super) fn handle_shell_send_route(
             "shell_ref": reference,
             "text": text,
             "append_newline": object.get("appendNewline").cloned().unwrap_or_else(|| Value::Bool(true)),
+            "requested_client_id": requested_client_id,
         },
         "accepted": true,
         "queued": true,
@@ -151,15 +173,27 @@ pub(super) fn handle_shell_terminate_route(
     command_queue: &SharedCommandQueue,
     reference: &str,
 ) -> crate::local_api::server::HttpResponse {
-    if !request.body.is_empty() {
-        if let Err(response) = json_request_body(request) {
-            return response;
+    let body = if request.body.is_empty() {
+        json!({})
+    } else {
+        match json_request_body(request) {
+            Ok(value) => value,
+            Err(response) => return response,
         }
-    }
+    };
     let shell = match resolve_shell_snapshot(snapshot, reference) {
         Ok(shell) => shell,
         Err((code, message)) => return json_error_response(404, code, message),
     };
+    let requested_client_id = match parse_optional_client_id(&body) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(response) =
+        enforce_attachment_lease_ownership(snapshot, requested_client_id.as_deref())
+    {
+        return response;
+    }
     if let Err(err) = enqueue_command(
         command_queue,
         LocalApiCommand::TerminateShell {
@@ -180,6 +214,7 @@ pub(super) fn handle_shell_terminate_route(
             "kind": "shell.terminate",
             "queued": true,
             "shell_ref": reference,
+            "requested_client_id": requested_client_id,
         },
         "accepted": true,
         "queued": true,
