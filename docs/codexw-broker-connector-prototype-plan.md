@@ -5,6 +5,19 @@ This document turns the connector mapping design into a concrete prototype plan.
 The goal is not full production broker support. The goal is to validate that a
 thin connector can expose `codexw` remotely without distorting the local API.
 
+The repo now also includes a small broker-style client fixture:
+
+- [scripts/codexw_broker_client.py](../scripts/codexw_broker_client.py)
+
+That fixture is not part of the connector itself. It exists to prove that the
+connector is consumable as a remote-control layer by something outside the test
+harness.
+
+It is also covered by a process-level smoke path, so the repo now verifies both:
+
+- the connector as a broker-style route adapter
+- the minimal client shape that consumes those aliases
+
 ## Objective
 
 Prototype a connector that:
@@ -196,6 +209,16 @@ Current automated coverage now includes a real process-level smoke path:
     - inspect focused capability detail
     - reconnect the event stream with `Last-Event-ID`
     - observe the resumed capability-state event after mutation
+  - a realistic broker-style leased focused-detail workflow:
+    - create leased session
+    - consume initial event stream
+    - attempt focused mutation from another client and observe
+      `attachment_conflict`
+    - renew the lease as the owning client
+    - apply the focused mutation as the owner
+    - inspect focused service and capability detail
+    - reconnect the event stream with `Last-Event-ID`
+    - observe the resumed capability-state event after mutation
   - a realistic broker-style conflict workflow:
     - create session with an active lease
     - attempt turn/service mutation from another client identity
@@ -219,6 +242,7 @@ The prototype should produce:
 - one event passthrough example log
 - a list of unsupported broker surfaces
 - a list of adapter-only `codexw` extensions
+- one small reusable broker-style client fixture outside the test suite
 
 ## Current Prototype Status
 

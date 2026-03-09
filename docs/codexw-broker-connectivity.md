@@ -149,6 +149,7 @@ documents:
 - [codexw-broker-session-identity.md](codexw-broker-session-identity.md)
 - [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
 - [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
+- [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 
 The current implementation is now past pure route sketches:
 
@@ -157,6 +158,11 @@ The current implementation is now past pure route sketches:
   first-pass broker-style alias surface for session, turn, transcript,
   orchestration, event, shell, service, and capability flows, including
   focused service-detail and capability-detail inspection routes
+- the repo also includes a small broker-style client fixture script that drives
+  the connector outside the test suite for manual and prototype remote-control
+  flows
+- that fixture is also exercised by a process-level connector smoke test, so it
+  is no longer just a convenience script but a verified consumer-side artifact
 - the broker-style alias surface now also includes attachment lease lifecycle
   routes for renew/release, so remote clients do not need raw `/proxy/...`
   access for normal lease management

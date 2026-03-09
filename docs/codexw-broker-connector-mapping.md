@@ -216,3 +216,16 @@ The first connector prototype should ship with a small compatibility table:
 | orchestration/service extensions | `codexw`-specific routes | connector-extension |
 
 That table should be kept concrete and testable.
+
+The current repo now also includes a minimal consumer-side artifact for this
+mapping:
+
+- [scripts/codexw_broker_client.py](../scripts/codexw_broker_client.py)
+
+That script intentionally exercises the broker-facing aliases, not the raw
+local API, so it serves as the simplest non-test proof that the mapping is
+usable by a real remote client shape.
+
+The repo now also has a process-level smoke path that invokes this fixture
+against the real connector binary, so the consumer-side mapping is verified as
+well as documented.
