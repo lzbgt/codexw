@@ -1,4 +1,5 @@
 use super::super::super::*;
+use serde_json::Value;
 
 #[test]
 fn new_thread_requests_advertise_client_dynamic_tools() {
