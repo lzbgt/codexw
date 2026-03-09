@@ -642,7 +642,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/input_test_build_mentions.rs`
   Catalog-driven mention construction regression tests.
 - `wrapper/src/main_test_session_render.rs`
-  Tool-user-input, reasoning, terminal-interaction, and realtime-item rendering regression tests.
+  Session-render regression namespace root.
+- `wrapper/src/main_test_session_render/planning.rs`
+  Planning, tool-user-input, MCP elicitation, and reasoning-summary regression namespace root.
+- `wrapper/src/main_test_session_render/runtime.rs`
+  Terminal-interaction and realtime-item rendering regression tests.
 - `wrapper/src/main_test_session_collaboration.rs`
   Collaboration preset extraction, rendering, and prompt-status regression tests.
 - `wrapper/src/main_test_session_model_catalog.rs`
@@ -951,7 +955,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/transcript_plan_render/reasoning.rs`
   Plan formatting and reasoning summary rendering helpers.
 - `wrapper/src/transcript_plan_render/responses.rs`
-  Structured tool-user-input and MCP elicitation response helpers.
+  Structured tool-response namespace root.
+- `wrapper/src/transcript_plan_render/responses/tool_input.rs`
+  Tool-user-input auto-answer construction helpers.
+- `wrapper/src/transcript_plan_render/responses/mcp.rs`
+  MCP elicitation response and schema-fallback helpers.
 - `wrapper/src/session_prompt_status_active.rs`
   Prompt-status rendering for active command, turn, and realtime states plus shared spinner/elapsed helpers.
 - `wrapper/src/session_prompt_status_ready.rs`
