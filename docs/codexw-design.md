@@ -690,7 +690,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_status_ps_services.rs`
   `/ps` service-mutation/runtime test namespace root.
 - `wrapper/src/main_test_session_status_ps_services/mutations.rs`
-  `/ps` service capability, label, and dependency mutation regression tests.
+  `/ps` service capability, label, and dependency mutation regression namespace root.
+- `wrapper/src/main_test_session_status_ps_services/mutations/service.rs`
+  `/ps` reusable-service metadata mutation regression namespace root.
+- `wrapper/src/main_test_session_status_ps_services/mutations/service/capabilities.rs`
+  `/ps` reusable-service capability reassignment regression tests.
+- `wrapper/src/main_test_session_status_ps_services/mutations/service/labels.rs`
+  `/ps` reusable-service relabel regression tests.
 - `wrapper/src/main_test_session_status_ps_services/contract.rs`
   `/ps` service contract metadata mutation regression tests.
 - `wrapper/src/main_test_session_status_ps_recipes.rs`
@@ -1117,7 +1123,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/background_shells/tests/services/updates/mutations.rs`
   Reusable-service metadata/dependency mutation regression namespace root.
 - `wrapper/src/background_shells/tests/services/updates/mutations/service.rs`
-  Reusable-service metadata mutation regression tests.
+  Reusable-service metadata/contract cleanup regression namespace root.
+- `wrapper/src/background_shells/tests/services/updates/mutations/service/metadata.rs`
+  Reusable-service capability and label mutation regression tests.
+- `wrapper/src/background_shells/tests/services/updates/mutations/service/contract.rs`
+  Reusable-service live contract update regression tests.
+- `wrapper/src/background_shells/tests/services/updates/mutations/service/cleanup.rs`
+  Reusable-service capability-scoped termination regression tests.
 - `wrapper/src/background_shells/tests/services/updates/mutations/dependencies.rs`
   Reusable-service dependency-retarget and capability-scoped termination regression tests.
 - `wrapper/src/background_shells/tests/services/updates/readiness.rs`
@@ -1337,7 +1349,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_command_session_ps/control/interact/services.rs`
   `:ps` service interaction handlers such as attach, wait, and run.
 - `wrapper/src/dispatch_command_session_ps/control/services.rs`
-  `:ps` reusable-service mutation handlers such as provide, depend, contract, and relabel.
+  `:ps` reusable-service mutation handler namespace root.
+- `wrapper/src/dispatch_command_session_ps/control/services/metadata.rs`
+  `:ps` reusable-service metadata and contract mutation handlers such as provide, contract, and relabel.
+- `wrapper/src/dispatch_command_session_ps/control/services/dependencies.rs`
+  `:ps` dependency-capability retarget handlers such as depend/requires.
 - `wrapper/src/dispatch_command_session_ps/views.rs`
   Read-only `:ps` worker, blocker, dependency, service, capability, guidance, and action views.
 - `wrapper/src/dispatch_command_session_meta.rs`
