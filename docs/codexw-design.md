@@ -664,7 +664,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_status/runtime/status.rs`
   Generic status-runtime, notification-completion, background-terminal, and prompt-status regression tests.
 - `wrapper/src/main_test_session_status/runtime/orchestration.rs`
-  Status snapshot/orchestration breakdown and collab-wait regression tests.
+  Status snapshot/orchestration regression namespace root.
+- `wrapper/src/main_test_session_status/runtime/orchestration/background.rs`
+  Status snapshot and background/orchestration breakdown regression tests.
+- `wrapper/src/main_test_session_status/runtime/orchestration/collab.rs`
+  Collab wait and live-agent task regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration.rs`
   `/ps` orchestration parser test namespace root.
 - `wrapper/src/main_test_session_status_ps_orchestration/parsers.rs`
@@ -1116,6 +1120,12 @@ The biggest known limits are architectural, not accidental.
   Generic background-shell lifecycle, polling, and intent/status regression tests.
 - `wrapper/src/background_shells/tests/jobs/refs.rs`
   Generic background-shell alias and job-reference regression tests.
+- `wrapper/src/background_terminals.rs`
+  Server-observed background terminal namespace root.
+- `wrapper/src/background_terminals/tracking.rs`
+  Server-observed background terminal tracking helpers.
+- `wrapper/src/background_terminals/render.rs`
+  Server-observed background terminal rendering and count helpers.
 - `wrapper/src/background_shells/tests/services.rs`
   Reusable-service regression test namespace for service updates and service/capability views.
 - `wrapper/src/background_shells/tests/services/updates.rs`
