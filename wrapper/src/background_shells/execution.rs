@@ -6,5 +6,6 @@ mod manage;
 mod runtime;
 
 pub(crate) use self::runtime::parse_background_shell_optional_string;
+pub(crate) use self::runtime::parse_background_shell_timeout_ms;
 pub(crate) use self::runtime::terminate_jobs;
 pub(crate) use self::runtime::validate_service_capability;

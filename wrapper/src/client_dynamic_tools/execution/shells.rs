@@ -3,6 +3,11 @@ use serde_json::Value;
 use crate::background_shells::BackgroundShellOrigin;
 use crate::state::AppState;
 
+#[path = "shells/jobs.rs"]
+mod jobs;
+#[path = "shells/services.rs"]
+mod services;
+
 pub(crate) fn execute_background_shell_tool(
     tool: &str,
     params: &Value,
@@ -11,63 +16,30 @@ pub(crate) fn execute_background_shell_tool(
     state: &AppState,
 ) -> Result<String, String> {
     match tool {
-        "background_shell_start" => state
-            .orchestration
-            .background_shells
-            .start_from_tool_with_context(arguments, resolved_cwd, dynamic_tool_origin(params)),
-        "background_shell_poll" => state
-            .orchestration
-            .background_shells
-            .poll_from_tool(arguments),
-        "background_shell_send" => state
-            .orchestration
-            .background_shells
-            .send_input_from_tool(arguments),
-        "background_shell_set_alias" => state
-            .orchestration
-            .background_shells
-            .update_alias_from_tool(arguments),
-        "background_shell_list_capabilities" => state
-            .orchestration
-            .background_shells
-            .list_capabilities_from_tool(arguments),
-        "background_shell_list_services" => state
-            .orchestration
-            .background_shells
-            .list_services_from_tool(arguments),
-        "background_shell_update_service" => state
-            .orchestration
-            .background_shells
-            .update_service_from_tool(arguments),
-        "background_shell_update_dependencies" => state
-            .orchestration
-            .background_shells
-            .update_dependencies_from_tool(arguments),
-        "background_shell_inspect_capability" => state
-            .orchestration
-            .background_shells
-            .inspect_capability_from_tool(arguments),
-        "background_shell_attach" => state
-            .orchestration
-            .background_shells
-            .attach_from_tool(arguments),
-        "background_shell_wait_ready" => state
-            .orchestration
-            .background_shells
-            .wait_ready_from_tool(arguments),
-        "background_shell_invoke_recipe" => state
-            .orchestration
-            .background_shells
-            .invoke_recipe_from_tool(arguments),
-        "background_shell_list" => Ok(state.orchestration.background_shells.list_from_tool()),
-        "background_shell_terminate" => state
-            .orchestration
-            .background_shells
-            .terminate_from_tool(arguments),
-        "background_shell_clean" => state
-            .orchestration
-            .background_shells
-            .clean_from_tool(arguments),
+        "background_shell_start"
+        | "background_shell_list"
+        | "background_shell_poll"
+        | "background_shell_send"
+        | "background_shell_set_alias"
+        | "background_shell_terminate"
+        | "background_shell_clean" => jobs::execute_background_shell_job_tool(
+            tool,
+            params,
+            arguments,
+            resolved_cwd,
+            state,
+            dynamic_tool_origin(params),
+        ),
+        "background_shell_list_capabilities"
+        | "background_shell_list_services"
+        | "background_shell_update_service"
+        | "background_shell_update_dependencies"
+        | "background_shell_inspect_capability"
+        | "background_shell_attach"
+        | "background_shell_wait_ready"
+        | "background_shell_invoke_recipe" => {
+            services::execute_background_shell_service_tool(tool, arguments, state)
+        }
         _ => Err(format!("unsupported client dynamic tool `{tool}`")),
     }
 }

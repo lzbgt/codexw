@@ -792,7 +792,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools/execution/orchestration.rs`
   Orchestration dynamic-tool status, worker, action, and dependency dispatch plus argument parsing.
 - `wrapper/src/client_dynamic_tools/execution/shells.rs`
-  Background-shell dynamic-tool dispatch and request-origin extraction.
+  Background-shell dynamic-tool execution namespace root plus request-origin extraction.
+- `wrapper/src/client_dynamic_tools/execution/shells/jobs.rs`
+  Background-shell job-tool dispatch for start, list, poll, send, alias, terminate, and cleanup flows.
+- `wrapper/src/client_dynamic_tools/execution/shells/services.rs`
+  Background-shell service-tool dispatch for capability, service, readiness, attachment, and recipe flows.
 - `wrapper/src/client_dynamic_tools_tests_shells/management.rs`
   Background-shell dynamic-tool management test namespace.
 - `wrapper/src/client_dynamic_tools_tests_shells/management/lifecycle.rs`
@@ -802,7 +806,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_shells/management/lifecycle/cleanup.rs`
   Background-shell dynamic-tool cleanup regression tests.
 - `wrapper/src/client_dynamic_tools_tests_shells/management/aliases.rs`
-  Background-shell dynamic-tool alias assignment, alias-target send, and alias-validation regression tests.
+  Background-shell dynamic-tool alias/send regression namespace root.
+- `wrapper/src/client_dynamic_tools_tests_shells/management/aliases/alias.rs`
+  Background-shell dynamic-tool alias assignment, clearing, and validation regression tests.
+- `wrapper/src/client_dynamic_tools_tests_shells/management/aliases/send.rs`
+  Background-shell dynamic-tool alias-target send and follow-up poll regression tests.
 - `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls.rs`
   Background-shell service-control dynamic-tool test namespace.
 - `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates.rs`
@@ -1151,7 +1159,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/background_shells/execution/interact.rs`
   Background-shell interaction helper namespace root.
 - `wrapper/src/background_shells/execution/interact/tools.rs`
-  Background-shell tool-facing poll, send, attach, capability inspection, readiness wait, and recipe invocation helpers.
+  Background-shell tool-facing interaction namespace root.
+- `wrapper/src/background_shells/execution/interact/tools/jobs.rs`
+  Background-shell tool-facing poll and send helpers plus structured job snapshot rendering.
+- `wrapper/src/background_shells/execution/interact/tools/services.rs`
+  Background-shell tool-facing capability inspection, service attachment, readiness wait, and recipe invocation helpers.
 - `wrapper/src/background_shells/execution/interact/operator.rs`
   Background-shell operator-facing poll, send, attach, readiness wait, and recipe invocation wrappers.
 - `wrapper/src/background_shells/execution/runtime.rs`
