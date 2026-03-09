@@ -36,7 +36,7 @@ impl Drop for ChildGuard {
 struct ParsedRequest {
     method: String,
     path: String,
-    headers: HashMap<String, String>,
+    _headers: HashMap<String, String>,
     body: Vec<u8>,
 }
 
@@ -658,6 +658,330 @@ fn connector_broker_style_workflow_covers_turn_transcript_and_orchestration() ->
     Ok(())
 }
 
+#[test]
+fn connector_broker_style_workflow_covers_shell_and_service_control() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..7 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/new");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse create body")?;
+                    assert_eq!(body["thread_id"], "thread_1");
+                    assert_eq!(body["client_id"], "remote-web");
+                    assert_eq!(body["lease_seconds"], 45);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_1",
+                                "thread_id": "thread_1",
+                                "attachment": {
+                                    "client_id": "remote-web",
+                                    "lease_seconds": 45
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/shells/start");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse shell start body")?;
+                    assert_eq!(body["command"], "sleep 5");
+                    assert_eq!(body["intent"], "observation");
+                    assert_eq!(body["client_id"], "remote-web");
+                    assert_eq!(body["lease_seconds"], 45);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "job": {
+                                "job_id": "bg-1",
+                                "intent": "observation"
+                            },
+                            "interaction": {
+                                "operation": "start"
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/services");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "services": [
+                                {
+                                    "job_id": "dev.api",
+                                    "label": "API",
+                                    "ready_state": "ready"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                3 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_1/services/dev.api/attach"
+                    );
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse attach body")?;
+                    assert_eq!(body["client_id"], "remote-web");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "service": {
+                                "job_id": "dev.api",
+                                "label": "API"
+                            },
+                            "interaction": {
+                                "operation": "attach"
+                            },
+                            "attachment": "curl http://127.0.0.1:8080/health"
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                4 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/services/dev.api/wait");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse wait body")?;
+                    assert_eq!(body["client_id"], "remote-web");
+                    assert_eq!(body["timeout_ms"], 5000);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "service": {
+                                "job_id": "dev.api",
+                                "ready_state": "ready"
+                            },
+                            "interaction": {
+                                "operation": "wait"
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                5 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/services/dev.api/run");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse run body")?;
+                    assert_eq!(body["client_id"], "remote-web");
+                    assert_eq!(body["recipe"], "health");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "service": {
+                                "job_id": "dev.api",
+                                "label": "API"
+                            },
+                            "interaction": {
+                                "operation": "run"
+                            },
+                            "recipe": {
+                                "name": "health"
+                            },
+                            "result": "healthy"
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                6 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/capabilities");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "capabilities": [
+                                {
+                                    "capability": "@api.http",
+                                    "status": "healthy",
+                                    "providers": ["dev.api"]
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let _connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(connector_port)?;
+
+    let create_body = "{\"thread_id\":\"thread_1\"}";
+    let create_request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-web\r\n",
+            "X-Codexw-Lease-Seconds: 45\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        create_body.len(),
+        create_body
+    );
+    let create_response = send_raw_request(connector_port, &create_request)?;
+    assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(create_response.contains("\"session_id\":\"sess_1\""));
+
+    let shell_body = "{\"command\":\"sleep 5\",\"intent\":\"observation\"}";
+    let shell_request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/shells HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-web\r\n",
+            "X-Codexw-Lease-Seconds: 45\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        shell_body.len(),
+        shell_body
+    );
+    let shell_response = send_raw_request(connector_port, &shell_request)?;
+    assert!(shell_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(shell_response.contains("\"job_id\":\"bg-1\""));
+
+    let services_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/sessions/sess_1/services HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(services_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(services_response.contains("\"job_id\":\"dev.api\""));
+
+    let attach_body = "{}";
+    let attach_request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/services/dev.api/attach HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-web\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        attach_body.len(),
+        attach_body
+    );
+    let attach_response = send_raw_request(connector_port, &attach_request)?;
+    assert!(attach_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(attach_response.contains("curl http://127.0.0.1:8080/health"));
+
+    let wait_body = "{\"timeout_ms\":5000}";
+    let wait_request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/services/dev.api/wait HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-web\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        wait_body.len(),
+        wait_body
+    );
+    let wait_response = send_raw_request(connector_port, &wait_request)?;
+    assert!(wait_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(wait_response.contains("\"ready_state\":\"ready\""));
+
+    let run_body = "{\"recipe\":\"health\"}";
+    let run_request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/services/dev.api/run HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-web\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        run_body.len(),
+        run_body
+    );
+    let run_response = send_raw_request(connector_port, &run_request)?;
+    assert!(run_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(run_response.contains("\"name\":\"health\""));
+    assert!(run_response.contains("\"result\":\"healthy\""));
+
+    let capabilities_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/sessions/sess_1/capabilities HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(capabilities_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(capabilities_response.contains("\"capability\":\"@api.http\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
 fn spawn_connector(port: u16, local_api_port: u16) -> Result<ChildGuard> {
     let binary = connector_binary()?;
     let child = Command::new(binary)
@@ -798,7 +1122,7 @@ fn read_http_request(stream: &mut TcpStream) -> Result<ParsedRequest> {
     Ok(ParsedRequest {
         method,
         path,
-        headers,
+        _headers: headers,
         body,
     })
 }
