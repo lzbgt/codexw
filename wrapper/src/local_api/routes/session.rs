@@ -7,9 +7,11 @@ use crate::local_api::control::enqueue_command;
 use crate::local_api::server::HttpRequest;
 use crate::local_api::snapshot::LocalApiSnapshot;
 
+use super::attachment_summary;
 use super::json_error_response;
 use super::json_ok_response;
 use super::json_request_body;
+use super::session_summary;
 
 pub(super) fn handle_session_new_route(
     snapshot: &LocalApiSnapshot,
@@ -29,6 +31,13 @@ pub(super) fn handle_session_new_route(
     }
     json_ok_response(json!({
         "ok": true,
+        "session": session_summary(snapshot),
+        "attachment": attachment_summary(snapshot),
+        "operation": {
+            "kind": "session.new",
+            "queued": true,
+            "requested_action": "start_thread",
+        },
         "accepted": true,
         "queued": true,
         "session_id": snapshot.session_id,
@@ -74,6 +83,14 @@ pub(super) fn handle_session_attach_route(
     }
     json_ok_response(json!({
         "ok": true,
+        "session": session_summary(snapshot),
+        "attachment": attachment_summary(snapshot),
+        "operation": {
+            "kind": "session.attach",
+            "queued": true,
+            "requested_action": "attach_thread",
+            "target_thread_id": thread_id,
+        },
         "accepted": true,
         "queued": true,
         "session_id": snapshot.session_id,

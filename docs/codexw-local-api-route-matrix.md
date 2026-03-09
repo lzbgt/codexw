@@ -33,9 +33,11 @@ that `codexw` can be controlled remotely without scraping terminal output:
 | `GET /healthz` | 1 | none | `local_api/routes.rs`, `local_api/server.rs` | basic route smoke test |
 | `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
 | `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues resume of an existing thread id |
-| `GET /api/v1/session/{session_id}` | 2 | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `local_api/routes/session.rs` | summary payload is stable and session-scoped |
+| `GET /api/v1/session/{session_id}` | 2 | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `local_api/routes/session.rs` | Implemented. Returns structured `session` + explicit process-scoped `attachment` metadata while preserving compatibility summary fields |
 | `POST /api/v1/turn/start` | 2 | `dispatch_submit_turns.rs`, `input/*`, `requests/turn_start.rs` | `local_api/routes/turn.rs` | prompt text becomes a real turn request |
 | `POST /api/v1/turn/interrupt` | 2 | `dispatch_command_thread_control.rs`, `requests/turn_control.rs`, `app_input_interrupt.rs` | `local_api/routes/turn.rs` | active turn is interrupted through the same control path |
+| `POST /api/v1/session/{session_id}/turn/start` | 2 | `dispatch_submit_turns.rs`, `input/*`, `requests/turn_start.rs` | `local_api/routes/turn.rs` | Implemented. Session-scoped alias over turn start avoids redundant session ids in connector clients |
+| `POST /api/v1/session/{session_id}/turn/interrupt` | 2 | `dispatch_command_thread_control.rs`, `requests/turn_control.rs`, `app_input_interrupt.rs` | `local_api/routes/turn.rs` | Implemented. Session-scoped alias over turn interrupt preserves the same runtime control path |
 | `GET /api/v1/session/{session_id}/transcript` | 3 | transcript state + `transcript_*` summaries | `local_api/routes/transcript.rs` | bounded semantic snapshot without ANSI |
 | `GET /api/v1/session/{session_id}/events` | 3 | runtime mutations across `events/*`, `notification_*`, `background_shells/*`, `orchestration_registry/*` | `local_api/events.rs`, `local_api/routes.rs`, `local_api/server.rs` | Implemented. SSE stream emits semantic envelopes, supports `Last-Event-ID` replay, and survives idle time with heartbeats |
 | `GET /api/v1/session/{session_id}/orchestration/status` | 4 | `orchestration_view/summary/*` | `local_api/routes/orchestration.rs` | compact orchestration summary matches local status view semantics |
@@ -108,6 +110,15 @@ Every route family currently shares:
 - one thread/session identity model
 - one auth gate abstraction in `local_api/routes.rs`
 - one job-ref parser policy
+
+Connector-facing consistency already depends on two explicit choices that are
+now implemented:
+
+- session snapshots expose a process-scoped `attachment` object instead of
+  leaving attachment semantics implicit
+- turn control is available in both global and session-scoped forms so clients
+  can choose between low-level compatibility and a cleaner session-rooted
+  namespace
 
 Do not duplicate route-specific versions of:
 

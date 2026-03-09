@@ -7,6 +7,8 @@ use serde_json::Value;
 use serde_json::json;
 
 use super::LocalApiSnapshot;
+use super::routes::attachment_summary;
+use super::routes::session_summary;
 
 const MAX_STORED_EVENTS: usize = 512;
 
@@ -131,6 +133,8 @@ fn push_event(log: &SharedEventLog, session_id: &str, event: &str, data: Value) 
 
 fn session_event_payload(snapshot: &LocalApiSnapshot) -> Value {
     json!({
+        "session": session_summary(snapshot),
+        "attachment": attachment_summary(snapshot),
         "session_id": snapshot.session_id,
         "cwd": snapshot.cwd,
         "thread_id": snapshot.thread_id,

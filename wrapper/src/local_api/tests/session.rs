@@ -47,6 +47,10 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(response.status, 200);
     let body = json_body(&response.body);
     assert_eq!(body["session_id"], "sess_test");
+    assert_eq!(body["session"]["id"], "sess_test");
+    assert_eq!(body["session"]["scope"], "process");
+    assert_eq!(body["session"]["attachment"]["id"], "attach:sess_test");
+    assert_eq!(body["session"]["attached_thread_id"], "thread_123");
     assert_eq!(body["thread_id"], "thread_123");
     assert_eq!(body["working"], Value::Bool(true));
     assert_eq!(body["orchestration"]["main_agent_state"], "blocked");
@@ -63,6 +67,8 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(response.status, 200);
     let body = json_body(&response.body);
     assert_eq!(body["session_id"], "sess_test");
+    assert_eq!(body["session"]["active_turn_id"], "turn_456");
+    assert_eq!(body["session"]["attachment"]["scope"], "process");
     assert_eq!(body["active_turn_id"], "turn_456");
 }
 
@@ -93,7 +99,10 @@ fn session_new_enqueues_fresh_thread_start() {
     assert_eq!(response.status, 200);
     let body = json_body(&response.body);
     assert_eq!(body["session_id"], "sess_test");
+    assert_eq!(body["session"]["scope"], "process");
+    assert_eq!(body["attachment"]["id"], "attach:sess_test");
     assert_eq!(body["process_scoped"], Value::Bool(true));
+    assert_eq!(body["operation"]["kind"], "session.new");
     assert_eq!(body["requested_action"], "start_thread");
     let queued = queue.lock().expect("queue");
     assert_eq!(
@@ -121,6 +130,14 @@ fn session_attach_enqueues_thread_resume() {
     );
     assert_eq!(response.status, 200);
     let body = json_body(&response.body);
+    assert_eq!(body["session"]["id"], "sess_test");
+    assert_eq!(body["session"]["scope"], "process");
+    assert_eq!(body["attachment"]["attached_thread_id"], "thread_123");
+    assert_eq!(body["operation"]["kind"], "session.attach");
+    assert_eq!(
+        body["operation"]["target_thread_id"],
+        "thread_resume_target"
+    );
     assert_eq!(body["target_thread_id"], "thread_resume_target");
     assert_eq!(body["requested_action"], "attach_thread");
     let queued = queue.lock().expect("queue");

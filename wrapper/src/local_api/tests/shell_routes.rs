@@ -18,6 +18,10 @@ fn shell_start_route_enqueues_local_api_command() {
         None,
     );
     assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["interaction"]["kind"], "shell.start");
+    assert_eq!(body["interaction"]["queued"], true);
+    assert_eq!(body["interaction"]["arguments"]["command"], "echo hi");
     let queued = queue.lock().expect("queue");
     assert_eq!(
         queued.front(),
@@ -41,6 +45,8 @@ fn shell_poll_route_returns_selected_shell_snapshot() {
     );
     assert_eq!(response.status, 200);
     let body = json_body(&response.body);
+    assert_eq!(body["interaction"]["kind"], "shell.poll");
+    assert_eq!(body["interaction"]["shell_ref"], "bg-1");
     assert_eq!(body["shell"]["id"], "bg-1");
 }
 
@@ -57,6 +63,12 @@ fn shell_send_route_enqueues_local_api_command() {
         None,
     );
     assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["shell"]["id"], "bg-1");
+    assert_eq!(body["interaction"]["kind"], "shell.send");
+    assert_eq!(body["interaction"]["shell_ref"], "bg-1");
+    assert_eq!(body["interaction"]["text"], "status");
+    assert_eq!(body["interaction"]["append_newline"], true);
     let queued = queue.lock().expect("queue");
     assert_eq!(
         queued.front(),
@@ -84,6 +96,10 @@ fn shell_terminate_route_enqueues_local_api_command() {
         None,
     );
     assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["shell"]["id"], "bg-1");
+    assert_eq!(body["interaction"]["kind"], "shell.terminate");
+    assert_eq!(body["interaction"]["shell_ref"], "bg-1");
     let queued = queue.lock().expect("queue");
     assert_eq!(
         queued.front(),

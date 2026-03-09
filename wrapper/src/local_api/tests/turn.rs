@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 use super::LocalApiCommand;
-use super::get_request;
 use super::json_body;
 use super::new_command_queue;
 use super::post_json_request;
@@ -30,6 +29,34 @@ fn turn_start_enqueues_local_api_command() {
         json_body(&response.body)["accepted"],
         serde_json::Value::Bool(true)
     );
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::StartTurn {
+            session_id: "sess_test".to_string(),
+            prompt: "review this diff".to_string(),
+        })
+    );
+}
+
+#[test]
+fn session_scoped_turn_start_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/turn/start",
+            serde_json::json!({
+                "input": { "text": "review this diff" }
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["session"]["id"], "sess_test");
+    assert_eq!(body["operation"]["kind"], "turn.start");
     let queued = queue.lock().expect("queue");
     assert_eq!(
         queued.front(),
@@ -78,6 +105,31 @@ fn turn_interrupt_enqueues_local_api_command() {
         None,
     );
     assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::InterruptTurn {
+            session_id: "sess_test".to_string(),
+        })
+    );
+}
+
+#[test]
+fn session_scoped_turn_interrupt_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/turn/interrupt",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["session"]["id"], "sess_test");
+    assert_eq!(body["operation"]["kind"], "turn.interrupt");
     let queued = queue.lock().expect("queue");
     assert_eq!(
         queued.front(),

@@ -6,12 +6,9 @@ use std::time::Duration;
 use crate::background_shells::BackgroundShellManager;
 
 use super::events_since;
-use super::get_request;
-use super::json_body;
 use super::new_command_queue;
 use super::new_event_log;
 use super::publish_snapshot_change_events;
-use super::route_request;
 use super::sample_snapshot;
 use super::start_local_api;
 
@@ -25,6 +22,11 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     let events = events_since(&log, "sess_test", None);
     assert_eq!(events.len(), 6);
     assert_eq!(events[0].event, "session.updated");
+    assert_eq!(
+        events[0].data["session"]["attachment"]["id"],
+        "attach:sess_test"
+    );
+    assert_eq!(events[0].data["attachment"]["scope"], "process");
     assert_eq!(events[1].event, "turn.updated");
     assert_eq!(events[2].event, "orchestration.updated");
     assert_eq!(events[3].event, "workers.updated");

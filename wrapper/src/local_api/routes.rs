@@ -184,6 +184,10 @@ fn route_session_scoped_post(
     }
     let rest = parts.next().unwrap_or_default();
     match rest {
+        "turn/start" => turn::handle_turn_start_route_for_session(request, snapshot, command_queue),
+        "turn/interrupt" => {
+            turn::handle_turn_interrupt_route_for_session(request, snapshot, command_queue)
+        }
         "shells/start" => shells::handle_shell_start_route(request, snapshot, command_queue),
         "services/update" => {
             services::handle_service_update_route(request, snapshot, command_queue, session_id)
@@ -482,8 +486,10 @@ pub(super) fn current_shell_value(
 }
 
 pub(super) fn session_payload(snapshot: &LocalApiSnapshot) -> serde_json::Value {
+    let session = session_summary(snapshot);
     json!({
         "ok": true,
+        "session": session,
         "session_id": snapshot.session_id,
         "cwd": snapshot.cwd,
         "thread_id": snapshot.thread_id,
@@ -494,6 +500,33 @@ pub(super) fn session_payload(snapshot: &LocalApiSnapshot) -> serde_json::Value 
         "completed_turn_count": snapshot.completed_turn_count,
         "active_personality": snapshot.active_personality,
         "orchestration": snapshot.orchestration_status,
+        "transcript_length": snapshot.transcript.len(),
+    })
+}
+
+pub(super) fn attachment_summary(snapshot: &LocalApiSnapshot) -> serde_json::Value {
+    json!({
+        "id": format!("attach:{}", snapshot.session_id),
+        "scope": "process",
+        "process_scoped": true,
+        "attached_thread_id": snapshot.thread_id,
+    })
+}
+
+pub(super) fn session_summary(snapshot: &LocalApiSnapshot) -> serde_json::Value {
+    json!({
+        "id": snapshot.session_id,
+        "scope": "process",
+        "process_scoped": true,
+        "attachment": attachment_summary(snapshot),
+        "cwd": snapshot.cwd,
+        "attached_thread_id": snapshot.thread_id,
+        "active_turn_id": snapshot.active_turn_id,
+        "objective": snapshot.objective,
+        "working": snapshot.turn_running,
+        "started_turn_count": snapshot.started_turn_count,
+        "completed_turn_count": snapshot.completed_turn_count,
+        "active_personality": snapshot.active_personality,
         "transcript_length": snapshot.transcript.len(),
     })
 }

@@ -134,11 +134,15 @@ Deliverables:
 - `GET /api/v1/session/{session_id}`
 - `POST /api/v1/turn/start`
 - `POST /api/v1/turn/interrupt`
+- `POST /api/v1/session/{session_id}/turn/start`
+- `POST /api/v1/session/{session_id}/turn/interrupt`
 
 Acceptance criteria:
 
 - API routes can drive the same underlying thread/session lifecycle as the TTY
 - responses include `session_id`, `thread_id`, and `turn_id` where relevant
+- session-bearing routes expose an explicit process-scoped `session` contract
+  instead of relying on clients to infer attachment semantics from prose
 
 Current landed behavior:
 
@@ -146,6 +150,12 @@ Current landed behavior:
   API session and start a fresh Codex thread”
 - `POST /api/v1/session/attach` now means “reuse the current process-scoped
   local API session and resume a specific existing thread id”
+- `GET /api/v1/session/{session_id}` now returns a structured `session` object
+  with nested process-scoped `attachment` metadata
+- `POST /api/v1/session/{session_id}/turn/start` and
+  `POST /api/v1/session/{session_id}/turn/interrupt` now exist as session-scoped
+  aliases over the same turn control path, so connector clients can stay within
+  a single session-rooted route namespace
 - both routes enqueue onto the same runtime request path used by local
   thread-switch handling rather than inventing a second session model
 
@@ -181,6 +191,8 @@ Current landed behavior:
   - `capabilities.updated`
 - the stream is sourced from semantic snapshot deltas, not ANSI terminal output
 - heartbeat comments keep the connection alive during quiet periods
+- `session.updated` now carries the same explicit `session` + `attachment`
+  structure returned by the session snapshot routes
 
 ### Phase 4: Orchestration And Shell Surfaces
 
@@ -230,8 +242,9 @@ Current status:
   - `recipe` metadata for `run`
   - legacy `attachment` / `result` text preserved as `attachment_text` /
     `result_text`
-- the next service-side gap is session creation/attach semantics, not service
-  route payload shape
+- the next connector-facing gap is richer attach/lease semantics above the
+  current explicit process-scoped session model, not service route payload
+  shape
 
 ## Candidate Code Ownership
 

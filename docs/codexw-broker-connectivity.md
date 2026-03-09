@@ -691,6 +691,8 @@ The local API spike has now started with a minimal loopback skeleton:
 - `GET /api/v1/session/{session_id}/transcript`
 - `POST /api/v1/turn/start`
 - `POST /api/v1/turn/interrupt`
+- `POST /api/v1/session/{session_id}/turn/start`
+- `POST /api/v1/session/{session_id}/turn/interrupt`
 - `GET /api/v1/session/{session_id}/orchestration/status`
 - `GET /api/v1/session/{session_id}/orchestration/dependencies`
 - `GET /api/v1/session/{session_id}/orchestration/workers`
@@ -720,8 +722,14 @@ That semantic event-stream milestone is now partially landed:
 - explicit process-scoped session lifecycle routes now exist:
   - `POST /api/v1/session/new`
   - `POST /api/v1/session/attach`
+- session snapshots and `session.updated` events now carry explicit
+  process-scoped `session` and `attachment` metadata
+- turn control is available in both global and session-scoped route forms, so a
+  connector can remain inside one `/api/v1/session/{session_id}` namespace once
+  attached
 
 The next concrete code step is now connector-facing API coverage above the
 implemented session, transcript, orchestration, shell, and service surface, not
 more route discovery. Structured service interaction payloads are already in
-place for `attach`, `wait`, and `run`.
+place for `attach`, `wait`, and `run`. The next gap is richer attach/lease
+semantics above the current process-scoped session contract.

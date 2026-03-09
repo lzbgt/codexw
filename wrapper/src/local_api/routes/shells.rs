@@ -31,6 +31,7 @@ pub(super) fn handle_shell_start_route(
         Ok(value) => value,
         Err(response) => return response,
     };
+    let interaction_arguments = body.clone();
     let Some(object) = body.as_object() else {
         return json_error_response(
             400,
@@ -56,6 +57,11 @@ pub(super) fn handle_shell_start_route(
     }
     json_ok_response(json!({
         "ok": true,
+        "interaction": {
+            "kind": "shell.start",
+            "queued": true,
+            "arguments": interaction_arguments,
+        },
         "accepted": true,
         "queued": true,
         "session_id": snapshot.session_id,
@@ -71,6 +77,10 @@ pub(super) fn handle_shell_poll_route(
         Ok(shell) => json_ok_response(json!({
             "ok": true,
             "session_id": snapshot.session_id,
+            "interaction": {
+                "kind": "shell.poll",
+                "shell_ref": reference,
+            },
             "shell": shell,
         })),
         Err((code, message)) => json_error_response(404, code, message),
@@ -120,6 +130,14 @@ pub(super) fn handle_shell_send_route(
     }
     json_ok_response(json!({
         "ok": true,
+        "shell": shell,
+        "interaction": {
+            "kind": "shell.send",
+            "queued": true,
+            "shell_ref": reference,
+            "text": text,
+            "append_newline": object.get("appendNewline").cloned().unwrap_or_else(|| Value::Bool(true)),
+        },
         "accepted": true,
         "queued": true,
         "session_id": snapshot.session_id,
@@ -157,6 +175,12 @@ pub(super) fn handle_shell_terminate_route(
     }
     json_ok_response(json!({
         "ok": true,
+        "shell": shell,
+        "interaction": {
+            "kind": "shell.terminate",
+            "queued": true,
+            "shell_ref": reference,
+        },
         "accepted": true,
         "queued": true,
         "session_id": snapshot.session_id,
