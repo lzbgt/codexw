@@ -231,10 +231,9 @@ Based on the repo as it exists now:
 That means the next meaningful work is:
 
 1. continue tightening the client/lease policy as an adapter contract
-2. continue making the unsupported boundary explicit
-3. continue adding adversarial multi-client proof until the contract is
+2. continue adding adversarial multi-client proof until the contract is
    defensible, not only functional
-4. then decide explicitly whether to promote from prototype to supported
+3. then decide explicitly whether to promote from prototype to supported
    adapter
 
 ## Companion Docs

@@ -226,6 +226,11 @@ The biggest remaining gaps are above the route layer, not below it:
    is still a deliberate decision point, now defined in
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 
+The unsupported boundary itself is now also process-level defended through the
+connector smoke suite, including explicit rejection of out-of-scope broker-style
+`scene` routes, unsupported global broker routes, unknown broker aliases, and
+out-of-allowlist raw proxy paths.
+
 ## Recommended Next Work
 
 If continuing on this track, the highest-leverage next tasks are:

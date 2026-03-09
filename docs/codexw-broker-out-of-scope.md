@@ -7,6 +7,9 @@ This document resolves the remaining design question:
 The goal is to stop forcing readers to infer scope from scattered caveats in
 the connectivity, compatibility, and endpoint-audit docs.
 
+The currently named out-of-scope broker surfaces are also backed by explicit
+connector rejection proof in the process-level smoke suite, not only by prose.
+
 ## Scope Classes
 
 This document uses three scope labels.

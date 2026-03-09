@@ -84,8 +84,8 @@ Status labels:
 
 | Area | Status | Evidence | Remaining gap |
 | --- | --- | --- | --- |
-| Unsupported broker/client surfaces are explicitly named | doc/policy only | [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) | Promotion should pair this with stronger explicit negative proof through the connector. |
-| Connector remains thin and local API remains canonical | partial proof | code organization under `wrapper/src/local_api/*` and `wrapper/src/bin/codexw_connector_prototype/*`, plus [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md) | This is still primarily an architectural claim rather than an executable proof set. |
+| Unsupported broker/client surfaces are explicitly named | strong proof | [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md), explicit process-level rejection coverage in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) for out-of-scope broker-style `scene` routes, unsupported global broker routes, unknown broker aliases, and disallowed raw proxy / raw proxy SSE paths | No major prototype gap on the currently claimed unsupported surface. |
+| Connector remains thin and local API remains canonical | partial proof | code organization under `wrapper/src/local_api/*` and `wrapper/src/bin/codexw_connector_prototype/*`, plus [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md) and the negative-proof connector tests in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) | This is still primarily an architectural claim rather than a frozen adapter guarantee, but the unsupported-route enforcement side is now process-level proven. |
 
 ## Current Read
 
