@@ -246,3 +246,5 @@ Submission features:
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.
 
 In other words, `codexw` is now much closer to an app-server-backed Codex client than to a thin compatibility shim. The remaining high-leverage work is mostly architectural parity and UX depth, not missing command dispatch behavior.
+
+One concrete future-work direction is brokered remote connectivity: letting `codexw` act as a remotely reachable runtime behind a cloud relay so other clients such as a mobile app, web UI, or remote terminal can drive it. The sibling `~/work/agent` project already has a broker/control-plane design and client protocol docs, so this should be treated as a real investigation item rather than an abstract wishlist; the deeper design notes live in [docs/codexw-design.md](docs/codexw-design.md).

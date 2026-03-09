@@ -608,6 +608,82 @@ The biggest known limits are architectural, not accidental.
 - No known user-facing command remains in a generic placeholder state; the remaining limitations are backend-surface or UX-parity issues rather than missing command handlers.
 - Rendering is richer than plain logs, but it is still terminal-scrollback based rather than a full alternate-screen widget tree.
 
+## Future Investigation: Brokered Remote Connectivity
+
+One high-leverage future direction is to let `codexw` behave less like a purely local terminal wrapper and more like a remotely reachable Codex runtime behind a broker, so other clients such as a mobile app, web UI, or remote terminal can attach through a cloud relay.
+
+This is not a speculative idea in the abstract. The sibling `~/work/agent` project already documents a concrete daemon-first, multi-client architecture with:
+
+- outbound agent connectivity to a broker over WebSocket, typically `wss://.../v1/agent/connect`
+- broker-side proxying for HTTP and SSE via `/v1/agents/{agent_id}/proxy/...` and `/v1/agents/{agent_id}/proxy_sse/...`
+- broker authentication and control-plane concepts including mTLS for agents plus OIDC or token-based client auth
+- explicit client/session identity and bidirectional event protocol design for WebUI, mobile, Slack, and thin CLI clients
+
+Relevant reference points in that project include:
+
+- `/Users/zongbaolu/work/agent/DESIGN.md`
+- `/Users/zongbaolu/work/agent/broker/README.md`
+- `/Users/zongbaolu/work/agent/docs/PROTOCOL.md`
+- `/Users/zongbaolu/work/agent/docs/CLIENT.md`
+
+That makes brokered remote access a legitimate design investigation for `codexw`, not a generic brainstorm item.
+
+### Why This Is High Leverage
+
+- It could turn `codexw` into a universal connectivity target rather than a local-only terminal client.
+- It would provide one path toward mobile and browser access without re-implementing the Codex runtime separately in each client.
+- It could let `codexw` reuse an already-designed broker/control-plane vocabulary instead of inventing a new remote protocol from scratch.
+- It aligns with the existing direction of wrapper-owned orchestration state, background-shell control, and structured transcript rendering, which are already closer to a remotely consumable runtime than plain terminal output.
+
+### Required Design Work
+
+Before implementation, the following questions should be answered explicitly:
+
+1. Runtime role:
+   Should `codexw` become a broker-connected runtime itself, or should it expose a local API and rely on a separate connector process?
+
+2. Session model:
+   How should local Codex thread ids, wrapper sessions, resume commands, and remote client session ids map onto one another?
+
+3. Event model:
+   Which existing `codexw` transcript/status/orchestration events should become stable remote events, and which terminal-only render details should remain local presentation concerns?
+
+4. Control model:
+   Which actions must be remotely invokable:
+   - submit/steer turns
+   - inspect status / orchestration / capabilities
+   - operate background shells
+   - attach to reusable services
+   - manage approvals / automation posture
+
+5. Security model:
+   Should `codexw` adopt the `agent` broker pattern of outbound broker connection plus client auth, or only target protocol compatibility at the payload level?
+
+6. Compatibility boundary:
+   Is the goal full compatibility with the `~/work/agent` broker/API spec, partial reuse of its relay/session concepts, or merely borrowing its protocol ideas?
+
+### Concrete TODOs
+
+- Audit the `~/work/agent` broker and client protocol against `codexw`’s current state model and identify the minimum viable compatibility surface.
+- Write a `codexw`-specific remote API model for:
+  - session creation and resume
+  - transcript/event streaming
+  - orchestration status and worker views
+  - background shell/service control
+  - realtime state exposure
+- Decide whether `codexw` should expose:
+  - a local HTTP/SSE API
+  - a broker connector
+  - or direct broker connectivity
+- Define the security/auth story before implementation:
+  - local-only
+  - broker token auth
+  - mTLS client identity
+  - browser-compatible auth for a future WebUI
+- Evaluate whether the user’s C agent framework can reuse the same remote protocol contracts for interoperability, especially around broker transport, session identity, and event envelopes.
+
+This should be treated as a real future-work item and re-evaluated after the current architectural parity gaps are smaller. It is likely higher leverage than continuing endless small refactors once the local wrapper structure is sufficiently healthy.
+
 ## File Map
 
 - `wrapper/src/main.rs`
