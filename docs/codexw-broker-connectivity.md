@@ -162,7 +162,8 @@ The current implementation is now past pure route sketches:
 - the repo now also has a process-level connector smoke test proving that a
   remote client can drive the connector over TCP while a fake local API is
   served behind it, including broker-style session create and attachment lease
-  lifecycle aliases
+  lifecycle aliases and a realistic create -> turn -> transcript ->
+  orchestration inspection workflow
 
 ## Compatibility Matrix
 

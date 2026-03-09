@@ -162,6 +162,11 @@ Current automated coverage now includes a real process-level smoke path:
   - broker-style `sessions` alias mapping for session create
   - broker-style `sessions/{session_id}/attach` alias mapping
   - broker-style `sessions/{session_id}/attachment/{renew|release}` alias mapping
+  - a realistic broker-style workflow:
+    - create session
+    - start turn
+    - inspect transcript
+    - inspect orchestration status/dependencies
   - broker-style `sessions/{session_id}/shells` alias mapping for shell start
   - broker-style `sessions/{session_id}/services/{job_ref}/run` alias mapping
   - `session_id` body projection for attach aliases

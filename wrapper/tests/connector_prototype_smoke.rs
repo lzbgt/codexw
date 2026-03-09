@@ -444,6 +444,220 @@ fn connector_alias_service_run_maps_to_local_service_route() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn connector_broker_style_workflow_covers_turn_transcript_and_orchestration() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..5 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/new");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse create body")?;
+                    assert_eq!(body["thread_id"], "thread_1");
+                    assert_eq!(body["client_id"], "remote-web");
+                    assert_eq!(body["lease_seconds"], 45);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_1",
+                                "thread_id": "thread_1",
+                                "attachment": {
+                                    "client_id": "remote-web",
+                                    "lease_seconds": 45
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/turn/start");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse turn body")?;
+                    assert_eq!(body["prompt"], "Summarize the repository status");
+                    assert_eq!(body["client_id"], "remote-web");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "turn": {
+                                "status": "submitted"
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/transcript");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "items": [
+                                {
+                                    "role": "user",
+                                    "text": "Summarize the repository status"
+                                },
+                                {
+                                    "role": "assistant",
+                                    "text": "Repository is clean and connector alias coverage is expanding."
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                3 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/orchestration/status");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "status": {
+                                "main_agent": "runnable",
+                                "next_action": "Inspect transcript or workers"
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                4 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_1/orchestration/dependencies"
+                    );
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "dependencies": [
+                                {
+                                    "from": "main",
+                                    "to": "shell:bg-1",
+                                    "state": "sidecar"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let _connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(connector_port)?;
+
+    let create_body = "{\"thread_id\":\"thread_1\"}";
+    let create_request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-web\r\n",
+            "X-Codexw-Lease-Seconds: 45\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        create_body.len(),
+        create_body
+    );
+    let create_response = send_raw_request(connector_port, &create_request)?;
+    assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(create_response.contains("\"session_id\":\"sess_1\""));
+
+    let turn_body = "{\"prompt\":\"Summarize the repository status\"}";
+    let turn_request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/turns HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-web\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        turn_body.len(),
+        turn_body
+    );
+    let turn_response = send_raw_request(connector_port, &turn_request)?;
+    assert!(turn_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(turn_response.contains("\"submitted\""));
+
+    let transcript_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/sessions/sess_1/transcript HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(transcript_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(transcript_response.contains("Summarize the repository status"));
+    assert!(transcript_response.contains("connector alias coverage is expanding"));
+
+    let orchestration_status_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/sessions/sess_1/orchestration/status HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(orchestration_status_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(orchestration_status_response.contains("\"main_agent\":\"runnable\""));
+
+    let dependency_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/sessions/sess_1/orchestration/dependencies HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(dependency_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(dependency_response.contains("\"to\":\"shell:bg-1\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
 fn spawn_connector(port: u16, local_api_port: u16) -> Result<ChildGuard> {
     let binary = connector_binary()?;
     let child = Command::new(binary)
