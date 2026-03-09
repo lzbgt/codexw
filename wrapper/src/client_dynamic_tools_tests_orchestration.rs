@@ -243,6 +243,7 @@ fn orchestration_guidance_filter_uses_concrete_provider_ref_for_single_ready_ser
         guidance_text
             .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
     );
+    assert!(!guidance_text.contains("\"args\":"));
     let _ = state
         .orchestration
         .background_shells
@@ -305,6 +306,121 @@ fn orchestration_guidance_filter_omits_invoke_for_descriptive_only_ready_service
         .expect("actions text");
     assert!(actions_text.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
     assert!(!actions_text.contains("background_shell_invoke_recipe"));
+
+    let _ = state
+        .orchestration
+        .background_shells
+        .terminate_all_running();
+}
+
+#[test]
+fn orchestration_guidance_prefers_health_recipe_over_earlier_generic_recipe() {
+    let state = AppState::new(true, false);
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "printf 'READY\\n'; sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+                "readyPattern": "READY",
+                "recipes": [
+                    {
+                        "name": "query",
+                        "action": {
+                            "type": "stdin",
+                            "text": "query {{key}}"
+                        },
+                        "parameters": [{"name": "key", "required": true}]
+                    },
+                    {
+                        "name": "health",
+                        "action": {
+                            "type": "stdin",
+                            "text": "health"
+                        }
+                    }
+                ]
+            }),
+            "/tmp",
+        )
+        .expect("start ready service");
+    state
+        .orchestration
+        .background_shells
+        .wait_ready_for_operator("bg-1", 1000)
+        .expect("wait for ready service");
+
+    let actions = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_suggest_actions"
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(actions["success"], true);
+    let text = actions["contentItems"][0]["text"]
+        .as_str()
+        .expect("actions text");
+    assert!(
+        text.contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
+    );
+    assert!(!text.contains("\"recipe\":\"query\""));
+
+    let _ = state
+        .orchestration
+        .background_shells
+        .terminate_all_running();
+}
+
+#[test]
+fn orchestration_guidance_includes_example_args_for_parameterized_recipe() {
+    let state = AppState::new(true, false);
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "printf 'READY\\n'; sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+                "readyPattern": "READY",
+                "recipes": [{
+                    "name": "query",
+                    "action": {
+                        "type": "stdin",
+                        "text": "query {{key}} {{mode}}"
+                    },
+                    "parameters": [
+                        {"name": "key", "required": true},
+                        {"name": "mode", "default": "fast"}
+                    ]
+                }]
+            }),
+            "/tmp",
+        )
+        .expect("start ready service");
+    state
+        .orchestration
+        .background_shells
+        .wait_ready_for_operator("bg-1", 1000)
+        .expect("wait for ready service");
+
+    let actions = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_suggest_actions"
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(actions["success"], true);
+    let text = actions["contentItems"][0]["text"]
+        .as_str()
+        .expect("actions text");
+    assert!(text.contains(
+        "background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"query\",\"args\":{\"key\":\"value\",\"mode\":\"fast\"}}"
+    ));
 
     let _ = state
         .orchestration
@@ -677,6 +793,7 @@ fn orchestration_suggest_actions_can_use_concrete_provider_for_single_ready_serv
     assert!(
         text.contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
     );
+    assert!(!text.contains("\"args\":"));
     let _ = state
         .orchestration
         .background_shells
