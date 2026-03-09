@@ -163,6 +163,9 @@ def build_parser() -> argparse.ArgumentParser:
     turn.add_argument("--session-id", required=True)
     turn.add_argument("--prompt", required=True)
 
+    interrupt = sub.add_parser("turn-interrupt", help="Interrupt active work.")
+    interrupt.add_argument("--session-id", required=True)
+
     sub.add_parser("sessions", help="List sessions.")
 
     session_get = sub.add_parser("session-get", help="Inspect one session.")
@@ -283,6 +286,8 @@ def main() -> int:
         status, payload = client.post(
             f"/sessions/{args.session_id}/turns", {"prompt": args.prompt}
         )
+    elif cmd == "turn-interrupt":
+        status, payload = client.post(f"/sessions/{args.session_id}/interrupt", {})
     elif cmd == "sessions":
         status, payload = client.get("/sessions")
     elif cmd == "session-get":

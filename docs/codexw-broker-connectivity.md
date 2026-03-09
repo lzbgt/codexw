@@ -176,6 +176,10 @@ The current implementation is now past pure route sketches:
 - the standalone broker-style client fixture is also now process-level verified
   for attachment lease lifecycle flows (`renew` / `release`) with session
   snapshot confirmation after each transition
+- the standalone broker-style client fixture is also now process-level verified
+  for session listing and turn interrupt flows, session attach plus
+  orchestration status / workers / dependencies inspection, and shell list /
+  detail / send / poll / terminate control paths
 - the broker-style alias surface now also includes attachment lease lifecycle
   routes for renew/release, so remote clients do not need raw `/proxy/...`
   access for normal lease management

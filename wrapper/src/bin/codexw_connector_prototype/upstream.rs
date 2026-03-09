@@ -147,6 +147,7 @@ pub(super) fn supports_client_lease_injection(local_path: &str) -> bool {
             | ["api", "v1", "session", _, "turn", "start"]
             | ["api", "v1", "session", _, "turn", "interrupt"]
             | ["api", "v1", "session", _, "shells", "start"]
+            | ["api", "v1", "session", _, "shells", _, "poll"]
             | ["api", "v1", "session", _, "shells", _, "send"]
             | ["api", "v1", "session", _, "shells", _, "terminate"]
             | ["api", "v1", "session", _, "services", "update"]

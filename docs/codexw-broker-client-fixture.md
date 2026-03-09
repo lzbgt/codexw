@@ -26,9 +26,9 @@ than inventing a new abstraction layer.
 
 Supported operations include:
 
-- session create / attach / inspect
+- session create / attach / list / inspect
 - attachment renew / release
-- turn start
+- turn start / interrupt
 - transcript fetch
 - event stream consumption with optional `Last-Event-ID`
 - orchestration status / workers / dependencies
@@ -59,7 +59,11 @@ The repo now also includes process-level smoke coverage that invokes this
 fixture against the real connector binary for:
 
 - session create / turn / transcript
+- session list
+- turn interrupt
+- session attach plus orchestration status / workers / dependencies inspection
 - attachment renew / release plus session snapshot verification
+- shell list / detail / send / poll / terminate
 - shell start plus service attach / wait / run
 - service capability/contract/label mutation (`provide` / `depend` / `contract` / `relabel`)
 - lease-conflict propagation through broker-style alias routes
