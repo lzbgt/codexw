@@ -1455,7 +1455,15 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/state/lifecycle.rs`
   State constructors, request-id generation, turn/thread reset helpers, and attachment transfer behavior.
 - `wrapper/src/state_helpers.rs`
-  Shared state/text/buffer helper functions such as `thread_id`, `get_string`, delta buffering, status dedupe, and path canonicalization.
+  Shared state helper namespace root.
+- `wrapper/src/state_helpers/json.rs`
+  Shared nested JSON-string extraction helpers.
+- `wrapper/src/state_helpers/text.rs`
+  Shared thread-id lookup, text summarization, status dedupe, and path canonicalization helpers.
+- `wrapper/src/state_helpers/buffers.rs`
+  Shared streamed item/process delta buffering helpers.
+- `wrapper/src/state_helpers/tests.rs`
+  Shared state-helper regression tests.
 - `wrapper/src/editor_tests.rs`
   Crate-level regression tests for the inline editor.
 - `wrapper/src/render_tests.rs`
