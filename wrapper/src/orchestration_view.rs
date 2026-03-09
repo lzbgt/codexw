@@ -1210,6 +1210,110 @@ mod tests {
     }
 
     #[test]
+    fn guidance_filter_surfaces_contract_fix_for_untracked_services() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start untracked service");
+
+        let rendered = render_orchestration_guidance(&services);
+        assert!(rendered.contains("missing readiness or attachment metadata"));
+        assert!(rendered.contains("/ps services untracked"));
+        assert!(rendered.contains(":ps contract bg-1 <json-object>"));
+        assert!(rendered.contains(":ps relabel bg-1 <label|none>"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn guidance_filter_uses_concrete_wait_for_single_booting_service() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start booting service");
+
+        let rendered = render_orchestration_guidance(&services);
+        assert!(rendered.contains("still booting"));
+        assert!(rendered.contains(":ps wait bg-1 [timeoutMs]"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn guidance_filter_uses_concrete_provider_ref_for_single_ready_service() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "printf 'READY\\n'; sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start ready service");
+        services
+            .background_shells
+            .wait_ready_for_operator("bg-1", 1000)
+            .expect("wait for ready service");
+
+        let rendered = render_orchestration_guidance(&services);
+        assert!(rendered.contains(":ps attach bg-1"));
+        assert!(rendered.contains(":ps run bg-1 <recipe> [json-args]"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn guidance_filter_uses_concrete_wait_for_booting_blocker_provider() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start booting service");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start blocked prerequisite");
+
+        let rendered = render_orchestration_guidance(&services);
+        assert!(rendered.contains("/ps services booting @api.http"));
+        assert!(rendered.contains(":ps wait bg-1 [timeoutMs]"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
     fn actions_filter_renders_suggested_commands_for_conflicted_services() {
         let services = crate::state::AppState::new(true, false);
         services

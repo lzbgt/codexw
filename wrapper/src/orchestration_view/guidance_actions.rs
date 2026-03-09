@@ -210,6 +210,8 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
     let booting_services =
         running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+    let untracked_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
     let terminals = server_background_terminal_count(state);
 
     if let Some(issue) = blocking_capability_issues
@@ -255,14 +257,20 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
         .iter()
         .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Booting)
     {
+        let provider_ref = first_provider_ref_for_capability(state, &issue.capability)
+            .unwrap_or_else(|| format!("@{}", issue.capability));
         return vec![
             format!(
                 "A blocking shell is waiting on booting service capability @{}.",
                 issue.capability
             ),
-            "Use /ps capabilities or /ps services to inspect the provider and readiness state."
-                .to_string(),
-            "Use :ps wait <jobId|alias|@capability|n> [timeoutMs] when the booting service has a readiness contract.".to_string(),
+            format!(
+                "Use /ps services booting @{} to inspect the provider and readiness state.",
+                issue.capability
+            ),
+            format!(
+                "Use :ps wait {provider_ref} [timeoutMs] when the booting service has a readiness contract."
+            ),
         ];
     }
     if prereqs > 0 {
@@ -298,6 +306,8 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
         ];
     }
     if ready_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Ready);
         return vec![
             format!(
                 "{} {} ready for reuse.",
@@ -305,19 +315,50 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 if ready_services == 1 { "is" } else { "are" }
             ),
             "Use /ps services to inspect attachment metadata and available recipes.".to_string(),
-            "Use :ps attach <jobId|alias|@capability|n> or :ps run <jobId|alias|@capability|n> <recipe> [json-args] to reuse the service directly."
-                .to_string(),
+            match provider_ref.as_deref() {
+                Some(job_ref) => format!(
+                    "Use :ps attach {job_ref} or :ps run {job_ref} <recipe> [json-args] to reuse the service directly."
+                ),
+                None => "Use :ps attach <jobId|alias|@capability|n> or :ps run <jobId|alias|@capability|n> <recipe> [json-args] to reuse the service directly."
+                    .to_string(),
+            },
         ];
     }
     if booting_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Booting);
         return vec![
             format!(
                 "{} still booting.",
                 pluralize(booting_services, "service shell is", "service shells are")
             ),
             "Use /ps services to inspect readiness state and startup metadata.".to_string(),
-            "Use :ps wait <jobId|alias|@capability|n> [timeoutMs] when later work depends on service readiness."
+            match provider_ref.as_deref() {
+                Some(job_ref) => format!(
+                    "Use :ps wait {job_ref} [timeoutMs] when later work depends on service readiness."
+                ),
+                None => "Use :ps wait <jobId|alias|@capability|n> [timeoutMs] when later work depends on service readiness."
+                    .to_string(),
+            },
+        ];
+    }
+    if untracked_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
+        return vec![
+            format!(
+                "{} missing readiness or attachment metadata.",
+                pluralize(untracked_services, "service shell is", "service shells are")
+            ),
+            "Use /ps services untracked to inspect services that still need contract metadata."
                 .to_string(),
+            match provider_ref.as_deref() {
+                Some(job_ref) => format!(
+                    "Use :ps contract {job_ref} <json-object> or :ps relabel {job_ref} <label|none> to make the service reusable in place."
+                ),
+                None => "Use :ps contract <jobId|alias|@capability|n> <json-object> or :ps relabel <jobId|alias|@capability|n> <label|none> to make the service reusable in place."
+                    .to_string(),
+            },
         ];
     }
     if sidecar_agents + shell_sidecars > 0 {

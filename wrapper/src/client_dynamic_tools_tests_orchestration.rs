@@ -188,6 +188,50 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
 }
 
 #[test]
+fn orchestration_guidance_filter_uses_concrete_provider_ref_for_single_ready_service() {
+    let state = AppState::new(true, false);
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "printf 'READY\\n'; sleep 0.4",
+                "intent": "service",
+                "capabilities": ["api.http"],
+                "readyPattern": "READY"
+            }),
+            "/tmp",
+        )
+        .expect("start ready service");
+    state
+        .orchestration
+        .background_shells
+        .wait_ready_for_operator("bg-1", 1000)
+        .expect("wait for ready service");
+
+    let guidance = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_list_workers",
+            "arguments": {
+                "filter": "guidance"
+            }
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(guidance["success"], true);
+    let guidance_text = guidance["contentItems"][0]["text"]
+        .as_str()
+        .expect("guidance text");
+    assert!(guidance_text.contains(":ps attach bg-1"));
+    assert!(guidance_text.contains(":ps run bg-1 <recipe> [json-args]"));
+    let _ = state
+        .orchestration
+        .background_shells
+        .terminate_all_running();
+}
+
+#[test]
 fn orchestration_suggest_actions_returns_concrete_tool_steps() {
     let state = AppState::new(true, false);
     state
