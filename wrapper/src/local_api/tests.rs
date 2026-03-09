@@ -1,12 +1,22 @@
+use std::io::Read;
+use std::io::Write;
+use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::RwLock;
+use std::time::Duration;
+
+use crate::Cli;
 
 use serde_json::Value;
 
 use super::control::LocalApiCommand;
 use super::control::new_command_queue;
+use super::events::events_since;
+use super::events::new_event_log;
+use super::events::publish_snapshot_change_events;
 use super::server::HttpRequest;
 use super::server::route_request;
+use super::server::start_local_api;
 use super::snapshot::LocalApiBackgroundShellJob;
 use super::snapshot::LocalApiCachedAgentThread;
 use super::snapshot::LocalApiCapabilityConsumer;
@@ -169,6 +179,30 @@ fn post_json_request(path: &str, body: Value) -> HttpRequest {
 
 fn json_body(response_body: &[u8]) -> Value {
     serde_json::from_slice(response_body).expect("response body should be valid json")
+}
+
+fn local_api_test_cli() -> Cli {
+    crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: false,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        local_api: true,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
+        prompt: Vec::new(),
+    })
 }
 
 #[test]
@@ -383,4 +417,68 @@ fn shells_services_and_capabilities_routes_return_filtered_views() {
     let capabilities_body = json_body(&capabilities.body);
     assert_eq!(capabilities_body["capabilities"][0]["capability"], "@frontend.dev");
     assert_eq!(capabilities_body["capabilities"][0]["providers"][0]["job_id"], "bg-1");
+}
+
+#[test]
+fn publish_snapshot_change_events_emits_replayable_semantic_events() {
+    let snapshot = sample_snapshot();
+    let current = snapshot.read().expect("snapshot").clone();
+    let log = new_event_log();
+    publish_snapshot_change_events(&log, None, &current);
+
+    let events = events_since(&log, "sess_test", None);
+    assert_eq!(events.len(), 5);
+    assert_eq!(events[0].event, "session.updated");
+    assert_eq!(events[1].event, "turn.updated");
+    assert_eq!(events[2].event, "orchestration.updated");
+    assert_eq!(events[3].event, "workers.updated");
+    assert_eq!(events[4].event, "capabilities.updated");
+}
+
+#[test]
+fn event_stream_route_replays_existing_events() {
+    let snapshot = sample_snapshot();
+    let current = snapshot.read().expect("snapshot").clone();
+    let queue = new_command_queue();
+    let log = new_event_log();
+    publish_snapshot_change_events(&log, None, &current);
+
+    let handle = start_local_api(&local_api_test_cli(), snapshot.clone(), queue, log)
+        .expect("start local api")
+        .expect("local api enabled");
+    let addr = handle.bind_addr().to_string();
+
+    let mut stream = TcpStream::connect(&addr).expect("connect local api");
+    stream
+        .set_read_timeout(Some(Duration::from_secs(2)))
+        .expect("set read timeout");
+    stream
+        .write_all(
+            b"GET /api/v1/session/sess_test/events HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        )
+        .expect("write request");
+
+    let mut response = Vec::new();
+    let mut buffer = [0_u8; 4096];
+    loop {
+        let read = stream.read(&mut buffer).expect("read response");
+        if read == 0 {
+            break;
+        }
+        response.extend_from_slice(&buffer[..read]);
+        let response_text = String::from_utf8_lossy(&response);
+        if response_text.contains("event: session.updated")
+            && response_text.contains("event: turn.updated")
+        {
+            break;
+        }
+    }
+    let response_text = String::from_utf8_lossy(&response);
+    assert!(response_text.contains("HTTP/1.1 200 OK"));
+    assert!(response_text.contains("Content-Type: text/event-stream"));
+    assert!(response_text.contains("event: session.updated"));
+    assert!(response_text.contains("event: turn.updated"));
+
+    drop(stream);
+    handle.shutdown().expect("shutdown local api");
 }

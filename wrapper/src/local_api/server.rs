@@ -9,6 +9,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -19,13 +20,18 @@ use thiserror::Error;
 use crate::Cli;
 
 use super::LocalApiCommand;
+use super::LocalApiEvent;
+use super::SharedEventLog;
 use super::LocalApiSnapshot;
 use super::SharedCommandQueue;
 use super::SharedSnapshot;
 use super::control::enqueue_command;
+use super::events::events_since;
 
 const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const READ_TIMEOUT: Duration = Duration::from_millis(250);
+const EVENT_STREAM_POLL_INTERVAL: Duration = Duration::from_millis(100);
+const EVENT_STREAM_HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const MAX_REQUEST_BYTES: usize = 65536;
 
 pub(crate) struct LocalApiHandle {
@@ -54,6 +60,7 @@ pub(crate) fn start_local_api(
     cli: &Cli,
     snapshot: SharedSnapshot,
     command_queue: SharedCommandQueue,
+    event_log: SharedEventLog,
 ) -> Result<Option<LocalApiHandle>> {
     if !cli.local_api {
         return Ok(None);
@@ -76,7 +83,19 @@ pub(crate) fn start_local_api(
         while !stop_for_thread.load(Ordering::Relaxed) {
             match listener.accept() {
                 Ok((stream, _)) => {
-                    let _ = handle_connection(stream, &snapshot, &command_queue, auth_token.as_deref());
+                    let snapshot = snapshot.clone();
+                    let command_queue = command_queue.clone();
+                    let event_log = event_log.clone();
+                    let auth_token = auth_token.clone();
+                    thread::spawn(move || {
+                        let _ = handle_connection(
+                            stream,
+                            &snapshot,
+                            &command_queue,
+                            &event_log,
+                            auth_token.as_deref(),
+                        );
+                    });
                 }
                 Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
                     thread::sleep(ACCEPT_POLL_INTERVAL);
@@ -120,17 +139,31 @@ fn handle_connection(
     mut stream: TcpStream,
     snapshot: &SharedSnapshot,
     command_queue: &SharedCommandQueue,
+    event_log: &SharedEventLog,
     auth_token: Option<&str>,
 ) -> Result<()> {
     stream
         .set_read_timeout(Some(READ_TIMEOUT))
         .context("set local API read timeout")?;
-    let response = match read_request(&mut stream) {
-        Ok(request) => route_request(&request, snapshot, command_queue, auth_token),
-        Err(RequestReadError::BadRequest) => json_error_response(400, "bad_request", "invalid HTTP request"),
+    let maybe_response = match read_request(&mut stream) {
+        Ok(request) => {
+            if let Some(response) = authorize_request(&request, auth_token) {
+                Some(response)
+            } else if is_event_stream_request(&request) {
+                handle_event_stream_request(&mut stream, &request, snapshot, event_log)?;
+                None
+            } else {
+                Some(route_authorized_request(&request, snapshot, command_queue))
+            }
+        }
+        Err(RequestReadError::BadRequest) => {
+            Some(json_error_response(400, "bad_request", "invalid HTTP request"))
+        }
         Err(RequestReadError::Io(_)) => return Ok(()),
     };
-    write_response(&mut stream, &response)?;
+    if let Some(response) = maybe_response {
+        write_response(&mut stream, &response)?;
+    }
     let _ = stream.shutdown(Shutdown::Both);
     Ok(())
 }
@@ -202,25 +235,45 @@ fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, Requ
     })
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn route_request(
     request: &HttpRequest,
     snapshot: &SharedSnapshot,
     command_queue: &SharedCommandQueue,
     auth_token: Option<&str>,
 ) -> HttpResponse {
+    if let Some(response) = authorize_request(request, auth_token) {
+        return response;
+    }
+
+    route_authorized_request(request, snapshot, command_queue)
+}
+
+fn authorize_request(request: &HttpRequest, auth_token: Option<&str>) -> Option<HttpResponse> {
     if request.path == "/healthz" && request.method == "GET" {
-        return json_ok_response(json!({ "ok": true }));
+        return Some(json_ok_response(json!({ "ok": true })));
     }
 
     if let Some(expected_token) = auth_token {
         match request.headers.get("authorization") {
             Some(value) if value == &format!("Bearer {expected_token}") => {}
             _ => {
-                return json_error_response(401, "unauthorized", "missing or invalid bearer token");
+                return Some(json_error_response(
+                    401,
+                    "unauthorized",
+                    "missing or invalid bearer token",
+                ));
             }
         }
     }
+    None
+}
 
+fn route_authorized_request(
+    request: &HttpRequest,
+    snapshot: &SharedSnapshot,
+    command_queue: &SharedCommandQueue,
+) -> HttpResponse {
     let current_snapshot = match snapshot.read() {
         Ok(guard) => guard.clone(),
         Err(_) => {
@@ -297,6 +350,117 @@ fn route_session_scoped_get(path: &str, snapshot: &LocalApiSnapshot) -> HttpResp
         })),
         _ => json_error_response(404, "not_found", "unknown route"),
     }
+}
+
+fn is_event_stream_request(request: &HttpRequest) -> bool {
+    request.path.ends_with("/events")
+}
+
+fn handle_event_stream_request(
+    stream: &mut TcpStream,
+    request: &HttpRequest,
+    snapshot: &SharedSnapshot,
+    event_log: &SharedEventLog,
+) -> Result<()> {
+    if request.method != "GET" {
+        write_response(
+            stream,
+            &json_error_response(405, "method_not_allowed", "unsupported method for route"),
+        )?;
+        return Ok(());
+    }
+
+    let Some(path) = request.path.strip_prefix("/api/v1/session/") else {
+        write_response(stream, &json_error_response(404, "not_found", "unknown route"))?;
+        return Ok(());
+    };
+    let Some(session_id) = path.strip_suffix("/events") else {
+        write_response(stream, &json_error_response(404, "not_found", "unknown route"))?;
+        return Ok(());
+    };
+
+    let current_snapshot = match snapshot.read() {
+        Ok(guard) => guard.clone(),
+        Err(_) => {
+            write_response(
+                stream,
+                &json_error_response(
+                    500,
+                    "snapshot_unavailable",
+                    "failed to access local API snapshot",
+                ),
+            )?;
+            return Ok(());
+        }
+    };
+
+    if session_id != current_snapshot.session_id {
+        write_response(
+            stream,
+            &json_error_response(404, "session_not_found", "unknown session id"),
+        )?;
+        return Ok(());
+    }
+
+    let last_event_id = request
+        .headers
+        .get("last-event-id")
+        .and_then(|value| value.parse::<u64>().ok());
+    write_event_stream_headers(stream)?;
+    write_event_stream_comment(stream, "connected")?;
+
+    let mut sent_event_id = last_event_id;
+    let mut last_heartbeat = Instant::now();
+    loop {
+        let events = events_since(event_log, session_id, sent_event_id);
+        for event in events {
+            sent_event_id = Some(event.id);
+            write_event_stream_event(stream, &event)?;
+            last_heartbeat = Instant::now();
+        }
+
+        if last_heartbeat.elapsed() >= EVENT_STREAM_HEARTBEAT_INTERVAL {
+            write_event_stream_comment(stream, "heartbeat")?;
+            last_heartbeat = Instant::now();
+        }
+
+        thread::sleep(EVENT_STREAM_POLL_INTERVAL);
+    }
+}
+
+fn write_event_stream_headers(stream: &mut TcpStream) -> Result<()> {
+    stream
+        .write_all(
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Accel-Buffering: no\r\n\r\n",
+        )
+        .context("write local API event stream headers")?;
+    stream.flush().context("flush local API event stream headers")?;
+    Ok(())
+}
+
+fn write_event_stream_comment(stream: &mut TcpStream, comment: &str) -> Result<()> {
+    stream
+        .write_all(format!(": {comment}\n\n").as_bytes())
+        .context("write local API event stream comment")?;
+    stream
+        .flush()
+        .context("flush local API event stream comment")?;
+    Ok(())
+}
+
+fn write_event_stream_event(
+    stream: &mut TcpStream,
+    event: &LocalApiEvent,
+) -> Result<()> {
+    let data = serde_json::to_string(&event.data).context("serialize local API SSE event data")?;
+    let payload = format!("id: {}\nevent: {}\ndata: {}\n\n", event.id, event.event, data);
+    stream
+        .write_all(payload.as_bytes())
+        .context("write local API event stream event")?;
+    stream
+        .flush()
+        .context("flush local API event stream event")?;
+    Ok(())
 }
 
 fn handle_turn_start_route(

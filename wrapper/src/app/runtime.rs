@@ -11,9 +11,11 @@ use crate::config_persistence::load_persisted_theme;
 use crate::dispatch_command_utils::join_prompt;
 use crate::editor::LineEditor;
 use crate::events::process_server_line;
+use crate::local_api::new_event_log;
 use crate::local_api::new_process_session_id;
 use crate::local_api::new_shared_snapshot;
 use crate::local_api::new_command_queue;
+use crate::local_api::publish_snapshot_change_events;
 use crate::local_api::process_local_api_commands;
 use crate::local_api::start_local_api;
 use crate::local_api::sync_shared_snapshot;
@@ -60,8 +62,21 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     let mut editor = LineEditor::default();
     let local_api_snapshot = new_shared_snapshot(new_process_session_id(), resolved_cwd.clone());
     let local_api_commands = new_command_queue();
-    sync_shared_snapshot(&local_api_snapshot, &state);
-    let local_api_handle = start_local_api(&cli, local_api_snapshot.clone(), local_api_commands.clone())?;
+    let local_api_events = new_event_log();
+    let mut previous_local_api_snapshot = None;
+    let current_local_api_snapshot = sync_shared_snapshot(&local_api_snapshot, &state);
+    publish_snapshot_change_events(
+        &local_api_events,
+        previous_local_api_snapshot.as_ref(),
+        &current_local_api_snapshot,
+    );
+    previous_local_api_snapshot = Some(current_local_api_snapshot);
+    let local_api_handle = start_local_api(
+        &cli,
+        local_api_snapshot.clone(),
+        local_api_commands.clone(),
+        local_api_events.clone(),
+    )?;
     if let Some(handle) = local_api_handle.as_ref() {
         output.line_stderr(format!(
             "[session] local API listening on http://{}",
@@ -126,7 +141,13 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
             &mut writer,
             &local_api_commands,
         )?;
-        sync_shared_snapshot(&local_api_snapshot, &state);
+        let current_local_api_snapshot = sync_shared_snapshot(&local_api_snapshot, &state);
+        publish_snapshot_change_events(
+            &local_api_events,
+            previous_local_api_snapshot.as_ref(),
+            &current_local_api_snapshot,
+        );
+        previous_local_api_snapshot = Some(current_local_api_snapshot);
     }
 
     emit_resume_exit_hint(&mut output, &state, &resolved_cwd)?;

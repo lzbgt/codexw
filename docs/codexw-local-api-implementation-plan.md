@@ -46,18 +46,20 @@ Current implemented scope:
 - `GET /api/v1/session/{session_id}/capabilities`
 - `POST /api/v1/turn/start`
 - `POST /api/v1/turn/interrupt`
+- `GET /api/v1/session/{session_id}/events`
 - internal API command queue from the HTTP listener into the main runtime loop
+- shared semantic event log with `Last-Event-ID` replay
+- loopback SSE event stream for session, turn, orchestration, worker, and
+  capability updates
 - structured snapshot export for orchestration, shell, service, and capability state
 
 Current non-goals of the landed slice:
 
-- no SSE event stream yet
 - no transcript query routes yet
 - no shell or service mutation routes yet
 
 That means the next implementation step is no longer generic turn control or
-basic read routes. It is the first semantic event stream plus transcript and
-mutation routes.
+basic read routes. It is transcript routes and shell/service mutation routes.
 
 ## Scope
 
@@ -127,6 +129,8 @@ Acceptance criteria:
 
 ### Phase 3: Event Stream
 
+Status: initial slice landed
+
 Deliverables:
 
 - `GET /api/v1/session/{session_id}/events`
@@ -142,6 +146,19 @@ Acceptance criteria:
 - local client can attach and receive semantic events without reading terminal
   output
 - event stream survives ordinary quiet periods without false disconnect
+
+Current landed behavior:
+
+- `GET /api/v1/session/{session_id}/events` serves `text/event-stream`
+- replay is supported through the `Last-Event-ID` header
+- current event families are:
+  - `session.updated`
+  - `turn.updated`
+  - `orchestration.updated`
+  - `workers.updated`
+  - `capabilities.updated`
+- the stream is sourced from semantic snapshot deltas, not ANSI terminal output
+- heartbeat comments keep the connection alive during quiet periods
 
 ### Phase 4: Orchestration And Shell Surfaces
 

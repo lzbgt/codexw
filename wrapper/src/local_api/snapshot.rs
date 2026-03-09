@@ -20,7 +20,7 @@ use crate::orchestration_registry::sidecar_dependency_count;
 use crate::orchestration_registry::wait_dependency_summary;
 use crate::state::AppState;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub(crate) struct LocalApiSnapshot {
     pub(crate) session_id: String,
     pub(crate) cwd: String,
@@ -37,7 +37,7 @@ pub(crate) struct LocalApiSnapshot {
     pub(crate) capabilities: Vec<LocalApiCapabilityEntry>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiOrchestrationStatus {
     pub(crate) main_agent_state: String,
     pub(crate) wait_summary: Option<String>,
@@ -63,7 +63,7 @@ pub(crate) struct LocalApiOrchestrationStatus {
     pub(crate) background_terminal_count: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiDependencyEdge {
     pub(crate) from: String,
     pub(crate) to: String,
@@ -71,7 +71,7 @@ pub(crate) struct LocalApiDependencyEdge {
     pub(crate) blocking: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiWorkersSnapshot {
     pub(crate) main_agent_state: String,
     pub(crate) wait_summary: Option<String>,
@@ -81,7 +81,7 @@ pub(crate) struct LocalApiWorkersSnapshot {
     pub(crate) background_terminals: Vec<LocalApiBackgroundTerminal>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiCachedAgentThread {
     pub(crate) id: String,
     pub(crate) status: String,
@@ -89,7 +89,7 @@ pub(crate) struct LocalApiCachedAgentThread {
     pub(crate) updated_at: Option<i64>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiLiveAgentTask {
     pub(crate) id: String,
     pub(crate) tool: String,
@@ -100,14 +100,14 @@ pub(crate) struct LocalApiLiveAgentTask {
     pub(crate) agent_statuses: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiBackgroundShellOrigin {
     pub(crate) source_thread_id: Option<String>,
     pub(crate) source_call_id: Option<String>,
     pub(crate) source_tool: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiBackgroundShellJob {
     pub(crate) id: String,
     pub(crate) pid: u32,
@@ -131,7 +131,7 @@ pub(crate) struct LocalApiBackgroundShellJob {
     pub(crate) recent_lines: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiBackgroundTerminal {
     pub(crate) item_id: String,
     pub(crate) process_id: String,
@@ -141,7 +141,7 @@ pub(crate) struct LocalApiBackgroundTerminal {
     pub(crate) recent_output: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiCapabilityEntry {
     pub(crate) capability: String,
     pub(crate) issue: String,
@@ -149,7 +149,7 @@ pub(crate) struct LocalApiCapabilityEntry {
     pub(crate) consumers: Vec<LocalApiCapabilityConsumer>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiCapabilityProvider {
     pub(crate) job_id: String,
     pub(crate) alias: Option<String>,
@@ -159,7 +159,7 @@ pub(crate) struct LocalApiCapabilityProvider {
     pub(crate) endpoint: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
 pub(crate) struct LocalApiCapabilityConsumer {
     pub(crate) job_id: String,
     pub(crate) alias: Option<String>,
@@ -196,7 +196,7 @@ pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnap
     }))
 }
 
-pub(crate) fn sync_shared_snapshot(snapshot: &SharedSnapshot, state: &AppState) {
+pub(crate) fn sync_shared_snapshot(snapshot: &SharedSnapshot, state: &AppState) -> LocalApiSnapshot {
     if let Ok(mut guard) = snapshot.write() {
         guard.thread_id = state.thread_id.clone();
         guard.active_turn_id = state.active_turn_id.clone();
@@ -209,6 +209,23 @@ pub(crate) fn sync_shared_snapshot(snapshot: &SharedSnapshot, state: &AppState) 
         guard.orchestration_dependencies = orchestration_dependencies_snapshot(state);
         guard.workers = workers_snapshot(state);
         guard.capabilities = capabilities_snapshot(state);
+        return guard.clone();
+    }
+
+    LocalApiSnapshot {
+        session_id: String::new(),
+        cwd: String::new(),
+        thread_id: None,
+        active_turn_id: None,
+        objective: None,
+        turn_running: false,
+        started_turn_count: 0,
+        completed_turn_count: 0,
+        active_personality: None,
+        orchestration_status: LocalApiOrchestrationStatus::default(),
+        orchestration_dependencies: Vec::new(),
+        workers: LocalApiWorkersSnapshot::default(),
+        capabilities: Vec::new(),
     }
 }
 

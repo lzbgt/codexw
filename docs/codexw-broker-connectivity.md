@@ -698,5 +698,12 @@ The local API spike has now started with a minimal loopback skeleton:
 - `GET /api/v1/session/{session_id}/capabilities`
 - internal command queue from the HTTP listener into the main runtime loop
 
-The next concrete code step is the first semantic SSE stream plus transcript and
+That semantic event-stream milestone is now partially landed:
+
+- `GET /api/v1/session/{session_id}/events` exists in the loopback local API
+- replay works through `Last-Event-ID`
+- the current stream emits `session.updated`, `turn.updated`,
+  `orchestration.updated`, `workers.updated`, and `capabilities.updated`
+
+The next concrete code step is now transcript routes plus shell/service
 mutation routes, not more route discovery.
