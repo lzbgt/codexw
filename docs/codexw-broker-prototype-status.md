@@ -137,6 +137,11 @@ the real connector binary:
   - conflicting rival mutation with structured lease conflict details
   - owner mutation recovery
   - observer `Last-Event-ID` resume
+- one observer-readable contention workflow that mixes:
+  - owner-created leased session
+  - observer session/orchestration/shell/service/capability reads
+  - conflicting rival mutation with structured lease conflict details
+  - observer reads remaining available after the conflict
 - one lease-handoff workflow that mixes:
   - owner-created leased session
   - two independent observers consuming the same initial event state
@@ -154,6 +159,13 @@ the real connector binary:
   - rival release
   - owner retake and successful mutation
   - observer `Last-Event-ID` resume after the second role change
+- one client-event lease-handoff workflow that mixes:
+  - owner-created leased session
+  - observer initial event consumption
+  - rival `client-event` conflict before release
+  - explicit owner release
+  - rival lease acquisition and successful `client-event` publish
+  - observer `Last-Event-ID` resume after the handoff
 
 This process-level proof comes from two complementary surfaces:
 
@@ -194,8 +206,8 @@ The biggest remaining gaps are above the route layer, not below it:
    promoted into the harder adapter criteria captured in
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 2. broader connector behavior under sustained multi-client contention beyond the
-   now-covered conflict, recovery, explicit handoff, and repeated
-   role-reversal workflows
+   now-covered observer-readable contention, conflict/recovery, explicit
+   handoff, repeated role-reversal, and client-event handoff workflows
 3. a clearer statement of which broker/client surfaces are intentionally out of
    scope for `codexw`, now captured in
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
@@ -214,8 +226,8 @@ If continuing on this track, the highest-leverage next tasks are:
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 2. add more adversarial multi-client workflows, especially longer-lived lease
    churn and more complex observer/rival/owner permutations beyond the
-   now-covered conflict, recovery, explicit handoff, and repeated
-   role-reversal paths
+   now-covered observer-readable contention, conflict/recovery, explicit
+   handoff, repeated role-reversal, and client-event handoff paths
 3. keep the out-of-scope boundary explicit through
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) so prototype
    expansion does not drift into parity assumptions

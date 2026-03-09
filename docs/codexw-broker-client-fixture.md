@@ -62,6 +62,8 @@ fixture against the real connector binary for:
 - session create / turn / transcript
 - session list
 - client event publish plus event-stream replay/resume
+- client-event ownership conflict plus explicit lease handoff and resumed
+  observation
 - turn interrupt
 - session attach plus orchestration status / workers / dependencies inspection
 - attachment renew / release plus session snapshot verification
@@ -83,6 +85,11 @@ fixture against the real connector binary for:
   - conflicting rival mutation with structured lease conflict details
   - owner mutation recovery
   - observer `Last-Event-ID` resume
+- one observer-readable contention workflow that mixes:
+  - owner-created leased session
+  - observer session/orchestration/shell/service/capability reads
+  - conflicting rival mutation with structured lease conflict details
+  - observer reads remaining available after the conflict
 - one lease-handoff workflow that mixes:
   - owner-created leased session
   - two independent observers consuming the same initial event state
@@ -100,6 +107,14 @@ fixture against the real connector binary for:
   - rival release
   - owner retake and successful mutation
   - observer `Last-Event-ID` resume after the second role change
+- one client-event lease-handoff workflow that mixes:
+  - owner-created leased session
+  - observer initial event consumption
+  - rival `client-event` conflict before release
+  - explicit owner release
+  - rival lease acquisition
+  - successful rival `client-event` publish
+  - observer `Last-Event-ID` resume after the handoff
 
 So the fixture is not just a documentation example.
 

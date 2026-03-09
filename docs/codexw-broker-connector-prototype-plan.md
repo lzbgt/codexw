@@ -43,6 +43,11 @@ That fixture-backed smoke coverage now includes:
   - conflicting rival mutation
   - owner mutation recovery
   - observer `Last-Event-ID` resume
+- one observer-readable contention workflow with:
+  - leased owner session creation
+  - observer session/orchestration/shell/service/capability inspection
+  - conflicting rival mutation
+  - observer reads remaining available after the conflict
 - one lease-handoff workflow with:
   - leased owner session creation
   - two independent observers consuming the same initial event state
@@ -60,6 +65,13 @@ That fixture-backed smoke coverage now includes:
   - rival release
   - owner retake and mutation
   - observer `Last-Event-ID` resume after the second role change
+- one client-event lease-handoff workflow with:
+  - leased owner session creation
+  - observer initial event consumption
+  - rival `client-event` conflict before release
+  - explicit owner release
+  - rival lease acquisition and successful `client-event` publish
+  - observer `Last-Event-ID` resume after the handoff
 
 ## Objective
 
