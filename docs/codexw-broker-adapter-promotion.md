@@ -4,6 +4,8 @@ This document defines what must be true before the current broker/local-API
 stack should be treated as a supported adapter layer rather than only a strong
 prototype. For the current recommendation based on the present proof surface,
 see [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
+For the operational meaning of that support level after promotion, see
+[codexw-broker-support-policy.md](codexw-broker-support-policy.md).
 
 It does not redefine the whole broker architecture. It answers a narrower
 question:
@@ -207,6 +209,7 @@ After the current prototype phase, the project should be able to choose one of:
 Choose this when:
 
 - route, error, event, and policy contracts are explicit
+- the support/stability expectations for "supported experimental" are explicit
 - multi-client proof is strong enough for intended consumers
 - the connector remains a thin adapter
 - the unsupported boundary is explicit and acceptable
@@ -254,6 +257,7 @@ That means the next meaningful work is:
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)

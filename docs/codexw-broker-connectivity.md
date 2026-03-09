@@ -162,6 +162,8 @@ For the concise implementation/proof snapshot, see
 For the current recommendation on whether that proof is already sufficient to
 promote the stack beyond prototype framing, see
 [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
+For the operational meaning of that recommended support level, see
+[codexw-broker-support-policy.md](codexw-broker-support-policy.md).
 
 - `codexw` has a working loopback HTTP/SSE local API
 - the tracked connector prototype supports both raw `/proxy` passthrough and a

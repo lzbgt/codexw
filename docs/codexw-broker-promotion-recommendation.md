@@ -30,6 +30,11 @@ The recommended claim is:
   contract
 - the unsupported boundary remains explicit and enforced
 
+The operational meaning of that support level now lives in
+[codexw-broker-support-policy.md](codexw-broker-support-policy.md), so this
+document no longer has to carry implicit support/stability assumptions by
+itself.
+
 ## Why Promotion Is Now Justified
 
 This recommendation is based on facts already present in the repo.
@@ -40,6 +45,8 @@ The repo now has explicit documents for:
 
 - the adapter contract:
   [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- the support/stability policy:
+  [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - client policy and role semantics:
   [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - unsupported boundaries:
@@ -148,6 +155,7 @@ not:
 ## Companion Docs
 
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)

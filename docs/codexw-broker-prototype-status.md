@@ -9,6 +9,7 @@ design set:
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
@@ -230,13 +231,12 @@ The biggest remaining gaps are above the route layer, not below it:
 2. broader connector behavior under sustained multi-client contention beyond the
    now-covered observer-readable contention, conflict/recovery, explicit
    handoff, repeated role-reversal, and client-event handoff workflows
-3. a clearer statement of which broker/client surfaces are intentionally out of
-   scope for `codexw`, now captured in
-   [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
-4. eventual promotion from prototype connector to a more formal adapter layer
+3. eventual promotion from prototype connector to a more formal adapter layer
    is still a deliberate decision point, but the current recommendation is now
    written down explicitly in
-   [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
+   [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md),
+   and the operational meaning of that support level is now frozen in
+   [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 
 The remaining gaps are therefore no longer basic validation fidelity or missing
 contract language. They are promotion judgment and broader architectural

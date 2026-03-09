@@ -23,6 +23,9 @@ For the current recommendation on that promotion question, see
 [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md).
 For the current frozen broker-facing adapter contract itself, see
 [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md).
+For the operational meaning of "supported experimental adapter", including
+stability and breaking-change expectations, see
+[docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md).
 For a concise mapping from those criteria to the currently verified proof
 surface, see [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md).
 

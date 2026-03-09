@@ -302,7 +302,15 @@ Current status:
 - `wrapper/src/local_api/server.rs`
   - TCP listener lifecycle, HTTP parsing, connection handling, and response writeout
 - `wrapper/src/local_api/routes.rs`
-  - shared auth, JSON helpers, session lookup, `job_ref` resolution, and top-level route dispatch
+  - namespace root and re-export surface for the route layer
+- `wrapper/src/local_api/routes/dispatch.rs`
+  - top-level route dispatch, auth gate, session-scoped route routing, and healthz handling
+- `wrapper/src/local_api/routes/event_stream.rs`
+  - SSE stream request routing, replay handling, and stream write helpers
+- `wrapper/src/local_api/routes/shared.rs`
+  - shared JSON helpers, session payload helpers, attachment lease enforcement, and `job_ref` resolution
+- `wrapper/src/local_api/routes/client_events.rs`
+  - top-level and session-scoped semantic `client_event` publish handlers
 - `wrapper/src/local_api/routes/session.rs`
   - session inspect/new/attach route handlers
 - `wrapper/src/local_api/routes/turn.rs`
@@ -368,8 +376,9 @@ terminal-render code.
 
 ## Error Model Requirements
 
-Phase 1 should standardize, through the shared helpers already living in
-`wrapper/src/local_api/routes.rs`:
+Phase 1 should standardize, through the shared route helper layer now living in
+`wrapper/src/local_api/routes/shared.rs` and
+`wrapper/src/local_api/routes/dispatch.rs`:
 
 - `session_*`
 - `thread_*`
@@ -381,7 +390,8 @@ Phase 1 should standardize, through the shared helpers already living in
 
 Errors should always be JSON and should never expose raw terminal-only wording
 as the primary contract. A dedicated `local_api/errors.rs` module is not
-required unless the current shared helper layer becomes too large or divergent.
+required unless the current `routes/shared.rs` + `routes/dispatch.rs` helper
+layer becomes too large or divergent.
 
 ## Security Defaults
 

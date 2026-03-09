@@ -30,7 +30,7 @@ that `codexw` can be controlled remotely without scraping terminal output:
 
 | Route | Phase | Existing source of truth | Proposed local API handler | Minimum verification |
 | --- | --- | --- | --- | --- |
-| `GET /healthz` | 1 | none | `local_api/routes.rs`, `local_api/server.rs` | basic route smoke test |
+| `GET /healthz` | 1 | none | `local_api/routes/dispatch.rs`, `local_api/server.rs` | basic route smoke test |
 | `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
 | `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues resume of an existing thread id |
 | `GET /api/v1/session/{session_id}` | 2 | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `local_api/routes/session.rs` | Implemented. Returns structured `session` + explicit process-scoped `attachment` metadata while preserving compatibility summary fields |
@@ -41,7 +41,7 @@ that `codexw` can be controlled remotely without scraping terminal output:
 | `POST /api/v1/session/{session_id}/turn/start` | 2 | `dispatch_submit_turns.rs`, `input/*`, `requests/turn_start.rs` | `local_api/routes/turn.rs` | Implemented. Session-scoped alias over turn start avoids redundant session ids in connector clients and honors the active attachment lease |
 | `POST /api/v1/session/{session_id}/turn/interrupt` | 2 | `dispatch_command_thread_control.rs`, `requests/turn_control.rs`, `app_input_interrupt.rs` | `local_api/routes/turn.rs` | Implemented. Session-scoped alias over turn interrupt preserves the same runtime control path and honors the active attachment lease |
 | `GET /api/v1/session/{session_id}/transcript` | 3 | transcript state + `transcript_*` summaries | `local_api/routes/transcript.rs` | bounded semantic snapshot without ANSI |
-| `GET /api/v1/session/{session_id}/events` | 3 | runtime mutations across `events/*`, `notification_*`, `background_shells/*`, `orchestration_registry/*` | `local_api/events.rs`, `local_api/routes.rs`, `local_api/server.rs` | Implemented. SSE stream emits semantic envelopes, supports `Last-Event-ID` replay, and survives idle time with heartbeats |
+| `GET /api/v1/session/{session_id}/events` | 3 | runtime mutations across `events/*`, `notification_*`, `background_shells/*`, `orchestration_registry/*` | `local_api/events.rs`, `local_api/routes/event_stream.rs`, `local_api/server.rs` | Implemented. SSE stream emits semantic envelopes, supports `Last-Event-ID` replay, and survives idle time with heartbeats |
 | `GET /api/v1/session/{session_id}/orchestration/status` | 4 | `orchestration_view/summary/*` | `local_api/routes/orchestration.rs` | compact orchestration summary matches local status view semantics |
 | `GET /api/v1/session/{session_id}/orchestration/workers` | 4 | `orchestration_view/workers/*` | `local_api/routes/orchestration.rs` | filter parsing and focused worker render correctness |
 | `GET /api/v1/session/{session_id}/orchestration/dependencies` | 4 | `orchestration_view/dependencies.rs` | `local_api/routes/orchestration.rs` | dependency filters and focused capability queries work |
@@ -62,8 +62,8 @@ that `codexw` can be controlled remotely without scraping terminal output:
 | `POST /api/v1/session/{session_id}/services/{job_ref}/attach` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/routes/services.rs` | Implemented. Resolves `job_ref` through the snapshot, returns structured `service` + `interaction` payloads while preserving the legacy attachment summary text, and enforces the active attachment lease |
 | `POST /api/v1/session/{session_id}/services/{job_ref}/wait` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/routes/services.rs` | Implemented. Waits on live service readiness with optional `timeoutMs`, returns structured `service` + `interaction` payloads while preserving the legacy result text, and enforces the active attachment lease |
 | `POST /api/v1/session/{session_id}/services/{job_ref}/run` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/routes/services.rs` | Implemented. Invokes a service recipe with optional `args` / `waitForReadyMs`, returns structured `service` + `recipe` + `interaction` payloads while preserving the legacy result text, and enforces the active attachment lease |
-| `POST /api/v1/session/client_event` | 5 | `local_api/events.rs`, attachment lease policy in `local_api/routes.rs` | `local_api/routes/client_events.rs` | Implemented. Top-level compatibility route validates `session_id`, publishes replayable `client.event` entries, and enforces the active attachment lease |
-| `POST /api/v1/session/{session_id}/client_event` | 5 | `local_api/events.rs`, attachment lease policy in `local_api/routes.rs` | `local_api/routes/client_events.rs` | Implemented. Session-scoped route publishes replayable `client.event` entries with optional structured `data` and enforces the active attachment lease |
+| `POST /api/v1/session/client_event` | 5 | `local_api/events.rs`, attachment lease policy in `local_api/routes/shared.rs` | `local_api/routes/client_events.rs` | Implemented. Top-level compatibility route validates `session_id`, publishes replayable `client.event` entries, and enforces the active attachment lease |
+| `POST /api/v1/session/{session_id}/client_event` | 5 | `local_api/events.rs`, attachment lease policy in `local_api/routes/shared.rs` | `local_api/routes/client_events.rs` | Implemented. Session-scoped route publishes replayable `client.event` entries with optional structured `data` and enforces the active attachment lease |
 
 ## Suggested Module Layout
 
@@ -72,6 +72,10 @@ Current module tree:
 - `wrapper/src/local_api.rs`
 - `wrapper/src/local_api/server.rs`
 - `wrapper/src/local_api/routes.rs`
+- `wrapper/src/local_api/routes/client_events.rs`
+- `wrapper/src/local_api/routes/dispatch.rs`
+- `wrapper/src/local_api/routes/event_stream.rs`
+- `wrapper/src/local_api/routes/shared.rs`
 - `wrapper/src/local_api/routes/session.rs`
 - `wrapper/src/local_api/routes/turn.rs`
 - `wrapper/src/local_api/routes/transcript.rs`
@@ -112,10 +116,10 @@ This minimizes churn because later routes depend on:
 
 Every route family currently shares:
 
-- one JSON error contract from `local_api/routes.rs`
+- one JSON error contract from `local_api/routes/shared.rs`
 - one session lookup path
 - one thread/session identity model
-- one auth gate abstraction in `local_api/routes.rs`
+- one auth gate abstraction in `local_api/routes/dispatch.rs`
 - one job-ref parser policy
 
 Connector-facing consistency already depends on two explicit choices that are

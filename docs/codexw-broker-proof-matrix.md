@@ -18,6 +18,7 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
@@ -96,7 +97,9 @@ in route coverage and process-level workflow proof.
 The weakest remaining areas are no longer missing routes or missing contract
 text. The adapter contract now exists explicitly in
 [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md), and
-the process-level proof surface is broad.
+the operational support-level semantics now exist explicitly in
+[codexw-broker-support-policy.md](codexw-broker-support-policy.md), and the
+process-level proof surface is broad.
 
 That means the next high-leverage work is not more route invention or policy
 freezing. The repo now has enough evidence to support a concrete recommendation
