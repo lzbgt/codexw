@@ -156,9 +156,13 @@ The current implementation is now past pure route sketches:
 - the tracked connector prototype supports both raw `/proxy` passthrough and a
   first-pass broker-style alias surface for session, turn, transcript,
   orchestration, event, shell, service, and capability flows
+- the broker-style alias surface now also includes attachment lease lifecycle
+  routes for renew/release, so remote clients do not need raw `/proxy/...`
+  access for normal lease management
 - the repo now also has a process-level connector smoke test proving that a
   remote client can drive the connector over TCP while a fake local API is
-  served behind it
+  served behind it, including broker-style session create and attachment lease
+  lifecycle aliases
 
 ## Compatibility Matrix
 

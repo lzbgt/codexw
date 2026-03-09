@@ -201,6 +201,8 @@ The first connector prototype should ship with a small compatibility table:
 | `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works |
 | `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works with `session_id` body injection when missing |
+| `/v1/agents/{agent_id}/sessions/{session_id}/attachment/renew` | `/api/v1/session/{session_id}/attachment/renew` | works as alias surface with client/lease header projection |
+| `/v1/agents/{agent_id}/sessions/{session_id}/attachment/release` | `/api/v1/session/{session_id}/attachment/release` | works as alias surface with client header projection |
 | `/v1/agents/{agent_id}/sessions/{session_id}/turns` | `/api/v1/session/{session_id}/turn/start` | works as alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/events` | `/api/v1/session/{session_id}/events` | works as alias SSE surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/shells` | `/api/v1/session/{session_id}/shells` and `/shells/start` | works as method-sensitive alias surface |

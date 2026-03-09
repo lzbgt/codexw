@@ -241,6 +241,16 @@ fn resolve_proxy_target(method: &str, path: &str, agent_id: &str) -> Option<Prox
                     is_sse: false,
                     session_id_hint: Some(session_id),
                 }),
+                ["attachment", "renew"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/attachment/renew"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["attachment", "release"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/attachment/release"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
                 ["turns"] => Some(ProxyTarget {
                     local_path: format!("/api/v1/session/{session_id}/turn/start"),
                     is_sse: false,
@@ -353,7 +363,11 @@ fn resolve_proxy_target(method: &str, path: &str, agent_id: &str) -> Option<Prox
     let sessions_root = format!("/v1/agents/{agent_id}/sessions");
     if path == sessions_root || path == format!("{sessions_root}/") {
         return Some(ProxyTarget {
-            local_path: "/api/v1/session".to_string(),
+            local_path: if method == "POST" {
+                "/api/v1/session/new".to_string()
+            } else {
+                "/api/v1/session".to_string()
+            },
             is_sse: false,
             session_id_hint: None,
         });
@@ -1277,6 +1291,12 @@ mod tests {
         assert!(!list.is_sse);
         assert!(list.session_id_hint.is_none());
 
+        let create = resolve_proxy_target("POST", "/v1/agents/codexw-lab/sessions", "codexw-lab")
+            .expect("create route");
+        assert_eq!(create.local_path, "/api/v1/session/new");
+        assert!(!create.is_sse);
+        assert!(create.session_id_hint.is_none());
+
         let inspect =
             resolve_proxy_target("GET", "/v1/agents/codexw-lab/sessions/sess_1", "codexw-lab")
                 .expect("inspect route");
@@ -1290,6 +1310,25 @@ mod tests {
         .expect("attach route");
         assert_eq!(attach.local_path, "/api/v1/session/attach");
         assert_eq!(attach.session_id_hint.as_deref(), Some("sess_1"));
+
+        let renew = resolve_proxy_target(
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/attachment/renew",
+            "codexw-lab",
+        )
+        .expect("renew route");
+        assert_eq!(renew.local_path, "/api/v1/session/sess_1/attachment/renew");
+
+        let release = resolve_proxy_target(
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/attachment/release",
+            "codexw-lab",
+        )
+        .expect("release route");
+        assert_eq!(
+            release.local_path,
+            "/api/v1/session/sess_1/attachment/release"
+        );
 
         let turns = resolve_proxy_target(
             "POST",

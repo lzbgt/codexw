@@ -49,6 +49,8 @@ The first useful connector should support:
 
 - session create
 - session attach
+- attachment renew
+- attachment release
 - session inspect
 - turn start
 - turn interrupt
@@ -157,7 +159,9 @@ Current automated coverage now includes a real process-level smoke path:
 - a fake local-API server is bound behind it
 - a remote client drives the connector over TCP/HTTP
 - the smoke test currently verifies:
+  - broker-style `sessions` alias mapping for session create
   - broker-style `sessions/{session_id}/attach` alias mapping
+  - broker-style `sessions/{session_id}/attachment/{renew|release}` alias mapping
   - broker-style `sessions/{session_id}/shells` alias mapping for shell start
   - broker-style `sessions/{session_id}/services/{job_ref}/run` alias mapping
   - `session_id` body projection for attach aliases
@@ -189,6 +193,7 @@ Current implemented behavior:
   - `/v1/agents/{agent_id}/sessions`
   - `/v1/agents/{agent_id}/sessions/{session_id}`
   - `/v1/agents/{agent_id}/sessions/{session_id}/attach`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/attachment/{renew|release}`
   - `/v1/agents/{agent_id}/sessions/{session_id}/turns`
   - `/v1/agents/{agent_id}/sessions/{session_id}/interrupt`
   - `/v1/agents/{agent_id}/sessions/{session_id}/transcript`
