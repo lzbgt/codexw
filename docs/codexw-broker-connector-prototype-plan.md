@@ -175,6 +175,14 @@ Current automated coverage now includes a real process-level smoke path:
     - wait for service readiness
     - run service recipe
     - inspect capabilities
+  - a realistic broker-style service-mutation workflow:
+    - create session
+    - provide capabilities
+    - retarget dependencies
+    - update contract metadata
+    - relabel service
+    - inspect services and capabilities
+  - alias-based SSE forwarding with `Last-Event-ID` passthrough on reconnect
   - broker-style `sessions/{session_id}/shells` alias mapping for shell start
   - broker-style `sessions/{session_id}/services/{job_ref}/run` alias mapping
   - `session_id` body projection for attach aliases

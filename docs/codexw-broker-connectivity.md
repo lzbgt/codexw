@@ -163,8 +163,10 @@ The current implementation is now past pure route sketches:
   remote client can drive the connector over TCP while a fake local API is
   served behind it, including broker-style session create and attachment lease
   lifecycle aliases, a realistic create -> turn -> transcript ->
-  orchestration inspection workflow, and a realistic create -> shell ->
-  service attach/wait/run -> capability inspection workflow
+  orchestration inspection workflow, a realistic create -> shell ->
+  service attach/wait/run -> capability inspection workflow, a realistic
+  service-mutation workflow (`provide` / `depend` / `contract` / `relabel`),
+  and alias-based event-stream resume behavior via `Last-Event-ID`
 
 ## Compatibility Matrix
 
