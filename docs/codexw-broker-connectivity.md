@@ -150,6 +150,13 @@ documents:
 - [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
 - [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
 
+The current implementation is now past pure route sketches:
+
+- `codexw` has a working loopback HTTP/SSE local API
+- the tracked connector prototype supports both raw `/proxy` passthrough and a
+  first-pass broker-style alias surface for session, turn, transcript,
+  orchestration, and event flows
+
 ## Compatibility Matrix
 
 ### Areas That Already Map Reasonably Well

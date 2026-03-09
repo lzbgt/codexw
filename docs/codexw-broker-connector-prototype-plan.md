@@ -172,9 +172,20 @@ Current implemented behavior:
 - requires an exact `{agent_id}` segment in:
   - `/v1/agents/{agent_id}/proxy/...`
   - `/v1/agents/{agent_id}/proxy_sse/...`
+- also exposes first-pass broker-style aliases for the common remote-client paths:
+  - `/v1/agents/{agent_id}/sessions`
+  - `/v1/agents/{agent_id}/sessions/{session_id}`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/attach`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/turns`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/interrupt`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/transcript`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/events`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/orchestration/{status|workers|dependencies}`
 - forwards only an allowlisted subset of HTTP requests under `proxy/...` to the
   local API path of the same suffix
 - forwards SSE requests under `proxy_sse/...` to the local API event stream
+- resolves the broker-style aliases onto the same local-API allowlist instead of
+  creating a second policy path
 - wraps SSE `data:` payloads with:
   - `source: "codexw"`
   - `broker.agent_id`

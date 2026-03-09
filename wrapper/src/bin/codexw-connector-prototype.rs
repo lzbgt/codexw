@@ -77,6 +77,7 @@ struct UpstreamResponse {
 struct ProxyTarget {
     local_path: String,
     is_sse: bool,
+    session_id_hint: Option<String>,
 }
 
 fn main() -> Result<()> {
@@ -163,7 +164,7 @@ fn handle_connection(mut stream: TcpStream, cli: &Cli) -> Result<()> {
         }
     }
 
-    let Some(target) = strip_proxy_target(&request.path, &cli.agent_id) else {
+    let Some(target) = resolve_proxy_target(&request.path, &cli.agent_id) else {
         write_response(
             &mut stream,
             &json_error_response(404, "not_found", "unknown connector route", None),
@@ -195,27 +196,101 @@ fn handle_connection(mut stream: TcpStream, cli: &Cli) -> Result<()> {
         return Ok(());
     }
 
-    let upstream = forward_request(&request, cli, &target.local_path)?;
+    let upstream = forward_request(&request, cli, &target)?;
     write_response(&mut stream, &from_upstream_response(upstream, cli))?;
     let _ = stream.shutdown(Shutdown::Both);
     Ok(())
 }
 
-fn strip_proxy_target(path: &str, agent_id: &str) -> Option<ProxyTarget> {
+fn resolve_proxy_target(path: &str, agent_id: &str) -> Option<ProxyTarget> {
     let proxy_prefix = format!("/v1/agents/{agent_id}/proxy/");
     if let Some(stripped) = path.strip_prefix(&proxy_prefix) {
         return Some(ProxyTarget {
             local_path: format!("/{}", stripped.trim_start_matches('/')),
             is_sse: false,
+            session_id_hint: None,
         });
     }
 
     let proxy_sse_prefix = format!("/v1/agents/{agent_id}/proxy_sse/");
-    path.strip_prefix(&proxy_sse_prefix)
-        .map(|stripped| ProxyTarget {
+    if let Some(stripped) = path.strip_prefix(&proxy_sse_prefix) {
+        return Some(ProxyTarget {
             local_path: format!("/{}", stripped.trim_start_matches('/')),
             is_sse: true,
-        })
+            session_id_hint: None,
+        });
+    }
+
+    let session_prefix = format!("/v1/agents/{agent_id}/sessions/");
+    if let Some(stripped) = path.strip_prefix(&session_prefix) {
+        let segments: Vec<&str> = stripped
+            .trim_matches('/')
+            .split('/')
+            .filter(|segment| !segment.is_empty())
+            .collect();
+        if let Some((session_id, rest)) = segments.split_first() {
+            let session_id = (*session_id).to_string();
+            return match rest {
+                [] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["attach"] => Some(ProxyTarget {
+                    local_path: "/api/v1/session/attach".to_string(),
+                    is_sse: false,
+                    session_id_hint: Some(session_id),
+                }),
+                ["turns"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/turn/start"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["interrupt"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/turn/interrupt"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["transcript"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/transcript"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["events"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/events"),
+                    is_sse: true,
+                    session_id_hint: None,
+                }),
+                ["orchestration", "status"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/orchestration/status"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["orchestration", "workers"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/orchestration/workers"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["orchestration", "dependencies"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/orchestration/dependencies"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                _ => None,
+            };
+        }
+    }
+
+    let sessions_root = format!("/v1/agents/{agent_id}/sessions");
+    if path == sessions_root || path == format!("{sessions_root}/") {
+        return Some(ProxyTarget {
+            local_path: "/api/v1/session".to_string(),
+            is_sse: false,
+            session_id_hint: None,
+        });
+    }
+
+    None
 }
 
 fn is_allowed_local_proxy_target(method: &str, local_path: &str, is_sse: bool) -> bool {
@@ -270,7 +345,11 @@ fn is_allowed_local_proxy_target(method: &str, local_path: &str, is_sse: bool) -
     }
 }
 
-fn forward_request(request: &HttpRequest, cli: &Cli, local_path: &str) -> Result<UpstreamResponse> {
+fn forward_request(
+    request: &HttpRequest,
+    cli: &Cli,
+    target: &ProxyTarget,
+) -> Result<UpstreamResponse> {
     let base = Url::parse(&cli.local_api_base).context("parse local API base URL")?;
     let host = base
         .host_str()
@@ -288,8 +367,8 @@ fn forward_request(request: &HttpRequest, cli: &Cli, local_path: &str) -> Result
         .set_write_timeout(Some(Duration::from_secs(5)))
         .context("set upstream write timeout")?;
 
-    let path = compose_local_path(&base, local_path);
-    let (content_type, body) = prepare_upstream_body(request, local_path)?;
+    let path = compose_local_path(&base, &target.local_path);
+    let (content_type, body) = prepare_upstream_body(request, target)?;
     write_upstream_request(
         &mut stream,
         &request.method,
@@ -305,7 +384,7 @@ fn forward_request(request: &HttpRequest, cli: &Cli, local_path: &str) -> Result
 
 fn prepare_upstream_body(
     request: &HttpRequest,
-    local_path: &str,
+    target: &ProxyTarget,
 ) -> Result<(Option<String>, Vec<u8>)> {
     let requested_client_id = request
         .headers
@@ -319,14 +398,19 @@ fn prepare_upstream_body(
         .map(|value| value.trim())
         .filter(|value| !value.is_empty());
 
-    if request.method != "POST" || (!supports_client_lease_injection(local_path)) {
+    let requires_object_body =
+        target.session_id_hint.is_some() || supports_client_lease_injection(&target.local_path);
+    if request.method != "POST" || !requires_object_body {
         return Ok((
             request.headers.get("content-type").cloned(),
             request.body.clone(),
         ));
     }
 
-    if requested_client_id.is_none() && requested_lease_seconds.is_none() {
+    if requested_client_id.is_none()
+        && requested_lease_seconds.is_none()
+        && target.session_id_hint.is_none()
+    {
         return Ok((
             request.headers.get("content-type").cloned(),
             request.body.clone(),
@@ -337,14 +421,18 @@ fn prepare_upstream_body(
         serde_json::Map::new()
     } else {
         let value: Value = serde_json::from_slice(&request.body)
-            .context("parse connector request body for client/lease injection")?;
+            .context("parse connector request body for connector JSON injection")?;
         let Some(object) = value.as_object() else {
-            anyhow::bail!(
-                "connector header-based client/lease injection requires a JSON object body"
-            );
+            anyhow::bail!("connector JSON injection requires a JSON object body");
         };
         object.clone()
     };
+
+    if let Some(session_id) = &target.session_id_hint {
+        object
+            .entry("session_id".to_string())
+            .or_insert(Value::String(session_id.clone()));
+    }
 
     if let Some(client_id) = requested_client_id {
         object
@@ -906,35 +994,39 @@ mod tests {
     use serde_json::json;
 
     use super::HttpRequest;
+    use super::ProxyTarget;
     use super::is_allowed_local_proxy_target;
     use super::prepare_upstream_body;
-    use super::strip_proxy_target;
+    use super::resolve_proxy_target;
     use super::supports_client_lease_injection;
     use super::wrap_event_payload;
 
     #[test]
-    fn strip_proxy_target_maps_http_and_sse_routes() {
-        let http = strip_proxy_target(
+    fn resolve_proxy_target_maps_http_and_sse_routes() {
+        let http = resolve_proxy_target(
             "/v1/agents/codexw-lab/proxy/api/v1/session/new",
             "codexw-lab",
         )
         .expect("http route");
         assert_eq!(http.local_path, "/api/v1/session/new");
         assert!(!http.is_sse);
+        assert!(http.session_id_hint.is_none());
 
-        let sse = strip_proxy_target(
+        let sse = resolve_proxy_target(
             "/v1/agents/codexw-lab/proxy_sse/api/v1/session/sess_1/events",
             "codexw-lab",
         )
         .expect("sse route");
         assert_eq!(sse.local_path, "/api/v1/session/sess_1/events");
         assert!(sse.is_sse);
+        assert!(sse.session_id_hint.is_none());
     }
 
     #[test]
-    fn strip_proxy_target_rejects_wrong_agent() {
+    fn resolve_proxy_target_rejects_wrong_agent_for_proxy_routes() {
         assert!(
-            strip_proxy_target("/v1/agents/other/proxy/api/v1/session/new", "codexw-lab").is_none()
+            resolve_proxy_target("/v1/agents/other/proxy/api/v1/session/new", "codexw-lab")
+                .is_none()
         );
     }
 
@@ -1012,8 +1104,15 @@ mod tests {
             ]),
             body: Vec::new(),
         };
-        let (content_type, body) =
-            prepare_upstream_body(&request, "/api/v1/session/new").expect("prepared body");
+        let (content_type, body) = prepare_upstream_body(
+            &request,
+            &ProxyTarget {
+                local_path: "/api/v1/session/new".to_string(),
+                is_sse: false,
+                session_id_hint: None,
+            },
+        )
+        .expect("prepared body");
         assert_eq!(content_type.as_deref(), Some("application/json"));
         let json: Value = serde_json::from_slice(&body).expect("json body");
         assert_eq!(json["client_id"], "mobile-ios");
@@ -1038,8 +1137,15 @@ mod tests {
             }))
             .expect("serialize"),
         };
-        let (_, body) =
-            prepare_upstream_body(&request, "/api/v1/session/attach").expect("prepared body");
+        let (_, body) = prepare_upstream_body(
+            &request,
+            &ProxyTarget {
+                local_path: "/api/v1/session/attach".to_string(),
+                is_sse: false,
+                session_id_hint: None,
+            },
+        )
+        .expect("prepared body");
         let json: Value = serde_json::from_slice(&body).expect("json body");
         assert_eq!(json["client_id"], "webui");
         assert_eq!(json["lease_seconds"], 90);
@@ -1056,8 +1162,15 @@ mod tests {
             )]),
             body: Vec::new(),
         };
-        let err =
-            prepare_upstream_body(&request, "/api/v1/session/new").expect_err("invalid lease");
+        let err = prepare_upstream_body(
+            &request,
+            &ProxyTarget {
+                local_path: "/api/v1/session/new".to_string(),
+                is_sse: false,
+                session_id_hint: None,
+            },
+        )
+        .expect_err("invalid lease");
         assert!(format!("{err:#}").contains("x-codexw-lease-seconds"));
     }
 
@@ -1069,8 +1182,83 @@ mod tests {
             headers: HashMap::from([("x-codexw-client-id".to_string(), "mobile-ios".to_string())]),
             body: serde_json::to_vec(&json!(["not", "an", "object"])).expect("serialize"),
         };
-        let err = prepare_upstream_body(&request, "/api/v1/session/new").expect_err("invalid body");
+        let err = prepare_upstream_body(
+            &request,
+            &ProxyTarget {
+                local_path: "/api/v1/session/new".to_string(),
+                is_sse: false,
+                session_id_hint: None,
+            },
+        )
+        .expect_err("invalid body");
         assert!(format!("{err:#}").contains("JSON object body"));
+    }
+
+    #[test]
+    fn resolve_proxy_target_maps_broker_style_session_alias_routes() {
+        let list = resolve_proxy_target("/v1/agents/codexw-lab/sessions", "codexw-lab")
+            .expect("list route");
+        assert_eq!(list.local_path, "/api/v1/session");
+        assert!(!list.is_sse);
+        assert!(list.session_id_hint.is_none());
+
+        let inspect = resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1", "codexw-lab")
+            .expect("inspect route");
+        assert_eq!(inspect.local_path, "/api/v1/session/sess_1");
+
+        let attach =
+            resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1/attach", "codexw-lab")
+                .expect("attach route");
+        assert_eq!(attach.local_path, "/api/v1/session/attach");
+        assert_eq!(attach.session_id_hint.as_deref(), Some("sess_1"));
+
+        let turns =
+            resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1/turns", "codexw-lab")
+                .expect("turn route");
+        assert_eq!(turns.local_path, "/api/v1/session/sess_1/turn/start");
+
+        let transcript = resolve_proxy_target(
+            "/v1/agents/codexw-lab/sessions/sess_1/transcript",
+            "codexw-lab",
+        )
+        .expect("transcript route");
+        assert_eq!(transcript.local_path, "/api/v1/session/sess_1/transcript");
+
+        let events =
+            resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1/events", "codexw-lab")
+                .expect("events route");
+        assert_eq!(events.local_path, "/api/v1/session/sess_1/events");
+        assert!(events.is_sse);
+    }
+
+    #[test]
+    fn resolve_proxy_target_rejects_wrong_agent_for_alias_routes() {
+        assert!(resolve_proxy_target("/v1/agents/other/sessions/sess_1", "codexw-lab").is_none());
+    }
+
+    #[test]
+    fn prepare_upstream_body_injects_session_id_hint_for_attach_alias() {
+        let request = HttpRequest {
+            method: "POST".to_string(),
+            path: "/v1/agents/codexw-lab/sessions/sess_1/attach".to_string(),
+            headers: HashMap::new(),
+            body: serde_json::to_vec(&json!({
+                "thread_id": "thread_1"
+            }))
+            .expect("serialize"),
+        };
+        let (_, body) = prepare_upstream_body(
+            &request,
+            &ProxyTarget {
+                local_path: "/api/v1/session/attach".to_string(),
+                is_sse: false,
+                session_id_hint: Some("sess_1".to_string()),
+            },
+        )
+        .expect("prepared body");
+        let json: Value = serde_json::from_slice(&body).expect("json body");
+        assert_eq!(json["session_id"], "sess_1");
+        assert_eq!(json["thread_id"], "thread_1");
     }
 
     #[test]

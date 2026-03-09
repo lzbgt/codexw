@@ -199,6 +199,10 @@ The first connector prototype should ship with a small compatibility table:
 | `/v1/agents/{agent_id}/proxy/...` session create | `/api/v1/session/new` | works |
 | `/v1/agents/{agent_id}/proxy/...` turn start | `/api/v1/turn/start` | works |
 | `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works |
+| `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as alias surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works with `session_id` body injection when missing |
+| `/v1/agents/{agent_id}/sessions/{session_id}/turns` | `/api/v1/session/{session_id}/turn/start` | works as alias surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/events` | `/api/v1/session/{session_id}/events` | works as alias SSE surface |
 | orchestration/service extensions | `codexw`-specific routes | connector-extension |
 
 That table should be kept concrete and testable.
