@@ -645,10 +645,7 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 - Define the minimal compatibility target:
   - now tracked in [docs/codexw-broker-compatibility-target.md](docs/codexw-broker-compatibility-target.md)
 - Evaluate whether the user’s C agent framework can share:
-  - session identity rules
-  - event envelopes
-  - broker transport assumptions
-  - auth and deployment routing concepts
+  - now tracked in [docs/codexw-broker-shared-assumptions.md](docs/codexw-broker-shared-assumptions.md)
 
 ## Current Status
 
