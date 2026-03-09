@@ -22,6 +22,7 @@ That fixture-backed smoke coverage now includes:
 
 - session create / turn / transcript
 - session list
+- client-event publish plus event-stream replay/resume
 - turn interrupt
 - session attach plus orchestration status / workers / dependencies inspection
 - attachment renew / release plus session snapshot verification

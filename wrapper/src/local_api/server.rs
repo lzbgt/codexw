@@ -163,6 +163,7 @@ fn handle_connection(
                     snapshot,
                     command_queue,
                     background_shells,
+                    event_log,
                 ))
             }
         }

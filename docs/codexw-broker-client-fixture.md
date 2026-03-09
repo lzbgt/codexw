@@ -28,6 +28,7 @@ Supported operations include:
 
 - session create / attach / list / inspect
 - attachment renew / release
+- client event publish
 - turn start / interrupt
 - transcript fetch
 - event stream consumption with optional `Last-Event-ID`
@@ -60,6 +61,7 @@ fixture against the real connector binary for:
 
 - session create / turn / transcript
 - session list
+- client event publish plus event-stream replay/resume
 - turn interrupt
 - session attach plus orchestration status / workers / dependencies inspection
 - attachment renew / release plus session snapshot verification
@@ -143,6 +145,20 @@ python3 scripts/codexw_broker_client.py \
   events \
   --session-id sess_1 \
   --limit 5
+```
+
+Publish a client event:
+
+```bash
+python3 scripts/codexw_broker_client.py \
+  --base-url http://127.0.0.1:4317 \
+  --agent-id codexw-lab \
+  --client-id remote-web \
+  --lease-seconds 45 \
+  client-event \
+  --session-id sess_1 \
+  --event selection.changed \
+  --data-json '{"selection":"services"}'
 ```
 
 Resume from a known event id:

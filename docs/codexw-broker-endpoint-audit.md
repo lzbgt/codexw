@@ -33,7 +33,7 @@ Its purpose is to map relevant `~/work/agent` broker/client surfaces to current
 | Source surface | Classification | `codexw` owner/source | Notes |
 | --- | --- | --- | --- |
 | `POST /api/v1/session/new` | `direct fit` | `state.rs`, thread/session lifecycle | `codexw` already has explicit thread/session concepts and can mint wrapper session handles |
-| `POST /api/v1/session/client_event` | `adapter fit` | future collaboration/event-ingest layer | The concept fits, but `codexw` does not yet expose client event ingestion |
+| `POST /api/v1/session/client_event` | `direct fit` | `local_api/events.rs`, `local_api/routes/client_events.rs` | Public local-API client-event ingestion now exists and can be consumed through the connector/fixture path |
 | `GET /api/v1/session/scene` | `out of scope` | none | No durable scene/entity model in `codexw` today |
 | `POST /api/v1/session/scene/apply` | `out of scope` | none | Same reason; not needed for first remote control |
 

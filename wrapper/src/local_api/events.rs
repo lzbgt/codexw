@@ -113,6 +113,26 @@ pub(crate) fn events_since(
         .collect()
 }
 
+pub(crate) fn publish_client_event(
+    log: &SharedEventLog,
+    session_id: &str,
+    client_id: Option<&str>,
+    event_name: &str,
+    data: Value,
+) {
+    push_event(
+        log,
+        session_id,
+        "client.event",
+        json!({
+            "session_id": session_id,
+            "client_id": client_id,
+            "event": event_name,
+            "data": data,
+        }),
+    );
+}
+
 fn push_event(log: &SharedEventLog, session_id: &str, event: &str, data: Value) {
     let Ok(mut guard) = log.lock() else {
         return;

@@ -1,3 +1,4 @@
+mod client_events;
 mod orchestration;
 mod services;
 mod session;
@@ -42,11 +43,13 @@ pub(crate) fn route_request(
     auth_token: Option<&str>,
 ) -> HttpResponse {
     let background_shells = BackgroundShellManager::default();
-    route_request_with_manager(
+    let event_log = super::new_event_log();
+    route_request_with_manager_and_events(
         request,
         snapshot,
         command_queue,
         &background_shells,
+        &event_log,
         auth_token,
     )
 }
@@ -59,11 +62,36 @@ pub(crate) fn route_request_with_manager(
     background_shells: &BackgroundShellManager,
     auth_token: Option<&str>,
 ) -> HttpResponse {
+    let event_log = super::new_event_log();
+    route_request_with_manager_and_events(
+        request,
+        snapshot,
+        command_queue,
+        background_shells,
+        &event_log,
+        auth_token,
+    )
+}
+
+pub(crate) fn route_request_with_manager_and_events(
+    request: &HttpRequest,
+    snapshot: &SharedSnapshot,
+    command_queue: &SharedCommandQueue,
+    background_shells: &BackgroundShellManager,
+    event_log: &SharedEventLog,
+    auth_token: Option<&str>,
+) -> HttpResponse {
     if let Some(response) = authorize_request(request, auth_token) {
         return response;
     }
 
-    route_authorized_request(request, snapshot, command_queue, background_shells)
+    route_authorized_request(
+        request,
+        snapshot,
+        command_queue,
+        background_shells,
+        event_log,
+    )
 }
 
 pub(super) fn authorize_request(
@@ -94,6 +122,7 @@ pub(super) fn route_authorized_request(
     snapshot: &SharedSnapshot,
     command_queue: &SharedCommandQueue,
     background_shells: &BackgroundShellManager,
+    event_log: &SharedEventLog,
 ) -> HttpResponse {
     let current_snapshot = match snapshot.read() {
         Ok(guard) => guard.clone(),
@@ -122,6 +151,10 @@ pub(super) fn route_authorized_request(
         return session::handle_session_attach_route(request, &current_snapshot, command_queue);
     }
 
+    if request.method == "POST" && request.path == "/api/v1/session/client_event" {
+        return client_events::handle_client_event_route(request, &current_snapshot, event_log);
+    }
+
     if request.method == "POST" {
         if let Some(path) = request.path.strip_prefix("/api/v1/session/") {
             return route_session_scoped_post(
@@ -130,6 +163,7 @@ pub(super) fn route_authorized_request(
                 &current_snapshot,
                 command_queue,
                 background_shells,
+                event_log,
             );
         }
         return json_error_response(404, "not_found", "unknown route");
@@ -187,6 +221,7 @@ fn route_session_scoped_post(
     snapshot: &LocalApiSnapshot,
     command_queue: &SharedCommandQueue,
     background_shells: &BackgroundShellManager,
+    event_log: &SharedEventLog,
 ) -> HttpResponse {
     let mut parts = path.splitn(2, '/');
     let session_id = parts.next().unwrap_or_default();
@@ -205,6 +240,9 @@ fn route_session_scoped_post(
         "attachment/release" => {
             session::handle_attachment_release_route(request, snapshot, command_queue)
         }
+        "client_event" => client_events::handle_session_client_event_route(
+            request, snapshot, event_log, session_id,
+        ),
         "shells/start" => shells::handle_shell_start_route(request, snapshot, command_queue),
         "services/update" => {
             services::handle_service_update_route(request, snapshot, command_queue, session_id)

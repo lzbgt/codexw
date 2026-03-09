@@ -142,8 +142,10 @@ pub(super) fn supports_client_lease_injection(local_path: &str) -> bool {
         segments.as_slice(),
         ["api", "v1", "session", "new"]
             | ["api", "v1", "session", "attach"]
+            | ["api", "v1", "session", "client_event"]
             | ["api", "v1", "session", _, "attachment", "renew"]
             | ["api", "v1", "session", _, "attachment", "release"]
+            | ["api", "v1", "session", _, "client_event"]
             | ["api", "v1", "session", _, "turn", "start"]
             | ["api", "v1", "session", _, "turn", "interrupt"]
             | ["api", "v1", "session", _, "shells", "start"]

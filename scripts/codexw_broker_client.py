@@ -174,6 +174,13 @@ def build_parser() -> argparse.ArgumentParser:
     transcript = sub.add_parser("transcript", help="Fetch transcript snapshot.")
     transcript.add_argument("--session-id", required=True)
 
+    client_event = sub.add_parser("client-event", help="Publish a client event.")
+    client_event.add_argument("--session-id", required=True)
+    client_event.add_argument("--event", required=True)
+    client_event.add_argument(
+        "--data-json", help="Optional JSON payload for the client event."
+    )
+
     events = sub.add_parser("events", help="Read a small number of SSE events.")
     events.add_argument("--session-id", required=True)
     events.add_argument("--last-event-id")
@@ -294,6 +301,11 @@ def main() -> int:
         status, payload = client.get(f"/sessions/{args.session_id}")
     elif cmd == "transcript":
         status, payload = client.get(f"/sessions/{args.session_id}/transcript")
+    elif cmd == "client-event":
+        body: dict[str, Any] = {"event": args.event}
+        if args.data_json:
+            body["data"] = json.loads(args.data_json)
+        status, payload = client.post(f"/sessions/{args.session_id}/client-events", body)
     elif cmd == "events":
         _print_json(
             200,

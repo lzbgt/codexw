@@ -14,6 +14,7 @@ pub(crate) use control::process_local_api_commands;
 pub(crate) use events::LocalApiEvent;
 pub(crate) use events::SharedEventLog;
 pub(crate) use events::new_event_log;
+pub(crate) use events::publish_client_event;
 pub(crate) use events::publish_snapshot_change_events;
 #[cfg(test)]
 #[allow(unused_imports)]

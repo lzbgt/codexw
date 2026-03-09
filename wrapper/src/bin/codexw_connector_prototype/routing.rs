@@ -82,6 +82,11 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
+                ["client-events"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/client_event"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
                 ["turns"] => Some(ProxyTarget {
                     local_path: format!("/api/v1/session/{session_id}/turn/start"),
                     is_sse: false,
@@ -253,6 +258,7 @@ pub(super) fn is_allowed_local_proxy_target(method: &str, local_path: &str, is_s
                 | ["api", "v1", "session"]
                 | ["api", "v1", "session", _]
                 | ["api", "v1", "session", _, "transcript"]
+                | ["api", "v1", "session", _, "client_event"]
                 | ["api", "v1", "session", _, "shells"]
                 | ["api", "v1", "session", _, "shells", _]
                 | ["api", "v1", "session", _, "services"]
@@ -267,8 +273,10 @@ pub(super) fn is_allowed_local_proxy_target(method: &str, local_path: &str, is_s
             segments.as_slice(),
             ["api", "v1", "session", "new"]
                 | ["api", "v1", "session", "attach"]
+                | ["api", "v1", "session", "client_event"]
                 | ["api", "v1", "session", _, "attachment", "renew"]
                 | ["api", "v1", "session", _, "attachment", "release"]
+                | ["api", "v1", "session", _, "client_event"]
                 | ["api", "v1", "session", _, "turn", "start"]
                 | ["api", "v1", "session", _, "turn", "interrupt"]
                 | ["api", "v1", "session", _, "shells", "start"]

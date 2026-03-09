@@ -373,3 +373,51 @@ fn session_attachment_release_rejects_wrong_client() {
         "client_web"
     );
 }
+
+#[test]
+fn top_level_client_event_requires_known_session_id() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/client_event",
+            serde_json::json!({
+                "session_id": "sess_other",
+                "event": "selection.changed"
+            }),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 404);
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "session_not_found"
+    );
+}
+
+#[test]
+fn client_event_rejects_conflicting_active_client() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/client_event",
+            serde_json::json!({
+                "client_id": "client_mobile",
+                "event": "selection.changed"
+            }),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 409);
+    let body = json_body(&response.body);
+    assert_eq!(body["error"]["code"], "attachment_conflict");
+    assert_eq!(
+        body["error"]["details"]["requested_client_id"],
+        "client_mobile"
+    );
+    assert_eq!(
+        body["error"]["details"]["current_attachment"]["client_id"],
+        "client_web"
+    );
+}

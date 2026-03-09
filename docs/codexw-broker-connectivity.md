@@ -177,6 +177,9 @@ The current implementation is now past pure route sketches:
   for attachment lease lifecycle flows (`renew` / `release`) with session
   snapshot confirmation after each transition
 - the standalone broker-style client fixture is also now process-level verified
+  for `client-event` publish plus event-stream replay/resume, so the
+  collaboration/event-ingest path is no longer just a local-API primitive
+- the standalone broker-style client fixture is also now process-level verified
   for session listing and turn interrupt flows, session attach plus
   orchestration status / workers / dependencies inspection, and shell list /
   detail / send / poll / terminate control paths
@@ -596,7 +599,7 @@ The first audit should classify each relevant `~/work/agent` surface into one of
 | `~/work/agent` surface | Initial classification | Why |
 | --- | --- | --- |
 | `POST /api/v1/session/new` | direct fit | `codexw` already has explicit thread/session lifecycle concepts and can define a local wrapper session handle |
-| `POST /api/v1/session/client_event` | adapter fit | the collaboration idea fits, but `codexw` does not yet have a public client-event ingest model |
+| `POST /api/v1/session/client_event` | direct fit | implemented in the local API and exposed through the broker-style fixture client | The collaboration idea now has a public local-API ingest route plus connector/fixture coverage |
 | `GET /api/v1/session/scene` | out of scope | `codexw` currently has no durable scene/entity model comparable to `agentd` |
 | `POST /api/v1/session/scene/apply` | out of scope | same reason; not a first-phase remote-control requirement |
 
