@@ -3,6 +3,7 @@ use serde_json::Value;
 use crate::history_text::render_user_message_history;
 use crate::history_text::sanitize_history_text;
 use crate::state::AppState;
+use crate::state::ConversationMessage;
 use crate::state::get_string;
 
 pub(crate) fn latest_conversation_history_items(turns: &[Value], limit: usize) -> Vec<&Value> {
@@ -24,6 +25,38 @@ pub(crate) fn latest_conversation_history_items(turns: &[Value], limit: usize) -
     items
 }
 
+pub(crate) fn latest_conversation_history_messages(
+    turns: &[Value],
+    limit: usize,
+) -> Vec<ConversationMessage> {
+    latest_conversation_history_items(turns, limit)
+        .into_iter()
+        .filter_map(|item| match get_string(item, &["type"]).unwrap_or("") {
+            "userMessage" => item
+                .get("content")
+                .and_then(Value::as_array)
+                .map(|content| render_user_message_history(content))
+                .filter(|text| !text.trim().is_empty())
+                .map(|text| ConversationMessage {
+                    role: "user".to_string(),
+                    text,
+                }),
+            "agentMessage" => {
+                let text = sanitize_history_text(get_string(item, &["text"]).unwrap_or(""));
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(ConversationMessage {
+                        role: "assistant".to_string(),
+                        text,
+                    })
+                }
+            }
+            _ => None,
+        })
+        .collect()
+}
+
 fn is_conversation_history_item(item: &Value) -> bool {
     match get_string(item, &["type"]).unwrap_or("") {
         "userMessage" => item
@@ -39,6 +72,7 @@ fn is_conversation_history_item(item: &Value) -> bool {
 }
 
 pub(crate) fn seed_resumed_state_from_turns(turns: &[Value], state: &mut AppState) {
+    state.replace_conversation_history(latest_conversation_history_messages(turns, 50));
     let mut latest_user_message = None;
     let mut latest_agent_message = None;
 

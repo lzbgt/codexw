@@ -49,6 +49,12 @@ pub(crate) struct OrchestrationState {
     pub(crate) live_agent_tasks: HashMap<String, LiveAgentTaskSummary>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ConversationMessage {
+    pub(crate) role: String,
+    pub(crate) text: String,
+}
+
 pub(crate) struct AppState {
     pub(crate) thread_id: Option<String>,
     pub(crate) active_turn_id: Option<String>,
@@ -67,6 +73,7 @@ pub(crate) struct AppState {
     pub(crate) startup_resume_picker: bool,
     pub(crate) objective: Option<String>,
     pub(crate) last_agent_message: Option<String>,
+    pub(crate) conversation_history: Vec<ConversationMessage>,
     pub(crate) last_turn_diff: Option<String>,
     pub(crate) current_rollout_path: Option<PathBuf>,
     pub(crate) last_token_usage: Option<serde_json::Value>,

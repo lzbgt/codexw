@@ -35,6 +35,7 @@ pub(crate) struct LocalApiSnapshot {
     pub(crate) orchestration_dependencies: Vec<LocalApiDependencyEdge>,
     pub(crate) workers: LocalApiWorkersSnapshot,
     pub(crate) capabilities: Vec<LocalApiCapabilityEntry>,
+    pub(crate) transcript: Vec<LocalApiTranscriptEntry>,
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
@@ -168,6 +169,12 @@ pub(crate) struct LocalApiCapabilityConsumer {
     pub(crate) status: String,
 }
 
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
+pub(crate) struct LocalApiTranscriptEntry {
+    pub(crate) role: String,
+    pub(crate) text: String,
+}
+
 pub(crate) type SharedSnapshot = Arc<RwLock<LocalApiSnapshot>>;
 
 pub(crate) fn new_process_session_id() -> String {
@@ -193,10 +200,14 @@ pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnap
         orchestration_dependencies: Vec::new(),
         workers: LocalApiWorkersSnapshot::default(),
         capabilities: Vec::new(),
+        transcript: Vec::new(),
     }))
 }
 
-pub(crate) fn sync_shared_snapshot(snapshot: &SharedSnapshot, state: &AppState) -> LocalApiSnapshot {
+pub(crate) fn sync_shared_snapshot(
+    snapshot: &SharedSnapshot,
+    state: &AppState,
+) -> LocalApiSnapshot {
     if let Ok(mut guard) = snapshot.write() {
         guard.thread_id = state.thread_id.clone();
         guard.active_turn_id = state.active_turn_id.clone();
@@ -209,6 +220,7 @@ pub(crate) fn sync_shared_snapshot(snapshot: &SharedSnapshot, state: &AppState) 
         guard.orchestration_dependencies = orchestration_dependencies_snapshot(state);
         guard.workers = workers_snapshot(state);
         guard.capabilities = capabilities_snapshot(state);
+        guard.transcript = transcript_snapshot(state);
         return guard.clone();
     }
 
@@ -226,6 +238,7 @@ pub(crate) fn sync_shared_snapshot(snapshot: &SharedSnapshot, state: &AppState) 
         orchestration_dependencies: Vec::new(),
         workers: LocalApiWorkersSnapshot::default(),
         capabilities: Vec::new(),
+        transcript: Vec::new(),
     }
 }
 
@@ -237,7 +250,10 @@ fn orchestration_status_snapshot(state: &AppState) -> LocalApiOrchestrationStatu
         sidecar_dependencies: sidecar_dependency_count(state),
         wait_tasks: active_wait_task_count(state),
         sidecar_agent_tasks: active_sidecar_agent_task_count(state),
-        exec_prerequisites: running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
+        exec_prerequisites: running_shell_count_by_intent(
+            state,
+            BackgroundShellIntent::Prerequisite,
+        ),
         exec_sidecars: running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
         exec_services: running_shell_count_by_intent(state, BackgroundShellIntent::Service),
         services_ready: running_service_count_by_readiness(
@@ -386,7 +402,9 @@ fn local_api_shell_job(snapshot: BackgroundShellJobSnapshot) -> LocalApiBackgrou
             .map(|recipe| recipe.name)
             .collect(),
         ready_pattern: snapshot.ready_pattern,
-        service_readiness: snapshot.service_readiness.map(|value| value.as_str().to_string()),
+        service_readiness: snapshot
+            .service_readiness
+            .map(|value| value.as_str().to_string()),
         origin: LocalApiBackgroundShellOrigin {
             source_thread_id: snapshot.origin.source_thread_id,
             source_call_id: snapshot.origin.source_call_id,
@@ -425,7 +443,9 @@ fn capabilities_snapshot(state: &AppState) -> Vec<LocalApiCapabilityEntry> {
                 job_id: job.id,
                 alias: job.alias,
                 label: job.label,
-                readiness: job.service_readiness.map(|value| value.as_str().to_string()),
+                readiness: job
+                    .service_readiness
+                    .map(|value| value.as_str().to_string()),
                 protocol: job.service_protocol,
                 endpoint: job.service_endpoint,
             })
@@ -460,4 +480,16 @@ fn capability_issue_label(issue: BackgroundShellCapabilityIssueClass) -> &'stati
         BackgroundShellCapabilityIssueClass::Untracked => "untracked",
         BackgroundShellCapabilityIssueClass::Ambiguous => "ambiguous",
     }
+}
+
+fn transcript_snapshot(state: &AppState) -> Vec<LocalApiTranscriptEntry> {
+    state
+        .conversation_history
+        .iter()
+        .cloned()
+        .map(|message| LocalApiTranscriptEntry {
+            role: message.role,
+            text: message.text,
+        })
+        .collect()
 }

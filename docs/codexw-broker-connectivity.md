@@ -688,12 +688,17 @@ The local API spike has now started with a minimal loopback skeleton:
 - `GET /healthz`
 - `GET /api/v1/session`
 - `GET /api/v1/session/{session_id}`
+- `GET /api/v1/session/{session_id}/transcript`
 - `POST /api/v1/turn/start`
 - `POST /api/v1/turn/interrupt`
 - `GET /api/v1/session/{session_id}/orchestration/status`
 - `GET /api/v1/session/{session_id}/orchestration/dependencies`
 - `GET /api/v1/session/{session_id}/orchestration/workers`
 - `GET /api/v1/session/{session_id}/shells`
+- `POST /api/v1/session/{session_id}/shells/start`
+- `POST /api/v1/session/{session_id}/shells/{job_ref}/poll`
+- `POST /api/v1/session/{session_id}/shells/{job_ref}/send`
+- `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate`
 - `GET /api/v1/session/{session_id}/services`
 - `GET /api/v1/session/{session_id}/capabilities`
 - internal command queue from the HTTP listener into the main runtime loop
@@ -705,5 +710,5 @@ That semantic event-stream milestone is now partially landed:
 - the current stream emits `session.updated`, `turn.updated`,
   `orchestration.updated`, `workers.updated`, and `capabilities.updated`
 
-The next concrete code step is now transcript routes plus shell/service
-mutation routes, not more route discovery.
+The next concrete code step is now service mutation routes plus richer shell
+service interaction routes (`attach`, `wait`, `run`), not more route discovery.

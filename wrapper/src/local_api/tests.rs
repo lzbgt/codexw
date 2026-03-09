@@ -26,6 +26,7 @@ use super::snapshot::LocalApiDependencyEdge;
 use super::snapshot::LocalApiLiveAgentTask;
 use super::snapshot::LocalApiOrchestrationStatus;
 use super::snapshot::LocalApiSnapshot;
+use super::snapshot::LocalApiTranscriptEntry;
 use super::snapshot::LocalApiWorkersSnapshot;
 
 fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
@@ -156,6 +157,16 @@ fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
                 status: "satisfied".to_string(),
             }],
         }],
+        transcript: vec![
+            LocalApiTranscriptEntry {
+                role: "user".to_string(),
+                text: "continue".to_string(),
+            },
+            LocalApiTranscriptEntry {
+                role: "assistant".to_string(),
+                text: "working on it".to_string(),
+            },
+        ],
     }))
 }
 
@@ -235,7 +246,12 @@ fn session_snapshot_is_returned_with_valid_token() {
     request
         .headers
         .insert("authorization".to_string(), "Bearer secret".to_string());
-    let response = route_request(&request, &sample_snapshot(), &new_command_queue(), Some("secret"));
+    let response = route_request(
+        &request,
+        &sample_snapshot(),
+        &new_command_queue(),
+        Some("secret"),
+    );
     assert_eq!(response.status, 200);
     let body = json_body(&response.body);
     assert_eq!(body["session_id"], "sess_test");
@@ -267,7 +283,10 @@ fn unknown_session_id_returns_not_found() {
         None,
     );
     assert_eq!(response.status, 404);
-    assert_eq!(json_body(&response.body)["error"]["code"], "session_not_found");
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "session_not_found"
+    );
 }
 
 #[test]
@@ -316,7 +335,10 @@ fn turn_start_requires_attached_thread() {
         None,
     );
     assert_eq!(response.status, 409);
-    assert_eq!(json_body(&response.body)["error"]["code"], "thread_not_attached");
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "thread_not_attached"
+    );
 }
 
 #[test]
@@ -379,7 +401,10 @@ fn orchestration_workers_route_returns_live_and_cached_workers() {
     );
     assert_eq!(response.status, 200);
     let body = json_body(&response.body);
-    assert_eq!(body["workers"]["cached_agent_threads"][0]["id"], "thread_worker");
+    assert_eq!(
+        body["workers"]["cached_agent_threads"][0]["id"],
+        "thread_worker"
+    );
     assert_eq!(body["workers"]["background_shells"][0]["id"], "bg-1");
 }
 
@@ -394,7 +419,10 @@ fn shells_services_and_capabilities_routes_return_filtered_views() {
         None,
     );
     assert_eq!(shells.status, 200);
-    assert_eq!(json_body(&shells.body)["shells"].as_array().map(Vec::len), Some(2));
+    assert_eq!(
+        json_body(&shells.body)["shells"].as_array().map(Vec::len),
+        Some(2)
+    );
 
     let services = route_request(
         &get_request("/api/v1/session/sess_test/services"),
@@ -415,8 +443,192 @@ fn shells_services_and_capabilities_routes_return_filtered_views() {
     );
     assert_eq!(capabilities.status, 200);
     let capabilities_body = json_body(&capabilities.body);
-    assert_eq!(capabilities_body["capabilities"][0]["capability"], "@frontend.dev");
-    assert_eq!(capabilities_body["capabilities"][0]["providers"][0]["job_id"], "bg-1");
+    assert_eq!(
+        capabilities_body["capabilities"][0]["capability"],
+        "@frontend.dev"
+    );
+    assert_eq!(
+        capabilities_body["capabilities"][0]["providers"][0]["job_id"],
+        "bg-1"
+    );
+}
+
+#[test]
+fn transcript_route_returns_semantic_conversation_entries() {
+    let response = route_request(
+        &get_request("/api/v1/session/sess_test/transcript"),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["transcript"].as_array().map(Vec::len), Some(2));
+    assert_eq!(body["transcript"][0]["role"], "user");
+    assert_eq!(body["transcript"][1]["role"], "assistant");
+}
+
+#[test]
+fn shell_start_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/start",
+            serde_json::json!({
+                "command": "npm run dev",
+                "intent": "service",
+                "label": "frontend",
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::StartShell {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "command": "npm run dev",
+                "intent": "service",
+                "label": "frontend",
+            }),
+        })
+    );
+}
+
+#[test]
+fn shell_poll_route_returns_selected_shell_snapshot() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/dev.frontend/poll",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["shell"]["id"], "bg-1");
+    assert_eq!(body["shell"]["alias"], "dev.frontend");
+}
+
+#[test]
+fn shell_send_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/dev.frontend/send",
+            serde_json::json!({
+                "text": "status",
+                "appendNewline": false,
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::SendShellInput {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-1",
+                "text": "status",
+                "appendNewline": false,
+            }),
+        })
+    );
+}
+
+#[test]
+fn shell_terminate_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/1/terminate",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::TerminateShell {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-1",
+            }),
+        })
+    );
+}
+
+#[test]
+fn service_update_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/update",
+            serde_json::json!({
+                "jobId": "bg-1",
+                "label": "frontend service",
+                "capabilities": ["frontend.dev"]
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::UpdateService {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-1",
+                "label": "frontend service",
+                "capabilities": ["frontend.dev"]
+            }),
+        })
+    );
+}
+
+#[test]
+fn dependency_update_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/dependencies/update",
+            serde_json::json!({
+                "jobId": "bg-2",
+                "dependsOnCapabilities": ["frontend.dev"]
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::UpdateDependencies {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-2",
+                "dependsOnCapabilities": ["frontend.dev"]
+            }),
+        })
+    );
 }
 
 #[test]
@@ -427,12 +639,13 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     publish_snapshot_change_events(&log, None, &current);
 
     let events = events_since(&log, "sess_test", None);
-    assert_eq!(events.len(), 5);
+    assert_eq!(events.len(), 6);
     assert_eq!(events[0].event, "session.updated");
     assert_eq!(events[1].event, "turn.updated");
     assert_eq!(events[2].event, "orchestration.updated");
     assert_eq!(events[3].event, "workers.updated");
     assert_eq!(events[4].event, "capabilities.updated");
+    assert_eq!(events[5].event, "transcript.updated");
 }
 
 #[test]
@@ -453,9 +666,7 @@ fn event_stream_route_replays_existing_events() {
         .set_read_timeout(Some(Duration::from_secs(2)))
         .expect("set read timeout");
     stream
-        .write_all(
-            b"GET /api/v1/session/sess_test/events HTTP/1.1\r\nHost: localhost\r\n\r\n",
-        )
+        .write_all(b"GET /api/v1/session/sess_test/events HTTP/1.1\r\nHost: localhost\r\n\r\n")
         .expect("write request");
 
     let mut response = Vec::new();

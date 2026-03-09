@@ -50,5 +50,7 @@ pub(crate) fn submit_turn_input(
         )?;
     }
 
+    state.push_conversation_message("user", trimmed);
+
     Ok(true)
 }

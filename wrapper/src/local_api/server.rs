@@ -13,17 +13,17 @@ use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
-use serde_json::json;
 use serde_json::Value;
+use serde_json::json;
 use thiserror::Error;
 
 use crate::Cli;
 
 use super::LocalApiCommand;
 use super::LocalApiEvent;
-use super::SharedEventLog;
 use super::LocalApiSnapshot;
 use super::SharedCommandQueue;
+use super::SharedEventLog;
 use super::SharedSnapshot;
 use super::control::enqueue_command;
 use super::events::events_since;
@@ -156,9 +156,11 @@ fn handle_connection(
                 Some(route_authorized_request(&request, snapshot, command_queue))
             }
         }
-        Err(RequestReadError::BadRequest) => {
-            Some(json_error_response(400, "bad_request", "invalid HTTP request"))
-        }
+        Err(RequestReadError::BadRequest) => Some(json_error_response(
+            400,
+            "bad_request",
+            "invalid HTTP request",
+        )),
         Err(RequestReadError::Io(_)) => return Ok(()),
     };
     if let Some(response) = maybe_response {
@@ -177,7 +179,10 @@ fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, Requ
             return Err(RequestReadError::BadRequest);
         }
         request_bytes.extend_from_slice(&buffer[..read]);
-        if let Some(index) = request_bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+        if let Some(index) = request_bytes
+            .windows(4)
+            .position(|window| window == b"\r\n\r\n")
+        {
             break index + 4;
         }
         if request_bytes.len() >= MAX_REQUEST_BYTES {
@@ -277,7 +282,11 @@ fn route_authorized_request(
     let current_snapshot = match snapshot.read() {
         Ok(guard) => guard.clone(),
         Err(_) => {
-            return json_error_response(500, "snapshot_unavailable", "failed to access local API snapshot");
+            return json_error_response(
+                500,
+                "snapshot_unavailable",
+                "failed to access local API snapshot",
+            );
         }
     };
 
@@ -287,6 +296,13 @@ fn route_authorized_request(
 
     if request.method == "POST" && request.path == "/api/v1/turn/interrupt" {
         return handle_turn_interrupt_route(request, &current_snapshot, command_queue);
+    }
+
+    if request.method == "POST" {
+        if let Some(path) = request.path.strip_prefix("/api/v1/session/") {
+            return route_session_scoped_post(path, request, &current_snapshot, command_queue);
+        }
+        return json_error_response(404, "not_found", "unknown route");
     }
 
     if request.method != "GET" {
@@ -312,6 +328,11 @@ fn route_session_scoped_get(path: &str, snapshot: &LocalApiSnapshot) -> HttpResp
     }
     match parts.next() {
         None => json_ok_response(session_payload(snapshot)),
+        Some("transcript") => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "transcript": snapshot.transcript,
+        })),
         Some("orchestration/status") => json_ok_response(json!({
             "ok": true,
             "session_id": snapshot.session_id,
@@ -352,6 +373,61 @@ fn route_session_scoped_get(path: &str, snapshot: &LocalApiSnapshot) -> HttpResp
     }
 }
 
+fn route_session_scoped_post(
+    path: &str,
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+) -> HttpResponse {
+    let mut parts = path.splitn(2, '/');
+    let session_id = parts.next().unwrap_or_default();
+    if session_id != snapshot.session_id {
+        return json_error_response(404, "session_not_found", "unknown session id");
+    }
+    match parts.next() {
+        Some("shells/start") => {
+            handle_shell_start_route(request, snapshot, command_queue, session_id)
+        }
+        Some(rest) if rest.starts_with("shells/") => {
+            route_shell_action_route(rest, request, snapshot, command_queue, session_id)
+        }
+        Some("services/update") => {
+            handle_service_update_route(request, snapshot, command_queue, session_id)
+        }
+        Some("dependencies/update") => {
+            handle_dependency_update_route(request, snapshot, command_queue, session_id)
+        }
+        _ => json_error_response(404, "not_found", "unknown route"),
+    }
+}
+
+fn route_shell_action_route(
+    path: &str,
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    session_id: &str,
+) -> HttpResponse {
+    let Some(rest) = path.strip_prefix("shells/") else {
+        return json_error_response(404, "not_found", "unknown route");
+    };
+    let mut parts = rest.splitn(2, '/');
+    let Some(reference) = parts.next() else {
+        return json_error_response(404, "not_found", "unknown route");
+    };
+    let Some(action) = parts.next() else {
+        return json_error_response(404, "not_found", "unknown route");
+    };
+    match action {
+        "poll" => handle_shell_poll_route(request, snapshot, reference, session_id),
+        "send" => handle_shell_send_route(request, snapshot, command_queue, reference, session_id),
+        "terminate" => {
+            handle_shell_terminate_route(request, snapshot, command_queue, reference, session_id)
+        }
+        _ => json_error_response(404, "not_found", "unknown route"),
+    }
+}
+
 fn is_event_stream_request(request: &HttpRequest) -> bool {
     request.path.ends_with("/events")
 }
@@ -371,11 +447,17 @@ fn handle_event_stream_request(
     }
 
     let Some(path) = request.path.strip_prefix("/api/v1/session/") else {
-        write_response(stream, &json_error_response(404, "not_found", "unknown route"))?;
+        write_response(
+            stream,
+            &json_error_response(404, "not_found", "unknown route"),
+        )?;
         return Ok(());
     };
     let Some(session_id) = path.strip_suffix("/events") else {
-        write_response(stream, &json_error_response(404, "not_found", "unknown route"))?;
+        write_response(
+            stream,
+            &json_error_response(404, "not_found", "unknown route"),
+        )?;
         return Ok(());
     };
 
@@ -434,7 +516,9 @@ fn write_event_stream_headers(stream: &mut TcpStream) -> Result<()> {
             b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Accel-Buffering: no\r\n\r\n",
         )
         .context("write local API event stream headers")?;
-    stream.flush().context("flush local API event stream headers")?;
+    stream
+        .flush()
+        .context("flush local API event stream headers")?;
     Ok(())
 }
 
@@ -448,12 +532,12 @@ fn write_event_stream_comment(stream: &mut TcpStream, comment: &str) -> Result<(
     Ok(())
 }
 
-fn write_event_stream_event(
-    stream: &mut TcpStream,
-    event: &LocalApiEvent,
-) -> Result<()> {
+fn write_event_stream_event(stream: &mut TcpStream, event: &LocalApiEvent) -> Result<()> {
     let data = serde_json::to_string(&event.data).context("serialize local API SSE event data")?;
-    let payload = format!("id: {}\nevent: {}\ndata: {}\n\n", event.id, event.event, data);
+    let payload = format!(
+        "id: {}\nevent: {}\ndata: {}\n\n",
+        event.id, event.event, data
+    );
     stream
         .write_all(payload.as_bytes())
         .context("write local API event stream event")?;
@@ -555,12 +639,324 @@ fn handle_turn_interrupt_route(
     }))
 }
 
+fn handle_shell_start_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    session_id: &str,
+) -> HttpResponse {
+    let mut body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object_mut() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    let Some(command) = object.get("command").and_then(Value::as_str) else {
+        return json_error_response(400, "validation_error", "missing command");
+    };
+    if command.trim().is_empty() {
+        return json_error_response(400, "validation_error", "command must not be empty");
+    }
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::StartShell {
+            session_id: session_id.to_string(),
+            arguments: body,
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue shell start: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+    }))
+}
+
+fn handle_shell_poll_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    if request.method != "POST" {
+        return json_error_response(405, "method_not_allowed", "unsupported method for route");
+    }
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    json_ok_response(json!({
+        "ok": true,
+        "session_id": session_id,
+        "shell": shell,
+    }))
+}
+
+fn handle_shell_send_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    let body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    let Some(text) = object.get("text").and_then(Value::as_str) else {
+        return json_error_response(400, "validation_error", "missing text");
+    };
+    let append_newline = object
+        .get("appendNewline")
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::SendShellInput {
+            session_id: session_id.to_string(),
+            arguments: json!({
+                "jobId": shell.id,
+                "text": text,
+                "appendNewline": append_newline,
+            }),
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue shell send: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "shell_id": shell.id,
+    }))
+}
+
+fn handle_shell_terminate_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    if !request.body.is_empty() {
+        if let Err(response) = json_request_body(request) {
+            return response;
+        }
+    }
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::TerminateShell {
+            session_id: session_id.to_string(),
+            arguments: json!({ "jobId": shell.id }),
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue shell termination: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "shell_id": shell.id,
+    }))
+}
+
 fn json_request_body(request: &HttpRequest) -> std::result::Result<Value, HttpResponse> {
     if request.body.is_empty() {
-        return Err(json_error_response(400, "validation_error", "request body is required"));
+        return Err(json_error_response(
+            400,
+            "validation_error",
+            "request body is required",
+        ));
     }
-    serde_json::from_slice::<Value>(&request.body)
-        .map_err(|_| json_error_response(400, "validation_error", "request body must be valid JSON"))
+    serde_json::from_slice::<Value>(&request.body).map_err(|_| {
+        json_error_response(400, "validation_error", "request body must be valid JSON")
+    })
+}
+
+fn resolve_shell_snapshot(
+    snapshot: &LocalApiSnapshot,
+    reference: &str,
+) -> std::result::Result<super::snapshot::LocalApiBackgroundShellJob, (&'static str, &'static str)>
+{
+    let reference = reference.trim();
+    if reference.is_empty() {
+        return Err(("validation_error", "shell reference must not be empty"));
+    }
+    if let Some(shell) = snapshot
+        .workers
+        .background_shells
+        .iter()
+        .find(|shell| shell.id == reference)
+    {
+        return Ok(shell.clone());
+    }
+    if let Some(shell) = snapshot
+        .workers
+        .background_shells
+        .iter()
+        .find(|shell| shell.alias.as_deref() == Some(reference))
+    {
+        return Ok(shell.clone());
+    }
+    if let Some(capability) = reference.strip_prefix('@') {
+        let capability_name = format!("@{capability}");
+        let Some(entry) = snapshot
+            .capabilities
+            .iter()
+            .find(|entry| entry.capability == capability_name)
+        else {
+            return Err(("shell_not_found", "unknown shell capability"));
+        };
+        if entry.providers.len() != 1 {
+            return Err(("shell_reference_ambiguous", "shell capability is ambiguous"));
+        }
+        let job_id = &entry.providers[0].job_id;
+        let Some(shell) = snapshot
+            .workers
+            .background_shells
+            .iter()
+            .find(|shell| &shell.id == job_id)
+        else {
+            return Err((
+                "shell_not_found",
+                "shell capability provider is not available",
+            ));
+        };
+        return Ok(shell.clone());
+    }
+    if let Ok(index) = reference.parse::<usize>() {
+        if index == 0 {
+            return Err(("validation_error", "shell index must be 1-based"));
+        }
+        if let Some(shell) = snapshot.workers.background_shells.get(index - 1) {
+            return Ok(shell.clone());
+        }
+    }
+    Err(("shell_not_found", "unknown shell reference"))
+}
+
+fn handle_service_update_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    session_id: &str,
+) -> HttpResponse {
+    let mut body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object_mut() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    if !object.contains_key("jobId") {
+        return json_error_response(400, "validation_error", "missing jobId");
+    }
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::UpdateService {
+            session_id: session_id.to_string(),
+            arguments: body,
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue service update: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+    }))
+}
+
+fn handle_dependency_update_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    session_id: &str,
+) -> HttpResponse {
+    let mut body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object_mut() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    if !object.contains_key("jobId") {
+        return json_error_response(400, "validation_error", "missing jobId");
+    }
+    if !object.contains_key("dependsOnCapabilities") {
+        return json_error_response(400, "validation_error", "missing dependsOnCapabilities");
+    }
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::UpdateDependencies {
+            session_id: session_id.to_string(),
+            arguments: body,
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue dependency update: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+    }))
 }
 
 fn session_payload(snapshot: &LocalApiSnapshot) -> serde_json::Value {
@@ -576,6 +972,7 @@ fn session_payload(snapshot: &LocalApiSnapshot) -> serde_json::Value {
         "completed_turn_count": snapshot.completed_turn_count,
         "active_personality": snapshot.active_personality,
         "orchestration": snapshot.orchestration_status,
+        "transcript_length": snapshot.transcript.len(),
     })
 }
 

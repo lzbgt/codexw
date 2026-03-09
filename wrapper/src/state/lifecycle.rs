@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::rpc::RequestId;
 
 use super::AppState;
+use super::ConversationMessage;
 use super::OrchestrationState;
 use super::SessionOverrides;
 
@@ -34,6 +35,7 @@ impl AppState {
             startup_resume_picker: false,
             objective: None,
             last_agent_message: None,
+            conversation_history: Vec::new(),
             last_turn_diff: None,
             current_rollout_path: None,
             last_token_usage: None,
@@ -98,9 +100,30 @@ impl AppState {
         self.completed_turn_count = 0;
         self.startup_resume_picker = false;
         self.objective = None;
+        self.conversation_history.clear();
         self.last_token_usage = None;
         self.active_collaboration_mode = None;
         self.pending_selection = None;
+    }
+
+    pub(crate) fn replace_conversation_history(&mut self, history: Vec<ConversationMessage>) {
+        self.conversation_history = history;
+    }
+
+    pub(crate) fn push_conversation_message(&mut self, role: &str, text: &str) {
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+        self.conversation_history.push(ConversationMessage {
+            role: role.to_string(),
+            text: trimmed.to_string(),
+        });
+        const MAX_CONVERSATION_MESSAGES: usize = 100;
+        if self.conversation_history.len() > MAX_CONVERSATION_MESSAGES {
+            let drop_count = self.conversation_history.len() - MAX_CONVERSATION_MESSAGES;
+            self.conversation_history.drain(..drop_count);
+        }
     }
 
     pub(crate) fn take_pending_attachments(&mut self) -> (Vec<String>, Vec<String>) {

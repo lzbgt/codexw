@@ -15,8 +15,33 @@ use crate::state::thread_id;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum LocalApiCommand {
-    StartTurn { session_id: String, prompt: String },
-    InterruptTurn { session_id: String },
+    StartTurn {
+        session_id: String,
+        prompt: String,
+    },
+    InterruptTurn {
+        session_id: String,
+    },
+    StartShell {
+        session_id: String,
+        arguments: serde_json::Value,
+    },
+    SendShellInput {
+        session_id: String,
+        arguments: serde_json::Value,
+    },
+    TerminateShell {
+        session_id: String,
+        arguments: serde_json::Value,
+    },
+    UpdateService {
+        session_id: String,
+        arguments: serde_json::Value,
+    },
+    UpdateDependencies {
+        session_id: String,
+        arguments: serde_json::Value,
+    },
 }
 
 pub(crate) type SharedCommandQueue = Arc<Mutex<VecDeque<LocalApiCommand>>>;
@@ -70,7 +95,8 @@ pub(crate) fn process_local_api_commands(
             }
             LocalApiCommand::InterruptTurn { session_id } => {
                 if let Some(turn_id) = state.active_turn_id.clone() {
-                    match send_turn_interrupt(writer, state, thread_id(state)?.to_string(), turn_id) {
+                    match send_turn_interrupt(writer, state, thread_id(state)?.to_string(), turn_id)
+                    {
                         Ok(()) => {
                             output.line_stderr(format!(
                                 "[local-api] requested turn interrupt for session {session_id}"
@@ -101,6 +127,107 @@ pub(crate) fn process_local_api_commands(
                     ))?;
                 }
             }
+            LocalApiCommand::StartShell {
+                session_id,
+                arguments,
+            } => match state
+                .orchestration
+                .background_shells
+                .start_from_tool_with_context(
+                    &arguments,
+                    resolved_cwd,
+                    crate::background_shells::BackgroundShellOrigin {
+                        source_tool: Some("local_api".to_string()),
+                        ..Default::default()
+                    },
+                ) {
+                Ok(summary) => {
+                    output.line_stderr(format!(
+                        "[local-api] started background shell for session {session_id}: {summary}"
+                    ))?;
+                }
+                Err(err) => {
+                    output.line_stderr(format!(
+                        "[local-api] failed to start background shell for session {session_id}: {err}"
+                    ))?;
+                }
+            },
+            LocalApiCommand::SendShellInput {
+                session_id,
+                arguments,
+            } => match state
+                .orchestration
+                .background_shells
+                .send_input_from_tool(&arguments)
+            {
+                Ok(summary) => {
+                    output.line_stderr(format!(
+                        "[local-api] sent input to background shell for session {session_id}: {summary}"
+                    ))?;
+                }
+                Err(err) => {
+                    output.line_stderr(format!(
+                        "[local-api] failed to send input to background shell for session {session_id}: {err}"
+                    ))?;
+                }
+            },
+            LocalApiCommand::TerminateShell {
+                session_id,
+                arguments,
+            } => match state
+                .orchestration
+                .background_shells
+                .terminate_from_tool(&arguments)
+            {
+                Ok(summary) => {
+                    output.line_stderr(format!(
+                        "[local-api] terminated background shell for session {session_id}: {summary}"
+                    ))?;
+                }
+                Err(err) => {
+                    output.line_stderr(format!(
+                        "[local-api] failed to terminate background shell for session {session_id}: {err}"
+                    ))?;
+                }
+            },
+            LocalApiCommand::UpdateService {
+                session_id,
+                arguments,
+            } => match state
+                .orchestration
+                .background_shells
+                .update_service_from_tool(&arguments)
+            {
+                Ok(summary) => {
+                    output.line_stderr(format!(
+                        "[local-api] updated service state for session {session_id}: {summary}"
+                    ))?;
+                }
+                Err(err) => {
+                    output.line_stderr(format!(
+                        "[local-api] failed to update service state for session {session_id}: {err}"
+                    ))?;
+                }
+            },
+            LocalApiCommand::UpdateDependencies {
+                session_id,
+                arguments,
+            } => match state
+                .orchestration
+                .background_shells
+                .update_dependencies_from_tool(&arguments)
+            {
+                Ok(summary) => {
+                    output.line_stderr(format!(
+                        "[local-api] updated dependency state for session {session_id}: {summary}"
+                    ))?;
+                }
+                Err(err) => {
+                    output.line_stderr(format!(
+                        "[local-api] failed to update dependency state for session {session_id}: {err}"
+                    ))?;
+                }
+            },
         }
     }
     Ok(())

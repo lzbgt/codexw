@@ -38,10 +38,15 @@ Current implemented scope:
 - `GET /healthz`
 - `GET /api/v1/session`
 - `GET /api/v1/session/{session_id}`
+- `GET /api/v1/session/{session_id}/transcript`
 - `GET /api/v1/session/{session_id}/orchestration/status`
 - `GET /api/v1/session/{session_id}/orchestration/dependencies`
 - `GET /api/v1/session/{session_id}/orchestration/workers`
 - `GET /api/v1/session/{session_id}/shells`
+- `POST /api/v1/session/{session_id}/shells/start`
+- `POST /api/v1/session/{session_id}/shells/{job_ref}/poll`
+- `POST /api/v1/session/{session_id}/shells/{job_ref}/send`
+- `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate`
 - `GET /api/v1/session/{session_id}/services`
 - `GET /api/v1/session/{session_id}/capabilities`
 - `POST /api/v1/turn/start`
@@ -51,15 +56,18 @@ Current implemented scope:
 - shared semantic event log with `Last-Event-ID` replay
 - loopback SSE event stream for session, turn, orchestration, worker, and
   capability updates
-- structured snapshot export for orchestration, shell, service, and capability state
+- structured snapshot export for orchestration, shell, service, capability, and
+  transcript state
 
 Current non-goals of the landed slice:
 
-- no transcript query routes yet
-- no shell or service mutation routes yet
+- no turn steer route yet
+- no shell recipe/attach/wait routes yet
+- no service `provide` / `depend` / `contract` / `relabel` routes yet
 
-That means the next implementation step is no longer generic turn control or
-basic read routes. It is transcript routes and shell/service mutation routes.
+That means the next implementation step is no longer transcript or basic shell
+control. It is higher-level shell service interactions and service mutation
+routes.
 
 ## Scope
 
@@ -168,6 +176,7 @@ Deliverables:
 - `GET /api/v1/session/{session_id}/orchestration/workers`
 - `GET /api/v1/session/{session_id}/orchestration/dependencies`
 - `GET /api/v1/session/{session_id}/shells`
+- `POST /api/v1/session/{session_id}/shells/start`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/poll`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/send`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate`

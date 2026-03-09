@@ -35,17 +35,28 @@ pub(crate) fn publish_snapshot_change_events(
     previous: Option<&LocalApiSnapshot>,
     current: &LocalApiSnapshot,
 ) {
-    if previous.is_none_or(|snapshot| {
-        session_event_payload(snapshot) != session_event_payload(current)
-    }) {
-        push_event(log, &current.session_id, "session.updated", session_event_payload(current));
+    if previous
+        .is_none_or(|snapshot| session_event_payload(snapshot) != session_event_payload(current))
+    {
+        push_event(
+            log,
+            &current.session_id,
+            "session.updated",
+            session_event_payload(current),
+        );
     }
 
     if previous.is_none_or(|snapshot| turn_event_payload(snapshot) != turn_event_payload(current)) {
-        push_event(log, &current.session_id, "turn.updated", turn_event_payload(current));
+        push_event(
+            log,
+            &current.session_id,
+            "turn.updated",
+            turn_event_payload(current),
+        );
     }
 
-    if previous.is_none_or(|snapshot| snapshot.orchestration_status != current.orchestration_status) {
+    if previous.is_none_or(|snapshot| snapshot.orchestration_status != current.orchestration_status)
+    {
         push_event(
             log,
             &current.session_id,
@@ -55,7 +66,12 @@ pub(crate) fn publish_snapshot_change_events(
     }
 
     if previous.is_none_or(|snapshot| snapshot.workers != current.workers) {
-        push_event(log, &current.session_id, "workers.updated", json!(current.workers));
+        push_event(
+            log,
+            &current.session_id,
+            "workers.updated",
+            json!(current.workers),
+        );
     }
 
     if previous.is_none_or(|snapshot| snapshot.capabilities != current.capabilities) {
@@ -64,6 +80,15 @@ pub(crate) fn publish_snapshot_change_events(
             &current.session_id,
             "capabilities.updated",
             json!(current.capabilities),
+        );
+    }
+
+    if previous.is_none_or(|snapshot| snapshot.transcript != current.transcript) {
+        push_event(
+            log,
+            &current.session_id,
+            "transcript.updated",
+            json!(current.transcript),
         );
     }
 }

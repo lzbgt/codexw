@@ -23,6 +23,7 @@ pub(crate) fn render_completed_item(
         "agentMessage" => {
             let text = get_string(item, &["text"]).unwrap_or("").to_string();
             state.last_agent_message = Some(text.clone());
+            state.push_conversation_message("assistant", &text);
             output.finish_stream()?;
             if !text.trim().is_empty() {
                 output.block_stdout("Assistant", &text)?;
