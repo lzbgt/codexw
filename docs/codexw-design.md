@@ -841,7 +841,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/workers.rs`
   Orchestration worker-section rendering for main-agent, live-agent, cached-agent, shell, service, capability, and terminal views.
 - `wrapper/src/orchestration_view/summary.rs`
-  Orchestration snapshot, overview/runtime/background summaries, and ready-prompt suffix rendering.
+  Orchestration-summary namespace root for snapshot and prompt/background summary helpers.
+- `wrapper/src/orchestration_view/summary/snapshots.rs`
+  Orchestration snapshots plus overview and runtime status-summary rendering.
+- `wrapper/src/orchestration_view/summary/prompt.rs`
+  Ready-prompt suffix rendering and compact background summary generation.
 - `wrapper/src/orchestration_view/guidance_actions.rs`
   Orchestration guidance/action namespace root and shared imports.
 - `wrapper/src/orchestration_view/guidance_actions/render.rs`
@@ -1167,7 +1171,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/editor_tests.rs`
   Crate-level regression tests for the inline editor.
 - `wrapper/src/render_tests.rs`
-  Crate-level regression tests for ANSI block rendering and prompt layout behavior.
+  Render-test namespace root for transcript and prompt regression coverage.
+- `wrapper/src/render_tests/transcript.rs`
+  Crate-level regression tests for ANSI block rendering, transcript completions, plan rendering, and transcript summaries.
+- `wrapper/src/render_tests/prompt.rs`
+  Crate-level regression tests for committed prompt rendering, prompt wrapping, and status-line fitting.
 - `wrapper/src/output.rs`
   Prompt redraw, committed output, prompt visibility, output ordering.
 - `wrapper/src/render_prompt.rs`
