@@ -140,6 +140,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
             &mut state,
             &mut output,
             &mut writer,
+            &local_api_snapshot,
             &local_api_commands,
         )?;
         let current_local_api_snapshot = sync_shared_snapshot(&local_api_snapshot, &state);

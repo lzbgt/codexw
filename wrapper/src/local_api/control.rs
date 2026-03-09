@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 use std::process::ChildStdin;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 use anyhow::Result;
 
@@ -15,14 +17,20 @@ use crate::requests::send_turn_interrupt;
 use crate::state::AppState;
 use crate::state::thread_id;
 
+use super::SharedSnapshot;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum LocalApiCommand {
     StartSessionThread {
         session_id: String,
+        client_id: Option<String>,
+        lease_seconds: Option<u64>,
     },
     AttachSessionThread {
         session_id: String,
         thread_id: String,
+        client_id: Option<String>,
+        lease_seconds: Option<u64>,
     },
     StartTurn {
         session_id: String,
@@ -50,6 +58,15 @@ pub(crate) enum LocalApiCommand {
     UpdateDependencies {
         session_id: String,
         arguments: serde_json::Value,
+    },
+    RenewAttachmentLease {
+        session_id: String,
+        client_id: Option<String>,
+        lease_seconds: u64,
+    },
+    ReleaseAttachment {
+        session_id: String,
+        client_id: Option<String>,
     },
 }
 
@@ -79,31 +96,38 @@ pub(crate) fn process_local_api_commands(
     state: &mut AppState,
     output: &mut Output,
     writer: &mut ChildStdin,
+    snapshot: &SharedSnapshot,
     queue: &SharedCommandQueue,
 ) -> Result<()> {
     for command in drain_commands(queue) {
         match command {
-            LocalApiCommand::StartSessionThread { session_id } => {
-                match send_thread_start(writer, state, cli, resolved_cwd, None) {
-                    Ok(()) => {
-                        output.line_stderr(format!(
-                            "[local-api] requested fresh thread start for session {session_id}"
-                        ))?;
-                    }
-                    Err(err) => {
-                        output.line_stderr(format!(
-                            "[local-api] failed to start fresh thread for session {session_id}: {err:#}"
-                        ))?;
-                    }
+            LocalApiCommand::StartSessionThread {
+                session_id,
+                client_id,
+                lease_seconds,
+            } => match send_thread_start(writer, state, cli, resolved_cwd, None) {
+                Ok(()) => {
+                    apply_attachment_metadata(snapshot, client_id.as_deref(), lease_seconds);
+                    output.line_stderr(format!(
+                        "[local-api] requested fresh thread start for session {session_id}"
+                    ))?;
                 }
-            }
+                Err(err) => {
+                    output.line_stderr(format!(
+                        "[local-api] failed to start fresh thread for session {session_id}: {err:#}"
+                    ))?;
+                }
+            },
             LocalApiCommand::AttachSessionThread {
                 session_id,
                 thread_id,
+                client_id,
+                lease_seconds,
             } => {
                 match send_thread_resume(writer, state, cli, resolved_cwd, thread_id.clone(), None)
                 {
                     Ok(()) => {
+                        apply_attachment_metadata(snapshot, client_id.as_deref(), lease_seconds);
                         output.line_stderr(format!(
                             "[local-api] requested thread attach for session {session_id}: {thread_id}"
                         ))?;
@@ -269,7 +293,61 @@ pub(crate) fn process_local_api_commands(
                     ))?;
                 }
             },
+            LocalApiCommand::RenewAttachmentLease {
+                session_id,
+                client_id,
+                lease_seconds,
+            } => {
+                apply_attachment_metadata(snapshot, client_id.as_deref(), Some(lease_seconds));
+                output.line_stderr(format!(
+                    "[local-api] renewed attachment lease for session {session_id}: {lease_seconds}s"
+                ))?;
+            }
+            LocalApiCommand::ReleaseAttachment {
+                session_id,
+                client_id,
+            } => {
+                clear_attachment_metadata(snapshot, client_id.as_deref());
+                output.line_stderr(format!(
+                    "[local-api] released attachment lease for session {session_id}"
+                ))?;
+            }
         }
     }
     Ok(())
+}
+
+fn apply_attachment_metadata(
+    snapshot: &SharedSnapshot,
+    client_id: Option<&str>,
+    lease_seconds: Option<u64>,
+) {
+    let Ok(mut guard) = snapshot.write() else {
+        return;
+    };
+    guard.attachment_client_id = client_id.map(ToOwned::to_owned);
+    guard.attachment_lease_seconds = lease_seconds;
+    guard.attachment_lease_expires_at_ms = lease_seconds.and_then(lease_expiry_ms);
+}
+
+fn clear_attachment_metadata(snapshot: &SharedSnapshot, client_id: Option<&str>) {
+    let Ok(mut guard) = snapshot.write() else {
+        return;
+    };
+    if client_id.is_some() && guard.attachment_client_id.as_deref() != client_id {
+        return;
+    }
+    guard.attachment_client_id = None;
+    guard.attachment_lease_seconds = None;
+    guard.attachment_lease_expires_at_ms = None;
+}
+
+fn lease_expiry_ms(seconds: u64) -> Option<u64> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_millis();
+    let delta = u128::from(seconds).checked_mul(1000)?;
+    let expiry = now.checked_add(delta)?;
+    u64::try_from(expiry).ok()
 }

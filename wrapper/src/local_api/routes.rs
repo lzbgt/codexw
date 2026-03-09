@@ -10,6 +10,8 @@ use std::net::TcpStream;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -113,7 +115,7 @@ pub(super) fn route_authorized_request(
     }
 
     if request.method == "POST" && request.path == "/api/v1/session/new" {
-        return session::handle_session_new_route(&current_snapshot, command_queue);
+        return session::handle_session_new_route(request, &current_snapshot, command_queue);
     }
 
     if request.method == "POST" && request.path == "/api/v1/session/attach" {
@@ -187,6 +189,12 @@ fn route_session_scoped_post(
         "turn/start" => turn::handle_turn_start_route_for_session(request, snapshot, command_queue),
         "turn/interrupt" => {
             turn::handle_turn_interrupt_route_for_session(request, snapshot, command_queue)
+        }
+        "attachment/renew" => {
+            session::handle_attachment_renew_route(request, snapshot, command_queue)
+        }
+        "attachment/release" => {
+            session::handle_attachment_release_route(request, snapshot, command_queue)
         }
         "shells/start" => shells::handle_shell_start_route(request, snapshot, command_queue),
         "services/update" => {
@@ -505,10 +513,17 @@ pub(super) fn session_payload(snapshot: &LocalApiSnapshot) -> serde_json::Value 
 }
 
 pub(super) fn attachment_summary(snapshot: &LocalApiSnapshot) -> serde_json::Value {
+    let lease_active = snapshot
+        .attachment_lease_expires_at_ms
+        .is_some_and(|expiry| expiry > now_unix_ms());
     json!({
         "id": format!("attach:{}", snapshot.session_id),
         "scope": "process",
         "process_scoped": true,
+        "client_id": snapshot.attachment_client_id,
+        "lease_seconds": snapshot.attachment_lease_seconds,
+        "lease_expires_at_ms": snapshot.attachment_lease_expires_at_ms,
+        "lease_active": lease_active,
         "attached_thread_id": snapshot.thread_id,
     })
 }
@@ -519,6 +534,7 @@ pub(super) fn session_summary(snapshot: &LocalApiSnapshot) -> serde_json::Value 
         "scope": "process",
         "process_scoped": true,
         "attachment": attachment_summary(snapshot),
+        "client_id": snapshot.attachment_client_id,
         "cwd": snapshot.cwd,
         "attached_thread_id": snapshot.thread_id,
         "active_turn_id": snapshot.active_turn_id,
@@ -529,6 +545,34 @@ pub(super) fn session_summary(snapshot: &LocalApiSnapshot) -> serde_json::Value 
         "active_personality": snapshot.active_personality,
         "transcript_length": snapshot.transcript.len(),
     })
+}
+
+pub(super) fn attachment_has_active_conflicting_client(
+    snapshot: &LocalApiSnapshot,
+    requested_client_id: Option<&str>,
+) -> bool {
+    let Some(existing_client_id) = snapshot.attachment_client_id.as_deref() else {
+        return false;
+    };
+    if !snapshot
+        .attachment_lease_expires_at_ms
+        .is_some_and(|expiry| expiry > now_unix_ms())
+    {
+        return false;
+    }
+    match requested_client_id {
+        Some(requested_client_id) => existing_client_id != requested_client_id,
+        None => true,
+    }
+}
+
+pub(super) fn now_unix_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|value| value.as_millis())
+        .ok()
+        .and_then(|value| u64::try_from(value).ok())
+        .unwrap_or(0)
 }
 
 pub(super) fn json_ok_response(body: serde_json::Value) -> HttpResponse {

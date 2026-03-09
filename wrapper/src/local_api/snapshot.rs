@@ -24,6 +24,9 @@ use crate::state::AppState;
 pub(crate) struct LocalApiSnapshot {
     pub(crate) session_id: String,
     pub(crate) cwd: String,
+    pub(crate) attachment_client_id: Option<String>,
+    pub(crate) attachment_lease_seconds: Option<u64>,
+    pub(crate) attachment_lease_expires_at_ms: Option<u64>,
     pub(crate) thread_id: Option<String>,
     pub(crate) active_turn_id: Option<String>,
     pub(crate) objective: Option<String>,
@@ -189,6 +192,9 @@ pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnap
     Arc::new(RwLock::new(LocalApiSnapshot {
         session_id,
         cwd,
+        attachment_client_id: None,
+        attachment_lease_seconds: None,
+        attachment_lease_expires_at_ms: None,
         thread_id: None,
         active_turn_id: None,
         objective: None,
@@ -227,6 +233,9 @@ pub(crate) fn sync_shared_snapshot(
     LocalApiSnapshot {
         session_id: String::new(),
         cwd: String::new(),
+        attachment_client_id: None,
+        attachment_lease_seconds: None,
+        attachment_lease_expires_at_ms: None,
         thread_id: None,
         active_turn_id: None,
         objective: None,

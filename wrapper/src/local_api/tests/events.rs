@@ -27,6 +27,8 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         "attach:sess_test"
     );
     assert_eq!(events[0].data["attachment"]["scope"], "process");
+    assert_eq!(events[0].data["attachment"]["client_id"], "client_web");
+    assert_eq!(events[0].data["attachment"]["lease_seconds"], 300);
     assert_eq!(events[1].event, "turn.updated");
     assert_eq!(events[2].event, "orchestration.updated");
     assert_eq!(events[3].event, "workers.updated");

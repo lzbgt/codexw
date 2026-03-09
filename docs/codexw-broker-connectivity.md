@@ -722,8 +722,16 @@ That semantic event-stream milestone is now partially landed:
 - explicit process-scoped session lifecycle routes now exist:
   - `POST /api/v1/session/new`
   - `POST /api/v1/session/attach`
+- explicit process-scoped attachment lease routes now exist:
+  - `POST /api/v1/session/{session_id}/attachment/renew`
+  - `POST /api/v1/session/{session_id}/attachment/release`
 - session snapshots and `session.updated` events now carry explicit
   process-scoped `session` and `attachment` metadata
+- that attachment metadata now includes:
+  - `client_id`
+  - `lease_seconds`
+  - `lease_expires_at_ms`
+  - `lease_active`
 - turn control is available in both global and session-scoped route forms, so a
   connector can remain inside one `/api/v1/session/{session_id}` namespace once
   attached
@@ -731,5 +739,6 @@ That semantic event-stream milestone is now partially landed:
 The next concrete code step is now connector-facing API coverage above the
 implemented session, transcript, orchestration, shell, and service surface, not
 more route discovery. Structured service interaction payloads are already in
-place for `attach`, `wait`, and `run`. The next gap is richer attach/lease
-semantics above the current process-scoped session contract.
+place for `attach`, `wait`, and `run`, and explicit attach/lease semantics now
+exist for the current process-scoped session contract. The next gap is
+connector-specific client/lease policy above that single-process model.

@@ -34,6 +34,8 @@ that `codexw` can be controlled remotely without scraping terminal output:
 | `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
 | `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues resume of an existing thread id |
 | `GET /api/v1/session/{session_id}` | 2 | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `local_api/routes/session.rs` | Implemented. Returns structured `session` + explicit process-scoped `attachment` metadata while preserving compatibility summary fields |
+| `POST /api/v1/session/{session_id}/attachment/renew` | 2 | `local_api/control.rs`, `local_api/events.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Renews the current process-scoped attachment lease with optional `client_id` ownership checks |
+| `POST /api/v1/session/{session_id}/attachment/release` | 2 | `local_api/control.rs`, `local_api/events.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Clears the current process-scoped attachment lease with optional `client_id` ownership checks |
 | `POST /api/v1/turn/start` | 2 | `dispatch_submit_turns.rs`, `input/*`, `requests/turn_start.rs` | `local_api/routes/turn.rs` | prompt text becomes a real turn request |
 | `POST /api/v1/turn/interrupt` | 2 | `dispatch_command_thread_control.rs`, `requests/turn_control.rs`, `app_input_interrupt.rs` | `local_api/routes/turn.rs` | active turn is interrupted through the same control path |
 | `POST /api/v1/session/{session_id}/turn/start` | 2 | `dispatch_submit_turns.rs`, `input/*`, `requests/turn_start.rs` | `local_api/routes/turn.rs` | Implemented. Session-scoped alias over turn start avoids redundant session ids in connector clients |
@@ -116,6 +118,8 @@ now implemented:
 
 - session snapshots expose a process-scoped `attachment` object instead of
   leaving attachment semantics implicit
+- session snapshots also expose explicit attachment ownership metadata:
+  `client_id`, `lease_seconds`, `lease_expires_at_ms`, and `lease_active`
 - turn control is available in both global and session-scoped forms so clients
   can choose between low-level compatibility and a cleaner session-rooted
   namespace

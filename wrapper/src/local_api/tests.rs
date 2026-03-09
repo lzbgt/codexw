@@ -42,6 +42,9 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
     Arc::new(RwLock::new(LocalApiSnapshot {
         session_id: "sess_test".to_string(),
         cwd: "/tmp/repo".to_string(),
+        attachment_client_id: Some("client_web".to_string()),
+        attachment_lease_seconds: Some(300),
+        attachment_lease_expires_at_ms: Some(4_102_444_800_000),
         thread_id: Some("thread_123".to_string()),
         active_turn_id: Some("turn_456".to_string()),
         objective: Some("continue".to_string()),

@@ -152,10 +152,15 @@ Current landed behavior:
   local API session and resume a specific existing thread id”
 - `GET /api/v1/session/{session_id}` now returns a structured `session` object
   with nested process-scoped `attachment` metadata
+- `POST /api/v1/session/new` and `POST /api/v1/session/attach` now accept
+  optional `client_id` and `lease_seconds`
 - `POST /api/v1/session/{session_id}/turn/start` and
   `POST /api/v1/session/{session_id}/turn/interrupt` now exist as session-scoped
   aliases over the same turn control path, so connector clients can stay within
   a single session-rooted route namespace
+- `POST /api/v1/session/{session_id}/attachment/renew` and
+  `POST /api/v1/session/{session_id}/attachment/release` now exist for explicit
+  attachment lease management within the process-scoped session model
 - both routes enqueue onto the same runtime request path used by local
   thread-switch handling rather than inventing a second session model
 
@@ -242,9 +247,14 @@ Current status:
   - `recipe` metadata for `run`
   - legacy `attachment` / `result` text preserved as `attachment_text` /
     `result_text`
-- the next connector-facing gap is richer attach/lease semantics above the
-  current explicit process-scoped session model, not service route payload
-  shape
+- attach/lease semantics now exist for the current process-scoped model:
+  - optional `client_id`
+  - optional `lease_seconds`
+  - derived `lease_expires_at_ms`
+  - explicit renew/release routes
+- the next connector-facing gap is no longer lease metadata. It is
+  multi-client or connector-specific attachment policy above the current
+  single process-scoped control context
 
 ## Candidate Code Ownership
 
