@@ -639,19 +639,11 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
   - `/Users/zongbaolu/work/agent/docs/PROTOCOL.md`
   - `/Users/zongbaolu/work/agent/docs/CLIENT.md`
 - Write a first `codexw` local API sketch covering:
-  - session lifecycle
-  - turn lifecycle
-  - transcript/event streaming
-  - orchestration views
-  - background shell/service control
+  - now tracked in [docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md)
 - Decide whether the first implementation target is:
-  - loopback-only local API
-  - local API plus connector
-  - direct broker connectivity
+  - now tracked in [docs/codexw-broker-connector-decision.md](docs/codexw-broker-connector-decision.md)
 - Define the minimal compatibility target:
-  - payload vocabulary reuse
-  - partial protocol compatibility
-  - or full broker/client compatibility
+  - now tracked in [docs/codexw-broker-compatibility-target.md](docs/codexw-broker-compatibility-target.md)
 - Evaluate whether the user’s C agent framework can share:
   - session identity rules
   - event envelopes
