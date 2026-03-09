@@ -217,6 +217,46 @@ fn unique_running_service_ref(state: &AppState) -> Option<String> {
     }
 }
 
+fn first_recipe_name_for_job_ref(state: &AppState, job_ref: &str) -> Option<String> {
+    state
+        .orchestration
+        .background_shells
+        .running_service_snapshots()
+        .into_iter()
+        .find(|job| job.alias.as_deref().unwrap_or(job.id.as_str()) == job_ref)
+        .and_then(|job| {
+            job.interaction_recipes
+                .first()
+                .map(|recipe| recipe.name.clone())
+        })
+}
+
+fn unique_service_recipe_name_by_readiness(
+    state: &AppState,
+    readiness: BackgroundShellServiceReadiness,
+) -> Option<String> {
+    unique_service_ref_by_readiness(state, readiness)
+        .and_then(|job_ref| first_recipe_name_for_job_ref(state, &job_ref))
+}
+
+fn first_recipe_name_for_capability(state: &AppState, capability: &str) -> Option<String> {
+    state
+        .orchestration
+        .background_shells
+        .running_service_snapshots()
+        .into_iter()
+        .find(|job| {
+            job.service_capabilities
+                .iter()
+                .any(|entry| entry == capability)
+        })
+        .and_then(|job| {
+            job.interaction_recipes
+                .first()
+                .map(|recipe| recipe.name.clone())
+        })
+}
+
 fn unique_shell_ref_by_intent(state: &AppState, intent: BackgroundShellIntent) -> Option<String> {
     let mut refs = state
         .orchestration
@@ -349,6 +389,8 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
     if ready_services > 0 {
         let provider_ref =
             unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+        let recipe_name =
+            unique_service_recipe_name_by_readiness(state, BackgroundShellServiceReadiness::Ready);
         return vec![
             format!(
                 "{} {} ready for reuse.",
@@ -358,7 +400,8 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
             "Use /ps services to inspect attachment metadata and available recipes.".to_string(),
             match provider_ref.as_deref() {
                 Some(job_ref) => format!(
-                    "Use :ps attach {job_ref} or :ps run {job_ref} <recipe> [json-args] to reuse the service directly."
+                    "Use :ps attach {job_ref} or :ps run {job_ref} {} [json-args] to reuse the service directly.",
+                    recipe_name.as_deref().unwrap_or("<recipe>")
                 ),
                 None => "Use :ps attach <jobId|alias|@capability|n> or :ps run <jobId|alias|@capability|n> <recipe> [json-args] to reuse the service directly."
                     .to_string(),
@@ -568,6 +611,8 @@ fn guidance_lines_for_tool(state: &AppState) -> Vec<String> {
     if ready_services > 0 {
         let provider_ref =
             unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+        let recipe_name =
+            unique_service_recipe_name_by_readiness(state, BackgroundShellServiceReadiness::Ready);
         return vec![
             format!(
                 "{} {} ready for reuse.",
@@ -577,7 +622,8 @@ fn guidance_lines_for_tool(state: &AppState) -> Vec<String> {
             "Use `background_shell_list_services {\"status\":\"ready\"}` to inspect attachment metadata and available recipes.".to_string(),
             match provider_ref.as_deref() {
                 Some(job_ref) => format!(
-                    "Use `background_shell_attach {{\"jobId\":\"{job_ref}\"}}` or `background_shell_invoke_recipe {{\"jobId\":\"{job_ref}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
+                    "Use `background_shell_attach {{\"jobId\":\"{job_ref}\"}}` or `background_shell_invoke_recipe {{\"jobId\":\"{job_ref}\",\"recipe\":\"{}\"}}` to reuse the ready service directly.",
+                    recipe_name.as_deref().unwrap_or("...")
                 ),
                 None => "Use `background_shell_attach {\"jobId\":\"<jobId|alias|@capability>\"}` or `background_shell_invoke_recipe {\"jobId\":\"<jobId|alias|@capability>\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
             },
@@ -750,13 +796,15 @@ fn guidance_lines_for_capability(
             BackgroundShellCapabilityIssueClass::Healthy => {
                 let provider_ref = first_provider_ref_for_capability(state, capability)
                     .unwrap_or_else(|| format!("@{capability}"));
+                let recipe_name = first_recipe_name_for_capability(state, capability);
                 vec![
                     format!("Reusable service capability @{capability} is ready for reuse."),
                     format!(
                         "Use /ps attach {provider_ref} to inspect endpoint and recipe details."
                     ),
                     format!(
-                        "Use :ps run {provider_ref} <recipe> [json-args] to reuse it directly."
+                        "Use :ps run {provider_ref} {} [json-args] to reuse it directly.",
+                        recipe_name.as_deref().unwrap_or("<recipe>")
                     ),
                 ]
             }
@@ -890,13 +938,15 @@ fn guidance_lines_for_tool_capability(
             BackgroundShellCapabilityIssueClass::Healthy => {
                 let provider_ref = first_provider_ref_for_capability(state, capability)
                     .unwrap_or_else(|| format!("@{capability}"));
+                let recipe_name = first_recipe_name_for_capability(state, capability);
                 vec![
                     format!("Reusable service capability @{capability} is ready for reuse."),
                     format!(
                         "Use `background_shell_attach {{\"jobId\":\"{provider_ref}\"}}` to inspect endpoint and recipe details."
                     ),
                     format!(
-                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{provider_ref}\",\"recipe\":\"...\"}}` to reuse it directly."
+                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{provider_ref}\",\"recipe\":\"{}\"}}` to reuse it directly.",
+                        recipe_name.as_deref().unwrap_or("...")
                     ),
                 ]
             }
@@ -1155,6 +1205,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
     if ready_services > 0 {
         let provider_ref =
             unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+        let recipe_name =
+            unique_service_recipe_name_by_readiness(state, BackgroundShellServiceReadiness::Ready);
         return match audience {
             ActionAudience::Operator => vec![
                 "Run `:ps services ready` to inspect reusable service metadata.".to_string(),
@@ -1167,7 +1219,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                 },
                 match provider_ref.as_deref() {
                     Some(job_ref) => format!(
-                        "Run `:ps run {job_ref} <recipe> [json-args]` to reuse the ready service directly."
+                        "Run `:ps run {job_ref} {} [json-args]` to reuse the ready service directly.",
+                        recipe_name.as_deref().unwrap_or("<recipe>")
                     ),
                     None => "Run `:ps run <jobId|alias|@capability|n> <recipe> [json-args]` to reuse the ready service directly."
                         .to_string(),
@@ -1183,7 +1236,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                 },
                 match provider_ref.as_deref() {
                     Some(job_ref) => format!(
-                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{job_ref}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
+                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{job_ref}\",\"recipe\":\"{}\"}}` to reuse the ready service directly.",
+                        recipe_name.as_deref().unwrap_or("...")
                     ),
                     None => "Use `background_shell_invoke_recipe {\"jobId\":\"<jobId|alias|@capability>\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
                 },
@@ -1553,24 +1607,28 @@ fn action_lines_for_capability(
             (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Operator) => {
                 let provider_ref = first_provider_ref_for_capability(state, capability)
                     .unwrap_or_else(|| format!("@{capability}"));
+                let recipe_name = first_recipe_name_for_capability(state, capability);
                 vec![
                     format!(
                         "Run `:ps attach {provider_ref}` to inspect endpoint and recipe details."
                     ),
                     format!(
-                        "Run `:ps run {provider_ref} <recipe> [json-args]` to reuse the ready service directly."
+                        "Run `:ps run {provider_ref} {} [json-args]` to reuse the ready service directly.",
+                        recipe_name.as_deref().unwrap_or("<recipe>")
                     ),
                 ]
             }
             (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Tool) => {
                 let provider_ref = first_provider_ref_for_capability(state, capability)
                     .unwrap_or_else(|| format!("@{capability}"));
+                let recipe_name = first_recipe_name_for_capability(state, capability);
                 vec![
                     format!(
                         "Use `background_shell_attach {{\"jobId\":\"{provider_ref}\"}}` to inspect endpoint and recipe details."
                     ),
                     format!(
-                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{provider_ref}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
+                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{provider_ref}\",\"recipe\":\"{}\"}}` to reuse the ready service directly.",
+                        recipe_name.as_deref().unwrap_or("...")
                     ),
                 ]
             }

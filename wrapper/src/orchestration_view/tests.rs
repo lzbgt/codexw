@@ -546,7 +546,8 @@ fn guidance_filter_uses_concrete_provider_ref_for_single_ready_service() {
                 "command": "printf 'READY\\n'; sleep 0.4",
                 "intent": "service",
                 "capabilities": ["api.http"],
-                "readyPattern": "READY"
+                "readyPattern": "READY",
+                "recipes": [{"name": "health"}]
             }),
             "/tmp",
         )
@@ -558,7 +559,7 @@ fn guidance_filter_uses_concrete_provider_ref_for_single_ready_service() {
 
     let rendered = render_orchestration_guidance(&services);
     assert!(rendered.contains(":ps attach bg-1"));
-    assert!(rendered.contains(":ps run bg-1 <recipe> [json-args]"));
+    assert!(rendered.contains(":ps run bg-1 health [json-args]"));
     let _ = services.background_shells.terminate_all_running();
 }
 
@@ -931,7 +932,8 @@ fn focused_ready_capability_actions_use_concrete_provider_ref() {
                 "command": "printf 'READY\\n'; sleep 0.4",
                 "intent": "service",
                 "capabilities": ["api.http"],
-                "readyPattern": "READY"
+                "readyPattern": "READY",
+                "recipes": [{"name": "health"}]
             }),
             "/tmp",
         )
@@ -944,14 +946,14 @@ fn focused_ready_capability_actions_use_concrete_provider_ref() {
     let guidance = render_orchestration_guidance_for_capability(&services, "@api.http")
         .expect("focused guidance");
     assert!(guidance.contains("/ps attach bg-1"));
-    assert!(guidance.contains(":ps run bg-1 <recipe> [json-args]"));
+    assert!(guidance.contains(":ps run bg-1 health [json-args]"));
 
     let tool_actions = render_orchestration_actions_for_tool_capability(&services, "@api.http")
         .expect("focused tool actions");
     assert!(tool_actions.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
     assert!(
         tool_actions
-            .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"...\"}")
+            .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
     );
     let _ = services.background_shells.terminate_all_running();
 }
@@ -966,7 +968,8 @@ fn actions_filter_uses_concrete_provider_ref_for_single_ready_service() {
                 "command": "printf 'READY\\n'; sleep 0.4",
                 "intent": "service",
                 "capabilities": ["api.http"],
-                "readyPattern": "READY"
+                "readyPattern": "READY",
+                "recipes": [{"name": "health"}]
             }),
             "/tmp",
         )
@@ -979,14 +982,14 @@ fn actions_filter_uses_concrete_provider_ref_for_single_ready_service() {
     let rendered = render_orchestration_actions(&services);
     assert!(rendered.contains("Suggested actions:"));
     assert!(rendered.contains(":ps attach bg-1"));
-    assert!(rendered.contains(":ps run bg-1 <recipe> [json-args]"));
+    assert!(rendered.contains(":ps run bg-1 health [json-args]"));
 
     let tool_rendered = render_orchestration_actions_for_tool(&services);
     assert!(tool_rendered.contains("Suggested actions:"));
     assert!(tool_rendered.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
     assert!(
         tool_rendered
-            .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"...\"}")
+            .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
     );
 
     let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);

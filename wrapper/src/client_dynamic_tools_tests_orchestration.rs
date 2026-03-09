@@ -206,7 +206,8 @@ fn orchestration_guidance_filter_uses_concrete_provider_ref_for_single_ready_ser
                 "command": "printf 'READY\\n'; sleep 0.4",
                 "intent": "service",
                 "capabilities": ["api.http"],
-                "readyPattern": "READY"
+                "readyPattern": "READY",
+                "recipes": [{"name": "health"}]
             }),
             "/tmp",
         )
@@ -234,7 +235,7 @@ fn orchestration_guidance_filter_uses_concrete_provider_ref_for_single_ready_ser
     assert!(guidance_text.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
     assert!(
         guidance_text
-            .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"...\"}")
+            .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"health\"}")
     );
     let _ = state
         .orchestration
