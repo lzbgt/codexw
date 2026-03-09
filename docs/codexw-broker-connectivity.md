@@ -565,18 +565,10 @@ The first investigation pass should produce these artifacts:
    - now tracked in [docs/codexw-broker-event-envelope.md](docs/codexw-broker-event-envelope.md)
 
 3. `session-identity-note.md`
-   - mapping between:
-     - local thread ids
-     - wrapper session ids
-     - remote client session ids
-     - resume/attach semantics
+   - now tracked in [docs/codexw-broker-session-identity.md](docs/codexw-broker-session-identity.md)
 
 4. `connector-decision.md`
-   - recommend one of:
-     - local API first
-     - local API plus connector
-     - direct broker connectivity
-   - with explicit tradeoffs
+   - now tracked in [docs/codexw-broker-connector-decision.md](docs/codexw-broker-connector-decision.md)
 
 ## Session Model Questions
 
