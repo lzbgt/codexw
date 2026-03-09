@@ -651,8 +651,10 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 
 This is now an explicit tracked design area, not an informal idea.
 
-The next high-leverage step is no longer broad design exploration. The remaining
-work is:
+The next high-leverage step is no longer broad design exploration. The
+remaining work is now implementation-facing:
 
-- a concrete connector mapping and prototype plan
-- then a real implementation spike for a loopback-only local API
+- a real implementation spike for the loopback local API, now framed in
+  [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
+- a connector prototype after that, now framed in
+  [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
