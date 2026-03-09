@@ -84,6 +84,12 @@ Promotion requires:
 - the connector preserves structured local-API errors instead of collapsing
   them into generic text
 
+The current prototype already has process-level proof for malformed injected
+JSON request bodies, malformed lease-header projection, and preserved local
+field-validation errors through the connector path. The remaining promotion work
+in this area is contract freezing and wording, not basic implementation
+coverage.
+
 ### 3. Event Contract
 
 The event surface must be stable enough for remote consumers:

@@ -8,6 +8,7 @@ use super::routing::ProxyTarget;
 use super::routing::is_allowed_local_proxy_target;
 use super::routing::resolve_proxy_target;
 use super::sse::wrap_event_payload;
+use super::upstream::ForwardRequestError;
 use super::upstream::prepare_upstream_body;
 use super::upstream::supports_client_lease_injection;
 
@@ -202,7 +203,13 @@ fn prepare_upstream_body_rejects_invalid_lease_header() {
         },
     )
     .expect_err("invalid lease");
-    assert!(format!("{err:#}").contains("x-codexw-lease-seconds"));
+    match err {
+        ForwardRequestError::Validation { message, details } => {
+            assert!(message.contains("x-codexw-lease-seconds"));
+            assert_eq!(details.expect("details")["field"], "x-codexw-lease-seconds");
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
 }
 
 #[test]
@@ -222,7 +229,13 @@ fn prepare_upstream_body_rejects_non_object_json_when_injecting() {
         },
     )
     .expect_err("invalid body");
-    assert!(format!("{err:#}").contains("JSON object body"));
+    match err {
+        ForwardRequestError::Validation { message, details } => {
+            assert!(message.contains("JSON object body"));
+            assert_eq!(details.expect("details")["field"], "body");
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
 }
 
 #[test]

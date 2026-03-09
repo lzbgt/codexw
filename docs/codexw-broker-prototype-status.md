@@ -127,6 +127,9 @@ the real connector binary:
 - broker-style SSE consumption
 - broker-style SSE resume through `Last-Event-ID`
 - structured lease-conflict propagation
+- structured connector-local validation failures for malformed injected request
+  bodies and malformed client/lease headers
+- preserved local field-level validation failures through the connector
 - focused service-detail and capability-detail reads after mutation workflows
 - client-event publish and replay/resume
 - one combined leased workflow that mixes:
@@ -197,6 +200,11 @@ For prototype or lab use, the following are now strong enough to build against:
 
 These are still prototype surfaces, but they are no longer speculative.
 
+The same is now true for the current validation/error surface: malformed
+connector-side injected request bodies and malformed client/lease headers return
+structured `validation_error` responses, and structured local field-validation
+errors are preserved instead of being collapsed into generic transport failures.
+
 ## What Is Still Prototype-Grade
 
 The current stack is still intentionally limited:
@@ -225,6 +233,10 @@ The biggest remaining gaps are above the route layer, not below it:
 4. eventual promotion from prototype connector to a more formal adapter layer
    is still a deliberate decision point, now defined in
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+
+The remaining gaps are therefore no longer basic validation fidelity. They are
+promotion-level contract freezing and broader architectural choices above the
+current route/error/event surface.
 
 The unsupported boundary itself is now also process-level defended through the
 connector smoke suite, including explicit rejection of out-of-scope broker-style

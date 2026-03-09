@@ -7,6 +7,7 @@ use std::time::Duration;
 use anyhow::Context;
 use anyhow::Result;
 use serde_json::Value;
+use serde_json::json;
 use url::Url;
 
 use super::Cli;
@@ -22,30 +23,56 @@ pub(super) struct UpstreamResponse {
     pub(super) body: Vec<u8>,
 }
 
+#[derive(Debug)]
+pub(super) enum ForwardRequestError {
+    Validation {
+        message: String,
+        details: Option<Value>,
+    },
+    Transport(anyhow::Error),
+}
+
+impl ForwardRequestError {
+    fn validation(message: impl Into<String>, details: Option<Value>) -> Self {
+        Self::Validation {
+            message: message.into(),
+            details,
+        }
+    }
+}
+
 pub(super) fn forward_request(
     request: &HttpRequest,
     cli: &Cli,
     target: &ProxyTarget,
-) -> Result<UpstreamResponse> {
-    let base = Url::parse(&cli.local_api_base).context("parse local API base URL")?;
+) -> std::result::Result<UpstreamResponse, ForwardRequestError> {
+    let (content_type, body) = prepare_upstream_body(request, target)?;
+
+    let base = Url::parse(&cli.local_api_base)
+        .context("parse local API base URL")
+        .map_err(ForwardRequestError::Transport)?;
     let host = base
         .host_str()
-        .context("local API base URL missing host")?
+        .context("local API base URL missing host")
+        .map_err(ForwardRequestError::Transport)?
         .to_string();
     let port = base
         .port_or_known_default()
-        .context("local API base URL missing port")?;
+        .context("local API base URL missing port")
+        .map_err(ForwardRequestError::Transport)?;
     let mut stream = TcpStream::connect((host.as_str(), port))
-        .with_context(|| format!("connect to local API {}:{}", host, port))?;
+        .with_context(|| format!("connect to local API {}:{}", host, port))
+        .map_err(ForwardRequestError::Transport)?;
     stream
         .set_read_timeout(Some(Duration::from_secs(5)))
-        .context("set upstream read timeout")?;
+        .context("set upstream read timeout")
+        .map_err(ForwardRequestError::Transport)?;
     stream
         .set_write_timeout(Some(Duration::from_secs(5)))
-        .context("set upstream write timeout")?;
+        .context("set upstream write timeout")
+        .map_err(ForwardRequestError::Transport)?;
 
     let path = compose_local_path(&base, &target.local_path);
-    let (content_type, body) = prepare_upstream_body(request, target)?;
     write_upstream_request(
         &mut stream,
         &request.method,
@@ -54,15 +81,16 @@ pub(super) fn forward_request(
         cli.local_api_token.as_deref(),
         body.as_slice(),
         request.headers.get("last-event-id").map(String::as_str),
-    )?;
+    )
+    .map_err(ForwardRequestError::Transport)?;
 
-    read_upstream_response(stream)
+    read_upstream_response(stream).map_err(ForwardRequestError::Transport)
 }
 
 pub(super) fn prepare_upstream_body(
     request: &HttpRequest,
     target: &ProxyTarget,
-) -> Result<(Option<String>, Vec<u8>)> {
+) -> std::result::Result<(Option<String>, Vec<u8>), ForwardRequestError> {
     let requested_client_id = request
         .headers
         .get("x-codexw-client-id")
@@ -97,10 +125,23 @@ pub(super) fn prepare_upstream_body(
     let mut object = if request.body.is_empty() {
         serde_json::Map::new()
     } else {
-        let value: Value = serde_json::from_slice(&request.body)
-            .context("parse connector request body for connector JSON injection")?;
+        let value: Value = serde_json::from_slice(&request.body).map_err(|_| {
+            ForwardRequestError::validation(
+                "connector JSON injection requires a JSON object body",
+                Some(json!({
+                    "field": "body",
+                    "expected": "json object",
+                })),
+            )
+        })?;
         let Some(object) = value.as_object() else {
-            anyhow::bail!("connector JSON injection requires a JSON object body");
+            return Err(ForwardRequestError::validation(
+                "connector JSON injection requires a JSON object body",
+                Some(json!({
+                    "field": "body",
+                    "expected": "json object",
+                })),
+            ));
         };
         object.clone()
     };
@@ -117,9 +158,15 @@ pub(super) fn prepare_upstream_body(
             .or_insert(Value::String(client_id));
     }
     if let Some(lease_seconds) = requested_lease_seconds {
-        let parsed = lease_seconds
-            .parse::<u64>()
-            .with_context(|| format!("parse x-codexw-lease-seconds `{lease_seconds}`"))?;
+        let parsed = lease_seconds.parse::<u64>().map_err(|_| {
+            ForwardRequestError::validation(
+                "x-codexw-lease-seconds must be a positive integer header",
+                Some(json!({
+                    "field": "x-codexw-lease-seconds",
+                    "expected": "positive integer header",
+                })),
+            )
+        })?;
         object
             .entry("lease_seconds".to_string())
             .or_insert(Value::Number(parsed.into()));
@@ -127,7 +174,9 @@ pub(super) fn prepare_upstream_body(
 
     Ok((
         Some("application/json".to_string()),
-        serde_json::to_vec(&Value::Object(object)).context("serialize injected connector body")?,
+        serde_json::to_vec(&Value::Object(object))
+            .context("serialize injected connector body")
+            .map_err(ForwardRequestError::Transport)?,
     ))
 }
 

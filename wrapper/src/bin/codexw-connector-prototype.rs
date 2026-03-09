@@ -31,6 +31,7 @@ use http::write_response;
 use routing::is_allowed_local_proxy_target;
 use routing::resolve_proxy_target;
 use sse::handle_sse_proxy;
+use upstream::ForwardRequestError;
 use upstream::forward_request;
 
 const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -179,8 +180,30 @@ fn handle_connection(mut stream: TcpStream, cli: &Cli) -> Result<()> {
         return Ok(());
     }
 
-    let upstream = forward_request(&request, cli, &target)?;
-    write_response(&mut stream, &http::from_upstream_response(upstream, cli))?;
+    match forward_request(&request, cli, &target) {
+        Ok(upstream) => {
+            write_response(&mut stream, &http::from_upstream_response(upstream, cli))?;
+        }
+        Err(ForwardRequestError::Validation { message, details }) => {
+            write_response(
+                &mut stream,
+                &json_error_response(400, "validation_error", &message, details),
+            )?;
+        }
+        Err(ForwardRequestError::Transport(err)) => {
+            write_response(
+                &mut stream,
+                &json_error_response(
+                    502,
+                    "upstream_unavailable",
+                    "connector could not reach or prepare the local API request",
+                    Some(json!({
+                        "cause": format!("{err:#}"),
+                    })),
+                ),
+            )?;
+        }
+    }
     let _ = stream.shutdown(Shutdown::Both);
     Ok(())
 }
