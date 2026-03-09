@@ -697,6 +697,12 @@ The biggest known limits are architectural, not accidental.
   Core `:status` overview lines for cwd, thread, sandbox, model, collaboration, and attachment state.
 - `wrapper/src/session_snapshot_runtime.rs`
   Runtime `:status` lines for realtime state, account, activity timing, rate limits, token usage, and last reply summaries.
+- `wrapper/src/orchestration_view.rs`
+  Worker/dependency rendering, orchestration summaries, and filtered `:ps` views over the unified orchestration state.
+- `wrapper/src/orchestration_view/guidance_actions.rs`
+  Shared orchestration guidance/action renderers plus recipe/ref helper logic for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/actions.rs`
+  Suggested-action generation for global and capability-focused orchestration remediation.
 - `wrapper/src/requests.rs`
   Outbound request namespace root plus shared `send_json(...)` transport helper.
 - `wrapper/src/requests/request_types.rs`
