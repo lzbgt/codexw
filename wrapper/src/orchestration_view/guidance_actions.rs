@@ -314,13 +314,19 @@ fn guidance_lines_for_capability(
                     "Use /ps capabilities @{capability} and /ps services @{capability} to inspect the conflicting providers."
                 ),
             ],
-            BackgroundShellCapabilityDependencyState::Booting => vec![
-                format!("A blocking shell is waiting on booting service capability @{capability}."),
-                format!(
-                    "Use /ps services booting @{capability} to inspect the provider and readiness state."
-                ),
-                format!("Use :ps wait @{capability} 5000 when later work depends on readiness."),
-            ],
+            BackgroundShellCapabilityDependencyState::Booting => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!("A blocking shell is waiting on booting service capability @{capability}."),
+                    format!(
+                        "Use /ps services booting @{capability} to inspect the provider and readiness state."
+                    ),
+                    format!(
+                        "Use :ps wait {provider_ref} 5000 when later work depends on readiness."
+                    ),
+                ]
+            }
             BackgroundShellCapabilityDependencyState::Satisfied => vec![],
         });
     }
@@ -348,27 +354,47 @@ fn guidance_lines_for_capability(
                     .to_string(),
                 format!("Use /ps capabilities @{capability} to inspect providers and consumers."),
             ],
-            BackgroundShellCapabilityIssueClass::Booting => vec![
-                format!("Reusable service capability @{capability} is still booting."),
-                format!("Use /ps services booting @{capability} to inspect provider readiness."),
-                format!("Use :ps wait @{capability} 5000 when later work depends on readiness."),
-            ],
-            BackgroundShellCapabilityIssueClass::Untracked => vec![
-                format!(
-                    "Reusable service capability @{capability} is provided by an untracked service."
-                ),
-                format!(
-                    "Use /ps services untracked @{capability} to inspect the provider missing readiness or attachment metadata."
-                ),
-                format!(
-                    "Use :ps contract <jobId|alias|@capability|n> <json-object> to add readyPattern or attachment metadata in place."
-                ),
-            ],
-            BackgroundShellCapabilityIssueClass::Healthy => vec![
-                format!("Reusable service capability @{capability} is ready for reuse."),
-                format!("Use /ps attach @{capability} to inspect endpoint and recipe details."),
-                format!("Use :ps run @{capability} <recipe> [json-args] to reuse it directly."),
-            ],
+            BackgroundShellCapabilityIssueClass::Booting => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!("Reusable service capability @{capability} is still booting."),
+                    format!(
+                        "Use /ps services booting @{capability} to inspect provider readiness."
+                    ),
+                    format!(
+                        "Use :ps wait {provider_ref} 5000 when later work depends on readiness."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityIssueClass::Untracked => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Reusable service capability @{capability} is provided by an untracked service."
+                    ),
+                    format!(
+                        "Use /ps services untracked @{capability} to inspect the provider missing readiness or attachment metadata."
+                    ),
+                    format!(
+                        "Use :ps contract {provider_ref} <json-object> to add readyPattern or attachment metadata in place."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityIssueClass::Healthy => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!("Reusable service capability @{capability} is ready for reuse."),
+                    format!(
+                        "Use /ps attach {provider_ref} to inspect endpoint and recipe details."
+                    ),
+                    format!(
+                        "Use :ps run {provider_ref} <recipe> [json-args] to reuse it directly."
+                    ),
+                ]
+            }
         },
     )
 }
@@ -778,131 +804,177 @@ fn action_lines_for_capability(
                     ),
                 ]
             }
-            (BackgroundShellCapabilityDependencyState::Booting, ActionAudience::Operator) => vec![
-                format!(
-                    "Run `:ps services booting @{capability}` to inspect the booting provider state."
-                ),
-                format!("Run `:ps wait @{capability} 5000` to wait on the capability provider."),
-                format!(
-                    "Run `:ps dependencies booting @{capability}` to keep the dependency view focused."
-                ),
-            ],
-            (BackgroundShellCapabilityDependencyState::Booting, ActionAudience::Tool) => vec![
-                format!(
-                    "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect the booting provider state."
-                ),
-                format!(
-                    "Use `background_shell_wait_ready {{\"jobId\":\"@{capability}\",\"timeoutMs\":5000}}` to wait on the capability provider."
-                ),
-                format!(
-                    "Use `orchestration_list_dependencies {{\"filter\":\"booting\",\"capability\":\"@{capability}\"}}` to keep the dependency view focused."
-                ),
-            ],
+            (BackgroundShellCapabilityDependencyState::Booting, ActionAudience::Operator) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Run `:ps services booting @{capability}` to inspect the booting provider state."
+                    ),
+                    format!(
+                        "Run `:ps wait {provider_ref} 5000` to wait on the capability provider."
+                    ),
+                    format!(
+                        "Run `:ps dependencies booting @{capability}` to keep the dependency view focused."
+                    ),
+                ]
+            }
+            (BackgroundShellCapabilityDependencyState::Booting, ActionAudience::Tool) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect the booting provider state."
+                    ),
+                    format!(
+                        "Use `background_shell_wait_ready {{\"jobId\":\"{provider_ref}\",\"timeoutMs\":5000}}` to wait on the capability provider."
+                    ),
+                    format!(
+                        "Use `orchestration_list_dependencies {{\"filter\":\"booting\",\"capability\":\"@{capability}\"}}` to keep the dependency view focused."
+                    ),
+                ]
+            }
             (BackgroundShellCapabilityDependencyState::Satisfied, _) => vec![],
         });
     }
 
-    Ok(match (
-        state.orchestration.background_shells.service_capability_issue_for_ref(capability)?,
-        audience,
-    ) {
-        (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Operator) => vec![
-            format!(
-                "Run `:ps capabilities @{capability}` to confirm there is no running provider."
-            ),
-            format!(
-                "Run `:ps provide <jobId|alias|n> @{capability}` to retarget an existing running service, or start a new provider for that role."
-            ),
-        ],
-        (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Tool) => vec![
-            format!(
-                "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to confirm there is no running provider."
-            ),
-            format!(
-                "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
-            ),
-        ],
-        (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Operator) => vec![
-            format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
-            {
+    Ok(
+        match (
+            state
+                .orchestration
+                .background_shells
+                .service_capability_issue_for_ref(capability)?,
+            audience,
+        ) {
+            (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Operator) => vec![
+                format!(
+                    "Run `:ps capabilities @{capability}` to confirm there is no running provider."
+                ),
+                format!(
+                    "Run `:ps provide <jobId|alias|n> @{capability}` to retarget an existing running service, or start a new provider for that role."
+                ),
+            ],
+            (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Tool) => vec![
+                format!(
+                    "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to confirm there is no running provider."
+                ),
+                format!(
+                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
+                ),
+            ],
+            (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Operator) => vec![
+                format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
+                {
+                    let provider_ref = first_provider_ref_for_capability(state, capability)
+                        .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                    format!(
+                        "Run `:ps provide {provider_ref} <@other.role|none>` to remove or replace @{capability} on one running provider before falling back to cleanup."
+                    )
+                },
+                format!(
+                    "Run `:clean services @{capability}` to clear the ambiguous reusable role."
+                ),
+                format!("Run `:ps services @{capability}` to verify the surviving providers."),
+            ],
+            (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Tool) => {
                 let provider_ref = first_provider_ref_for_capability(state, capability)
                     .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                vec![
+                    format!(
+                        "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect providers and consumers."
+                    ),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":null}}` to remove or replace the conflicting reusable role before falling back to cleanup."
+                    ),
+                    format!(
+                        "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the ambiguous reusable role."
+                    ),
+                    format!(
+                        "Use `background_shell_list_services {{\"capability\":\"@{capability}\"}}` to verify the surviving providers."
+                    ),
+                ]
+            }
+            (BackgroundShellCapabilityIssueClass::Booting, ActionAudience::Operator) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Run `:ps services booting @{capability}` to inspect provider readiness."
+                    ),
+                    format!("Run `:ps wait {provider_ref} 5000` for the booting service you need."),
+                    "Run `:ps capabilities booting` to keep the capability view focused."
+                        .to_string(),
+                ]
+            }
+            (BackgroundShellCapabilityIssueClass::Booting, ActionAudience::Tool) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
                 format!(
-                    "Run `:ps provide {provider_ref} <@other.role|none>` to remove or replace @{capability} on one running provider before falling back to cleanup."
-                )
-            },
-            format!("Run `:clean services @{capability}` to clear the ambiguous reusable role."),
-            format!("Run `:ps services @{capability}` to verify the surviving providers."),
-        ],
-        (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Tool) => {
-            let provider_ref = first_provider_ref_for_capability(state, capability)
-                .unwrap_or_else(|| "<jobId|alias|n>".to_string());
-            vec![
-                format!(
-                    "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect providers and consumers."
+                    "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect provider readiness."
                 ),
                 format!(
-                    "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":null}}` to remove or replace the conflicting reusable role before falling back to cleanup."
+                    "Use `background_shell_wait_ready {{\"jobId\":\"{provider_ref}\",\"timeoutMs\":5000}}` for the booting service you need."
                 ),
-                format!(
-                    "Use `background_shell_clean {{\"scope\":\"services\",\"capability\":\"@{capability}\"}}` to clear the ambiguous reusable role."
-                ),
-                format!(
-                    "Use `background_shell_list_services {{\"capability\":\"@{capability}\"}}` to verify the surviving providers."
-                ),
+                "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
             ]
-        }
-        (BackgroundShellCapabilityIssueClass::Booting, ActionAudience::Operator) => vec![
-            format!("Run `:ps services booting @{capability}` to inspect provider readiness."),
-            format!("Run `:ps wait @{capability} 5000` for the booting service you need."),
-            "Run `:ps capabilities booting` to keep the capability view focused.".to_string(),
-        ],
-        (BackgroundShellCapabilityIssueClass::Booting, ActionAudience::Tool) => vec![
-            format!(
-                "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect provider readiness."
-            ),
-            format!(
-                "Use `background_shell_wait_ready {{\"jobId\":\"@{capability}\",\"timeoutMs\":5000}}` for the booting service you need."
-            ),
-            "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
-        ],
-        (BackgroundShellCapabilityIssueClass::Untracked, ActionAudience::Operator) => vec![
-            format!(
-                "Run `:ps services untracked @{capability}` to inspect the provider missing readiness or attachment metadata."
-            ),
-            format!(
-                "Run `:ps contract <jobId|alias|@capability|n> <json-object>` to add `readyPattern`, `protocol`, `endpoint`, or recipes in place for @{capability}."
-            ),
-            format!(
-                "Run `:ps relabel <jobId|alias|@capability|n> <label|none>` if the reusable service needs a clearer operator label."
-            ),
-        ],
-        (BackgroundShellCapabilityIssueClass::Untracked, ActionAudience::Tool) => vec![
-            format!(
-                "Use `background_shell_list_services {{\"status\":\"untracked\",\"capability\":\"@{capability}\"}}` to inspect the provider missing readiness or attachment metadata."
-            ),
-            format!(
-                "Use `background_shell_update_service {{\"jobId\":\"@{capability}\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}}` to add a live readiness or attachment contract for @{capability}."
-            ),
-            format!(
-                "Use `background_shell_update_service {{\"jobId\":\"@{capability}\",\"label\":\"service-label\"}}` if the reusable service needs a clearer operator label."
-            ),
-        ],
-        (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Operator) => vec![
-            format!("Run `:ps attach @{capability}` to inspect endpoint and recipe details."),
-            format!(
-                "Run `:ps run @{capability} <recipe> [json-args]` to reuse the ready service directly."
-            ),
-        ],
-        (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Tool) => vec![
-            format!(
-                "Use `background_shell_attach {{\"jobId\":\"@{capability}\"}}` to inspect endpoint and recipe details."
-            ),
-            format!(
-                "Use `background_shell_invoke_recipe {{\"jobId\":\"@{capability}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
-            ),
-        ],
-    })
+            }
+            (BackgroundShellCapabilityIssueClass::Untracked, ActionAudience::Operator) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Run `:ps services untracked @{capability}` to inspect the provider missing readiness or attachment metadata."
+                    ),
+                    format!(
+                        "Run `:ps contract {provider_ref} <json-object>` to add `readyPattern`, `protocol`, `endpoint`, or recipes in place for @{capability}."
+                    ),
+                    format!(
+                        "Run `:ps relabel {provider_ref} <label|none>` if the reusable service needs a clearer operator label."
+                    ),
+                ]
+            }
+            (BackgroundShellCapabilityIssueClass::Untracked, ActionAudience::Tool) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Use `background_shell_list_services {{\"status\":\"untracked\",\"capability\":\"@{capability}\"}}` to inspect the provider missing readiness or attachment metadata."
+                    ),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}}` to add a live readiness or attachment contract for @{capability}."
+                    ),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"label\":\"service-label\"}}` if the reusable service needs a clearer operator label."
+                    ),
+                ]
+            }
+            (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Operator) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Run `:ps attach {provider_ref}` to inspect endpoint and recipe details."
+                    ),
+                    format!(
+                        "Run `:ps run {provider_ref} <recipe> [json-args]` to reuse the ready service directly."
+                    ),
+                ]
+            }
+            (BackgroundShellCapabilityIssueClass::Healthy, ActionAudience::Tool) => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Use `background_shell_attach {{\"jobId\":\"{provider_ref}\"}}` to inspect endpoint and recipe details."
+                    ),
+                    format!(
+                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{provider_ref}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
+                    ),
+                ]
+            }
+        },
+    )
 }
 
 fn normalize_capability_ref(raw: &str) -> Result<String, String> {

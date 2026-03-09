@@ -268,7 +268,7 @@ fn orchestration_suggest_actions_can_focus_one_capability() {
         "background_shell_list_services {\"status\":\"untracked\",\"capability\":\"@api.http\"}"
     ));
     assert!(text.contains(
-        "background_shell_update_service {\"jobId\":\"@api.http\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+        "background_shell_update_service {\"jobId\":\"bg-1\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
     ));
     let _ = state
         .orchestration
@@ -389,7 +389,10 @@ fn orchestration_suggest_actions_can_focus_untracked_capability_contract_fixes()
         "background_shell_list_services {\"status\":\"untracked\",\"capability\":\"@api.http\"}"
     ));
     assert!(text.contains(
-        "background_shell_update_service {\"jobId\":\"@api.http\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+        "background_shell_update_service {\"jobId\":\"bg-1\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+    ));
+    assert!(text.contains(
+        "background_shell_update_service {\"jobId\":\"bg-1\",\"label\":\"service-label\"}"
     ));
     let _ = state
         .orchestration
