@@ -122,6 +122,8 @@ the real connector binary:
   - `contract`
   - `relabel`
 - capability list / detail
+- explicit rejection of unsupported broker-style aliases and out-of-allowlist
+  raw proxy / raw proxy SSE routes
 - broker-style SSE consumption
 - broker-style SSE resume through `Last-Event-ID`
 - structured lease-conflict propagation

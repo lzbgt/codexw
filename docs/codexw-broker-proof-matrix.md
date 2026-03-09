@@ -51,7 +51,7 @@ Status labels:
 | Service list/detail/control | strong proof | [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/services.rs](../wrapper/tests/connector_prototype_smoke/fixture/services.rs) | No major prototype gap. |
 | Capability list/detail | strong proof | [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs), [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/services.rs](../wrapper/tests/connector_prototype_smoke/fixture/services.rs) | No major prototype gap. |
 | `client_event` publish | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs), [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md) | More explicit negative route proof would still help promotion. |
-| Unsupported route behavior | partial proof | connector allowlist structure in [wrapper/src/bin/codexw_connector_prototype/routing.rs](../wrapper/src/bin/codexw_connector_prototype/routing.rs), smoke coverage in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) | Promotion should add clearer explicit proof for rejected broker surfaces, not only rely on current code structure. |
+| Unsupported route behavior | strong proof | connector allowlist structure in [wrapper/src/bin/codexw_connector_prototype/routing.rs](../wrapper/src/bin/codexw_connector_prototype/routing.rs), explicit process-level rejection coverage in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) for unknown broker aliases plus disallowed raw proxy and raw proxy SSE paths | Broader fuzzing or exhaustive negative matrices are still optional hardening, not a missing promotion prerequisite for the currently claimed surface. |
 
 ### Error Contract
 
@@ -95,8 +95,7 @@ in route coverage and process-level workflow proof.
 The weakest remaining areas are not missing endpoints. They are:
 
 1. turning client-policy text into a stricter adapter contract
-2. adding clearer negative proof for unsupported broker surfaces
-3. deciding explicitly whether the current proof level is enough for promotion
+2. deciding explicitly whether the current proof level is enough for promotion
 
 That means the next high-leverage work is not more route invention. It is using
 this matrix together with

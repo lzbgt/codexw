@@ -169,11 +169,11 @@ Promotion should require stable process-level proof for:
 
 ### Recommended Additional Proof Before Promotion
 
-Useful but not strictly required for the current prototype:
+Useful but not strictly required beyond the already-landed prototype proof set:
 
 - a small compatibility matrix beyond the Python fixture
-- route-by-route contract assertions instead of relying only on workflow tests
-- explicit negative tests for unsupported broker surfaces through the connector
+- route-by-route contract assertions that go beyond the current representative
+  positive and negative workflow coverage
 
 ## Operational Requirements
 
