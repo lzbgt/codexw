@@ -627,7 +627,15 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_personality_status.rs`
   Personality rendering, prompt-status, and status-snapshot regression tests.
 - `wrapper/src/main_test_session_status.rs`
-  Thread-status, prompt-status, realtime-status snapshot, and ready-state prompt regression tests.
+  Thread-status, prompt-status, realtime-status snapshot, ready-state prompt, and collab wait regression tests.
+- `wrapper/src/main_test_session_status_ps_orchestration.rs`
+  `/ps` orchestration selector, capability, dependency, cleanup, and targeted worker-control regression tests.
+- `wrapper/src/client_dynamic_tools_tests_orchestration.rs`
+  Orchestration dynamic-tool namespace tests plus filter/argument validation regressions.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance.rs`
+  Tool-native orchestration guidance regression tests.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions.rs`
+  Tool-native orchestration action regression tests.
 - `wrapper/src/app.rs`
   Top-level runtime loop and backend wiring.
 - `wrapper/src/app_input_editing.rs`
