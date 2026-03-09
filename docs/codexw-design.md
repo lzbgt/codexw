@@ -678,7 +678,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_status_ps_orchestration/runtime/control.rs`
   `/ps` orchestration runtime control test namespace with shared poll/send/alias/cleanup helpers.
 - `wrapper/src/main_test_session_status_ps_orchestration/runtime/control/jobs.rs`
-  `/ps` orchestration runtime regression tests for polling, termination, alias reuse, and stdin send flows.
+  `/ps` orchestration runtime job-control test namespace.
+- `wrapper/src/main_test_session_status_ps_orchestration/runtime/control/jobs/polling.rs`
+  `/ps` orchestration runtime regression tests for polling and termination flows.
+- `wrapper/src/main_test_session_status_ps_orchestration/runtime/control/jobs/aliases.rs`
+  `/ps` orchestration runtime regression tests for alias reuse, unalias, and stdin send flows.
 - `wrapper/src/main_test_session_status_ps_orchestration/runtime/control/services.rs`
   `/ps` orchestration runtime regression tests for capability-scoped service/blocker cleanup.
 - `wrapper/src/main_test_session_status_ps_orchestration/runtime/services.rs`
@@ -1327,7 +1331,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_command_session_ps/control.rs`
   `:ps` mutation/job-control namespace root.
 - `wrapper/src/dispatch_command_session_ps/control/interact.rs`
-  `:ps` job interaction handlers such as send, poll, attach, wait, run, alias, unalias, and terminate.
+  `:ps` interaction-handler namespace root.
+- `wrapper/src/dispatch_command_session_ps/control/interact/jobs.rs`
+  `:ps` generic background-shell interaction handlers such as send, poll, alias, unalias, and terminate.
+- `wrapper/src/dispatch_command_session_ps/control/interact/services.rs`
+  `:ps` service interaction handlers such as attach, wait, and run.
 - `wrapper/src/dispatch_command_session_ps/control/services.rs`
   `:ps` reusable-service mutation handlers such as provide, depend, contract, and relabel.
 - `wrapper/src/dispatch_command_session_ps/views.rs`
