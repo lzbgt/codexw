@@ -559,6 +559,21 @@ Current user-facing capabilities include:
 
 `codexw` no longer leaves any of the user-facing slash-command side effects in a generic placeholder state. The Windows-only `:sandbox-add-read-dir` path is now handled client-side like upstream: it validates the requested absolute directory and refreshes sandbox read grants locally rather than going through app-server. The main remaining gaps are architectural or UX-level instead of command dispatch parity. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only. Upstream app-server also still does not expose a public client request that can write to or poll model-owned `item/commandExecution` sessions directly, so same-turn async shell work is implemented through wrapper-owned dynamic tools instead of reusing the backend's internal unified-exec handles.
 
+## Project Status
+
+The project is now in a relatively mature state.
+
+- user-facing command parity is largely complete
+- unattended automation, orchestration visibility, and wrapper-owned async shell workflows are in place
+- the main remaining work is architectural parity with the native Codex TUI rather than basic command implementation
+
+That means the highest-leverage future work is concentrated in:
+
+- alternate-screen / widget-tree style UI parity instead of the current scrollback-first terminal model
+- richer realtime UX, especially the upstream audio path
+- deeper async execution parity if app-server ever exposes public control over model-owned `item/commandExecution` sessions
+- continued doc/runtime consistency work so the design notes stay trustworthy as the implementation evolves
+
 ## Approval and Automation Posture
 
 `codexw` defaults to a fully automated posture.
@@ -590,7 +605,7 @@ The biggest known limits are architectural, not accidental.
 - `codexw` is not the native upstream Codex TUI.
 - It depends only on app-server surfaces, so popup-heavy native workflows cannot always be reproduced exactly.
 - It cannot directly control model-owned `item/commandExecution` sessions through app-server today; the background-shell workflow is a wrapper-side workaround built on dynamic tools.
-- A small number of platform-specific commands can only explain their limitation because app-server does not expose the needed internal state, notably the Windows additional read-root grant workflow.
+- No known user-facing command remains in a generic placeholder state; the remaining limitations are backend-surface or UX-parity issues rather than missing command handlers.
 - Rendering is richer than plain logs, but it is still terminal-scrollback based rather than a full alternate-screen widget tree.
 
 ## File Map

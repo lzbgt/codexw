@@ -244,3 +244,5 @@ Submission features:
 - `:sandbox-add-read-dir <absolute-directory-path>` now follows the native Windows TUI model instead of staying a placeholder: on Windows it validates the requested directory locally and refreshes sandbox read grants client-side; on non-Windows it stays hidden from help/completion and reports that the workflow is Windows-only if typed explicitly.
 - The remaining behavior differences against upstream are now mostly architectural or UX-level rather than missing slash-command side effects: `codexw` still uses a scrollback-style inline terminal UI instead of the native alternate-screen widget tree, and the realtime path remains text-only rather than implementing the upstream audio UX.
 - While a thread switch or local command is in flight, `codexw` hides the prompt and ignores text editing keys instead of buffering invisible input that would appear later unexpectedly.
+
+In other words, `codexw` is now much closer to an app-server-backed Codex client than to a thin compatibility shim. The remaining high-leverage work is mostly architectural parity and UX depth, not missing command dispatch behavior.
