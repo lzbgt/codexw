@@ -8,6 +8,7 @@ design set:
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
 Its goal is simple:
 
@@ -173,6 +174,10 @@ This process-level proof comes from two complementary surfaces:
 - the standalone Python broker client fixture in
   `scripts/codexw_broker_client.py`, also exercised by process-level smoke
 
+For a promotion-oriented mapping from those workflows back to route, error,
+event, policy, and unsupported-boundary claims, see
+[codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md).
+
 ## What Is Stable Enough For Prototype Consumers
 
 For prototype or lab use, the following are now strong enough to build against:
@@ -233,4 +238,5 @@ If continuing on this track, the highest-leverage next tasks are:
    expansion does not drift into parity assumptions
 4. use [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
    as the explicit checklist for deciding whether the connector stays
-   prototype-grade or becomes a supported adapter layer
+   prototype-grade or becomes a supported adapter layer, together with
+   [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)

@@ -1,0 +1,104 @@
+# codexw Broker Proof Matrix
+
+This document maps the broker/local-API adapter claims to concrete repo
+evidence.
+
+Use it when deciding whether the current stack is only a strong prototype or is
+close to promotion under
+[codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md).
+
+It does not redefine the broker design. It answers a narrower question:
+
+- which claims are process-level proven
+- which claims are only policy or design intent
+- which areas still need stronger evidence before promotion
+
+## Companion Docs
+
+- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
+- [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
+- [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+
+## Reading This Matrix
+
+Status labels:
+
+- `strong proof`
+  - backed by process-level connector smoke and/or the real Python broker
+    client fixture
+- `partial proof`
+  - backed by implementation plus some smoke proof, but not yet at the level
+    desirable for promotion
+- `doc/policy only`
+  - specified clearly, but still primarily a contract statement rather than a
+    defended proof surface
+
+## Promotion Criteria Matrix
+
+### Route Contract
+
+| Area | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Session lifecycle and inspection | strong proof | [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md), [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/session.rs](../wrapper/tests/connector_prototype_smoke/fixture/session.rs) | Promotion could still use tighter route-by-route assertions rather than mostly workflow coverage. |
+| Attachment renew/release | strong proof | [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/session.rs](../wrapper/tests/connector_prototype_smoke/fixture/session.rs) | No major prototype gap. |
+| Turn start/interrupt | strong proof | [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/session.rs](../wrapper/tests/connector_prototype_smoke/fixture/session.rs) | Steer/resume semantics remain outside the current adapter proof set. |
+| Transcript inspection | strong proof | [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/session.rs](../wrapper/tests/connector_prototype_smoke/fixture/session.rs) | No major prototype gap. |
+| Orchestration status/workers/dependencies | strong proof | [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/session.rs](../wrapper/tests/connector_prototype_smoke/fixture/session.rs) | Schema freezing is still a promotion-time decision. |
+| Shell list/detail/control | strong proof | [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs), [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/shells.rs](../wrapper/tests/connector_prototype_smoke/fixture/shells.rs) | No major prototype gap. |
+| Service list/detail/control | strong proof | [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/services.rs](../wrapper/tests/connector_prototype_smoke/fixture/services.rs) | No major prototype gap. |
+| Capability list/detail | strong proof | [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs), [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/services.rs](../wrapper/tests/connector_prototype_smoke/fixture/services.rs) | No major prototype gap. |
+| `client_event` publish | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs), [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md) | More explicit negative route proof would still help promotion. |
+| Unsupported route behavior | partial proof | connector allowlist structure in [wrapper/src/bin/codexw_connector_prototype/routing.rs](../wrapper/src/bin/codexw_connector_prototype/routing.rs), smoke coverage in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) | Promotion should add clearer explicit proof for rejected broker surfaces, not only rely on current code structure. |
+
+### Error Contract
+
+| Area | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Structured local-API error envelope | strong proof | [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), local-API route tests under `wrapper/src/local_api/tests/*` | Promotion should freeze this more explicitly as adapter contract language. |
+| Connector preserves structured local-API errors | strong proof | [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs), [wrapper/tests/connector_prototype_smoke/fixture/services.rs](../wrapper/tests/connector_prototype_smoke/fixture/services.rs), [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | No major prototype gap on current lease/conflict behavior. |
+| Field-accurate validation failures | partial proof | local-API validation tests plus selected connector smoke paths | Promotion should widen this beyond the currently exercised attachment/client-id heavy cases. |
+
+### Event Contract
+
+| Area | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Semantic SSE event stream exists | strong proof | [wrapper/src/local_api/events.rs](../wrapper/src/local_api/events.rs), [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/events/basic.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/basic.rs) | No major prototype gap. |
+| `Last-Event-ID` replay/resume | strong proof | [wrapper/tests/connector_prototype_smoke/workflows.rs](../wrapper/tests/connector_prototype_smoke/workflows.rs), [wrapper/tests/connector_prototype_smoke/fixture/events/basic.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/basic.rs), [wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs), [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | Promotion may still want a stricter explicit event-order statement. |
+| Event surface is semantic, not terminal-derived | strong proof | [wrapper/src/local_api/events.rs](../wrapper/src/local_api/events.rs), [wrapper/src/local_api/snapshot.rs](../wrapper/src/local_api/snapshot.rs), [docs/codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md) | No major prototype gap. |
+| Multi-client event behavior under lease churn | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | Sustained or probabilistic churn is still optional future hardening, not a current missing route. |
+
+### Client Policy Contract
+
+| Area | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Owner / observer / rival roles are explicit | doc/policy only | [codexw-broker-client-policy.md](codexw-broker-client-policy.md) | Promotion still needs to treat this as stable adapter contract, not only design text. |
+| Lease-owned versus observer-readable operations | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs), [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md) | Could still be presented in a stricter contract table before promotion. |
+| Renew/release/takeover semantics | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/session.rs](../wrapper/tests/connector_prototype_smoke/fixture/session.rs), [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | No major prototype gap within the current process-scoped model. |
+| Repeated role reversal | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | More sustained multi-client churn is still a possible follow-up, not a route deficiency. |
+| Client event behavior under lease rules | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/client_events.rs) | No major prototype gap on the currently claimed client-event surface. |
+
+### Unsupported Boundary
+
+| Area | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Unsupported broker/client surfaces are explicitly named | doc/policy only | [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) | Promotion should pair this with stronger explicit negative proof through the connector. |
+| Connector remains thin and local API remains canonical | partial proof | code organization under `wrapper/src/local_api/*` and `wrapper/src/bin/codexw_connector_prototype/*`, plus [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md) | This is still primarily an architectural claim rather than an executable proof set. |
+
+## Current Read
+
+The current broker/local-API stack is already stronger than a normal prototype
+in route coverage and process-level workflow proof.
+
+The weakest remaining areas are not missing endpoints. They are:
+
+1. turning client-policy text into a stricter adapter contract
+2. adding clearer negative proof for unsupported broker surfaces
+3. deciding explicitly whether the current proof level is enough for promotion
+
+That means the next high-leverage work is not more route invention. It is using
+this matrix together with
+[codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md) to
+make the remaining promotion decision auditable.

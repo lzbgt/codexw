@@ -138,6 +138,9 @@ That boundary should remain aligned with
 
 Promotion should require more than route availability.
 
+The repo-side evidence for the areas below is summarized in
+[codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md).
+
 ### Required Automated Proof
 
 At minimum, the repo should continue to have process-level proof for:
@@ -237,6 +240,7 @@ That means the next meaningful work is:
 ## Companion Docs
 
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)

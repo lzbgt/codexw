@@ -152,6 +152,7 @@ documents:
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
 The current implementation is now past pure route sketches:
 
@@ -767,6 +768,8 @@ remaining work is now implementation-facing:
 - the criteria for promoting the current broker/local-API stack into a
   supported adapter layer, now captured in
   [docs/codexw-broker-adapter-promotion.md](docs/codexw-broker-adapter-promotion.md)
+- the mapping from those criteria to current process-level proof, now captured
+  in [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
 
 The local API spike has now started with a minimal loopback skeleton:
 
