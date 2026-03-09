@@ -559,14 +559,10 @@ Those are likely to require either:
 The first investigation pass should produce these artifacts:
 
 1. `endpoint-audit.md`
-   - one row per relevant `~/work/agent` endpoint or event family
-   - classification: `direct fit`, `adapter fit`, `out of scope`
-   - owner/source of truth inside `codexw`
-   - implementation notes
+   - now tracked in [docs/codexw-broker-endpoint-audit.md](docs/codexw-broker-endpoint-audit.md)
 
 2. `event-envelope-sketch.md`
-   - proposed `codexw` event envelope for transcript, status, orchestration, shells, and services
-   - explicit mapping to any reused `agent` vocabulary
+   - now tracked in [docs/codexw-broker-event-envelope.md](docs/codexw-broker-event-envelope.md)
 
 3. `session-identity-note.md`
    - mapping between:
