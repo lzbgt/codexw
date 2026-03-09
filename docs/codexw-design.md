@@ -710,7 +710,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates.rs`
   Background-shell service metadata mutation, dependency-retarget, and validation regression tests.
 - `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views.rs`
-  Background-shell service list, capability index, attachment, and service-state filter regression tests.
+  Background-shell service-control view regression namespace root.
+- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/capabilities.rs`
+  Background-shell capability-index/detail dynamic-tool regression tests.
+- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/services.rs`
+  Background-shell service-list, attachment, and service-state filter dynamic-tool regression tests.
 - `wrapper/src/client_dynamic_tools_tests_shells/recipes.rs`
   Background-shell recipe dynamic-tool regression test namespace.
 - `wrapper/src/client_dynamic_tools_tests_shells/recipes/invoke.rs`
@@ -869,7 +873,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/background_shells/services/render.rs`
   Reusable-service render namespace root.
 - `wrapper/src/background_shells/services/render/index.rs`
-  Reusable-service capability/dependency indexes, issue classification, and summary helpers.
+  Reusable-service capability/dependency render-index namespace root.
+- `wrapper/src/background_shells/services/render/index/capabilities.rs`
+  Reusable-service capability indexes, issue classification, and provider/consumer display helpers.
+- `wrapper/src/background_shells/services/render/index/dependencies.rs`
+  Reusable-service dependency summary, blocking-issue, and dependency-state count helpers.
 - `wrapper/src/background_shells/services/render/views.rs`
   Reusable-service view namespace root.
 - `wrapper/src/background_shells/services/render/views/capabilities.rs`
@@ -908,7 +916,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/background_shells/tests/services/updates/readiness.rs`
   Reusable-service readiness transition and wait regression tests.
 - `wrapper/src/background_shells/tests/services/views.rs`
-  Reusable-service capability reference, capability index, service-state filter, and attachment-view regression tests.
+  Reusable-service view regression namespace root.
+- `wrapper/src/background_shells/tests/services/views/capabilities.rs`
+  Reusable-service capability reference and capability-index/detail regression tests.
+- `wrapper/src/background_shells/tests/services/views/services.rs`
+  Reusable-service shell-list, service-state filter, and attachment-view regression tests.
 - `wrapper/src/background_shells/tests/services/recipes.rs`
   Reusable-service recipe regression test namespace.
 - `wrapper/src/background_shells/tests/services/recipes/metadata.rs`
