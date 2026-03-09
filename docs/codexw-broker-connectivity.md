@@ -166,6 +166,24 @@ That keeps the first implementation aligned with the existing wrapper architectu
 
 Those are important, but they are not blockers for a first remote-control API if the scope is state/control/event transport rather than full UI parity.
 
+## Surface Mapping: Current `codexw` To Remote API
+
+The following table captures the highest-value existing local surfaces that could become remote API surfaces first.
+
+| Current local surface | Internal source of truth | Remote shape to design | Notes |
+| --- | --- | --- | --- |
+| `:status` | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `GET /api/v1/status` + `status.updated` events | Good first remote inspection surface because it is already summary-oriented |
+| `:ps` worker views | `orchestration_view/*`, `orchestration_registry/*` | `GET /api/v1/orchestration/workers?filter=...` | Maps naturally to client dashboards and remote terminals |
+| `:ps dependencies` | `orchestration_view/dependencies.rs` | `GET /api/v1/orchestration/dependencies?filter=...` | Already structured enough to avoid parsing terminal text |
+| transcript scrollback | item/turn state + transcript render helpers | `GET /api/v1/transcript` + SSE event stream | Remote clients should consume semantic item events, not ANSI blocks |
+| turn submit / steer / interrupt | request builders + `dispatch_submit_*` | `POST /api/v1/turn/start`, `POST /api/v1/turn/steer`, `POST /api/v1/turn/interrupt` | Existing local lifecycle is already explicit |
+| background shell jobs | `background_shells/*` | `POST /api/v1/shells/*`, `GET /api/v1/shells` | One of the highest-value remote-control surfaces |
+| reusable services / capabilities | `background_shells/services/*` | `GET /api/v1/services`, `GET /api/v1/capabilities` | Needed for mobile/WebUI service attachment and orchestration reuse |
+| model / personality / approvals | selection flow + request overrides | `GET /api/v1/session/config`, `POST /api/v1/session/config` | Useful, but lower priority than status and turn control |
+| local prompt/editor state | terminal-only editor modules | no public API in phase 1 | Treat as local-only presentation detail |
+
+The right first implementation is not “remote terminal mirroring.” It is exposing the stable semantic layers already present underneath the terminal renderer.
+
 ## API Surface To Design
 
 The first remote API proposal should cover:
@@ -203,6 +221,111 @@ The first remote API proposal should cover:
 - attach/wait/run recipe
 - provide/depend/relabel/contract
 - list services and capabilities
+
+## First-Pass Local API Sketch
+
+This is not the final wire contract. It is a candidate shape for the first audit/implementation pass.
+
+### Session
+
+- `POST /api/v1/session/new`
+  - creates a remote session handle bound to a local cwd/objective context
+- `GET /api/v1/session`
+  - returns current session summary, active thread id, cwd, model, personality, collaboration mode
+- `POST /api/v1/session/attach`
+  - attaches the remote client to an existing local thread or wrapper session
+
+### Turns
+
+- `POST /api/v1/turn/start`
+  - starts a new turn with prompt text and optional attachments/mentions
+- `POST /api/v1/turn/steer`
+  - adds steer input to the active turn
+- `POST /api/v1/turn/interrupt`
+  - interrupts active work
+
+### Transcript And Events
+
+- `GET /api/v1/transcript`
+  - snapshot view of recent transcript items
+- `GET /api/v1/events`
+  - SSE stream of semantic updates
+
+### Orchestration
+
+- `GET /api/v1/orchestration/status`
+- `GET /api/v1/orchestration/workers?filter=...`
+- `GET /api/v1/orchestration/dependencies?filter=...`
+- `GET /api/v1/orchestration/actions`
+
+### Background Shells
+
+- `GET /api/v1/shells`
+- `POST /api/v1/shells/start`
+- `POST /api/v1/shells/{job}/poll`
+- `POST /api/v1/shells/{job}/send`
+- `POST /api/v1/shells/{job}/terminate`
+- `POST /api/v1/shells/{job}/attach`
+- `POST /api/v1/shells/{job}/wait_ready`
+- `POST /api/v1/shells/{job}/invoke_recipe`
+
+### Reusable Services And Capabilities
+
+- `GET /api/v1/services`
+- `GET /api/v1/services/{job}`
+- `GET /api/v1/capabilities`
+- `GET /api/v1/capabilities/{capability}`
+- `POST /api/v1/services/{job}/update`
+- `POST /api/v1/services/{job}/update_dependencies`
+
+## First-Pass Event Model Sketch
+
+The first remote stream should prefer a small set of stable semantic events:
+
+- `session.attached`
+- `turn.started`
+- `turn.completed`
+- `transcript.item`
+- `status.updated`
+- `orchestration.updated`
+- `shell.updated`
+- `service.updated`
+- `capability.updated`
+
+For phase 1, every event should satisfy two constraints:
+
+1. it can be generated from existing internal state without depending on terminal-render logic
+2. it is useful to more than one client type
+
+That avoids overfitting the first API to a single WebUI or terminal proxy.
+
+## Mapping Against `~/work/agent`
+
+The likely compatibility plan is partial, not immediate full parity.
+
+### Directly Reusable Ideas
+
+- outbound broker connection model
+- HTTP plus SSE relay split
+- explicit client identity
+- session-safe event transport
+- durable machine-readable event envelopes instead of UI heuristics
+
+### Likely Different In `codexw`
+
+- `codexw` is not a standalone agent daemon; it is a wrapper around `codex app-server`
+- background-shell execution is wrapper-owned, not backend-native
+- transcript semantics are shaped by app-server item/turn events rather than a custom run engine
+- local thread ids and resume flows already exist and should not be hidden behind a totally unrelated session abstraction
+
+### Likely First Compatibility Target
+
+The most realistic initial target is:
+
+- reuse the broker/client conceptual model
+- reuse the event and session vocabulary where it fits
+- allow a connector or bridge to adapt between the systems
+- avoid promising strict wire compatibility until the local API exists and the gap analysis is complete
 
 ## Session Model Questions
 
@@ -243,17 +366,23 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 
 - compare `codexw` state/events against `~/work/agent` protocol and client expectations
 - list exact mismatches instead of assuming compatibility
+- write a surface inventory:
+  - local-only
+  - remotely exposable in phase 1
+  - exposed later only with architectural changes
 
 ### Phase 1: Local API Design
 
 - define a local HTTP/SSE API for `codexw`
 - decide auth and session identity
 - specify event envelopes
+- decide event ordering and replay rules for reconnecting clients
 
 ### Phase 2: Prototype Connector
 
 - adapt the local API to the broker relay model
 - test remote terminal and browser-driven operation
+- evaluate whether the `~/work/agent` C framework can consume the same event/session contract without wrapper-specific hacks
 
 ### Phase 3: Decide Native Broker Support
 
