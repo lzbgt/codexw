@@ -48,6 +48,16 @@ That fixture-backed smoke coverage now includes:
   - explicit owner release
   - rival lease takeover and successful mutation
   - dual `Last-Event-ID` observer resume after the handoff
+- one repeated role-reversal workflow with:
+  - leased owner session creation
+  - observer event consumption
+  - rival conflict before release
+  - owner release
+  - rival takeover and mutation
+  - former-owner conflict while rival holds the lease
+  - rival release
+  - owner retake and mutation
+  - observer `Last-Event-ID` resume after the second role change
 
 ## Objective
 

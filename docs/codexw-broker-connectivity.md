@@ -196,6 +196,11 @@ For the concise implementation/proof snapshot, see
   release, rival lease takeover, rival mutation success, and dual resumed
   `Last-Event-ID` event consumers after the handoff
 - the standalone broker-style client fixture is also now process-level verified
+  for a repeated role-reversal workflow where the original owner releases,
+  the rival takes over and mutates, the former owner is then blocked, the rival
+  releases, and the owner retakes the lease before a resumed observer sees the
+  post-retake capability event
+- the standalone broker-style client fixture is also now process-level verified
   for session listing and turn interrupt flows, session attach plus
   orchestration status / workers / dependencies inspection, and shell list /
   detail / send / poll / terminate control paths

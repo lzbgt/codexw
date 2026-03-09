@@ -90,6 +90,16 @@ fixture against the real connector binary for:
   - owner attachment release
   - rival lease acquisition and successful mutation
   - dual-observer `Last-Event-ID` resume after the handoff
+- one repeated role-reversal workflow that mixes:
+  - owner-created leased session
+  - observer event consumption
+  - rival conflict before release
+  - owner release
+  - rival takeover and successful mutation
+  - former-owner conflict while rival holds the lease
+  - rival release
+  - owner retake and successful mutation
+  - observer `Last-Event-ID` resume after the second role change
 
 So the fixture is not just a documentation example.
 
