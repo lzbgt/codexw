@@ -662,7 +662,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_selections/threads/init_agents.rs`
   Init command and agent-thread selection regression tests.
 - `wrapper/src/main_test_session_selections/threads/requests.rs`
-  Thread-switch, dynamic-tool advertisement, and Windows sandbox selection regression tests.
+  Thread-request regression namespace root.
+- `wrapper/src/main_test_session_selections/threads/requests/threads.rs`
+  Thread-switch and dynamic-tool advertisement regression tests.
+- `wrapper/src/main_test_session_selections/threads/requests/sandbox.rs`
+  Windows sandbox request and setup regression tests.
 - `wrapper/src/main_test_session_status.rs`
   Shared status test harness helpers and namespace root.
 - `wrapper/src/main_test_session_status/prompt.rs`
@@ -1243,7 +1247,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/requests/bootstrap_search.rs`
   Thread-list and fuzzy file-search request builders.
 - `wrapper/src/requests/thread_switch_common.rs`
-  Shared thread-switch request-id, pending-state helpers, and thread start/resume/fork request builders.
+  Thread-switch request namespace root.
+- `wrapper/src/requests/thread_switch_common/shared.rs`
+  Shared thread-switch request-id, pending-state, and session-override helpers.
+- `wrapper/src/requests/thread_switch_common/switch.rs`
+  Thread start, resume, and fork request builders.
 - `wrapper/src/requests/thread_maintenance.rs`
   Thread compact, rename, and background-terminal cleanup request builders.
 - `wrapper/src/requests/thread_realtime.rs`
