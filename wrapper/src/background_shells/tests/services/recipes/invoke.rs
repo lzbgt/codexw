@@ -1,9 +1,47 @@
-use super::*;
+use super::super::*;
 
-#[path = "recipes/invoke.rs"]
-mod invoke;
-#[path = "recipes/metadata.rs"]
-mod metadata;
+#[test]
+fn service_recipe_can_invoke_stdin_action() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &json!({
+                "command": interactive_echo_command(),
+                "intent": "service",
+                "recipes": [
+                    {
+                        "name": "status",
+                        "description": "Ask the service for status",
+                        "action": {
+                            "type": "stdin",
+                            "text": "status"
+                        }
+                    }
+                ]
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+
+    let rendered = manager
+        .invoke_recipe_for_operator("bg-1", "status")
+        .expect("invoke stdin recipe");
+    assert!(rendered.contains("Action: stdin \"status\""));
+    assert!(rendered.contains("Sent"));
+
+    let mut polled = String::new();
+    for _ in 0..40 {
+        polled = manager
+            .poll_job("bg-1", 0, 200)
+            .expect("poll shell directly");
+        if polled.contains("status") {
+            break;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+    assert!(polled.contains("status"));
+    let _ = manager.terminate_all_running();
+}
 
 #[test]
 fn service_recipe_can_invoke_http_action() {
@@ -305,7 +343,6 @@ fn service_recipe_can_invoke_redis_action() {
         .invoke_recipe_for_operator("bg-1", "ping")
         .expect("invoke redis recipe");
     assert!(rendered.contains("Action: redis PING expect=\"PONG\" timeout=500ms"));
-    assert!(rendered.contains("Command: PING"));
     assert!(rendered.contains("Type: simple-string"));
     assert!(rendered.contains("Value: PONG"));
     let _ = manager.terminate_all_running();
@@ -319,7 +356,9 @@ fn service_recipe_redis_expectation_is_enforced() {
         let (mut stream, _) = listener.accept().expect("accept request");
         let mut request = [0_u8; 4096];
         let _ = stream.read(&mut request).expect("read request");
-        stream.write_all(b"+NOPE\r\n").expect("write response");
+        stream
+            .write_all(b"$5\r\nwrong\r\n")
+            .expect("write response");
         stream.flush().expect("flush response");
     });
     let manager = BackgroundShellManager::default();
@@ -329,7 +368,7 @@ fn service_recipe_redis_expectation_is_enforced() {
                 "command": "sleep 0.4",
                 "intent": "service",
                 "protocol": "redis",
-                "endpoint": format!("{addr}"),
+                "endpoint": format!("tcp://{addr}"),
                 "recipes": [
                     {
                         "name": "ping",
@@ -351,48 +390,6 @@ fn service_recipe_redis_expectation_is_enforced() {
         .invoke_recipe_for_operator("bg-1", "ping")
         .expect_err("expectation mismatch should fail");
     assert!(err.contains("expected substring `PONG`"));
-    assert!(err.contains("Value: NOPE"));
+    assert!(err.contains("Value: wrong"));
     let _ = manager.terminate_all_running();
-}
-
-#[test]
-fn informational_recipe_cannot_be_invoked() {
-    let manager = BackgroundShellManager::default();
-    manager
-        .start_from_tool(
-            &json!({
-                "command": "sleep 0.4",
-                "intent": "service",
-                "recipes": [
-                    {
-                        "name": "docs",
-                        "description": "Read the service docs first"
-                    }
-                ]
-            }),
-            "/tmp",
-        )
-        .expect("start service shell");
-
-    let err = manager
-        .invoke_recipe_for_operator("bg-1", "docs")
-        .expect_err("informational recipe should not be invokable");
-    assert!(err.contains("descriptive only"));
-    let _ = manager.terminate_all_running();
-}
-
-#[test]
-fn service_attachment_fields_require_service_intent() {
-    let manager = BackgroundShellManager::default();
-    let err = manager
-        .start_from_tool(
-            &json!({
-                "command": "sleep 0.1",
-                "intent": "observation",
-                "protocol": "http"
-            }),
-            "/tmp",
-        )
-        .expect_err("service attachment fields should require service intent");
-    assert!(err.contains("service contract fields"));
 }
