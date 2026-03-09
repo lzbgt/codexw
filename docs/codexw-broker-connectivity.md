@@ -701,6 +701,10 @@ The local API spike has now started with a minimal loopback skeleton:
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate`
 - `GET /api/v1/session/{session_id}/services`
 - `GET /api/v1/session/{session_id}/capabilities`
+- `POST /api/v1/session/{session_id}/services/{job_ref}/provide`
+- `POST /api/v1/session/{session_id}/services/{job_ref}/depend`
+- `POST /api/v1/session/{session_id}/services/{job_ref}/contract`
+- `POST /api/v1/session/{session_id}/services/{job_ref}/relabel`
 - internal command queue from the HTTP listener into the main runtime loop
 
 That semantic event-stream milestone is now partially landed:
@@ -708,7 +712,9 @@ That semantic event-stream milestone is now partially landed:
 - `GET /api/v1/session/{session_id}/events` exists in the loopback local API
 - replay works through `Last-Event-ID`
 - the current stream emits `session.updated`, `turn.updated`,
-  `orchestration.updated`, `workers.updated`, and `capabilities.updated`
+  `orchestration.updated`, `workers.updated`, `capabilities.updated`, and
+  `transcript.updated`
 
-The next concrete code step is now service mutation routes plus richer shell
-service interaction routes (`attach`, `wait`, `run`), not more route discovery.
+The next concrete code step is now richer shell/service interaction routes
+(`attach`, `wait`, `run`) plus eventual session create/attach semantics, not
+more route discovery.

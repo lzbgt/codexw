@@ -603,6 +603,92 @@ fn service_update_route_enqueues_local_api_command() {
 }
 
 #[test]
+fn service_provide_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/dev.frontend/provide",
+            serde_json::json!({
+                "capabilities": ["frontend.dev"]
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::UpdateService {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-1",
+                "capabilities": ["frontend.dev"]
+            }),
+        })
+    );
+}
+
+#[test]
+fn service_contract_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/bg-1/contract",
+            serde_json::json!({
+                "endpoint": "http://127.0.0.1:3001",
+                "readyPattern": "listening",
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::UpdateService {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-1",
+                "endpoint": "http://127.0.0.1:3001",
+                "readyPattern": "listening",
+            }),
+        })
+    );
+}
+
+#[test]
+fn service_relabel_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/@frontend.dev/relabel",
+            serde_json::json!({
+                "label": "frontend service"
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::UpdateService {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-1",
+                "label": "frontend service"
+            }),
+        })
+    );
+}
+
+#[test]
 fn dependency_update_route_enqueues_local_api_command() {
     let queue = new_command_queue();
     let response = route_request(
@@ -628,6 +714,70 @@ fn dependency_update_route_enqueues_local_api_command() {
                 "dependsOnCapabilities": ["frontend.dev"]
             }),
         })
+    );
+}
+
+#[test]
+fn service_depend_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/bg-2/depend",
+            serde_json::json!({
+                "dependsOnCapabilities": ["frontend.dev"]
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::UpdateDependencies {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-2",
+                "dependsOnCapabilities": ["frontend.dev"]
+            }),
+        })
+    );
+}
+
+#[test]
+fn service_contract_route_requires_contract_fields() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/bg-1/contract",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 400);
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "validation_error"
+    );
+}
+
+#[test]
+fn service_contract_route_requires_contract_field() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/bg-1/contract",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 400);
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "validation_error"
     );
 }
 

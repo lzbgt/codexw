@@ -48,10 +48,10 @@ that `codexw` can be controlled remotely without scraping terminal output:
 | `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate` | 4 | `background_shells/execution/interact/tools/jobs.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Queues one-job termination against resolved shell refs |
 | `GET /api/v1/session/{session_id}/services` | 4 | `background_shells/services/render/views/services/tool.rs` | `local_api/routes/services.rs` | service-state filters match existing dynamic-tool semantics |
 | `GET /api/v1/session/{session_id}/capabilities` | 4 | `background_shells/services/render/views/capabilities/list.rs` | `local_api/routes/services.rs` | capability-state filters and focused refs work |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/provide` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/routes/services.rs` | capability mutation matches `:ps provide` behavior |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/depend` | 5 | `background_shells/services/updates/dependencies/apply.rs` | `local_api/routes/services.rs` | dependency retargeting matches `:ps depend` |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/contract` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/routes/services.rs` | live contract mutation preserves validation rules |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/relabel` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/routes/services.rs` | label mutation matches operator and tool behavior |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/provide` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Capability mutation queues the same update path as `:ps provide` / `background_shell_update_service` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/depend` | 5 | `background_shells/services/updates/dependencies/apply.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Dependency retargeting queues the same update path as `:ps depend` / `background_shell_update_dependencies` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/contract` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Contract mutation requires at least one mutable contract field and reuses live service update validation |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/relabel` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Label mutation queues the same update path as `:ps relabel` |
 
 ## Suggested Module Layout
 

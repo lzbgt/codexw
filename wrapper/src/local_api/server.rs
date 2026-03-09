@@ -388,14 +388,17 @@ fn route_session_scoped_post(
         Some("shells/start") => {
             handle_shell_start_route(request, snapshot, command_queue, session_id)
         }
-        Some(rest) if rest.starts_with("shells/") => {
-            route_shell_action_route(rest, request, snapshot, command_queue, session_id)
-        }
         Some("services/update") => {
             handle_service_update_route(request, snapshot, command_queue, session_id)
         }
         Some("dependencies/update") => {
             handle_dependency_update_route(request, snapshot, command_queue, session_id)
+        }
+        Some(rest) if rest.starts_with("shells/") => {
+            route_shell_action_route(rest, request, snapshot, command_queue, session_id)
+        }
+        Some(rest) if rest.starts_with("services/") => {
+            route_service_action_route(rest, request, snapshot, command_queue, session_id)
         }
         _ => json_error_response(404, "not_found", "unknown route"),
     }
@@ -423,6 +426,40 @@ fn route_shell_action_route(
         "send" => handle_shell_send_route(request, snapshot, command_queue, reference, session_id),
         "terminate" => {
             handle_shell_terminate_route(request, snapshot, command_queue, reference, session_id)
+        }
+        _ => json_error_response(404, "not_found", "unknown route"),
+    }
+}
+
+fn route_service_action_route(
+    path: &str,
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    session_id: &str,
+) -> HttpResponse {
+    let Some(rest) = path.strip_prefix("services/") else {
+        return json_error_response(404, "not_found", "unknown route");
+    };
+    let mut parts = rest.splitn(2, '/');
+    let Some(reference) = parts.next() else {
+        return json_error_response(404, "not_found", "unknown route");
+    };
+    let Some(action) = parts.next() else {
+        return json_error_response(404, "not_found", "unknown route");
+    };
+    match action {
+        "provide" => {
+            handle_service_provide_route(request, snapshot, command_queue, reference, session_id)
+        }
+        "depend" => {
+            handle_service_depend_route(request, snapshot, command_queue, reference, session_id)
+        }
+        "contract" => {
+            handle_service_contract_route(request, snapshot, command_queue, reference, session_id)
+        }
+        "relabel" => {
+            handle_service_relabel_route(request, snapshot, command_queue, reference, session_id)
         }
         _ => json_error_response(404, "not_found", "unknown route"),
     }
@@ -892,26 +929,7 @@ fn handle_service_update_route(
     if !object.contains_key("jobId") {
         return json_error_response(400, "validation_error", "missing jobId");
     }
-    if let Err(err) = enqueue_command(
-        command_queue,
-        LocalApiCommand::UpdateService {
-            session_id: session_id.to_string(),
-            arguments: body,
-        },
-    ) {
-        return json_error_response(
-            500,
-            "queue_unavailable",
-            &format!("failed to queue service update: {err:#}"),
-        );
-    }
-    json_ok_response(json!({
-        "ok": true,
-        "accepted": true,
-        "queued": true,
-        "session_id": snapshot.session_id,
-        "thread_id": snapshot.thread_id,
-    }))
+    enqueue_service_update(command_queue, session_id, body, snapshot)
 }
 
 fn handle_dependency_update_route(
@@ -937,11 +955,173 @@ fn handle_dependency_update_route(
     if !object.contains_key("dependsOnCapabilities") {
         return json_error_response(400, "validation_error", "missing dependsOnCapabilities");
     }
+    enqueue_dependency_update(command_queue, session_id, body, snapshot)
+}
+
+fn handle_service_provide_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    let mut body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object_mut() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    if !object.contains_key("capabilities") {
+        return json_error_response(400, "validation_error", "missing capabilities");
+    }
+    object.insert("jobId".to_string(), Value::String(shell.id.clone()));
+    enqueue_service_update(command_queue, session_id, body, snapshot)
+}
+
+fn handle_service_depend_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    let mut body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object_mut() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    if !object.contains_key("dependsOnCapabilities") {
+        return json_error_response(400, "validation_error", "missing dependsOnCapabilities");
+    }
+    object.insert("jobId".to_string(), Value::String(shell.id.clone()));
+    enqueue_dependency_update(command_queue, session_id, body, snapshot)
+}
+
+fn handle_service_contract_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    let mut body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object_mut() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    let has_contract_field = object.contains_key("protocol")
+        || object.contains_key("endpoint")
+        || object.contains_key("attachHint")
+        || object.contains_key("readyPattern")
+        || object.contains_key("recipes");
+    if !has_contract_field {
+        return json_error_response(
+            400,
+            "validation_error",
+            "contract update requires one of protocol, endpoint, attachHint, readyPattern, or recipes",
+        );
+    }
+    object.insert("jobId".to_string(), Value::String(shell.id.clone()));
+    enqueue_service_update(command_queue, session_id, body, snapshot)
+}
+
+fn handle_service_relabel_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    let mut body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object_mut() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    if !object.contains_key("label") {
+        return json_error_response(400, "validation_error", "missing label");
+    }
+    object.insert("jobId".to_string(), Value::String(shell.id.clone()));
+    enqueue_service_update(command_queue, session_id, body, snapshot)
+}
+
+fn enqueue_service_update(
+    command_queue: &SharedCommandQueue,
+    session_id: &str,
+    arguments: Value,
+    snapshot: &LocalApiSnapshot,
+) -> HttpResponse {
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::UpdateService {
+            session_id: session_id.to_string(),
+            arguments,
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue service update: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+    }))
+}
+
+fn enqueue_dependency_update(
+    command_queue: &SharedCommandQueue,
+    session_id: &str,
+    arguments: Value,
+    snapshot: &LocalApiSnapshot,
+) -> HttpResponse {
     if let Err(err) = enqueue_command(
         command_queue,
         LocalApiCommand::UpdateDependencies {
             session_id: session_id.to_string(),
-            arguments: body,
+            arguments,
         },
     ) {
         return json_error_response(

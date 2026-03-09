@@ -63,7 +63,8 @@ Current non-goals of the landed slice:
 
 - no turn steer route yet
 - no shell recipe/attach/wait routes yet
-- no service `provide` / `depend` / `contract` / `relabel` routes yet
+- explicit service mutation routes now exist for `provide`, `depend`,
+  `contract`, and `relabel`
 
 That means the next implementation step is no longer transcript or basic shell
 control. It is higher-level shell service interactions and service mutation
@@ -201,6 +202,14 @@ Acceptance criteria:
 
 - service/capability orchestration can be driven entirely through the local API
 - no shell/service operation still requires terminal-only command parsing
+
+Current status:
+
+- implemented through the loopback API and queued onto the same runtime mutation
+  path used by the existing local shell/service control surfaces
+- the main remaining service-side gap is synchronous interaction routes such as
+  `attach`, `wait`, and `run`, which need a result-bearing local-API execution
+  path rather than the current fire-and-forget command queue
 
 ## Candidate Code Ownership
 
