@@ -182,13 +182,17 @@ Current implemented behavior:
 - supports:
   - optional incoming connector bearer auth
   - optional outgoing local-API bearer auth
+  - connector-side client/lease header injection via:
+    - `X-Codexw-Client-Id`
+    - `X-Codexw-Lease-Seconds`
+    for supported mutating JSON routes
 
 Current explicit limitations:
 
 - no broker registration handshake yet
 - no broker-side policy beyond the current static allowlist and agent-id path ownership
 - no shadow session/deployment store
-- no remote lease policy beyond what the local API already enforces
+- no remote lease policy beyond header-to-local-API projection and what the local API already enforces
 - no persistence or reconnect bookkeeping outside SSE `Last-Event-ID` passthrough
 
 ## Decision After Prototype

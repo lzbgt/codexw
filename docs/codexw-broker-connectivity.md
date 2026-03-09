@@ -771,4 +771,6 @@ That connector-facing work has now started with a first standalone prototype:
   - wraps SSE payloads with `source` and `broker` metadata
   - supports optional incoming connector bearer auth
   - supports optional outgoing local-API bearer auth
+  - supports connector-side `X-Codexw-Client-Id` and `X-Codexw-Lease-Seconds`
+    header injection into supported mutating local-API JSON routes
   - rejects proxy requests outside the approved session/turn/orchestration/shell/service route families

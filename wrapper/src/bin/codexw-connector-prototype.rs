@@ -289,17 +289,110 @@ fn forward_request(request: &HttpRequest, cli: &Cli, local_path: &str) -> Result
         .context("set upstream write timeout")?;
 
     let path = compose_local_path(&base, local_path);
+    let (content_type, body) = prepare_upstream_body(request, local_path)?;
     write_upstream_request(
         &mut stream,
         &request.method,
         &path,
-        request.headers.get("content-type").map(String::as_str),
+        content_type.as_deref(),
         cli.local_api_token.as_deref(),
-        request.body.as_slice(),
+        body.as_slice(),
         request.headers.get("last-event-id").map(String::as_str),
     )?;
 
     read_upstream_response(stream)
+}
+
+fn prepare_upstream_body(
+    request: &HttpRequest,
+    local_path: &str,
+) -> Result<(Option<String>, Vec<u8>)> {
+    let requested_client_id = request
+        .headers
+        .get("x-codexw-client-id")
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    let requested_lease_seconds = request
+        .headers
+        .get("x-codexw-lease-seconds")
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty());
+
+    if request.method != "POST" || (!supports_client_lease_injection(local_path)) {
+        return Ok((
+            request.headers.get("content-type").cloned(),
+            request.body.clone(),
+        ));
+    }
+
+    if requested_client_id.is_none() && requested_lease_seconds.is_none() {
+        return Ok((
+            request.headers.get("content-type").cloned(),
+            request.body.clone(),
+        ));
+    }
+
+    let mut object = if request.body.is_empty() {
+        serde_json::Map::new()
+    } else {
+        let value: Value = serde_json::from_slice(&request.body)
+            .context("parse connector request body for client/lease injection")?;
+        let Some(object) = value.as_object() else {
+            anyhow::bail!(
+                "connector header-based client/lease injection requires a JSON object body"
+            );
+        };
+        object.clone()
+    };
+
+    if let Some(client_id) = requested_client_id {
+        object
+            .entry("client_id".to_string())
+            .or_insert(Value::String(client_id));
+    }
+    if let Some(lease_seconds) = requested_lease_seconds {
+        let parsed = lease_seconds
+            .parse::<u64>()
+            .with_context(|| format!("parse x-codexw-lease-seconds `{lease_seconds}`"))?;
+        object
+            .entry("lease_seconds".to_string())
+            .or_insert(Value::Number(parsed.into()));
+    }
+
+    Ok((
+        Some("application/json".to_string()),
+        serde_json::to_vec(&Value::Object(object)).context("serialize injected connector body")?,
+    ))
+}
+
+fn supports_client_lease_injection(local_path: &str) -> bool {
+    let trimmed = local_path.trim_matches('/');
+    let segments: Vec<&str> = if trimmed.is_empty() {
+        Vec::new()
+    } else {
+        trimmed.split('/').collect()
+    };
+    matches!(
+        segments.as_slice(),
+        ["api", "v1", "session", "new"]
+            | ["api", "v1", "session", "attach"]
+            | ["api", "v1", "session", _, "attachment", "renew"]
+            | ["api", "v1", "session", _, "attachment", "release"]
+            | ["api", "v1", "session", _, "turn", "start"]
+            | ["api", "v1", "session", _, "turn", "interrupt"]
+            | ["api", "v1", "session", _, "shells", "start"]
+            | ["api", "v1", "session", _, "shells", _, "send"]
+            | ["api", "v1", "session", _, "shells", _, "terminate"]
+            | ["api", "v1", "session", _, "services", "update"]
+            | ["api", "v1", "session", _, "services", _, "provide"]
+            | ["api", "v1", "session", _, "services", _, "depend"]
+            | ["api", "v1", "session", _, "services", _, "contract"]
+            | ["api", "v1", "session", _, "services", _, "relabel"]
+            | ["api", "v1", "session", _, "services", _, "attach"]
+            | ["api", "v1", "session", _, "services", _, "wait"]
+            | ["api", "v1", "session", _, "services", _, "run"]
+    )
 }
 
 fn handle_sse_proxy(
@@ -807,10 +900,16 @@ fn json_error_response(
 
 #[cfg(test)]
 mod tests {
-    use serde_json::Value;
+    use std::collections::HashMap;
 
+    use serde_json::Value;
+    use serde_json::json;
+
+    use super::HttpRequest;
     use super::is_allowed_local_proxy_target;
+    use super::prepare_upstream_body;
     use super::strip_proxy_target;
+    use super::supports_client_lease_injection;
     use super::wrap_event_payload;
 
     #[test]
@@ -889,6 +988,89 @@ mod tests {
             "/api/v1/turn/start",
             false,
         ));
+    }
+
+    #[test]
+    fn client_lease_injection_support_is_limited_to_mutating_routes() {
+        assert!(supports_client_lease_injection("/api/v1/session/new"));
+        assert!(supports_client_lease_injection(
+            "/api/v1/session/sess_1/services/bg-1/run"
+        ));
+        assert!(!supports_client_lease_injection(
+            "/api/v1/session/sess_1/transcript"
+        ));
+    }
+
+    #[test]
+    fn prepare_upstream_body_injects_client_and_lease_headers_into_empty_json_body() {
+        let request = HttpRequest {
+            method: "POST".to_string(),
+            path: "/v1/agents/codexw-lab/proxy/api/v1/session/new".to_string(),
+            headers: HashMap::from([
+                ("x-codexw-client-id".to_string(), "mobile-ios".to_string()),
+                ("x-codexw-lease-seconds".to_string(), "30".to_string()),
+            ]),
+            body: Vec::new(),
+        };
+        let (content_type, body) =
+            prepare_upstream_body(&request, "/api/v1/session/new").expect("prepared body");
+        assert_eq!(content_type.as_deref(), Some("application/json"));
+        let json: Value = serde_json::from_slice(&body).expect("json body");
+        assert_eq!(json["client_id"], "mobile-ios");
+        assert_eq!(json["lease_seconds"], 30);
+    }
+
+    #[test]
+    fn prepare_upstream_body_merges_headers_without_overwriting_explicit_fields() {
+        let request = HttpRequest {
+            method: "POST".to_string(),
+            path: "/v1/agents/codexw-lab/proxy/api/v1/session/attach".to_string(),
+            headers: HashMap::from([
+                ("content-type".to_string(), "application/json".to_string()),
+                ("x-codexw-client-id".to_string(), "mobile-ios".to_string()),
+                ("x-codexw-lease-seconds".to_string(), "45".to_string()),
+            ]),
+            body: serde_json::to_vec(&json!({
+                "session_id": "sess_1",
+                "thread_id": "thread_1",
+                "client_id": "webui",
+                "lease_seconds": 90
+            }))
+            .expect("serialize"),
+        };
+        let (_, body) =
+            prepare_upstream_body(&request, "/api/v1/session/attach").expect("prepared body");
+        let json: Value = serde_json::from_slice(&body).expect("json body");
+        assert_eq!(json["client_id"], "webui");
+        assert_eq!(json["lease_seconds"], 90);
+    }
+
+    #[test]
+    fn prepare_upstream_body_rejects_invalid_lease_header() {
+        let request = HttpRequest {
+            method: "POST".to_string(),
+            path: "/v1/agents/codexw-lab/proxy/api/v1/session/new".to_string(),
+            headers: HashMap::from([(
+                "x-codexw-lease-seconds".to_string(),
+                "not-a-number".to_string(),
+            )]),
+            body: Vec::new(),
+        };
+        let err =
+            prepare_upstream_body(&request, "/api/v1/session/new").expect_err("invalid lease");
+        assert!(format!("{err:#}").contains("x-codexw-lease-seconds"));
+    }
+
+    #[test]
+    fn prepare_upstream_body_rejects_non_object_json_when_injecting() {
+        let request = HttpRequest {
+            method: "POST".to_string(),
+            path: "/v1/agents/codexw-lab/proxy/api/v1/session/new".to_string(),
+            headers: HashMap::from([("x-codexw-client-id".to_string(), "mobile-ios".to_string())]),
+            body: serde_json::to_vec(&json!(["not", "an", "object"])).expect("serialize"),
+        };
+        let err = prepare_upstream_body(&request, "/api/v1/session/new").expect_err("invalid body");
+        assert!(format!("{err:#}").contains("JSON object body"));
     }
 
     #[test]
