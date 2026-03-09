@@ -71,6 +71,12 @@ fixture against the real connector binary for:
 - lease-conflict propagation through broker-style alias routes
 - focused service-detail and capability-detail inspection
 - event stream consumption and `Last-Event-ID` resume
+- one combined leased workflow that mixes:
+  - initial event consumption
+  - lease-owned service mutation
+  - focused service-detail verification
+  - resumed event consumption with `Last-Event-ID`
+  - through the real standalone Python fixture, not only Rust smoke helpers
 
 So the fixture is not just a documentation example.
 

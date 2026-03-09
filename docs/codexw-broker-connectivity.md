@@ -184,6 +184,10 @@ For the concise implementation/proof snapshot, see
   for `client-event` publish plus event-stream replay/resume, so the
   collaboration/event-ingest path is no longer just a local-API primitive
 - the standalone broker-style client fixture is also now process-level verified
+  for one combined leased workflow that mixes initial event consumption,
+  lease-owned service mutation, focused service-detail inspection, and resumed
+  `Last-Event-ID` event consumption through the broker-style alias surface
+- the standalone broker-style client fixture is also now process-level verified
   for session listing and turn interrupt flows, session attach plus
   orchestration status / workers / dependencies inspection, and shell list /
   detail / send / poll / terminate control paths

@@ -125,6 +125,11 @@ the real connector binary:
 - structured lease-conflict propagation
 - focused service-detail and capability-detail reads after mutation workflows
 - client-event publish and replay/resume
+- one combined leased workflow that mixes:
+  - initial event consumption
+  - lease-owned service mutation
+  - focused service-detail inspection
+  - resumed `Last-Event-ID` event consumption
 
 This process-level proof comes from two complementary surfaces:
 
@@ -172,9 +177,8 @@ If continuing on this track, the highest-leverage next tasks are:
 
 1. tighten the connector/client policy contract, especially around lease
    ownership and competing clients
-2. add one more end-to-end workflow that combines:
-   - long-lived event streaming
-   - lease-aware mutation
-   - focused detail inspection
+2. add more adversarial multi-client workflows, especially overlapping leases
+   and competing long-lived event consumers instead of only single-client
+   sequential resume paths
 3. keep the design docs aligned so this status file remains the concise source
    of truth while the other docs stay architectural
