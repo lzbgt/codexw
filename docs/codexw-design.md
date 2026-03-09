@@ -632,7 +632,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_selections/pickers.rs`
   Model, permissions, personality, theme, and fast-mode picker regression tests.
 - `wrapper/src/main_test_session_selections/threads.rs`
-  Init, agent-thread, thread-switch, dynamic-tool advertisement, and Windows sandbox selection regressions.
+  Session-thread selection regression namespace root.
+- `wrapper/src/main_test_session_selections/threads/init_agents.rs`
+  Init command and agent-thread selection regression tests.
+- `wrapper/src/main_test_session_selections/threads/requests.rs`
+  Thread-switch, dynamic-tool advertisement, and Windows sandbox selection regression tests.
 - `wrapper/src/main_test_session_status.rs`
   Thread-status, prompt-status, realtime-status snapshot, and shared status test harness helpers.
 - `wrapper/src/main_test_session_status/runtime.rs`
@@ -1028,7 +1032,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/selection_flow.rs`
   Session picker orchestration, pending-selection routing, and shared selection presets/constants.
 - `wrapper/src/selection_flow/model.rs`
-  Model and reasoning-effort picker rendering, selector resolution, and persistence/application helpers.
+  Model-selection namespace root.
+- `wrapper/src/selection_flow/model/apply.rs`
+  Model and reasoning-effort picker application, validation, and persistence helpers.
+- `wrapper/src/selection_flow/model/render.rs`
+  Model and reasoning-effort picker rendering plus selector/lookup helpers.
 - `wrapper/src/selection_flow/options.rs`
   Personality, permissions, theme, and fast-mode picker rendering plus persistence/application helpers.
 - `wrapper/src/dispatch_command_session_status.rs`

@@ -16,7 +16,6 @@ use super::render_orchestration_actions_for_tool_capability;
 use super::render_orchestration_blockers_for_capability;
 use super::render_orchestration_guidance;
 use super::render_orchestration_guidance_for_capability;
-use super::render_orchestration_guidance_for_tool;
 use super::render_orchestration_workers;
 use super::render_orchestration_workers_with_filter;
 
