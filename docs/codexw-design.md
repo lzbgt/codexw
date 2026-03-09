@@ -658,7 +658,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_selections/threads/requests.rs`
   Thread-switch, dynamic-tool advertisement, and Windows sandbox selection regression tests.
 - `wrapper/src/main_test_session_status.rs`
-  Thread-status, prompt-status, realtime-status snapshot, and shared status test harness helpers.
+  Shared status test harness helpers and namespace root.
+- `wrapper/src/main_test_session_status/prompt.rs`
+  Thread-status and prompt-status regression tests.
+- `wrapper/src/main_test_session_status/state.rs`
+  Realtime status snapshot and state-reset regression tests.
 - `wrapper/src/main_test_session_status/runtime.rs`
   Generic status-runtime test namespace root.
 - `wrapper/src/main_test_session_status/runtime/status.rs`
@@ -1399,7 +1403,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/editor_graphemes.rs`
   Grapheme-aware byte-index, counting, and whitespace helpers used by the editor.
 - `wrapper/src/state.rs`
-  `AppState`, `ProcessOutputBuffer`, request-id generation, constructor/reset helpers, and attachment transfer behavior.
+  Shared runtime-state namespace root and re-export surface.
+- `wrapper/src/state/types.rs`
+  `AppState`, `OrchestrationState`, `ProcessOutputBuffer`, session override types, and deref wiring.
+- `wrapper/src/state/lifecycle.rs`
+  State constructors, request-id generation, turn/thread reset helpers, and attachment transfer behavior.
 - `wrapper/src/state_helpers.rs`
   Shared state/text/buffer helper functions such as `thread_id`, `get_string`, delta buffering, status dedupe, and path canonicalization.
 - `wrapper/src/editor_tests.rs`
