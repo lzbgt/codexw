@@ -827,7 +827,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/transcript_completion_render.rs`
   Command/file-change completion and pending-attachment rendering helpers.
 - `wrapper/src/transcript_plan_render.rs`
-  Plan, reasoning, and structured tool-user-input response helpers.
+  Transcript-plan namespace root for plan/reasoning and structured tool-response helpers.
+- `wrapper/src/transcript_plan_render/reasoning.rs`
+  Plan formatting and reasoning summary rendering helpers.
+- `wrapper/src/transcript_plan_render/responses.rs`
+  Structured tool-user-input and MCP elicitation response helpers.
 - `wrapper/src/session_prompt_status_active.rs`
   Prompt-status rendering for active command, turn, and realtime states plus shared spinner/elapsed helpers.
 - `wrapper/src/session_prompt_status_ready.rs`
@@ -1201,7 +1205,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/render_tests.rs`
   Render-test namespace root for transcript and prompt regression coverage.
 - `wrapper/src/render_tests/transcript.rs`
-  Crate-level regression tests for ANSI block rendering, transcript completions, plan rendering, and transcript summaries.
+  Transcript-render regression namespace root.
+- `wrapper/src/render_tests/transcript/blocks.rs`
+  ANSI block rendering, plan rendering, and status-line transcript regression tests.
+- `wrapper/src/render_tests/transcript/completions.rs`
+  Transcript completion, abbreviation, and summary regression tests.
 - `wrapper/src/render_tests/prompt.rs`
   Crate-level regression tests for committed prompt rendering, prompt wrapping, and status-line fitting.
 - `wrapper/src/output.rs`
