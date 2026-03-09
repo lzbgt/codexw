@@ -13,16 +13,20 @@ use std::time::Duration;
 use anyhow::Context;
 use anyhow::Result;
 use serde_json::json;
+use serde_json::Value;
 use thiserror::Error;
 
 use crate::Cli;
 
+use super::LocalApiCommand;
 use super::LocalApiSnapshot;
+use super::SharedCommandQueue;
 use super::SharedSnapshot;
+use super::control::enqueue_command;
 
 const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const READ_TIMEOUT: Duration = Duration::from_millis(250);
-const MAX_REQUEST_BYTES: usize = 8192;
+const MAX_REQUEST_BYTES: usize = 65536;
 
 pub(crate) struct LocalApiHandle {
     bind_addr: String,
@@ -46,7 +50,11 @@ impl LocalApiHandle {
     }
 }
 
-pub(crate) fn start_local_api(cli: &Cli, snapshot: SharedSnapshot) -> Result<Option<LocalApiHandle>> {
+pub(crate) fn start_local_api(
+    cli: &Cli,
+    snapshot: SharedSnapshot,
+    command_queue: SharedCommandQueue,
+) -> Result<Option<LocalApiHandle>> {
     if !cli.local_api {
         return Ok(None);
     }
@@ -68,7 +76,7 @@ pub(crate) fn start_local_api(cli: &Cli, snapshot: SharedSnapshot) -> Result<Opt
         while !stop_for_thread.load(Ordering::Relaxed) {
             match listener.accept() {
                 Ok((stream, _)) => {
-                    let _ = handle_connection(stream, &snapshot, auth_token.as_deref());
+                    let _ = handle_connection(stream, &snapshot, &command_queue, auth_token.as_deref());
                 }
                 Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
                     thread::sleep(ACCEPT_POLL_INTERVAL);
@@ -90,6 +98,7 @@ pub(crate) struct HttpRequest {
     pub(crate) method: String,
     pub(crate) path: String,
     pub(crate) headers: HashMap<String, String>,
+    pub(crate) body: Vec<u8>,
 }
 
 #[derive(Debug, Clone)]
@@ -107,12 +116,17 @@ enum RequestReadError {
     Io(#[from] std::io::Error),
 }
 
-fn handle_connection(mut stream: TcpStream, snapshot: &SharedSnapshot, auth_token: Option<&str>) -> Result<()> {
+fn handle_connection(
+    mut stream: TcpStream,
+    snapshot: &SharedSnapshot,
+    command_queue: &SharedCommandQueue,
+    auth_token: Option<&str>,
+) -> Result<()> {
     stream
         .set_read_timeout(Some(READ_TIMEOUT))
         .context("set local API read timeout")?;
     let response = match read_request(&mut stream) {
-        Ok(request) => route_request(&request, snapshot, auth_token),
+        Ok(request) => route_request(&request, snapshot, command_queue, auth_token),
         Err(RequestReadError::BadRequest) => json_error_response(400, "bad_request", "invalid HTTP request"),
         Err(RequestReadError::Io(_)) => return Ok(()),
     };
@@ -124,20 +138,20 @@ fn handle_connection(mut stream: TcpStream, snapshot: &SharedSnapshot, auth_toke
 fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, RequestReadError> {
     let mut buffer = [0_u8; 1024];
     let mut request_bytes = Vec::new();
-    loop {
+    let header_end = loop {
         let read = stream.read(&mut buffer)?;
         if read == 0 {
-            break;
+            return Err(RequestReadError::BadRequest);
         }
         request_bytes.extend_from_slice(&buffer[..read]);
-        if request_bytes.windows(4).any(|window| window == b"\r\n\r\n") {
-            break;
+        if let Some(index) = request_bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+            break index + 4;
         }
         if request_bytes.len() >= MAX_REQUEST_BYTES {
             return Err(RequestReadError::BadRequest);
         }
-    }
-    let request_text = String::from_utf8_lossy(&request_bytes);
+    };
+    let request_text = String::from_utf8_lossy(&request_bytes[..header_end]);
     let mut lines = request_text.split("\r\n");
     let request_line = lines.next().ok_or(RequestReadError::BadRequest)?;
     let mut request_parts = request_line.split_whitespace();
@@ -158,23 +172,43 @@ fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, Requ
         headers.insert(name.trim().to_ascii_lowercase(), value.trim().to_string());
     }
 
+    let content_length = headers
+        .get("content-length")
+        .map(|value| value.parse::<usize>())
+        .transpose()
+        .map_err(|_| RequestReadError::BadRequest)?
+        .unwrap_or(0);
+    let mut body = request_bytes[header_end..].to_vec();
+    while body.len() < content_length {
+        let read = stream.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        body.extend_from_slice(&buffer[..read]);
+        if header_end + body.len() >= MAX_REQUEST_BYTES {
+            return Err(RequestReadError::BadRequest);
+        }
+    }
+    if body.len() < content_length {
+        return Err(RequestReadError::BadRequest);
+    }
+    body.truncate(content_length);
+
     Ok(HttpRequest {
         method: method.to_string(),
         path: raw_path.split('?').next().unwrap_or(raw_path).to_string(),
         headers,
+        body,
     })
 }
 
 pub(crate) fn route_request(
     request: &HttpRequest,
     snapshot: &SharedSnapshot,
+    command_queue: &SharedCommandQueue,
     auth_token: Option<&str>,
 ) -> HttpResponse {
-    if request.method != "GET" {
-        return json_error_response(405, "method_not_allowed", "only GET is supported");
-    }
-
-    if request.path == "/healthz" {
+    if request.path == "/healthz" && request.method == "GET" {
         return json_ok_response(json!({ "ok": true }));
     }
 
@@ -194,6 +228,18 @@ pub(crate) fn route_request(
         }
     };
 
+    if request.method == "POST" && request.path == "/api/v1/turn/start" {
+        return handle_turn_start_route(request, &current_snapshot, command_queue);
+    }
+
+    if request.method == "POST" && request.path == "/api/v1/turn/interrupt" {
+        return handle_turn_interrupt_route(request, &current_snapshot, command_queue);
+    }
+
+    if request.method != "GET" {
+        return json_error_response(405, "method_not_allowed", "unsupported method for route");
+    }
+
     if request.path == "/api/v1/session" {
         return json_ok_response(session_payload(&current_snapshot));
     }
@@ -206,6 +252,106 @@ pub(crate) fn route_request(
     }
 
     json_error_response(404, "not_found", "unknown route")
+}
+
+fn handle_turn_start_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+) -> HttpResponse {
+    let body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(session_id) = body.get("session_id").and_then(Value::as_str) else {
+        return json_error_response(400, "validation_error", "missing session_id");
+    };
+    if session_id != snapshot.session_id {
+        return json_error_response(404, "session_not_found", "unknown session id");
+    }
+    if snapshot.thread_id.is_none() {
+        return json_error_response(409, "thread_not_attached", "session has no attached thread");
+    }
+    let Some(prompt) = body
+        .get("input")
+        .and_then(Value::as_object)
+        .and_then(|input| input.get("text"))
+        .and_then(Value::as_str)
+    else {
+        return json_error_response(400, "validation_error", "missing input.text");
+    };
+    if prompt.trim().is_empty() {
+        return json_error_response(400, "validation_error", "input.text must not be empty");
+    }
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::StartTurn {
+            session_id: session_id.to_string(),
+            prompt: prompt.to_string(),
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue start request: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+        "active_turn_id": snapshot.active_turn_id,
+    }))
+}
+
+fn handle_turn_interrupt_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+) -> HttpResponse {
+    let body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(session_id) = body.get("session_id").and_then(Value::as_str) else {
+        return json_error_response(400, "validation_error", "missing session_id");
+    };
+    if session_id != snapshot.session_id {
+        return json_error_response(404, "session_not_found", "unknown session id");
+    }
+    if snapshot.active_turn_id.is_none() {
+        return json_error_response(409, "turn_not_active", "session has no active turn");
+    }
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::InterruptTurn {
+            session_id: session_id.to_string(),
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue interrupt request: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+        "active_turn_id": snapshot.active_turn_id,
+    }))
+}
+
+fn json_request_body(request: &HttpRequest) -> std::result::Result<Value, HttpResponse> {
+    if request.body.is_empty() {
+        return Err(json_error_response(400, "validation_error", "request body is required"));
+    }
+    serde_json::from_slice::<Value>(&request.body)
+        .map_err(|_| json_error_response(400, "validation_error", "request body must be valid JSON"))
 }
 
 fn session_payload(snapshot: &LocalApiSnapshot) -> serde_json::Value {

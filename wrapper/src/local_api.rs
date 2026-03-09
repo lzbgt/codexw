@@ -1,9 +1,14 @@
+mod control;
 mod server;
 mod snapshot;
 
 #[cfg(test)]
 mod tests;
 
+pub(crate) use control::LocalApiCommand;
+pub(crate) use control::SharedCommandQueue;
+pub(crate) use control::new_command_queue;
+pub(crate) use control::process_local_api_commands;
 pub(crate) use server::start_local_api;
 pub(crate) use snapshot::LocalApiSnapshot;
 pub(crate) use snapshot::SharedSnapshot;

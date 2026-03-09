@@ -13,6 +13,8 @@ use crate::editor::LineEditor;
 use crate::events::process_server_line;
 use crate::local_api::new_process_session_id;
 use crate::local_api::new_shared_snapshot;
+use crate::local_api::new_command_queue;
+use crate::local_api::process_local_api_commands;
 use crate::local_api::start_local_api;
 use crate::local_api::sync_shared_snapshot;
 use crate::output::Output;
@@ -57,8 +59,9 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     let mut state = AppState::new(cli.auto_continue, cli.raw_json);
     let mut editor = LineEditor::default();
     let local_api_snapshot = new_shared_snapshot(new_process_session_id(), resolved_cwd.clone());
+    let local_api_commands = new_command_queue();
     sync_shared_snapshot(&local_api_snapshot, &state);
-    let local_api_handle = start_local_api(&cli, local_api_snapshot.clone())?;
+    let local_api_handle = start_local_api(&cli, local_api_snapshot.clone(), local_api_commands.clone())?;
     if let Some(handle) = local_api_handle.as_ref() {
         output.line_stderr(format!(
             "[session] local API listening on http://{}",
@@ -115,6 +118,14 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
             }
             Err(_) => break,
         }
+        process_local_api_commands(
+            &cli,
+            &resolved_cwd,
+            &mut state,
+            &mut output,
+            &mut writer,
+            &local_api_commands,
+        )?;
         sync_shared_snapshot(&local_api_snapshot, &state);
     }
 

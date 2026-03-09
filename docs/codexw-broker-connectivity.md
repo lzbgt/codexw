@@ -688,6 +688,9 @@ The local API spike has now started with a minimal loopback skeleton:
 - `GET /healthz`
 - `GET /api/v1/session`
 - `GET /api/v1/session/{session_id}`
+- `POST /api/v1/turn/start`
+- `POST /api/v1/turn/interrupt`
+- internal command queue from the HTTP listener into the main runtime loop
 
-The next concrete code step is turn control plus the first semantic SSE stream,
-not more route discovery.
+The next concrete code step is the first semantic SSE stream and richer
+read/query routes, not more route discovery.

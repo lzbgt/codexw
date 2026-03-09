@@ -38,16 +38,17 @@ Current implemented scope:
 - `GET /healthz`
 - `GET /api/v1/session`
 - `GET /api/v1/session/{session_id}`
+- `POST /api/v1/turn/start`
+- `POST /api/v1/turn/interrupt`
+- internal API command queue from the HTTP listener into the main runtime loop
 
 Current non-goals of the landed slice:
 
-- no turn-control routes yet
 - no SSE event stream yet
 - no orchestration, shell, or service routes yet
 
-That means the next implementation step is no longer “start a server at all.”
-It is extending the existing loopback skeleton with turn routes and the first
-semantic event stream.
+That means the next implementation step is no longer generic turn control.
+It is the first semantic event stream and richer read/query routes.
 
 ## Scope
 
