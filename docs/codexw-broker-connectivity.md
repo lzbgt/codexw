@@ -730,6 +730,10 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
   - now tracked in [docs/codexw-broker-compatibility-target.md](docs/codexw-broker-compatibility-target.md)
 - Evaluate whether the user’s C agent framework can share:
   - now tracked in [docs/codexw-broker-shared-assumptions.md](docs/codexw-broker-shared-assumptions.md)
+- Keep the connector/client policy contract explicit:
+  - now tracked in [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
+- Keep the unsupported boundary explicit:
+  - now tracked in [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
 
 ## Current Status
 
@@ -746,6 +750,10 @@ remaining work is now implementation-facing:
   [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
 - a connector prototype after that, now framed in
   [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
+- the connector/client policy contract, now captured in
+  [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
+- the explicit broker/client boundary, now captured in
+  [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
 
 The local API spike has now started with a minimal loopback skeleton:
 

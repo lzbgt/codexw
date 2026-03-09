@@ -171,11 +171,14 @@ The current stack is still intentionally limited:
 The biggest remaining gaps are above the route layer, not below it:
 
 1. explicit client-policy and attachment semantics beyond the current
-   process-scoped lease model
+   process-scoped lease model, now captured in
+   [codexw-broker-client-policy.md](codexw-broker-client-policy.md) but not yet
+   promoted into a harder adapter contract
 2. broader connector behavior under sustained multi-client contention beyond the
    now-covered conflict-and-recovery workflow
 3. a clearer statement of which broker/client surfaces are intentionally out of
-   scope for `codexw`
+   scope for `codexw`, now captured in
+   [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 4. eventual promotion from prototype connector to a more formal adapter layer
 
 ## Recommended Next Work
@@ -183,9 +186,12 @@ The biggest remaining gaps are above the route layer, not below it:
 If continuing on this track, the highest-leverage next tasks are:
 
 1. tighten the connector/client policy contract, especially around lease
-   ownership and competing clients
+   ownership and competing clients, using
+   [codexw-broker-client-policy.md](codexw-broker-client-policy.md) as the
+   current source of truth
 2. add more adversarial multi-client workflows, especially overlapping leases
    and competing long-lived event consumers beyond the now-covered single
    conflict-and-recovery path
-3. keep the design docs aligned so this status file remains the concise source
-   of truth while the other docs stay architectural
+3. keep the out-of-scope boundary explicit through
+   [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) so prototype
+   expansion does not drift into parity assumptions

@@ -12,6 +12,9 @@ For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
 For a concise implementation/proof snapshot of the broker/local-API prototype,
 see [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md).
+For the current broker client/lease policy contract and explicit unsupported
+boundary, see [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
+and [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md).
 
 ## Architecture
 
