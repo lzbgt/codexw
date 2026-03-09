@@ -741,6 +741,15 @@ That semantic event-stream milestone is now partially landed:
   - service provide / depend / contract / relabel
   - service attach / wait / run
   - anonymous or mismatched `client_id` calls now receive `409 attachment_conflict`
+- local-API failures now use a stable machine-usable error contract:
+  - `error.status`
+  - `error.code`
+  - `error.message`
+  - `error.retryable`
+  - `error.details`
+- `attachment_conflict` now includes structured lease-holder context in
+  `error.details.current_attachment`, so a connector can make policy decisions
+  without scraping error prose
 
 The next concrete code step is now connector-facing API coverage above the
 implemented session, transcript, orchestration, shell, and service surface, not

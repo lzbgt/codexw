@@ -120,6 +120,11 @@ now implemented:
   leaving attachment semantics implicit
 - session snapshots also expose explicit attachment ownership metadata:
   `client_id`, `lease_seconds`, `lease_expires_at_ms`, and `lease_active`
+- mutating routes now share one stable JSON error envelope:
+  `error.status`, `error.code`, `error.message`, `error.retryable`, and
+  `error.details`
+- attachment conflicts now include structured lease-holder details instead of
+  only a text message
 - turn control is available in both global and session-scoped forms so clients
   can choose between low-level compatibility and a cleaner session-rooted
   namespace

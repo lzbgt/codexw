@@ -344,4 +344,13 @@ fn service_update_route_rejects_conflicting_attachment_client() {
         json_body(&response.body)["error"]["code"],
         "attachment_conflict"
     );
+    let body = json_body(&response.body);
+    assert_eq!(
+        body["error"]["details"]["requested_client_id"],
+        "client_mobile"
+    );
+    assert_eq!(
+        body["error"]["details"]["current_attachment"]["client_id"],
+        "client_web"
+    );
 }

@@ -16,6 +16,7 @@ pub(crate) use events::SharedEventLog;
 pub(crate) use events::new_event_log;
 pub(crate) use events::publish_snapshot_change_events;
 #[cfg(test)]
+#[allow(unused_imports)]
 pub(crate) use server::route_request_with_manager;
 pub(crate) use server::start_local_api;
 pub(crate) use snapshot::LocalApiSnapshot;

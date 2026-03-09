@@ -165,6 +165,15 @@ Current landed behavior:
   attachment lease:
   - optional `client_id` is accepted on those mutation routes
   - anonymous or mismatched callers receive `409 attachment_conflict`
+- local API errors now expose a stable machine-usable envelope:
+  - `error.status`
+  - `error.code`
+  - `error.message`
+  - `error.retryable`
+  - `error.details`
+- attachment conflicts now include structured conflict context in
+  `error.details.current_attachment`, so connector clients do not need to parse
+  prose to decide whether to retry, renew, or release
 - both routes enqueue onto the same runtime request path used by local
   thread-switch handling rather than inventing a second session model
 

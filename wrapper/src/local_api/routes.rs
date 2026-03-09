@@ -554,16 +554,19 @@ pub(super) fn attachment_has_active_conflicting_client(
     let Some(existing_client_id) = snapshot.attachment_client_id.as_deref() else {
         return false;
     };
-    if !snapshot
-        .attachment_lease_expires_at_ms
-        .is_some_and(|expiry| expiry > now_unix_ms())
-    {
+    if !attachment_lease_active(snapshot) {
         return false;
     }
     match requested_client_id {
         Some(requested_client_id) => existing_client_id != requested_client_id,
         None => true,
     }
+}
+
+fn attachment_lease_active(snapshot: &LocalApiSnapshot) -> bool {
+    snapshot
+        .attachment_lease_expires_at_ms
+        .is_some_and(|expiry| expiry > now_unix_ms())
 }
 
 pub(super) fn parse_optional_client_id(
@@ -573,18 +576,26 @@ pub(super) fn parse_optional_client_id(
         return Ok(None);
     };
     let Some(client_id) = value.as_str() else {
-        return Err(json_error_response(
+        return Err(json_error_response_with_details(
             400,
             "validation_error",
             "client_id must be a string",
+            json!({
+                "field": "client_id",
+                "expected": "string",
+            }),
         ));
     };
     let trimmed = client_id.trim();
     if trimmed.is_empty() {
-        return Err(json_error_response(
+        return Err(json_error_response_with_details(
             400,
             "validation_error",
             "client_id must not be empty",
+            json!({
+                "field": "client_id",
+                "expected": "non-empty string",
+            }),
         ));
     }
     Ok(Some(trimmed.to_string()))
@@ -595,10 +606,20 @@ pub(super) fn enforce_attachment_lease_ownership(
     requested_client_id: Option<&str>,
 ) -> Result<(), crate::local_api::server::HttpResponse> {
     if attachment_has_active_conflicting_client(snapshot, requested_client_id) {
-        return Err(json_error_response(
+        return Err(json_error_response_with_details(
             409,
             "attachment_conflict",
             "another client currently holds the active attachment lease",
+            json!({
+                "session_id": snapshot.session_id,
+                "requested_client_id": requested_client_id,
+                "current_attachment": {
+                    "client_id": snapshot.attachment_client_id,
+                    "lease_seconds": snapshot.attachment_lease_seconds,
+                    "lease_expires_at_ms": snapshot.attachment_lease_expires_at_ms,
+                    "lease_active": attachment_lease_active(snapshot),
+                }
+            }),
         ));
     }
     Ok(())
@@ -622,6 +643,15 @@ pub(super) fn json_ok_response(body: serde_json::Value) -> HttpResponse {
 }
 
 pub(super) fn json_error_response(status: u16, code: &str, message: &str) -> HttpResponse {
+    json_error_response_with_details(status, code, message, json!({}))
+}
+
+pub(super) fn json_error_response_with_details(
+    status: u16,
+    code: &str,
+    message: &str,
+    details: serde_json::Value,
+) -> HttpResponse {
     let reason = match status {
         400 => "Bad Request",
         401 => "Unauthorized",
@@ -634,8 +664,11 @@ pub(super) fn json_error_response(status: u16, code: &str, message: &str) -> Htt
     json_ok_response(json!({
         "ok": false,
         "error": {
+            "status": status,
             "code": code,
             "message": message,
+            "retryable": status >= 500,
+            "details": details,
         }
     }))
     .with_status(status, reason)

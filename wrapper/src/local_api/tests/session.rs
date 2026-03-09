@@ -227,6 +227,44 @@ fn session_new_rejects_conflicting_active_client() {
         json_body(&response.body)["error"]["code"],
         "attachment_conflict"
     );
+    let body = json_body(&response.body);
+    assert_eq!(body["error"]["status"], 409);
+    assert_eq!(body["error"]["retryable"], false);
+    assert_eq!(
+        body["error"]["details"]["requested_client_id"],
+        "client_mobile"
+    );
+    assert_eq!(
+        body["error"]["details"]["current_attachment"]["client_id"],
+        "client_web"
+    );
+    assert_eq!(
+        body["error"]["details"]["current_attachment"]["lease_active"],
+        true
+    );
+}
+
+#[test]
+fn session_new_rejects_non_string_client_id_with_field_details() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/new",
+            serde_json::json!({
+                "client_id": 123,
+                "lease_seconds": 30
+            }),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 400);
+    let body = json_body(&response.body);
+    assert_eq!(body["error"]["code"], "validation_error");
+    assert_eq!(body["error"]["status"], 400);
+    assert_eq!(body["error"]["retryable"], false);
+    assert_eq!(body["error"]["details"]["field"], "client_id");
+    assert_eq!(body["error"]["details"]["expected"], "string");
 }
 
 #[test]
@@ -324,5 +362,14 @@ fn session_attachment_release_rejects_wrong_client() {
     assert_eq!(
         json_body(&response.body)["error"]["code"],
         "attachment_conflict"
+    );
+    let body = json_body(&response.body);
+    assert_eq!(
+        body["error"]["details"]["requested_client_id"],
+        "client_mobile"
+    );
+    assert_eq!(
+        body["error"]["details"]["current_attachment"]["client_id"],
+        "client_web"
     );
 }
