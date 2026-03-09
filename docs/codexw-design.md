@@ -66,7 +66,7 @@ The runtime has thirteen main layers.
    `editor.rs`, `editor_buffer.rs`, `editor_history.rs`, `editor_graphemes.rs`, `editor_tests.rs`, `input.rs`, `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_mention_links.rs`, `input/input_decode_mention_paths.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_inline_paths.rs`, `input/input_decode_inline_skills.rs`, `input/input_decode_tokens.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build_items.rs`, `input/input_build_mentions.rs`, `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_commands.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation_session.rs`, `dispatch_command_thread_navigation_identity.rs`, `dispatch_command_thread_review.rs`, `dispatch_command_thread_control.rs`, `dispatch_command_thread_view.rs`, `dispatch_command_thread_draft.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_ps.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_utils.rs`, `prompt_state.rs`, `prompt_file_completions_token.rs`, and `prompt_file_completions_search.rs` implement the inline editor, editor regression coverage, grapheme-aware cursor helpers, command dispatch, slash/file completion, linked-mention decoding, inline-file/token decoding, attachment handling, catalog-driven mention resolution, prompt visibility/redraw, and structured app-server user input construction. The editor now supports real multiline vertical navigation inside the draft, and the control path ignores submit while a local command owns the prompt so invisible buffered input does not leak into later turns. `editor.rs` remains the public editor surface, `input.rs` remains the input namespace root and structured `UserInput` entrypoint, and `dispatch_commands.rs` remains the top-level slash-command router.
 
 13. Human output handling
-   `output.rs`, `render_prompt.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_block_structures.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_markdown_links.rs`, `render_markdown_styles.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a wrapped inline prompt redraw path. `output.rs` now owns prompt redraw, committed stream output, block-level ANSI assembly, wrapped prompt row management, and frame deduplication so periodic ticks only repaint when the prompt or transient status actually changes, while `render_prompt.rs` owns prompt fitting and committed prompt rendering directly.
+   `output.rs`, `output/ui.rs`, `output/render.rs`, `render_prompt.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_block_structures.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_markdown_links.rs`, `render_markdown_styles.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a wrapped inline prompt redraw path. `output.rs` is now the namespace root, `output/ui.rs` owns prompt redraw, committed stream output, prompt visibility, wrapped prompt row management, and frame deduplication so periodic ticks only repaint when the prompt or transient status actually changes, while `output/render.rs` owns block-level ANSI assembly and committed line normalization. `render_prompt.rs` still owns prompt fitting and committed prompt rendering directly.
 
 Session feature helpers are split across `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status_active.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, and `session_snapshot_runtime.rs`, with prompt-state callers now routing directly through `prompt_state.rs`.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
@@ -466,7 +466,7 @@ The companion skill in `skills/session-autopilot/` provides the model-side polic
 
 The editor and prompt renderer now operate on grapheme boundaries and display width rather than raw Unicode scalar counts. That makes cursor movement, backspace, delete, and prompt cursor placement behave correctly for CJK text, emoji, and combining characters.
 
-The prompt stays scroll-native. Instead of owning a fixed alternate screen, `output.rs` redraws a single prompt line in place and also handles committed transcript/status/block writes into normal terminal history.
+The prompt stays scroll-native. Instead of owning a fixed alternate screen, `output/ui.rs` redraws a single prompt line in place and also handles committed transcript/status/block writes into normal terminal history.
 
 Long drafts now wrap to the current terminal width so redraw stays aligned with the actual editor buffer instead of compressing everything into a single preview row. Explicit multiline drafts now render as real visual prompt rows, so `Ctrl-J` moves the cursor to the next line instead of showing a synthetic newline marker inside a flattened preview. In that multiline mode, Home/End and `Ctrl-A`/`Ctrl-E` operate on the current line segment rather than the full buffer, and `Ctrl-U` clears back to the current line start.
 
@@ -500,7 +500,7 @@ That keeps command workflows separate from lower-level input item construction.
 
 ## Output and Rendering
 
-`output.rs` owns terminal writes, prompt redraw ordering, and committed stream output directly.
+`output/ui.rs` owns terminal writes, prompt redraw ordering, and committed stream output directly.
 
 Important properties:
 
@@ -510,7 +510,7 @@ Important properties:
 - prompt hide and redraw before emitted transcript blocks
 - no mixed stdout/stderr interleaving for user-visible UI
 
-`render_prompt.rs` owns prompt fitting and committed prompt rendering. `output.rs` now also owns block-level ANSI assembly, while `render_block_common.rs` owns block classification/title/status styling, `render_block_markdown.rs` owns markdown block assembly, `render_markdown_code.rs` owns syntax-highlighted code rendering, `render_markdown_inline.rs` owns inline markdown parsing/tinting, `render_block_structured.rs` owns diff/command/plain block rendering, and `render_ansi.rs` owns ANSI serialization for `ratatui` text primitives such as `Text`, `Line`, and `Span`.
+`render_prompt.rs` owns prompt fitting and committed prompt rendering. `output/render.rs` now owns block-level ANSI assembly and committed line rendering, while `render_block_common.rs` owns block classification/title/status styling, `render_block_markdown.rs` owns markdown block assembly, `render_markdown_code.rs` owns syntax-highlighted code rendering, `render_markdown_inline.rs` owns inline markdown parsing/tinting, `render_block_structured.rs` owns diff/command/plain block rendering, and `render_ansi.rs` owns ANSI serialization for `ratatui` text primitives such as `Text`, `Line`, and `Span`.
 
 It renders:
 
@@ -755,6 +755,12 @@ The biggest known limits are architectural, not accidental.
   Background-shell Redis and parameterized recipe invocation dynamic-tool regressions.
 - `wrapper/src/client_dynamic_tools_tests_shells/recipes/readiness.rs`
   Background-shell readiness-wait and wait-before-invoke dynamic-tool regressions.
+- `wrapper/src/config_persistence.rs`
+  Config persistence namespace root for Codex config writes, theme reads, and `CODEX_HOME` resolution.
+- `wrapper/src/config_persistence/edit.rs`
+  TOML document load/edit/write helpers plus nested-table string mutation helpers for persisted config.
+- `wrapper/src/config_persistence/tests.rs`
+  Config persistence regression tests for model/theme/service-tier/windows sandbox writes and theme reads.
 - `wrapper/src/app.rs`
   Top-level runtime loop and backend wiring.
 - `wrapper/src/app_input_editing.rs`
@@ -1213,7 +1219,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/render_tests/prompt.rs`
   Crate-level regression tests for committed prompt rendering, prompt wrapping, and status-line fitting.
 - `wrapper/src/output.rs`
-  Prompt redraw, committed output, prompt visibility, output ordering.
+  Output namespace root and re-export surface.
+- `wrapper/src/output/ui.rs`
+  Prompt redraw, committed output, prompt visibility, output ordering, and frame deduplication.
+- `wrapper/src/output/render.rs`
+  Committed line normalization plus block-level ANSI assembly for transcript/status output.
 - `wrapper/src/render_prompt.rs`
   Prompt fitting, grapheme-aware cursor positioning, and committed prompt rendering.
 - `wrapper/src/render_block_common.rs`
