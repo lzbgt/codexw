@@ -1,7 +1,6 @@
 use super::BackgroundShellIntent;
 use super::BackgroundShellManager;
 use super::BackgroundShellOrigin;
-use super::BackgroundShellServiceReadiness;
 use serde_json::json;
 use std::collections::HashMap;
 use std::io::Read;

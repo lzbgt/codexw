@@ -629,7 +629,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_status.rs`
   Thread-status, prompt-status, realtime-status snapshot, ready-state prompt, and collab wait regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration.rs`
-  `/ps` orchestration selector, capability, dependency, cleanup, and targeted worker-control regression tests.
+  `/ps` orchestration selector, capability, dependency, and cleanup parser regression tests.
+- `wrapper/src/main_test_session_status_ps_orchestration/runtime.rs`
+  `/ps` orchestration runtime, capability, dependency, cleanup, and targeted worker-control regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration.rs`
   Orchestration dynamic-tool namespace tests plus filter/argument validation regressions.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance.rs`
@@ -715,10 +717,20 @@ The biggest known limits are architectural, not accidental.
   Worker/dependency rendering, orchestration summaries, and filtered `:ps` views over the unified orchestration state.
 - `wrapper/src/orchestration_view/guidance_actions.rs`
   Shared orchestration guidance/action renderers plus recipe/ref helper logic for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/guidance.rs`
+  Guidance generation for global and capability-focused orchestration remediation.
 - `wrapper/src/orchestration_view/guidance_actions/actions.rs`
   Suggested-action generation for global and capability-focused orchestration remediation.
 - `wrapper/src/orchestration_view/tests/guidance_actions.rs`
-  Orchestration guidance/action renderer regression tests.
+  Orchestration guidance/action renderer test namespace.
+- `wrapper/src/orchestration_view/tests/guidance_actions/guidance.rs`
+  Orchestration guidance renderer and summary regression tests.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions.rs`
+  Orchestration action renderer and remediation regression tests.
+- `wrapper/src/background_shells/tests/services.rs`
+  Reusable-service capability, readiness, dependency, and service-view regression tests.
+- `wrapper/src/background_shells/tests/services/recipes.rs`
+  Reusable-service attachment, recipe execution, and transport regression tests.
 - `wrapper/src/requests.rs`
   Outbound request namespace root plus shared `send_json(...)` transport helper.
 - `wrapper/src/requests/request_types.rs`
