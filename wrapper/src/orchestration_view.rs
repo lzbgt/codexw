@@ -1,11 +1,8 @@
-use crate::background_shells::BackgroundShellCapabilityDependencyState;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellServiceReadiness;
 use crate::background_terminals::render_background_terminals;
-use crate::background_terminals::server_background_terminal_count;
 use crate::orchestration_registry::LiveAgentTaskSummary;
 use crate::orchestration_registry::active_sidecar_agent_task_count;
-use crate::orchestration_registry::active_wait_task_count;
 use crate::orchestration_registry::blocking_dependency_count;
 use crate::orchestration_registry::main_agent_state_label;
 use crate::orchestration_registry::orchestration_dependency_edges;
@@ -37,7 +34,6 @@ pub(crate) use summary::orchestration_background_summary;
 pub(crate) use summary::orchestration_overview_summary;
 pub(crate) use summary::orchestration_prompt_suffix;
 pub(crate) use summary::orchestration_runtime_summary;
-pub(crate) use summary::orchestration_snapshot;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WorkerFilter {
