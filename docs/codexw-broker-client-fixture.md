@@ -59,6 +59,7 @@ The repo now also includes process-level smoke coverage that invokes this
 fixture against the real connector binary for:
 
 - session create / turn / transcript
+- attachment renew / release plus session snapshot verification
 - shell start plus service attach / wait / run
 - service capability/contract/label mutation (`provide` / `depend` / `contract` / `relabel`)
 - lease-conflict propagation through broker-style alias routes
@@ -104,6 +105,29 @@ python3 scripts/codexw_broker_client.py \
   turn-start \
   --session-id sess_1 \
   --prompt "Summarize the repository status"
+```
+
+Renew an attachment lease:
+
+```bash
+python3 scripts/codexw_broker_client.py \
+  --base-url http://127.0.0.1:4317 \
+  --agent-id codexw-lab \
+  --client-id remote-web \
+  attachment-renew \
+  --session-id sess_1 \
+  --lease-seconds 90
+```
+
+Release an attachment:
+
+```bash
+python3 scripts/codexw_broker_client.py \
+  --base-url http://127.0.0.1:4317 \
+  --agent-id codexw-lab \
+  --client-id remote-web \
+  attachment-release \
+  --session-id sess_1
 ```
 
 Read a few events:

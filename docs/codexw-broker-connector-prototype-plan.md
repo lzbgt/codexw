@@ -21,6 +21,7 @@ It is also covered by a process-level smoke path, so the repo now verifies both:
 That fixture-backed smoke coverage now includes:
 
 - session create / turn / transcript
+- attachment renew / release plus session snapshot verification
 - shell start plus service attach / wait / run
 - service mutation through the real broker-style fixture client
 - structured `attachment_conflict` propagation for a conflicting leased client
