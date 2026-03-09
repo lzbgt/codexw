@@ -18,6 +18,7 @@ use serde_json::json;
 use thiserror::Error;
 
 use crate::Cli;
+use crate::background_shells::BackgroundShellManager;
 
 use super::LocalApiCommand;
 use super::LocalApiEvent;
@@ -60,6 +61,7 @@ pub(crate) fn start_local_api(
     cli: &Cli,
     snapshot: SharedSnapshot,
     command_queue: SharedCommandQueue,
+    background_shells: BackgroundShellManager,
     event_log: SharedEventLog,
 ) -> Result<Option<LocalApiHandle>> {
     if !cli.local_api {
@@ -85,6 +87,7 @@ pub(crate) fn start_local_api(
                 Ok((stream, _)) => {
                     let snapshot = snapshot.clone();
                     let command_queue = command_queue.clone();
+                    let background_shells = background_shells.clone();
                     let event_log = event_log.clone();
                     let auth_token = auth_token.clone();
                     thread::spawn(move || {
@@ -92,6 +95,7 @@ pub(crate) fn start_local_api(
                             stream,
                             &snapshot,
                             &command_queue,
+                            &background_shells,
                             &event_log,
                             auth_token.as_deref(),
                         );
@@ -139,6 +143,7 @@ fn handle_connection(
     mut stream: TcpStream,
     snapshot: &SharedSnapshot,
     command_queue: &SharedCommandQueue,
+    background_shells: &BackgroundShellManager,
     event_log: &SharedEventLog,
     auth_token: Option<&str>,
 ) -> Result<()> {
@@ -153,7 +158,12 @@ fn handle_connection(
                 handle_event_stream_request(&mut stream, &request, snapshot, event_log)?;
                 None
             } else {
-                Some(route_authorized_request(&request, snapshot, command_queue))
+                Some(route_authorized_request(
+                    &request,
+                    snapshot,
+                    command_queue,
+                    background_shells,
+                ))
             }
         }
         Err(RequestReadError::BadRequest) => Some(json_error_response(
@@ -247,11 +257,29 @@ pub(crate) fn route_request(
     command_queue: &SharedCommandQueue,
     auth_token: Option<&str>,
 ) -> HttpResponse {
+    let background_shells = BackgroundShellManager::default();
+    route_request_with_manager(
+        request,
+        snapshot,
+        command_queue,
+        &background_shells,
+        auth_token,
+    )
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) fn route_request_with_manager(
+    request: &HttpRequest,
+    snapshot: &SharedSnapshot,
+    command_queue: &SharedCommandQueue,
+    background_shells: &BackgroundShellManager,
+    auth_token: Option<&str>,
+) -> HttpResponse {
     if let Some(response) = authorize_request(request, auth_token) {
         return response;
     }
 
-    route_authorized_request(request, snapshot, command_queue)
+    route_authorized_request(request, snapshot, command_queue, background_shells)
 }
 
 fn authorize_request(request: &HttpRequest, auth_token: Option<&str>) -> Option<HttpResponse> {
@@ -278,6 +306,7 @@ fn route_authorized_request(
     request: &HttpRequest,
     snapshot: &SharedSnapshot,
     command_queue: &SharedCommandQueue,
+    background_shells: &BackgroundShellManager,
 ) -> HttpResponse {
     let current_snapshot = match snapshot.read() {
         Ok(guard) => guard.clone(),
@@ -300,7 +329,13 @@ fn route_authorized_request(
 
     if request.method == "POST" {
         if let Some(path) = request.path.strip_prefix("/api/v1/session/") {
-            return route_session_scoped_post(path, request, &current_snapshot, command_queue);
+            return route_session_scoped_post(
+                path,
+                request,
+                &current_snapshot,
+                command_queue,
+                background_shells,
+            );
         }
         return json_error_response(404, "not_found", "unknown route");
     }
@@ -378,6 +413,7 @@ fn route_session_scoped_post(
     request: &HttpRequest,
     snapshot: &LocalApiSnapshot,
     command_queue: &SharedCommandQueue,
+    background_shells: &BackgroundShellManager,
 ) -> HttpResponse {
     let mut parts = path.splitn(2, '/');
     let session_id = parts.next().unwrap_or_default();
@@ -397,9 +433,14 @@ fn route_session_scoped_post(
         Some(rest) if rest.starts_with("shells/") => {
             route_shell_action_route(rest, request, snapshot, command_queue, session_id)
         }
-        Some(rest) if rest.starts_with("services/") => {
-            route_service_action_route(rest, request, snapshot, command_queue, session_id)
-        }
+        Some(rest) if rest.starts_with("services/") => route_service_action_route(
+            rest,
+            request,
+            snapshot,
+            command_queue,
+            background_shells,
+            session_id,
+        ),
         _ => json_error_response(404, "not_found", "unknown route"),
     }
 }
@@ -436,6 +477,7 @@ fn route_service_action_route(
     request: &HttpRequest,
     snapshot: &LocalApiSnapshot,
     command_queue: &SharedCommandQueue,
+    background_shells: &BackgroundShellManager,
     session_id: &str,
 ) -> HttpResponse {
     let Some(rest) = path.strip_prefix("services/") else {
@@ -449,6 +491,15 @@ fn route_service_action_route(
         return json_error_response(404, "not_found", "unknown route");
     };
     match action {
+        "attach" => {
+            handle_service_attach_route(request, snapshot, background_shells, reference, session_id)
+        }
+        "wait" => {
+            handle_service_wait_route(request, snapshot, background_shells, reference, session_id)
+        }
+        "run" => {
+            handle_service_run_route(request, snapshot, background_shells, reference, session_id)
+        }
         "provide" => {
             handle_service_provide_route(request, snapshot, command_queue, reference, session_id)
         }
@@ -462,6 +513,126 @@ fn route_service_action_route(
             handle_service_relabel_route(request, snapshot, command_queue, reference, session_id)
         }
         _ => json_error_response(404, "not_found", "unknown route"),
+    }
+}
+
+fn handle_service_attach_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    background_shells: &BackgroundShellManager,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    if !request.body.is_empty() {
+        if let Err(response) = json_request_body(request) {
+            return response;
+        }
+    }
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    match background_shells.attach_from_tool(&json!({ "jobId": shell.id })) {
+        Ok(attachment) => json_ok_response(json!({
+            "ok": true,
+            "session_id": session_id,
+            "shell_id": shell.id,
+            "attachment": attachment,
+        })),
+        Err(err) => json_error_response(400, "interaction_error", &err),
+    }
+}
+
+fn handle_service_wait_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    background_shells: &BackgroundShellManager,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    let body = if request.body.is_empty() {
+        json!({})
+    } else {
+        match json_request_body(request) {
+            Ok(value) => value,
+            Err(response) => return response,
+        }
+    };
+    let Some(object) = body.as_object() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    let mut arguments = serde_json::Map::new();
+    arguments.insert("jobId".to_string(), Value::String(shell.id.clone()));
+    if let Some(timeout_ms) = object.get("timeoutMs") {
+        arguments.insert("timeoutMs".to_string(), timeout_ms.clone());
+    }
+    match background_shells.wait_ready_from_tool(&Value::Object(arguments)) {
+        Ok(result) => json_ok_response(json!({
+            "ok": true,
+            "session_id": session_id,
+            "shell_id": shell.id,
+            "result": result,
+        })),
+        Err(err) => json_error_response(400, "interaction_error", &err),
+    }
+}
+
+fn handle_service_run_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    background_shells: &BackgroundShellManager,
+    reference: &str,
+    session_id: &str,
+) -> HttpResponse {
+    let shell = match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => shell,
+        Err((code, message)) => return json_error_response(404, code, message),
+    };
+    let body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(object) = body.as_object() else {
+        return json_error_response(
+            400,
+            "validation_error",
+            "request body must be a JSON object",
+        );
+    };
+    let Some(recipe) = object.get("recipe").and_then(Value::as_str) else {
+        return json_error_response(400, "validation_error", "missing recipe");
+    };
+    if recipe.trim().is_empty() {
+        return json_error_response(400, "validation_error", "recipe must not be empty");
+    }
+    let mut arguments = serde_json::Map::new();
+    arguments.insert("jobId".to_string(), Value::String(shell.id.clone()));
+    arguments.insert(
+        "recipe".to_string(),
+        Value::String(recipe.trim().to_string()),
+    );
+    if let Some(args) = object.get("args") {
+        arguments.insert("args".to_string(), args.clone());
+    }
+    if let Some(wait_for_ready_ms) = object.get("waitForReadyMs") {
+        arguments.insert("waitForReadyMs".to_string(), wait_for_ready_ms.clone());
+    }
+    match background_shells.invoke_recipe_from_tool(&Value::Object(arguments)) {
+        Ok(result) => json_ok_response(json!({
+            "ok": true,
+            "session_id": session_id,
+            "shell_id": shell.id,
+            "result": result,
+        })),
+        Err(err) => json_error_response(400, "interaction_error", &err),
     }
 }
 

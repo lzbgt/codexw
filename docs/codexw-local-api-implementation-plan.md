@@ -62,7 +62,7 @@ Current implemented scope:
 Current non-goals of the landed slice:
 
 - no turn steer route yet
-- no shell recipe/attach/wait routes yet
+- shell recipe/attach/wait routes now exist through explicit service interaction endpoints
 - explicit service mutation routes now exist for `provide`, `depend`,
   `contract`, and `relabel`
 
@@ -207,9 +207,12 @@ Current status:
 
 - implemented through the loopback API and queued onto the same runtime mutation
   path used by the existing local shell/service control surfaces
-- the main remaining service-side gap is synchronous interaction routes such as
-  `attach`, `wait`, and `run`, which need a result-bearing local-API execution
-  path rather than the current fire-and-forget command queue
+- synchronous service interaction routes now exist for `attach`, `wait`, and
+  `run`, backed by the live `BackgroundShellManager` rather than the fire-and-
+  forget command queue
+- the main remaining service-side gap is response shaping: remote clients still
+  receive operator-oriented result strings for attach/wait/run instead of fully
+  structured machine-native payloads
 
 ## Candidate Code Ownership
 

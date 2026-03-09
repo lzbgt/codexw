@@ -75,6 +75,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
         &cli,
         local_api_snapshot.clone(),
         local_api_commands.clone(),
+        state.orchestration.background_shells.clone(),
         local_api_events.clone(),
     )?;
     if let Some(handle) = local_api_handle.as_ref() {

@@ -6,6 +6,7 @@ use std::sync::RwLock;
 use std::time::Duration;
 
 use crate::Cli;
+use crate::background_shells::BackgroundShellManager;
 
 use serde_json::Value;
 
@@ -16,6 +17,7 @@ use super::events::new_event_log;
 use super::events::publish_snapshot_change_events;
 use super::server::HttpRequest;
 use super::server::route_request;
+use super::server::route_request_with_manager;
 use super::server::start_local_api;
 use super::snapshot::LocalApiBackgroundShellJob;
 use super::snapshot::LocalApiCachedAgentThread;
@@ -214,6 +216,47 @@ fn local_api_test_cli() -> Cli {
         local_api_token: None,
         prompt: Vec::new(),
     })
+}
+
+fn sample_service_manager() -> BackgroundShellManager {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(
+            &serde_json::json!({
+                "command": if cfg!(windows) { "more" } else { "cat" },
+                "intent": "service",
+                "label": "frontend",
+                "capabilities": ["frontend.dev"],
+                "protocol": "http",
+                "endpoint": "http://127.0.0.1:3000",
+                "attachHint": "open browser",
+                "readyPattern": "READY",
+                "recipes": [{
+                    "name": "health",
+                    "description": "Check health",
+                    "action": {
+                        "type": "stdin",
+                        "text": "status",
+                        "appendNewline": true
+                    }
+                }]
+            }),
+            "/tmp",
+        )
+        .expect("start service shell");
+    manager
+        .send_input_for_operator("bg-1", "READY", true)
+        .expect("send ready line");
+    for _ in 0..40 {
+        let rendered = manager
+            .poll_job("bg-1", 0, 20)
+            .expect("poll service output");
+        if rendered.contains("READY") {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    manager
 }
 
 #[test]
@@ -603,6 +646,79 @@ fn service_update_route_enqueues_local_api_command() {
 }
 
 #[test]
+fn service_attach_route_returns_attachment_summary() {
+    let manager = sample_service_manager();
+    let response = route_request_with_manager(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/bg-1/attach",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        &manager,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    let attachment = body["attachment"]
+        .as_str()
+        .expect("attachment summary should be a string");
+    assert!(attachment.contains("Endpoint: http://127.0.0.1:3000"));
+    assert!(attachment.contains("health"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn service_wait_route_returns_ready_status() {
+    let manager = sample_service_manager();
+    let response = route_request_with_manager(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/bg-1/wait",
+            serde_json::json!({
+                "timeoutMs": 2000
+            }),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        &manager,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    let result = body["result"]
+        .as_str()
+        .expect("wait result should be a string");
+    assert!(result.contains("already ready") || result.contains("became ready"));
+    assert!(result.contains("Ready pattern: READY"));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
+fn service_run_route_invokes_service_recipe() {
+    let manager = sample_service_manager();
+    let response = route_request_with_manager(
+        &post_json_request(
+            "/api/v1/session/sess_test/services/bg-1/run",
+            serde_json::json!({
+                "recipe": "health"
+            }),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        &manager,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    let result = body["result"]
+        .as_str()
+        .expect("run result should be a string");
+    assert!(result.contains("Invoked recipe `health`"));
+    assert!(result.contains("Action: stdin \"status\""));
+    let _ = manager.terminate_all_running();
+}
+
+#[test]
 fn service_provide_route_enqueues_local_api_command() {
     let queue = new_command_queue();
     let response = route_request(
@@ -806,9 +922,15 @@ fn event_stream_route_replays_existing_events() {
     let log = new_event_log();
     publish_snapshot_change_events(&log, None, &current);
 
-    let handle = start_local_api(&local_api_test_cli(), snapshot.clone(), queue, log)
-        .expect("start local api")
-        .expect("local api enabled");
+    let handle = start_local_api(
+        &local_api_test_cli(),
+        snapshot.clone(),
+        queue,
+        BackgroundShellManager::default(),
+        log,
+    )
+    .expect("start local api")
+    .expect("local api enabled");
     let addr = handle.bind_addr().to_string();
 
     let mut stream = TcpStream::connect(&addr).expect("connect local api");

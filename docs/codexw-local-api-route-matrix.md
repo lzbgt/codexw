@@ -52,6 +52,9 @@ that `codexw` can be controlled remotely without scraping terminal output:
 | `POST /api/v1/session/{session_id}/services/{job_ref}/depend` | 5 | `background_shells/services/updates/dependencies/apply.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Dependency retargeting queues the same update path as `:ps depend` / `background_shell_update_dependencies` |
 | `POST /api/v1/session/{session_id}/services/{job_ref}/contract` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Contract mutation requires at least one mutable contract field and reuses live service update validation |
 | `POST /api/v1/session/{session_id}/services/{job_ref}/relabel` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Label mutation queues the same update path as `:ps relabel` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/attach` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/server.rs` | Implemented. Resolves `job_ref` through the snapshot and returns the same attachment summary as `background_shell_attach` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/wait` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/server.rs` | Implemented. Waits on live service readiness with optional `timeoutMs` and returns the same summary as `background_shell_wait_ready` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/run` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/server.rs` | Implemented. Invokes a service recipe with optional `args` / `waitForReadyMs` and returns the same result text as `background_shell_invoke_recipe` |
 
 ## Suggested Module Layout
 
