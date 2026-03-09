@@ -136,6 +136,13 @@ the real connector binary:
   - conflicting rival mutation with structured lease conflict details
   - owner mutation recovery
   - observer `Last-Event-ID` resume
+- one lease-handoff workflow that mixes:
+  - owner-created leased session
+  - two independent observers consuming the same initial event state
+  - conflicting rival mutation before release
+  - explicit owner release
+  - rival lease takeover and successful mutation
+  - dual-observer `Last-Event-ID` resume after the handoff
 
 This process-level proof comes from two complementary surfaces:
 
@@ -175,7 +182,7 @@ The biggest remaining gaps are above the route layer, not below it:
    [codexw-broker-client-policy.md](codexw-broker-client-policy.md) but not yet
    promoted into a harder adapter contract
 2. broader connector behavior under sustained multi-client contention beyond the
-   now-covered conflict-and-recovery workflow
+   now-covered conflict, recovery, and explicit handoff workflows
 3. a clearer statement of which broker/client surfaces are intentionally out of
    scope for `codexw`, now captured in
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
@@ -189,9 +196,9 @@ If continuing on this track, the highest-leverage next tasks are:
    ownership and competing clients, using
    [codexw-broker-client-policy.md](codexw-broker-client-policy.md) as the
    current source of truth
-2. add more adversarial multi-client workflows, especially overlapping leases
-   and competing long-lived event consumers beyond the now-covered single
-   conflict-and-recovery path
+2. add more adversarial multi-client workflows, especially longer-lived lease
+   churn and repeated observer/rival role changes beyond the now-covered
+   conflict, recovery, and explicit handoff paths
 3. keep the out-of-scope boundary explicit through
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) so prototype
    expansion does not drift into parity assumptions

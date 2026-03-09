@@ -83,6 +83,13 @@ fixture against the real connector binary for:
   - conflicting rival mutation with structured lease conflict details
   - owner mutation recovery
   - observer `Last-Event-ID` resume
+- one lease-handoff workflow that mixes:
+  - owner-created leased session
+  - two independent observers consuming the same initial event state
+  - conflicting rival mutation before release
+  - owner attachment release
+  - rival lease acquisition and successful mutation
+  - dual-observer `Last-Event-ID` resume after the handoff
 
 So the fixture is not just a documentation example.
 

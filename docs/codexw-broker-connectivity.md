@@ -192,6 +192,10 @@ For the concise implementation/proof snapshot, see
   event consumption, structured rival conflict propagation, owner mutation
   recovery, and resumed `Last-Event-ID` event consumption
 - the standalone broker-style client fixture is also now process-level verified
+  for a lease-handoff workflow with two independent observers, explicit owner
+  release, rival lease takeover, rival mutation success, and dual resumed
+  `Last-Event-ID` event consumers after the handoff
+- the standalone broker-style client fixture is also now process-level verified
   for session listing and turn interrupt flows, session attach plus
   orchestration status / workers / dependencies inspection, and shell list /
   detail / send / poll / terminate control paths
