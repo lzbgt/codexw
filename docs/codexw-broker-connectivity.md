@@ -150,8 +150,12 @@ documents:
 - [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
 - [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
+- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 
 The current implementation is now past pure route sketches:
+
+For the concise implementation/proof snapshot, see
+[codexw-broker-prototype-status.md](codexw-broker-prototype-status.md).
 
 - `codexw` has a working loopback HTTP/SSE local API
 - the tracked connector prototype supports both raw `/proxy` passthrough and a

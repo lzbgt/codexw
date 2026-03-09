@@ -2,6 +2,9 @@
 
 This document turns the connector mapping design into a concrete prototype plan.
 
+For the concise implementation/proof snapshot, see
+[codexw-broker-prototype-status.md](codexw-broker-prototype-status.md).
+
 The goal is not full production broker support. The goal is to validate that a
 thin connector can expose `codexw` remotely without distorting the local API.
 

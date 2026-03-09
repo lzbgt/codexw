@@ -40,24 +40,33 @@ Current implemented scope:
 - `POST /api/v1/session/attach`
 - `GET /api/v1/session`
 - `GET /api/v1/session/{session_id}`
+- `POST /api/v1/session/{session_id}/attachment/renew`
+- `POST /api/v1/session/{session_id}/attachment/release`
 - `GET /api/v1/session/{session_id}/transcript`
 - `GET /api/v1/session/{session_id}/orchestration/status`
 - `GET /api/v1/session/{session_id}/orchestration/dependencies`
 - `GET /api/v1/session/{session_id}/orchestration/workers`
 - `GET /api/v1/session/{session_id}/shells`
+- `GET /api/v1/session/{session_id}/shells/{job_ref}`
 - `POST /api/v1/session/{session_id}/shells/start`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/poll`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/send`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate`
 - `GET /api/v1/session/{session_id}/services`
+- `GET /api/v1/session/{session_id}/services/{job_ref}`
 - `GET /api/v1/session/{session_id}/capabilities`
+- `GET /api/v1/session/{session_id}/capabilities/{capability}`
 - `POST /api/v1/turn/start`
 - `POST /api/v1/turn/interrupt`
+- `POST /api/v1/session/{session_id}/turn/start`
+- `POST /api/v1/session/{session_id}/turn/interrupt`
+- `POST /api/v1/session/client_event`
+- `POST /api/v1/session/{session_id}/client_event`
 - `GET /api/v1/session/{session_id}/events`
 - internal API command queue from the HTTP listener into the main runtime loop
 - shared semantic event log with `Last-Event-ID` replay
 - loopback SSE event stream for session, turn, orchestration, worker, and
-  capability updates
+  capability updates plus client-published semantic events
 - structured snapshot export for orchestration, shell, service, capability, and
   transcript state
 
@@ -227,12 +236,15 @@ Deliverables:
 - `GET /api/v1/session/{session_id}/orchestration/workers`
 - `GET /api/v1/session/{session_id}/orchestration/dependencies`
 - `GET /api/v1/session/{session_id}/shells`
+- `GET /api/v1/session/{session_id}/shells/{job_ref}`
 - `POST /api/v1/session/{session_id}/shells/start`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/poll`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/send`
 - `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate`
 - `GET /api/v1/session/{session_id}/services`
+- `GET /api/v1/session/{session_id}/services/{job_ref}`
 - `GET /api/v1/session/{session_id}/capabilities`
+- `GET /api/v1/session/{session_id}/capabilities/{capability}`
 
 Acceptance criteria:
 
@@ -247,6 +259,11 @@ Deliverables:
 - `POST /api/v1/session/{session_id}/services/{job_ref}/depend`
 - `POST /api/v1/session/{session_id}/services/{job_ref}/contract`
 - `POST /api/v1/session/{session_id}/services/{job_ref}/relabel`
+- `POST /api/v1/session/{session_id}/services/{job_ref}/attach`
+- `POST /api/v1/session/{session_id}/services/{job_ref}/wait`
+- `POST /api/v1/session/{session_id}/services/{job_ref}/run`
+- `POST /api/v1/session/client_event`
+- `POST /api/v1/session/{session_id}/client_event`
 
 Acceptance criteria:
 
