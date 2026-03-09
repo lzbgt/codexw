@@ -423,7 +423,7 @@ fn service_capability_reference_errors_when_ambiguous() {
         .resolve_job_reference("@api")
         .expect_err("capability should be ambiguous");
     assert!(err.contains("ambiguous"));
-    assert!(err.contains("/ps capabilities"));
+    assert!(err.contains(":ps capabilities"));
     assert!(err.contains("bg-1"));
     assert!(err.contains("bg-2"));
     let listed = manager.list_from_tool();
