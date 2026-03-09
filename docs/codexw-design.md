@@ -634,7 +634,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_selections.rs`
   Session-selection test harness helpers, rollout-path messaging regressions, and selection namespace roots.
 - `wrapper/src/main_test_session_selections/pickers.rs`
-  Model, permissions, personality, theme, and fast-mode picker regression tests.
+  Session-picker regression namespace root.
+- `wrapper/src/main_test_session_selections/pickers/model.rs`
+  Model and reasoning-effort picker regression tests.
+- `wrapper/src/main_test_session_selections/pickers/options.rs`
+  Permissions, personality, theme, and fast-mode picker regression tests.
 - `wrapper/src/main_test_session_selections/threads.rs`
   Session-thread selection regression namespace root.
 - `wrapper/src/main_test_session_selections/threads/init_agents.rs`
@@ -1203,7 +1207,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/selection_flow/model/render.rs`
   Model and reasoning-effort picker rendering plus selector/lookup helpers.
 - `wrapper/src/selection_flow/options.rs`
-  Personality, permissions, theme, and fast-mode picker rendering plus persistence/application helpers.
+  Personality, permissions, theme, and fast-mode picker namespace root.
+- `wrapper/src/selection_flow/options/apply.rs`
+  Personality, permissions, theme, and fast-mode picker application, validation, and persistence helpers.
+- `wrapper/src/selection_flow/options/render.rs`
+  Personality, permissions, and theme picker rendering plus selector/lookup helpers.
 - `wrapper/src/dispatch_command_session_status.rs`
   Session display/status commands such as attachments, permissions, `:status`, config display, and realtime status.
 - `wrapper/src/orchestration_registry.rs`
