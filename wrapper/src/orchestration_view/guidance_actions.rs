@@ -43,7 +43,6 @@ pub(crate) use render::render_orchestration_guidance_for_capability;
 pub(crate) use render::render_orchestration_guidance_for_tool;
 pub(crate) use render::render_orchestration_guidance_for_tool_capability;
 pub(super) use shared::ActionAudience;
-pub(super) use shared::RecipeInvocationSuggestion;
 pub(super) use shared::first_blocking_ref_for_capability;
 pub(super) use shared::first_provider_ref_for_capability;
 pub(super) use shared::first_recipe_name_for_capability;
