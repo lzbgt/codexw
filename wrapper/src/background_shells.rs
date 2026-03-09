@@ -76,7 +76,7 @@ pub(crate) enum BackgroundShellServiceReadiness {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum BackgroundShellReadyWaitOutcome {
+pub(crate) enum BackgroundShellReadyWaitOutcome {
     AlreadyReady,
     BecameReady { waited_ms: u64 },
 }
