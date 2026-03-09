@@ -634,7 +634,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_selections/threads.rs`
   Init, agent-thread, thread-switch, dynamic-tool advertisement, and Windows sandbox selection regressions.
 - `wrapper/src/main_test_session_status.rs`
-  Thread-status, prompt-status, realtime-status snapshot, ready-state prompt, and collab wait regression tests.
+  Thread-status, prompt-status, realtime-status snapshot, and shared status test harness helpers.
+- `wrapper/src/main_test_session_status/runtime.rs`
+  Generic status-runtime, notification-completion, background-terminal, status-snapshot, and collab wait regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration.rs`
   `/ps` orchestration selector, capability, dependency, and cleanup parser regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration/runtime.rs`
@@ -725,7 +727,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/session_snapshot_runtime.rs`
   Runtime `:status` lines for realtime state, account, activity timing, rate limits, token usage, and last reply summaries.
 - `wrapper/src/orchestration_view.rs`
-  Worker/dependency rendering, orchestration summaries, and filtered `:ps` views over the unified orchestration state.
+  Worker/dependency rendering, filtered `:ps` views, shared orchestration types, and orchestration-view namespace wiring.
+- `wrapper/src/orchestration_view/summary.rs`
+  Orchestration snapshot, overview/runtime/background summaries, and ready-prompt suffix rendering.
 - `wrapper/src/orchestration_view/guidance_actions.rs`
   Shared orchestration guidance/action renderers plus recipe/ref helper logic for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance.rs`
