@@ -18,7 +18,8 @@ use crate::orchestration_view::render_orchestration_actions_for_tool;
 use crate::orchestration_view::render_orchestration_actions_for_tool_capability;
 use crate::orchestration_view::render_orchestration_blockers_for_capability;
 use crate::orchestration_view::render_orchestration_dependencies;
-use crate::orchestration_view::render_orchestration_guidance_for_capability;
+use crate::orchestration_view::render_orchestration_guidance_for_tool;
+use crate::orchestration_view::render_orchestration_guidance_for_tool_capability;
 use crate::orchestration_view::render_orchestration_workers;
 use crate::orchestration_view::render_orchestration_workers_with_filter;
 use crate::state::AppState;
@@ -629,8 +630,10 @@ fn render_orchestration_workers_for_tool(
         }
     } else if matches!(filter, WorkerFilter::Guidance) {
         match capability.as_deref() {
-            Some(capability) => render_orchestration_guidance_for_capability(state, capability)?,
-            None => render_orchestration_workers_with_filter(state, filter),
+            Some(capability) => {
+                render_orchestration_guidance_for_tool_capability(state, capability)?
+            }
+            None => render_orchestration_guidance_for_tool(state),
         }
     } else if matches!(filter, WorkerFilter::Actions) {
         match capability.as_deref() {

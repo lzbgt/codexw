@@ -29,6 +29,8 @@ pub(crate) use guidance_actions::render_orchestration_actions_for_tool_capabilit
 pub(crate) use guidance_actions::render_orchestration_blockers_for_capability;
 pub(crate) use guidance_actions::render_orchestration_guidance;
 pub(crate) use guidance_actions::render_orchestration_guidance_for_capability;
+pub(crate) use guidance_actions::render_orchestration_guidance_for_tool;
+pub(crate) use guidance_actions::render_orchestration_guidance_for_tool_capability;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WorkerFilter {

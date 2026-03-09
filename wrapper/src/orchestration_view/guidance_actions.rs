@@ -48,6 +48,36 @@ pub(crate) fn render_orchestration_guidance_for_capability(
     }
 }
 
+pub(crate) fn render_orchestration_guidance_for_tool(state: &AppState) -> String {
+    let lines = guidance_lines_for_tool(state);
+    if lines.is_empty() {
+        String::new()
+    } else {
+        let mut rendered = vec!["Next action:".to_string()];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        rendered.join("\n")
+    }
+}
+
+pub(crate) fn render_orchestration_guidance_for_tool_capability(
+    state: &AppState,
+    capability_ref: &str,
+) -> Result<String, String> {
+    let capability = normalize_capability_ref(capability_ref)?;
+    let lines = guidance_lines_for_tool_capability(state, &capability)?;
+    if lines.is_empty() {
+        Ok(String::new())
+    } else {
+        let mut rendered = vec![format!("Next action (@{capability}):")];
+        for (index, line) in lines.iter().enumerate() {
+            rendered.push(format!("{:>2}. {}", index + 1, line));
+        }
+        Ok(rendered.join("\n"))
+    }
+}
+
 pub(crate) fn render_orchestration_blockers_for_capability(
     state: &AppState,
     capability_ref: &str,
@@ -385,6 +415,221 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
     Vec::new()
 }
 
+fn guidance_lines_for_tool(state: &AppState) -> Vec<String> {
+    let waits = active_wait_task_count(state);
+    let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
+    let sidecar_agents = active_sidecar_agent_task_count(state);
+    let shell_sidecars = running_shell_count_by_intent(state, BackgroundShellIntent::Observation);
+    let blocking_capability_issues = state
+        .orchestration
+        .background_shells
+        .blocking_capability_dependency_issues();
+    let capability_conflicts = state
+        .orchestration
+        .background_shells
+        .service_capability_conflicts();
+    let ready_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+    let booting_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+    let untracked_services =
+        running_service_count_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
+    let terminals = server_background_terminal_count(state);
+
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Missing)
+    {
+        let blocker_ref = first_blocking_ref_for_capability(state, &issue.capability)
+            .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+        let service_ref =
+            unique_running_service_ref(state).unwrap_or_else(|| "<jobId|alias|n>".to_string());
+        return vec![
+            format!(
+                "A blocking shell depends on missing service capability @{}.",
+                issue.capability
+            ),
+            format!(
+                "Use `background_shell_update_service {{\"jobId\":\"{service_ref}\",\"capabilities\":[\"@{}\"]}}` to retarget a running service or start a new provider for that reusable role.",
+                issue.capability
+            ),
+            format!(
+                "Use `background_shell_update_dependencies {{\"jobId\":\"{blocker_ref}\",\"dependsOnCapabilities\":[\"@other.role\"]}}` or `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{}\"}}` to inspect or retarget the blocked shell.",
+                issue.capability
+            ),
+        ];
+    }
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Ambiguous)
+    {
+        let provider_ref = first_provider_ref_for_capability(state, &issue.capability)
+            .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+        return vec![
+            format!(
+                "A blocking shell depends on ambiguous service capability @{}.",
+                issue.capability
+            ),
+            format!(
+                "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":null}}` to remove or replace the conflicting reusable role."
+            ),
+            format!(
+                "Use `background_shell_inspect_capability {{\"capability\":\"@{}\"}}` to inspect the conflicting providers and consumers.",
+                issue.capability
+            ),
+        ];
+    }
+    if let Some(issue) = blocking_capability_issues
+        .iter()
+        .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Booting)
+    {
+        let provider_ref = first_provider_ref_for_capability(state, &issue.capability)
+            .unwrap_or_else(|| format!("@{}", issue.capability));
+        return vec![
+            format!(
+                "A blocking shell is waiting on booting service capability @{}.",
+                issue.capability
+            ),
+            format!(
+                "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{}\"}}` to inspect provider readiness.",
+                issue.capability
+            ),
+            format!(
+                "Use `background_shell_wait_ready {{\"jobId\":\"{provider_ref}\",\"timeoutMs\":5000}}` when later work depends on readiness."
+            ),
+        ];
+    }
+    if prereqs > 0 {
+        return match unique_shell_ref_by_intent(state, BackgroundShellIntent::Prerequisite) {
+            Some(job_ref) => vec![
+                format!(
+                    "Main agent is blocked on {}.",
+                    pluralize(prereqs, "prerequisite shell", "prerequisite shells")
+                ),
+                "Use `orchestration_list_workers {\"filter\":\"blockers\"}` to inspect the gating shell."
+                    .to_string(),
+                format!(
+                    "Use `background_shell_poll {{\"jobId\":\"{job_ref}\"}}` to inspect the blocker output directly."
+                ),
+            ],
+            None => vec![
+                format!(
+                    "Main agent is blocked on {}.",
+                    pluralize(prereqs, "prerequisite shell", "prerequisite shells")
+                ),
+                "Use `orchestration_list_workers {\"filter\":\"blockers\"}` to inspect the gating shells."
+                    .to_string(),
+                "Use `background_shell_poll {\"jobId\":\"<jobId|alias|@capability>\"}` to inspect a blocker directly."
+                    .to_string(),
+            ],
+        };
+    }
+    if waits > 0 {
+        return vec![
+            format!(
+                "Main agent is blocked on {}.",
+                pluralize(waits, "agent wait", "agent waits")
+            ),
+            "Use `orchestration_list_workers {\"filter\":\"blockers\"}` to inspect the active wait dependencies.".to_string(),
+            "Use `orchestration_list_workers {\"filter\":\"agents\"}` to inspect cached and live agent workers.".to_string(),
+        ];
+    }
+    if !capability_conflicts.is_empty() {
+        let conflict_count = capability_conflicts.len();
+        let first = &capability_conflicts[0].0;
+        return vec![
+            format!(
+                "{} detected across service capabilities.",
+                pluralize(
+                    conflict_count,
+                    "capability conflict is",
+                    "capability conflicts are"
+                )
+            ),
+            format!(
+                "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":null}}` to resolve ambiguous reuse targets such as @{first}."
+            ),
+            format!(
+                "Use `background_shell_inspect_capability {{\"capability\":\"@{first}\"}}` to inspect the ambiguous capability map."
+            ),
+        ];
+    }
+    if ready_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Ready);
+        return vec![
+            format!(
+                "{} {} ready for reuse.",
+                pluralize(ready_services, "service", "services"),
+                if ready_services == 1 { "is" } else { "are" }
+            ),
+            "Use `background_shell_list_services {\"status\":\"ready\"}` to inspect attachment metadata and available recipes.".to_string(),
+            match provider_ref.as_deref() {
+                Some(job_ref) => format!(
+                    "Use `background_shell_attach {{\"jobId\":\"{job_ref}\"}}` or `background_shell_invoke_recipe {{\"jobId\":\"{job_ref}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
+                ),
+                None => "Use `background_shell_attach {\"jobId\":\"<jobId|alias|@capability>\"}` or `background_shell_invoke_recipe {\"jobId\":\"<jobId|alias|@capability>\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
+            },
+        ];
+    }
+    if booting_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Booting);
+        return vec![
+            format!(
+                "{} still booting.",
+                pluralize(booting_services, "service shell is", "service shells are")
+            ),
+            "Use `background_shell_list_services {\"status\":\"booting\"}` to inspect readiness state and startup metadata.".to_string(),
+            match provider_ref.as_deref() {
+                Some(job_ref) => format!(
+                    "Use `background_shell_wait_ready {{\"jobId\":\"{job_ref}\",\"timeoutMs\":5000}}` when later work depends on service readiness."
+                ),
+                None => "Use `background_shell_wait_ready {\"jobId\":\"<jobId|alias|@capability>\",\"timeoutMs\":5000}` when later work depends on service readiness.".to_string(),
+            },
+        ];
+    }
+    if untracked_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
+        return vec![
+            format!(
+                "{} missing readiness or attachment metadata.",
+                pluralize(untracked_services, "service shell is", "service shells are")
+            ),
+            "Use `background_shell_list_services {\"status\":\"untracked\"}` to inspect services that still need contract metadata.".to_string(),
+            match provider_ref.as_deref() {
+                Some(job_ref) => format!(
+                    "Use `background_shell_update_service {{\"jobId\":\"{job_ref}\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}}` or `background_shell_update_service {{\"jobId\":\"{job_ref}\",\"label\":\"service-label\"}}` to make the service reusable in place."
+                ),
+                None => "Use `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}` or `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"label\":\"service-label\"}` to make the service reusable in place.".to_string(),
+            },
+        ];
+    }
+    if sidecar_agents + shell_sidecars > 0 {
+        return vec![
+            format!(
+                "{} running without blocking the main agent.",
+                pluralize(sidecar_agents + shell_sidecars, "sidecar is", "sidecars are")
+            ),
+            "Continue independent work on the foreground thread.".to_string(),
+            "Use `orchestration_list_workers {\"filter\":\"agents\"}` or `orchestration_list_workers {\"filter\":\"shells\"}` to inspect progress only when the result becomes relevant.".to_string(),
+        ];
+    }
+    if terminals > 0 {
+        return vec![
+            format!(
+                "{} still active.",
+                pluralize(terminals, "server terminal is", "server terminals are")
+            ),
+            "Use `orchestration_list_workers {\"filter\":\"terminals\"}` to inspect them."
+                .to_string(),
+        ];
+    }
+
+    Vec::new()
+}
+
 fn guidance_lines_for_capability(
     state: &AppState,
     capability: &str,
@@ -501,6 +746,146 @@ fn guidance_lines_for_capability(
                     ),
                     format!(
                         "Use :ps run {provider_ref} <recipe> [json-args] to reuse it directly."
+                    ),
+                ]
+            }
+        },
+    )
+}
+
+fn guidance_lines_for_tool_capability(
+    state: &AppState,
+    capability: &str,
+) -> Result<Vec<String>, String> {
+    if let Some(issue) = state
+        .orchestration
+        .background_shells
+        .blocking_capability_dependency_issues()
+        .into_iter()
+        .find(|issue| issue.capability == capability)
+    {
+        return Ok(match issue.status {
+            BackgroundShellCapabilityDependencyState::Missing => {
+                let blocker_ref = first_blocking_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                let service_ref = unique_running_service_ref(state)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                vec![
+                    format!(
+                        "A blocking shell depends on missing service capability @{capability}."
+                    ),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{service_ref}\",\"capabilities\":[\"@{capability}\"]}}` to retarget a running service or start a new provider for that reusable role."
+                    ),
+                    format!(
+                        "Use `background_shell_update_dependencies {{\"jobId\":\"{blocker_ref}\",\"dependsOnCapabilities\":[\"@other.role\"]}}` or `orchestration_list_dependencies {{\"filter\":\"missing\",\"capability\":\"@{capability}\"}}` to inspect or retarget the blocked shell."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityDependencyState::Ambiguous => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                vec![
+                    format!(
+                        "A blocking shell depends on ambiguous service capability @{capability}."
+                    ),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":null}}` to remove or replace the conflicting reusable role."
+                    ),
+                    format!(
+                        "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the conflicting providers and consumers."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityDependencyState::Booting => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "A blocking shell is waiting on booting service capability @{capability}."
+                    ),
+                    format!(
+                        "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect provider readiness."
+                    ),
+                    format!(
+                        "Use `background_shell_wait_ready {{\"jobId\":\"{provider_ref}\",\"timeoutMs\":5000}}` when later work depends on readiness."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityDependencyState::Satisfied => vec![],
+        });
+    }
+
+    Ok(
+        match state
+            .orchestration
+            .background_shells
+            .service_capability_issue_for_ref(capability)?
+        {
+            BackgroundShellCapabilityIssueClass::Missing => {
+                let service_ref = unique_running_service_ref(state)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                vec![
+                    format!("Reusable service capability @{capability} has no running provider."),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{service_ref}\",\"capabilities\":[\"@{capability}\"]}}` to retarget a running service or start a new provider."
+                    ),
+                    format!(
+                        "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to confirm the missing-provider state."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityIssueClass::Ambiguous => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                vec![
+                    format!("Reusable service capability @{capability} is ambiguous."),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":[\"@other.role\"]}}` or `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"capabilities\":null}}` to remove or replace the conflicting reusable role."
+                    ),
+                    format!(
+                        "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect providers and consumers."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityIssueClass::Booting => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!("Reusable service capability @{capability} is still booting."),
+                    format!(
+                        "Use `background_shell_list_services {{\"status\":\"booting\",\"capability\":\"@{capability}\"}}` to inspect provider readiness."
+                    ),
+                    format!(
+                        "Use `background_shell_wait_ready {{\"jobId\":\"{provider_ref}\",\"timeoutMs\":5000}}` when later work depends on readiness."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityIssueClass::Untracked => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!(
+                        "Reusable service capability @{capability} is provided by an untracked service."
+                    ),
+                    format!(
+                        "Use `background_shell_list_services {{\"status\":\"untracked\",\"capability\":\"@{capability}\"}}` to inspect the provider missing readiness or attachment metadata."
+                    ),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}}` or `background_shell_update_service {{\"jobId\":\"{provider_ref}\",\"label\":\"service-label\"}}` to add reusable contract metadata in place."
+                    ),
+                ]
+            }
+            BackgroundShellCapabilityIssueClass::Healthy => {
+                let provider_ref = first_provider_ref_for_capability(state, capability)
+                    .unwrap_or_else(|| format!("@{capability}"));
+                vec![
+                    format!("Reusable service capability @{capability} is ready for reuse."),
+                    format!(
+                        "Use `background_shell_attach {{\"jobId\":\"{provider_ref}\"}}` to inspect endpoint and recipe details."
+                    ),
+                    format!(
+                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{provider_ref}\",\"recipe\":\"...\"}}` to reuse it directly."
                     ),
                 ]
             }
