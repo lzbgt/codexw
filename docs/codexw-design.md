@@ -807,23 +807,39 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions/guidance.rs`
   Guidance-generation namespace root for global and capability-focused orchestration remediation.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global.rs`
-  Global orchestration guidance generation for operator and tool audiences.
+  Global-guidance namespace root for blocker/service orchestration remediation.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/blockers.rs`
+  Global blocker/wait/capability guidance generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/services.rs`
+  Global ready/booting/untracked/conflict/sidecar/terminal guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/focused.rs`
   Capability-focused orchestration guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions.rs`
   Suggested-action namespace root for global and capability-focused orchestration remediation.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global.rs`
-  Global orchestration action generation for operator and tool audiences.
+  Global-action namespace root for blocker/service orchestration remediation.
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/blockers.rs`
+  Global blocker/wait/capability action generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/services.rs`
+  Global ready/booting/untracked/conflict/sidecar/terminal action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions/focused.rs`
   Capability-focused orchestration action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/tests/guidance_actions.rs`
   Orchestration guidance/action renderer test namespace.
 - `wrapper/src/orchestration_view/tests/guidance_actions/guidance.rs`
-  Orchestration guidance renderer and summary regression tests.
+  Orchestration guidance test namespace root.
+- `wrapper/src/orchestration_view/tests/guidance_actions/guidance/blockers.rs`
+  Global blocker/capability guidance renderer and summary regression tests.
+- `wrapper/src/orchestration_view/tests/guidance_actions/guidance/services.rs`
+  Global service/sidecar/terminal guidance renderer and summary regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions.rs`
   Orchestration action renderer test namespace.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/global.rs`
-  Global orchestration action renderer and remediation regression tests.
+  Global orchestration action test namespace root.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/blockers.rs`
+  Global blocker/capability action renderer and remediation regression tests.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services.rs`
+  Global service/recipe action renderer and remediation regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused.rs`
   Capability-focused orchestration action renderer and remediation regression tests.
 - `wrapper/src/background_shells/core.rs`
