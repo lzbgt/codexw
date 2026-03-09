@@ -145,6 +145,11 @@ the real connector binary:
   - observer session/orchestration/shell/service/capability reads
   - conflicting rival mutation with structured lease conflict details
   - observer reads remaining available after the conflict
+- one anonymous observer/rival workflow that mixes:
+  - owner-created leased session
+  - anonymous event/session/orchestration/service/capability reads
+  - conflicting anonymous mutation with structured `attachment_conflict`
+  - anonymous reads remaining available after the conflict
 - one lease-handoff workflow that mixes:
   - owner-created leased session
   - two independent observers consuming the same initial event state
@@ -207,10 +212,9 @@ The current stack is still intentionally limited:
 
 The biggest remaining gaps are above the route layer, not below it:
 
-1. explicit client-policy and attachment semantics beyond the current
-   process-scoped lease model, now captured in
-   [codexw-broker-client-policy.md](codexw-broker-client-policy.md) but not yet
-   promoted into the harder adapter criteria captured in
+1. explicit client-policy and attachment semantics are now stronger for named
+   and anonymous callers, but still need to be frozen as stable adapter
+   contract language in
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 2. broader connector behavior under sustained multi-client contention beyond the
    now-covered observer-readable contention, conflict/recovery, explicit

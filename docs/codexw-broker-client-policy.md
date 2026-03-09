@@ -61,6 +61,7 @@ Capabilities:
 Definition:
 
 - a client that reads session state without owning the lease
+- an observer may be named or anonymous
 
 Capabilities:
 
@@ -81,6 +82,7 @@ Definition:
 
 - a non-owner client attempting a lease-owned mutation while another client has
   the active lease
+- a rival may be a named client or an anonymous caller with no `client_id`
 
 Expected outcome:
 
@@ -157,6 +159,12 @@ response should continue to be:
   - `requested_client_id`
   - current attachment holder
   - lease timing metadata
+
+Notes:
+
+- for anonymous rival calls, `requested_client_id` is expected to be `null`
+- anonymous reads remain observer-allowed, but anonymous lease-owned mutation is
+  treated as rival behavior while another client owns the lease
 
 ## Connector Responsibilities
 

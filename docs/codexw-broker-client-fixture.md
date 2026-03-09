@@ -90,6 +90,11 @@ fixture against the real connector binary for:
   - observer session/orchestration/shell/service/capability reads
   - conflicting rival mutation with structured lease conflict details
   - observer reads remaining available after the conflict
+- one anonymous observer/rival workflow that mixes:
+  - owner-created leased session
+  - anonymous event/session/orchestration/service/capability reads
+  - conflicting anonymous mutation with `requested_client_id = null`
+  - anonymous reads remaining available after the conflict
 - one lease-handoff workflow that mixes:
   - owner-created leased session
   - two independent observers consuming the same initial event state

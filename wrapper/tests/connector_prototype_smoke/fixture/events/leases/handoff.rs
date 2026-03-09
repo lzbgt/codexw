@@ -1,0 +1,478 @@
+use super::*;
+
+#[test]
+fn broker_client_fixture_handles_lease_handoff_with_dual_observer_resume() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..10 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/new");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse create body")?;
+                    assert_eq!(body["thread_id"], "thread_multi_client_handoff");
+                    assert_eq!(body["client_id"], "fixture-owner");
+                    assert_eq!(body["lease_seconds"], 120);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        json_bytes(json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_multi_client_handoff",
+                                "attachment": {
+                                    "client_id": "fixture-owner",
+                                    "lease_seconds": 120,
+                                    "lease_active": true,
+                                    "lease_expires_at_ms": 3233445566u64
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 | 2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_multi_client_handoff/events"
+                    );
+                    let initial_stream = concat!(
+                        "HTTP/1.1 200 OK\r\n",
+                        "Content-Type: text/event-stream\r\n",
+                        "Connection: close\r\n",
+                        "\r\n",
+                        ": heartbeat\n",
+                        "id: 100\n",
+                        "event: service.updated\n",
+                        "data: {\"session_id\":\"sess_multi_client_handoff\",\"job_id\":\"bg-1\",\"alias\":\"dev.api\",\"capabilities\":[\"@frontend.pending\"]}\n",
+                        "\n"
+                    );
+                    stream
+                        .write_all(initial_stream.as_bytes())
+                        .context("write initial handoff event stream")?;
+                }
+                3 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_multi_client_handoff/services/bg-1/provide"
+                    );
+                    let body: Value = serde_json::from_slice(&request.body)
+                        .context("parse rival pre-release provide body")?;
+                    assert_eq!(body["client_id"], "fixture-rival");
+                    assert_eq!(body["capabilities"], json!(["@frontend.handoff"]));
+                    write_http_response(
+                        &mut stream,
+                        409,
+                        "Conflict",
+                        &[("Content-Type", "application/json")],
+                        json_bytes(json!({
+                            "ok": false,
+                            "error": {
+                                "status": 409,
+                                "code": "attachment_conflict",
+                                "message": "active attachment lease blocks this mutation",
+                                "retryable": false,
+                                "details": {
+                                    "requested_client_id": "fixture-rival",
+                                    "current_attachment": {
+                                        "client_id": "fixture-owner",
+                                        "lease_seconds": 120,
+                                        "lease_expires_at_ms": 3233445566u64,
+                                        "lease_active": true
+                                    }
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                4 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_multi_client_handoff/attachment/release"
+                    );
+                    let body: Value = serde_json::from_slice(&request.body)
+                        .context("parse owner release body")?;
+                    assert_eq!(body["client_id"], "fixture-owner");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        json_bytes(json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_multi_client_handoff",
+                                "attachment": {
+                                    "client_id": Value::Null,
+                                    "lease_seconds": Value::Null,
+                                    "lease_active": false,
+                                    "lease_expires_at_ms": Value::Null
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                5 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_multi_client_handoff/attachment/renew"
+                    );
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse rival renew body")?;
+                    assert_eq!(body["client_id"], "fixture-rival");
+                    assert_eq!(body["lease_seconds"], 90);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        json_bytes(json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_multi_client_handoff",
+                                "attachment": {
+                                    "client_id": "fixture-rival",
+                                    "lease_seconds": 90,
+                                    "lease_active": true,
+                                    "lease_expires_at_ms": 3233446666u64
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                6 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_multi_client_handoff");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        json_bytes(json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_multi_client_handoff",
+                                "attachment": {
+                                    "client_id": "fixture-rival",
+                                    "lease_seconds": 90,
+                                    "lease_active": true,
+                                    "lease_expires_at_ms": 3233446666u64
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                7 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_multi_client_handoff/services/bg-1/provide"
+                    );
+                    let body: Value = serde_json::from_slice(&request.body)
+                        .context("parse rival post-release provide body")?;
+                    assert_eq!(body["client_id"], "fixture-rival");
+                    assert_eq!(body["capabilities"], json!(["@frontend.handoff"]));
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        json_bytes(json!({
+                            "ok": true,
+                            "service": {
+                                "job_id": "bg-1",
+                                "alias": "dev.api",
+                                "capabilities": ["@frontend.handoff"],
+                                "ready_state": "ready"
+                            },
+                            "operation": {
+                                "kind": "service.provide"
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                8 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_multi_client_handoff/events"
+                    );
+                    assert_eq!(
+                        request._headers.get("last-event-id").map(String::as_str),
+                        Some("100")
+                    );
+                    let resumed_stream = concat!(
+                        "HTTP/1.1 200 OK\r\n",
+                        "Content-Type: text/event-stream\r\n",
+                        "Connection: close\r\n",
+                        "\r\n",
+                        ": heartbeat\n",
+                        "id: 101\n",
+                        "event: capabilities.updated\n",
+                        "data: {\"session_id\":\"sess_multi_client_handoff\",\"capability\":\"@frontend.handoff\",\"status\":\"healthy\",\"providers\":[\"bg-1\"]}\n",
+                        "\n"
+                    );
+                    stream
+                        .write_all(resumed_stream.as_bytes())
+                        .context("write observer-a resumed handoff stream")?;
+                }
+                9 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_multi_client_handoff/events"
+                    );
+                    assert_eq!(
+                        request._headers.get("last-event-id").map(String::as_str),
+                        Some("100")
+                    );
+                    let resumed_stream = concat!(
+                        "HTTP/1.1 200 OK\r\n",
+                        "Content-Type: text/event-stream\r\n",
+                        "Connection: close\r\n",
+                        "\r\n",
+                        ": heartbeat\n",
+                        "id: 101\n",
+                        "event: capabilities.updated\n",
+                        "data: {\"session_id\":\"sess_multi_client_handoff\",\"capability\":\"@frontend.handoff\",\"status\":\"healthy\",\"providers\":[\"bg-1\"]}\n",
+                        "\n"
+                    );
+                    stream
+                        .write_all(resumed_stream.as_bytes())
+                        .context("write observer-b resumed handoff stream")?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let base_url = format!("http://127.0.0.1:{connector_port}");
+    let create_output = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-owner",
+        "--lease-seconds",
+        "120",
+        "session-create",
+        "--thread-id",
+        "thread_multi_client_handoff",
+    ])?;
+    let create_json: Value = serde_json::from_str(&create_output).context("parse create output")?;
+    assert_eq!(create_json["status"], 200);
+    assert_eq!(
+        create_json["body"]["session"]["session_id"],
+        "sess_multi_client_handoff"
+    );
+
+    let observer_a_events = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-observer-a",
+        "events",
+        "--session-id",
+        "sess_multi_client_handoff",
+        "--limit",
+        "1",
+    ])?;
+    let observer_a_json: Value =
+        serde_json::from_str(&observer_a_events).context("parse observer-a events")?;
+    assert_eq!(observer_a_json["status"], 200);
+    assert_eq!(observer_a_json["body"][0]["event"], "service.updated");
+
+    let observer_b_events = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-observer-b",
+        "events",
+        "--session-id",
+        "sess_multi_client_handoff",
+        "--limit",
+        "1",
+    ])?;
+    let observer_b_json: Value =
+        serde_json::from_str(&observer_b_events).context("parse observer-b events")?;
+    assert_eq!(observer_b_json["status"], 200);
+    assert_eq!(observer_b_json["body"][0]["event"], "service.updated");
+
+    let rival_conflict_output = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-rival",
+        "service-provide",
+        "--session-id",
+        "sess_multi_client_handoff",
+        "--job-ref",
+        "bg-1",
+        "--values-json",
+        "[\"@frontend.handoff\"]",
+    ])?;
+    let rival_conflict_json: Value =
+        serde_json::from_str(&rival_conflict_output).context("parse rival conflict output")?;
+    assert_eq!(rival_conflict_json["status"], 409);
+    assert_eq!(
+        rival_conflict_json["body"]["error"]["code"],
+        "attachment_conflict"
+    );
+
+    let release_output = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-owner",
+        "attachment-release",
+        "--session-id",
+        "sess_multi_client_handoff",
+    ])?;
+    let release_json: Value =
+        serde_json::from_str(&release_output).context("parse release output")?;
+    assert_eq!(release_json["status"], 200);
+    assert_eq!(
+        release_json["body"]["session"]["attachment"]["lease_active"],
+        false
+    );
+
+    let renew_output = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-rival",
+        "attachment-renew",
+        "--session-id",
+        "sess_multi_client_handoff",
+        "--lease-seconds",
+        "90",
+    ])?;
+    let renew_json: Value =
+        serde_json::from_str(&renew_output).context("parse rival renew output")?;
+    assert_eq!(renew_json["status"], 200);
+    assert_eq!(
+        renew_json["body"]["session"]["attachment"]["client_id"],
+        "fixture-rival"
+    );
+
+    let session_output = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "session-get",
+        "--session-id",
+        "sess_multi_client_handoff",
+    ])?;
+    let session_json: Value =
+        serde_json::from_str(&session_output).context("parse session output")?;
+    assert_eq!(session_json["status"], 200);
+    assert_eq!(
+        session_json["body"]["session"]["attachment"]["client_id"],
+        "fixture-rival"
+    );
+
+    let rival_success_output = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-rival",
+        "service-provide",
+        "--session-id",
+        "sess_multi_client_handoff",
+        "--job-ref",
+        "bg-1",
+        "--values-json",
+        "[\"@frontend.handoff\"]",
+    ])?;
+    let rival_success_json: Value =
+        serde_json::from_str(&rival_success_output).context("parse rival success output")?;
+    assert_eq!(rival_success_json["status"], 200);
+    assert_eq!(
+        rival_success_json["body"]["service"]["capabilities"][0],
+        "@frontend.handoff"
+    );
+
+    let observer_a_resume = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-observer-a",
+        "events",
+        "--session-id",
+        "sess_multi_client_handoff",
+        "--last-event-id",
+        "100",
+        "--limit",
+        "1",
+    ])?;
+    let observer_a_resume_json: Value =
+        serde_json::from_str(&observer_a_resume).context("parse observer-a resume")?;
+    assert_eq!(observer_a_resume_json["status"], 200);
+    assert_eq!(
+        observer_a_resume_json["body"][0]["data"]["data"]["capability"],
+        "@frontend.handoff"
+    );
+
+    let observer_b_resume = run_broker_client(&[
+        "--base-url",
+        &base_url,
+        "--agent-id",
+        "codexw-lab",
+        "--client-id",
+        "fixture-observer-b",
+        "events",
+        "--session-id",
+        "sess_multi_client_handoff",
+        "--last-event-id",
+        "100",
+        "--limit",
+        "1",
+    ])?;
+    let observer_b_resume_json: Value =
+        serde_json::from_str(&observer_b_resume).context("parse observer-b resume")?;
+    assert_eq!(observer_b_resume_json["status"], 200);
+    assert_eq!(
+        observer_b_resume_json["body"][0]["data"]["data"]["capability"],
+        "@frontend.handoff"
+    );
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
