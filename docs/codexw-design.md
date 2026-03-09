@@ -636,7 +636,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_status.rs`
   Thread-status, prompt-status, realtime-status snapshot, and shared status test harness helpers.
 - `wrapper/src/main_test_session_status/runtime.rs`
-  Generic status-runtime, notification-completion, background-terminal, status-snapshot, and collab wait regression tests.
+  Generic status-runtime test namespace root.
+- `wrapper/src/main_test_session_status/runtime/status.rs`
+  Generic status-runtime, notification-completion, background-terminal, and prompt-status regression tests.
+- `wrapper/src/main_test_session_status/runtime/orchestration.rs`
+  Status snapshot/orchestration breakdown and collab-wait regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration.rs`
   `/ps` orchestration selector, capability, dependency, and cleanup parser regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration/runtime.rs`
@@ -779,7 +783,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/session_snapshot_runtime.rs`
   Runtime `:status` lines for realtime state, account, activity timing, rate limits, token usage, and last reply summaries.
 - `wrapper/src/orchestration_view.rs`
-  Worker/dependency rendering, filtered `:ps` views, shared orchestration types, and orchestration-view namespace wiring.
+  Orchestration-view namespace root with shared worker/dependency filter types.
+- `wrapper/src/orchestration_view/dependencies.rs`
+  Orchestration dependency-edge rendering and dependency-filter empty-state helpers.
+- `wrapper/src/orchestration_view/workers.rs`
+  Orchestration worker-section rendering for main-agent, live-agent, cached-agent, shell, service, capability, and terminal views.
 - `wrapper/src/orchestration_view/summary.rs`
   Orchestration snapshot, overview/runtime/background summaries, and ready-prompt suffix rendering.
 - `wrapper/src/orchestration_view/guidance_actions.rs`
