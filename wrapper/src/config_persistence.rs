@@ -14,8 +14,6 @@ use toml_edit::value;
 
 use crate::config_persistence::edit::config_path;
 use crate::config_persistence::edit::edit_config;
-#[cfg(test)]
-use crate::config_persistence::edit::edit_config_at_home;
 use crate::config_persistence::edit::ensure_tui_table;
 use crate::config_persistence::edit::set_nested_string;
 use crate::config_persistence::edit::set_root_string;

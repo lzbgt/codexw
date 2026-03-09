@@ -696,13 +696,17 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global.rs`
   Global tool-native orchestration guidance regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused.rs`
-  Capability-focused tool-native orchestration guidance regression tests.
+  Capability-focused tool-native orchestration guidance test namespace root.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused/services.rs`
+  Capability-focused tool-native orchestration guidance regression tests for reusable-service capability states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions.rs`
   Tool-native orchestration action test namespace.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global.rs`
   Global tool-native orchestration action regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused.rs`
-  Capability-focused tool-native orchestration action regression tests.
+  Capability-focused tool-native orchestration action test namespace root.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused/services.rs`
+  Capability-focused tool-native orchestration action regression tests for reusable-service capability states.
 - `wrapper/src/client_dynamic_tools.rs`
   Client dynamic-tool namespace root.
 - `wrapper/src/client_dynamic_tools/specs.rs`
@@ -877,7 +881,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global/services.rs`
   Global ready/booting/untracked/conflict/sidecar/terminal guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/focused.rs`
-  Capability-focused orchestration guidance generation for operator and tool audiences.
+  Capability-focused orchestration guidance namespace root.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/focused/blockers.rs`
+  Capability-focused blocking-dependency guidance generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/focused/services.rs`
+  Capability-focused reusable-service guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions.rs`
   Suggested-action namespace root for global and capability-focused orchestration remediation.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global.rs`
@@ -887,7 +895,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global/services.rs`
   Global ready/booting/untracked/conflict/sidecar/terminal action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions/focused.rs`
-  Capability-focused orchestration action generation for operator and tool audiences.
+  Capability-focused orchestration action namespace root.
+- `wrapper/src/orchestration_view/guidance_actions/actions/focused/blockers.rs`
+  Capability-focused blocking-dependency action generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/actions/focused/services.rs`
+  Capability-focused reusable-service action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/tests/guidance_actions.rs`
   Orchestration guidance/action renderer test namespace.
 - `wrapper/src/orchestration_view/tests/guidance_actions/guidance.rs`
@@ -905,7 +917,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services.rs`
   Global service/recipe action renderer and remediation regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused.rs`
-  Capability-focused orchestration action renderer and remediation regression tests.
+  Capability-focused orchestration action renderer test namespace root.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused/blockers.rs`
+  Capability-focused blocker/capability action renderer and remediation regression tests.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused/services.rs`
+  Capability-focused reusable-service action renderer and remediation regression tests.
 - `wrapper/src/background_shells/core.rs`
   Background-shell shared state helper namespace root.
 - `wrapper/src/background_shells/core/types.rs`

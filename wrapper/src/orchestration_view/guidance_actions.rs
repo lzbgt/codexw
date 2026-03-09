@@ -1,5 +1,4 @@
 use crate::background_shells::BackgroundShellCapabilityDependencyState;
-use crate::background_shells::BackgroundShellCapabilityIssueClass;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellInteractionParameter;
 use crate::background_shells::BackgroundShellInteractionRecipe;
@@ -45,7 +44,6 @@ pub(crate) use render::render_orchestration_guidance_for_tool_capability;
 pub(super) use shared::ActionAudience;
 pub(super) use shared::first_blocking_ref_for_capability;
 pub(super) use shared::first_provider_ref_for_capability;
-pub(super) use shared::first_recipe_name_for_capability;
 pub(super) use shared::normalize_capability_ref;
 pub(super) use shared::operator_recipe_command;
 pub(super) use shared::tool_recipe_call;
