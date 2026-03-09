@@ -696,7 +696,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global.rs`
   Global tool-native orchestration guidance test namespace root.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services.rs`
-  Global tool-native orchestration guidance regression tests for reusable-service states.
+  Global tool-native orchestration guidance test namespace root for reusable-service states.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability.rs`
+  Global tool-native orchestration guidance regression tests for ready and untracked reusable-service states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused.rs`
   Capability-focused tool-native orchestration guidance test namespace root.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused/services.rs`
@@ -708,7 +710,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/blockers.rs`
   Global tool-native orchestration action regression tests for blocking dependency states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services.rs`
-  Global tool-native orchestration action regression tests for reusable-service states.
+  Global tool-native orchestration action test namespace root for reusable-service states.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/conflicts.rs`
+  Global tool-native orchestration action regression tests for reusable-service conflict states.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability.rs`
+  Global tool-native orchestration action regression tests for ready, booting, and untracked reusable-service states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused.rs`
   Capability-focused tool-native orchestration action test namespace root.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused/services.rs`
@@ -941,7 +947,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services/conflicts.rs`
   Global service-conflict action renderer and remediation regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services/availability.rs`
-  Global ready/booting/untracked service action renderer and recipe remediation regression tests.
+  Global ready/booting/untracked service action renderer test namespace root.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services/availability/state.rs`
+  Global booting/untracked and multi-provider reusable-service action renderer regression tests.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services/availability/recipes.rs`
+  Global ready-service recipe and invocation action renderer regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused.rs`
   Capability-focused orchestration action renderer test namespace root.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused/blockers.rs`
