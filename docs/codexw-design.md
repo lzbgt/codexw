@@ -702,6 +702,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services.rs`
   Global tool-native orchestration guidance test namespace root for reusable-service states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability.rs`
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability/ready.rs`
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability/booting.rs`
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability/untracked.rs`
   Global tool-native orchestration guidance regression tests for ready and untracked reusable-service states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused.rs`
   Capability-focused tool-native orchestration guidance test namespace root.
@@ -718,6 +721,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/conflicts.rs`
   Global tool-native orchestration action regression tests for reusable-service conflict states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability.rs`
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability/ready.rs`
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability/booting.rs`
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability/untracked.rs`
   Global tool-native orchestration action regression tests for ready, booting, and untracked reusable-service states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused.rs`
   Capability-focused tool-native orchestration action test namespace root.
@@ -909,6 +915,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/conflicts.rs`
   Global conflict guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/availability.rs`
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/availability/ready.rs`
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/availability/booting.rs`
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/availability/untracked.rs`
   Global ready/booting/untracked service guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/residuals.rs`
   Global sidecar and terminal guidance generation for operator and tool audiences.
@@ -929,6 +938,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global/services/conflicts.rs`
   Global conflict action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global/services/availability.rs`
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/services/availability/ready.rs`
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/services/availability/booting.rs`
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/services/availability/untracked.rs`
   Global ready/booting/untracked service action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global/services/residuals.rs`
   Global sidecar and terminal action generation for operator and tool audiences.
