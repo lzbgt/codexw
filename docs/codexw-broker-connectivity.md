@@ -763,6 +763,8 @@ remaining work is now implementation-facing:
   [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
 - the connector/client policy contract, now captured in
   [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
+- the frozen broker-facing adapter contract, now captured in
+  [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md)
 - the explicit broker/client boundary, now captured in
   [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
 - the criteria for promoting the current broker/local-API stack into a

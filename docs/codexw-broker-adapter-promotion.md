@@ -122,10 +122,12 @@ Promotion requires:
 - conflict semantics are explicit
 - connector-side client/lease projection behavior is explicit
 
-This policy is currently described in
-[codexw-broker-client-policy.md](codexw-broker-client-policy.md). Promotion
-means treating that as part of the supported adapter contract, not only a
-prototype note.
+This policy is now frozen directly in
+[codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md), with
+the longer rationale and role discussion still in
+[codexw-broker-client-policy.md](codexw-broker-client-policy.md). Promotion is
+therefore no longer blocked on writing down the policy; it is blocked only on
+deciding whether the current proof is sufficient.
 
 ### 5. Explicit Unsupported Boundary
 
@@ -232,13 +234,15 @@ Based on the repo as it exists now:
 - the route surface is already broad enough
 - the connector alias surface is already broad enough
 - process-level proof is already stronger than a normal prototype
-- the biggest remaining work is contract hardening, not route invention
+- the biggest remaining work is promotion judgment and adversarial confidence,
+  not route invention or missing contract text
 
 That means the next meaningful work is:
 
-1. continue tightening the client/lease policy as an adapter contract
-2. continue adding adversarial multi-client proof until the contract is
+1. continue adding adversarial multi-client proof until the contract is
    defensible, not only functional
+2. use the explicit adapter contract plus the proof matrix to decide whether
+   the current evidence is already sufficient for promotion
 3. then decide explicitly whether to promote from prototype to supported
    adapter
 
@@ -246,6 +250,7 @@ That means the next meaningful work is:
 
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+- [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)

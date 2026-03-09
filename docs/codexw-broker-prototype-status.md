@@ -8,6 +8,7 @@ design set:
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
 Its goal is simple:
@@ -221,9 +222,10 @@ The current stack is still intentionally limited:
 The biggest remaining gaps are above the route layer, not below it:
 
 1. explicit client-policy and attachment semantics are now stronger for named
-   and anonymous callers, but still need to be frozen as stable adapter
-   contract language in
-   [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+   and anonymous callers, and are now frozen explicitly in
+   [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md);
+   the remaining question is whether the current proof level is already enough
+   to promote that contract
 2. broader connector behavior under sustained multi-client contention beyond the
    now-covered observer-readable contention, conflict/recovery, explicit
    handoff, repeated role-reversal, and client-event handoff workflows
@@ -234,9 +236,9 @@ The biggest remaining gaps are above the route layer, not below it:
    is still a deliberate decision point, now defined in
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 
-The remaining gaps are therefore no longer basic validation fidelity. They are
-promotion-level contract freezing and broader architectural choices above the
-current route/error/event surface.
+The remaining gaps are therefore no longer basic validation fidelity or missing
+contract language. They are promotion judgment and broader architectural
+choices above the current route/error/event surface.
 
 The unsupported boundary itself is now also process-level defended through the
 connector smoke suite, including explicit rejection of out-of-scope broker-style
@@ -247,11 +249,11 @@ out-of-allowlist raw proxy paths.
 
 If continuing on this track, the highest-leverage next tasks are:
 
-1. tighten the connector/client policy contract, especially around lease
-   ownership and competing clients, using
-   [codexw-broker-client-policy.md](codexw-broker-client-policy.md) together
-   with
+1. use
+   [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md),
+   [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md), and
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+   together to decide whether the current proof is already promotion-grade
 2. add more adversarial multi-client workflows, especially longer-lived lease
    churn and more complex observer/rival/owner permutations beyond the
    now-covered observer-readable contention, conflict/recovery, explicit
@@ -259,7 +261,8 @@ If continuing on this track, the highest-leverage next tasks are:
 3. keep the out-of-scope boundary explicit through
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) so prototype
    expansion does not drift into parity assumptions
-4. use [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+4. keep
+   [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
    as the explicit checklist for deciding whether the connector stays
    prototype-grade or becomes a supported adapter layer, together with
    [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)

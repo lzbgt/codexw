@@ -18,6 +18,8 @@ and [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md).
 For the criteria that would promote the current broker/local-API stack from a
 strong prototype into a supported adapter layer, see
 [docs/codexw-broker-adapter-promotion.md](docs/codexw-broker-adapter-promotion.md).
+For the current frozen broker-facing adapter contract itself, see
+[docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md).
 For a concise mapping from those criteria to the currently verified proof
 surface, see [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md).
 

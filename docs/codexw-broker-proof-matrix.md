@@ -17,6 +17,7 @@ It does not redefine the broker design. It answers a narrower question:
 
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
@@ -74,7 +75,7 @@ Status labels:
 
 | Area | Status | Evidence | Remaining gap |
 | --- | --- | --- | --- |
-| Owner / observer / rival roles are explicit | partial proof | [codexw-broker-client-policy.md](codexw-broker-client-policy.md), [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | Promotion should still freeze this into stable adapter-contract language instead of relying on policy text plus workflow inference. |
+| Owner / observer / rival roles are explicit | strong proof | [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md), [codexw-broker-client-policy.md](codexw-broker-client-policy.md), [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | The remaining question is promotion confidence, not whether the role model exists or is process-level defended. |
 | Lease-owned versus observer-readable operations | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs), [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md) | No major prototype gap on the currently claimed named and anonymous observer/rival surface. |
 | Renew/release/takeover semantics | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/session.rs](../wrapper/tests/connector_prototype_smoke/fixture/session.rs), [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | No major prototype gap within the current process-scoped model. |
 | Repeated role reversal | strong proof | [wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs](../wrapper/tests/connector_prototype_smoke/fixture/events/leases.rs) | More sustained multi-client churn is still a possible follow-up, not a route deficiency. |
@@ -85,19 +86,21 @@ Status labels:
 | Area | Status | Evidence | Remaining gap |
 | --- | --- | --- | --- |
 | Unsupported broker/client surfaces are explicitly named | strong proof | [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md), explicit process-level rejection coverage in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) for out-of-scope broker-style `scene` routes, unsupported global broker routes, unknown broker aliases, and disallowed raw proxy / raw proxy SSE paths | No major prototype gap on the currently claimed unsupported surface. |
-| Connector remains thin and local API remains canonical | partial proof | code organization under `wrapper/src/local_api/*` and `wrapper/src/bin/codexw_connector_prototype/*`, plus [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md) and the negative-proof connector tests in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) | This is still primarily an architectural claim rather than a frozen adapter guarantee, but the unsupported-route enforcement side is now process-level proven. |
+| Connector remains thin and local API remains canonical | strong proof | [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md), code organization under `wrapper/src/local_api/*` and `wrapper/src/bin/codexw_connector_prototype/*`, [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md), and the negative-proof connector tests in [wrapper/tests/connector_prototype_smoke/aliases.rs](../wrapper/tests/connector_prototype_smoke/aliases.rs) | The remaining work is promotion judgment and long-term architecture choice, not a missing proof surface for the current thin-adapter claim. |
 
 ## Current Read
 
 The current broker/local-API stack is already stronger than a normal prototype
 in route coverage and process-level workflow proof.
 
-The weakest remaining areas are not missing endpoints. They are:
+The weakest remaining areas are no longer missing routes or missing contract
+text. The adapter contract now exists explicitly in
+[codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md), and
+the process-level proof surface is broad.
 
-1. turning client-policy text into a stricter adapter contract
-2. deciding explicitly whether the current proof level is enough for promotion
-
-That means the next high-leverage work is not more route invention. It is using
-this matrix together with
+That means the next high-leverage work is not more route invention or policy
+freezing. It is using this matrix together with
 [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md) to
-make the remaining promotion decision auditable.
+decide whether the current proof level is already sufficient for adapter
+promotion or whether the project still wants more adversarial stress coverage
+before making that decision.
