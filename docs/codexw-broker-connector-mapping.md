@@ -73,6 +73,7 @@ The connector should be a narrow translation layer, not a second runtime.
 | Broker-side intent | Local `codexw` route | Mapping class | Notes |
 | --- | --- | --- | --- |
 | list shell jobs | `GET /api/v1/session/{session_id}/shells` | adapter | wrapper-owned jobs are `codexw`-specific |
+| inspect one shell job | `GET /api/v1/session/{session_id}/shells/{job_ref}` | adapter | useful for remote focused job views and alias/capability-based lookup |
 | start shell | `POST /api/v1/session/{session_id}/shells/start` | adapter | should remain available remotely |
 | poll shell | `POST /api/v1/session/{session_id}/shells/{job_ref}/poll` | adapter | `job_ref` needs connector-safe path encoding |
 | send shell stdin | `POST /api/v1/session/{session_id}/shells/{job_ref}/send` | adapter | explicit side-effect route |
@@ -206,6 +207,7 @@ The first connector prototype should ship with a small compatibility table:
 | `/v1/agents/{agent_id}/sessions/{session_id}/turns` | `/api/v1/session/{session_id}/turn/start` | works as alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/events` | `/api/v1/session/{session_id}/events` | works as alias SSE surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/shells` | `/api/v1/session/{session_id}/shells` and `/shells/start` | works as method-sensitive alias surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/shells/{job_ref}` | `/api/v1/session/{session_id}/shells/{job_ref}` | works as alias surface with percent-decoded path segment |
 | `/v1/agents/{agent_id}/sessions/{session_id}/services` | `/api/v1/session/{session_id}/services` | works as alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/services/{job_ref}` | `/api/v1/session/{session_id}/services/{job_ref}` | works as alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/capabilities` | `/api/v1/session/{session_id}/capabilities` | works as alias surface |

@@ -51,6 +51,21 @@ fn shell_poll_route_returns_selected_shell_snapshot() {
 }
 
 #[test]
+fn shell_detail_route_returns_selected_shell_snapshot() {
+    let request = super::HttpRequest {
+        method: "GET".to_string(),
+        path: "/api/v1/session/sess_test/shells/dev.frontend".to_string(),
+        headers: std::collections::HashMap::new(),
+        body: Vec::new(),
+    };
+    let response = route_request(&request, &sample_snapshot(), &new_command_queue(), None);
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["shell"]["id"], "bg-1");
+    assert_eq!(body["shell"]["alias"], "dev.frontend");
+}
+
+#[test]
 fn shell_send_route_enqueues_local_api_command() {
     let queue = new_command_queue();
     let response = route_request(

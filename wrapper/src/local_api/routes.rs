@@ -168,6 +168,9 @@ fn route_session_scoped_get(path: &str, snapshot: &LocalApiSnapshot) -> HttpResp
         "shells" => shells::handle_shells_route(snapshot),
         "services" => services::handle_services_route(snapshot),
         "capabilities" => services::handle_capabilities_route(snapshot),
+        _ if rest.starts_with("shells/") => {
+            shells::handle_shell_detail_route(snapshot, &rest["shells/".len()..])
+        }
         _ if rest.starts_with("services/") => {
             services::handle_service_detail_route(snapshot, &rest["services/".len()..])
         }

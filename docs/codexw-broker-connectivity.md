@@ -174,6 +174,9 @@ The current implementation is now past pure route sketches:
   service attach / wait / run control with SSE resume, which is the closest
   current approximation of a real remote client following live state while
   interacting with reusable services
+- and it now also proves a single broker-style workflow can mix lease-owned
+  capability mutation, focused service/capability detail aliases, and resumed
+  SSE capability-state observation after the mutation path
 
 ## Compatibility Matrix
 

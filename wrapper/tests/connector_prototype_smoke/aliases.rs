@@ -38,8 +38,8 @@ fn connector_alias_attach_projects_session_and_lease_headers() -> Result<()> {
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
 
     let body = "{\"thread_id\":\"thread_1\"}";
     let request = format!(
@@ -154,8 +154,8 @@ fn connector_alias_session_create_and_attachment_lifecycle_routes_work() -> Resu
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
 
     let create_body = "{\"thread_id\":\"thread_1\"}";
     let create_request = format!(
@@ -245,8 +245,8 @@ fn connector_alias_events_route_wraps_broker_metadata() -> Result<()> {
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
 
     let response = send_raw_request(
         connector_port,
@@ -300,8 +300,8 @@ fn connector_alias_events_route_forwards_last_event_id() -> Result<()> {
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
 
     let response = send_raw_request(
         connector_port,
@@ -353,8 +353,8 @@ fn connector_alias_shell_start_projects_client_and_lease_headers() -> Result<()>
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
 
     let body = "{\"command\":\"npm run dev\"}";
     let request = format!(
@@ -413,8 +413,8 @@ fn connector_alias_service_run_maps_to_local_service_route() -> Result<()> {
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
 
     let body = "{\"recipe\":\"health\"}";
     let request = format!(
@@ -441,16 +441,35 @@ fn connector_alias_service_run_maps_to_local_service_route() -> Result<()> {
 }
 
 #[test]
-fn connector_alias_service_and_capability_detail_routes_map_cleanly() -> Result<()> {
+fn connector_alias_shell_service_and_capability_detail_routes_map_cleanly() -> Result<()> {
     let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
     let local_addr = local_listener.local_addr().context("local api addr")?;
 
     let fake_server = thread::spawn(move || -> Result<()> {
-        for expected in 0..2 {
+        for expected in 0..3 {
             let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
             let request = read_http_request(&mut stream)?;
             match expected {
                 0 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/shells/@api.http");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "shell": {
+                                "id": "bg-1",
+                                "alias": "dev.api",
+                                "service_capabilities": ["@api.http"]
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
                     assert_eq!(request.method, "GET");
                     assert_eq!(request.path, "/api/v1/session/sess_1/services/dev.api");
                     write_http_response(
@@ -469,7 +488,7 @@ fn connector_alias_service_and_capability_detail_routes_map_cleanly() -> Result<
                         .as_slice(),
                     )?;
                 }
-                1 => {
+                2 => {
                     assert_eq!(request.method, "GET");
                     assert_eq!(
                         request.path,
@@ -497,8 +516,21 @@ fn connector_alias_service_and_capability_detail_routes_map_cleanly() -> Result<
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let shell_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/sessions/sess_1/shells/%40api.http HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(shell_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(shell_response.contains("\"alias\":\"dev.api\""));
+    assert!(shell_response.contains("\"service_capabilities\":[\"@api.http\"]"));
 
     let service_response = send_raw_request(
         connector_port,
@@ -638,8 +670,8 @@ fn connector_alias_turn_and_service_routes_propagate_attachment_conflict() -> Re
     });
 
     let connector_port = reserve_port()?;
-    let _connector = spawn_connector(connector_port, local_addr.port())?;
-    wait_for_healthz(connector_port)?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
 
     let client = BrokerClient::new(connector_port, "codexw-lab");
     let create_response = client.create_session(

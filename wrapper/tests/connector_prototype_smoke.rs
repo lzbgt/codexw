@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fs;
+use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::net::Shutdown;
@@ -8,9 +10,14 @@ use std::path::PathBuf;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
+use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -23,12 +30,15 @@ const POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 struct ChildGuard {
     child: Child,
+    stderr_path: PathBuf,
+    _serial_guard: MutexGuard<'static, ()>,
 }
 
 impl Drop for ChildGuard {
     fn drop(&mut self) {
         let _ = self.child.kill();
         let _ = self.child.wait();
+        let _ = fs::remove_file(&self.stderr_path);
     }
 }
 
@@ -101,7 +111,10 @@ impl BrokerClient {
 }
 
 fn spawn_connector(port: u16, local_api_port: u16) -> Result<ChildGuard> {
+    let serial_guard = smoke_test_lock();
     let binary = connector_binary()?;
+    let stderr_path = connector_stderr_path(port);
+    let stderr_file = File::create(&stderr_path).context("create connector stderr log")?;
     let child = Command::new(binary)
         .arg("--bind")
         .arg(format!("127.0.0.1:{port}"))
@@ -112,10 +125,14 @@ fn spawn_connector(port: u16, local_api_port: u16) -> Result<ChildGuard> {
         .arg("--deployment-id")
         .arg("mac-mini-01")
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::from(stderr_file))
         .spawn()
         .context("spawn connector prototype")?;
-    Ok(ChildGuard { child })
+    Ok(ChildGuard {
+        child,
+        stderr_path,
+        _serial_guard: serial_guard,
+    })
 }
 
 fn connector_binary() -> Result<PathBuf> {
@@ -146,11 +163,24 @@ fn reserve_port() -> Result<u16> {
     Ok(port)
 }
 
-fn wait_for_healthz(port: u16) -> Result<()> {
+fn wait_for_healthz(connector: &mut ChildGuard, port: u16) -> Result<()> {
     let deadline = Instant::now() + STARTUP_TIMEOUT;
     loop {
         if Instant::now() > deadline {
-            anyhow::bail!("connector healthz did not become reachable");
+            anyhow::bail!(
+                "connector healthz did not become reachable; stderr:\n{}",
+                connector_stderr(connector)
+            );
+        }
+        if let Some(status) = connector
+            .child
+            .try_wait()
+            .context("poll connector prototype process")?
+        {
+            anyhow::bail!(
+                "connector prototype exited before healthz with status {status}; stderr:\n{}",
+                connector_stderr(connector)
+            );
         }
         match send_raw_request(
             port,
@@ -165,6 +195,39 @@ fn wait_for_healthz(port: u16) -> Result<()> {
             _ => thread::sleep(POLL_INTERVAL),
         }
     }
+}
+
+fn smoke_test_lock() -> MutexGuard<'static, ()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+        .lock()
+        .expect("connector smoke lock poisoned")
+}
+
+fn connector_stderr_path(port: u16) -> PathBuf {
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    std::env::temp_dir().join(format!(
+        "codexw-connector-smoke-{}-{}-{}.log",
+        std::process::id(),
+        port,
+        millis
+    ))
+}
+
+fn connector_stderr(connector: &ChildGuard) -> String {
+    fs::read_to_string(&connector.stderr_path)
+        .map(|text| {
+            let trimmed = text.trim();
+            if trimmed.is_empty() {
+                "<empty>".to_string()
+            } else {
+                trimmed.to_string()
+            }
+        })
+        .unwrap_or_else(|_| "<unavailable>".to_string())
 }
 
 fn send_raw_request(port: u16, request: &str) -> Result<String> {

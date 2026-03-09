@@ -24,6 +24,20 @@ pub(super) fn handle_shells_route(
     }))
 }
 
+pub(super) fn handle_shell_detail_route(
+    snapshot: &LocalApiSnapshot,
+    reference: &str,
+) -> crate::local_api::server::HttpResponse {
+    match resolve_shell_snapshot(snapshot, reference) {
+        Ok(shell) => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "shell": shell,
+        })),
+        Err((code, message)) => json_error_response(404, code, message),
+    }
+}
+
 pub(super) fn handle_shell_start_route(
     request: &HttpRequest,
     snapshot: &LocalApiSnapshot,

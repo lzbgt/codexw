@@ -188,6 +188,14 @@ Current automated coverage now includes a real process-level smoke path:
     - update contract metadata
     - relabel service
     - inspect services and capabilities
+  - a realistic broker-style focused-detail plus resume workflow:
+    - create leased session
+    - consume initial event stream
+    - mutate service capabilities
+    - inspect focused service detail
+    - inspect focused capability detail
+    - reconnect the event stream with `Last-Event-ID`
+    - observe the resumed capability-state event after mutation
   - a realistic broker-style conflict workflow:
     - create session with an active lease
     - attempt turn/service mutation from another client identity
