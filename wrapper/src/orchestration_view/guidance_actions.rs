@@ -542,16 +542,15 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
         .iter()
         .find(|issue| issue.status == BackgroundShellCapabilityDependencyState::Booting)
     {
+        let provider_ref = first_provider_ref_for_capability(state, &issue.capability)
+            .unwrap_or_else(|| format!("@{}", issue.capability));
         return match audience {
             ActionAudience::Operator => vec![
                 format!(
-                    "Run `:ps services @{}` to inspect the booting provider state.",
+                    "Run `:ps services booting @{}` to inspect the booting provider state.",
                     issue.capability
                 ),
-                format!(
-                    "Run `:ps wait @{} 5000` to wait on the capability provider.",
-                    issue.capability
-                ),
+                format!("Run `:ps wait {provider_ref} 5000` to wait on the capability provider."),
                 format!(
                     "Run `:ps dependencies booting @{}` to keep the dependency view focused.",
                     issue.capability
@@ -563,8 +562,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     issue.capability
                 ),
                 format!(
-                    "Use `background_shell_wait_ready {{\"jobId\":\"@{}\",\"timeoutMs\":5000}}` to wait on the capability provider.",
-                    issue.capability
+                    "Use `background_shell_wait_ready {{\"jobId\":\"{provider_ref}\",\"timeoutMs\":5000}}` to wait on the capability provider."
                 ),
                 format!(
                     "Use `orchestration_list_dependencies {{\"filter\":\"booting\",\"capability\":\"@{}\"}}` to keep the dependency view focused.",

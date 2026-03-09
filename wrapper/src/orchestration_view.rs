@@ -1303,6 +1303,58 @@ mod tests {
     }
 
     #[test]
+    fn actions_filter_uses_concrete_wait_for_booting_blocker_provider() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start booting service");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start blocked prerequisite");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains("Suggested actions:"));
+        assert!(rendered.contains(":ps services booting @api.http"));
+        assert!(rendered.contains(":ps wait bg-1 5000"));
+        assert!(rendered.contains(":ps dependencies booting @api.http"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains("Suggested actions:"));
+        assert!(tool_rendered.contains(
+            "background_shell_list_services {\"status\":\"booting\",\"capability\":\"@api.http\"}"
+        ));
+        assert!(
+            tool_rendered
+                .contains("background_shell_wait_ready {\"jobId\":\"bg-1\",\"timeoutMs\":5000}")
+        );
+        assert!(tool_rendered.contains(
+            "orchestration_list_dependencies {\"filter\":\"booting\",\"capability\":\"@api.http\"}"
+        ));
+
+        let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
+        assert!(filtered.contains("Suggested actions:"));
+        assert!(filtered.contains(":ps wait bg-1 5000"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
     fn focused_actions_for_untracked_capability_render_contract_fixes() {
         let services = crate::state::AppState::new(true, false);
         services
