@@ -328,8 +328,8 @@ pub(crate) fn orchestration_prompt_suffix(state: &AppState) -> Option<String> {
     if terminals > 0 {
         parts.push(pluralize(terminals, "terminal", "terminals"));
     }
-    parts.push("/ps to view".to_string());
-    parts.push("/clean to close".to_string());
+    parts.push(":ps to view".to_string());
+    parts.push(":clean to close".to_string());
     Some(parts.join(" | "))
 }
 
@@ -649,7 +649,7 @@ fn render_cached_agent_threads_section(agent_threads: &[CachedAgentThreadSummary
         }
         lines.push(line);
     }
-    lines.push("Use /multi-agents to refresh or switch agent threads.".to_string());
+    lines.push("Use :multi-agents to refresh or switch agent threads.".to_string());
     lines
 }
 
@@ -679,7 +679,7 @@ fn push_section_gap(lines: &mut Vec<String>) {
 fn empty_filter_message(filter: WorkerFilter) -> &'static str {
     match filter {
         WorkerFilter::All => {
-            "No workers tracked yet. Use /multi-agents to cache agent threads or start a background task."
+            "No workers tracked yet. Use :multi-agents to cache agent threads or start a background task."
         }
         WorkerFilter::Blockers => "No blocking workers tracked right now.",
         WorkerFilter::Dependencies => "No dependency edges tracked right now.",

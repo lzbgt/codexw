@@ -430,7 +430,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 ),
             },
             format!(
-                "Use /ps capabilities @{} and /ps dependencies missing @{} to inspect the provider map and blocked shell.",
+                "Use :ps capabilities @{} and :ps dependencies missing @{} to inspect the provider map and blocked shell.",
                 issue.capability, issue.capability
             ),
         ];
@@ -445,7 +445,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 issue.capability
             ),
             "Resolve the conflicting reusable service role before relying on capability-based attachment.".to_string(),
-            "Use /ps capabilities to inspect providers and consumers for that capability."
+            "Use :ps capabilities to inspect providers and consumers for that capability."
                 .to_string(),
         ];
     }
@@ -461,7 +461,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 issue.capability
             ),
             format!(
-                "Use /ps services booting @{} to inspect the provider and readiness state.",
+                "Use :ps services booting @{} to inspect the provider and readiness state.",
                 issue.capability
             ),
             format!(
@@ -475,7 +475,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 "Main agent is blocked on {}.",
                 pluralize(prereqs, "prerequisite shell", "prerequisite shells")
             ),
-            "Inspect /ps blockers to identify the gating job.".to_string(),
+            "Inspect :ps blockers to identify the gating job.".to_string(),
             "Use :ps wait <jobId|alias|@capability|n> [timeoutMs] for services with readiness contracts or :ps poll <jobId|alias|@capability|n> to inspect raw output.".to_string(),
         ];
     }
@@ -485,8 +485,8 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 "Main agent is blocked on {}.",
                 pluralize(waits, "agent wait", "agent waits")
             ),
-            "Inspect /ps blockers to see the blocking agent dependencies.".to_string(),
-            "Use /multi-agents to refresh or switch into the relevant agent thread.".to_string(),
+            "Inspect :ps blockers to see the blocking agent dependencies.".to_string(),
+            "Use :multi-agents to refresh or switch into the relevant agent thread.".to_string(),
         ];
     }
     if !capability_conflicts.is_empty() {
@@ -498,7 +498,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 pluralize(conflict_count, "capability conflict is", "capability conflicts are")
             ),
             format!("Resolve ambiguous reuse targets such as @{first} before relying on capability-based attachment."),
-            "Use /ps capabilities to inspect the ambiguous capability map and assign more specific capabilities.".to_string(),
+            "Use :ps capabilities to inspect the ambiguous capability map and assign more specific capabilities.".to_string(),
         ];
     }
     if ready_services > 0 {
@@ -512,7 +512,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 pluralize(ready_services, "service", "services"),
                 if ready_services == 1 { "is" } else { "are" }
             ),
-            "Use /ps services to inspect attachment metadata and available recipes.".to_string(),
+            "Use :ps services to inspect attachment metadata and available recipes.".to_string(),
             match provider_ref.as_deref() {
                 Some(job_ref) => match recipe.as_ref() {
                     Some(recipe) => format!(
@@ -536,7 +536,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 "{} still booting.",
                 pluralize(booting_services, "service shell is", "service shells are")
             ),
-            "Use /ps services to inspect readiness state and startup metadata.".to_string(),
+            "Use :ps services to inspect readiness state and startup metadata.".to_string(),
             match provider_ref.as_deref() {
                 Some(job_ref) => format!(
                     "Use :ps wait {job_ref} [timeoutMs] when later work depends on service readiness."
@@ -554,7 +554,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 "{} missing readiness or attachment metadata.",
                 pluralize(untracked_services, "service shell is", "service shells are")
             ),
-            "Use /ps services untracked to inspect services that still need contract metadata."
+            "Use :ps services untracked to inspect services that still need contract metadata."
                 .to_string(),
             match provider_ref.as_deref() {
                 Some(job_ref) => format!(
@@ -573,7 +573,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 pluralize(sidecars, "sidecar is", "sidecars are")
             ),
             "Continue independent work on the foreground thread.".to_string(),
-            "Use /ps agents or /ps shells to inspect progress only when the result becomes relevant.".to_string(),
+            "Use :ps agents or :ps shells to inspect progress only when the result becomes relevant.".to_string(),
         ];
     }
     if terminals > 0 {
@@ -582,7 +582,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 "{} still active.",
                 pluralize(terminals, "server terminal is", "server terminals are")
             ),
-            "Use /ps terminals to inspect them or /clean terminals to close them.".to_string(),
+            "Use :ps terminals to inspect them or :clean terminals to close them.".to_string(),
         ];
     }
 
@@ -835,14 +835,14 @@ fn guidance_lines_for_capability(
                     ),
                 },
                 format!(
-                    "Use /ps capabilities @{capability} and /ps dependencies missing @{capability} to inspect the exact blocker."
+                    "Use :ps capabilities @{capability} and :ps dependencies missing @{capability} to inspect the exact blocker."
                 ),
             ],
             BackgroundShellCapabilityDependencyState::Ambiguous => vec![
                 format!("A blocking shell depends on ambiguous service capability @{capability}."),
                 "Resolve the conflicting reusable service role before relying on capability-based attachment.".to_string(),
                 format!(
-                    "Use /ps capabilities @{capability} and /ps services @{capability} to inspect the conflicting providers."
+                    "Use :ps capabilities @{capability} and :ps services @{capability} to inspect the conflicting providers."
                 ),
             ],
             BackgroundShellCapabilityDependencyState::Booting => {
@@ -851,7 +851,7 @@ fn guidance_lines_for_capability(
                 vec![
                     format!("A blocking shell is waiting on booting service capability @{capability}."),
                     format!(
-                        "Use /ps services booting @{capability} to inspect the provider and readiness state."
+                        "Use :ps services booting @{capability} to inspect the provider and readiness state."
                     ),
                     format!(
                         "Use :ps wait {provider_ref} 5000 when later work depends on readiness."
@@ -880,7 +880,7 @@ fn guidance_lines_for_capability(
                         ),
                     },
                     format!(
-                        "Use /ps capabilities @{capability} to confirm the missing-provider state."
+                        "Use :ps capabilities @{capability} to confirm the missing-provider state."
                     ),
                 ]
             }
@@ -888,7 +888,7 @@ fn guidance_lines_for_capability(
                 format!("Reusable service capability @{capability} is ambiguous."),
                 "Resolve the conflicting providers before relying on capability-based reuse."
                     .to_string(),
-                format!("Use /ps capabilities @{capability} to inspect providers and consumers."),
+                format!("Use :ps capabilities @{capability} to inspect providers and consumers."),
             ],
             BackgroundShellCapabilityIssueClass::Booting => {
                 let provider_ref = first_provider_ref_for_capability(state, capability)
@@ -896,7 +896,7 @@ fn guidance_lines_for_capability(
                 vec![
                     format!("Reusable service capability @{capability} is still booting."),
                     format!(
-                        "Use /ps services booting @{capability} to inspect provider readiness."
+                        "Use :ps services booting @{capability} to inspect provider readiness."
                     ),
                     format!(
                         "Use :ps wait {provider_ref} 5000 when later work depends on readiness."
@@ -911,7 +911,7 @@ fn guidance_lines_for_capability(
                         "Reusable service capability @{capability} is provided by an untracked service."
                     ),
                     format!(
-                        "Use /ps services untracked @{capability} to inspect the provider missing readiness or attachment metadata."
+                        "Use :ps services untracked @{capability} to inspect the provider missing readiness or attachment metadata."
                     ),
                     format!(
                         "Use :ps contract {provider_ref} <json-object> to add readyPattern or attachment metadata in place."
@@ -925,7 +925,7 @@ fn guidance_lines_for_capability(
                 vec![
                     format!("Reusable service capability @{capability} is ready for reuse."),
                     format!(
-                        "Use /ps attach {provider_ref} to inspect endpoint and recipe details."
+                        "Use :ps attach {provider_ref} to inspect endpoint and recipe details."
                     ),
                     match recipe.as_ref() {
                         Some(recipe) => format!(
@@ -933,7 +933,7 @@ fn guidance_lines_for_capability(
                             operator_recipe_command(&provider_ref, recipe)
                         ),
                         None => format!(
-                            "Use /ps attach {provider_ref} to inspect endpoint and recipe details."
+                            "Use :ps attach {provider_ref} to inspect endpoint and recipe details."
                         ),
                     },
                 ]

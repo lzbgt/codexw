@@ -419,7 +419,7 @@ fn ready_status_mentions_blocking_prereqs_services_and_terminals() {
     assert!(rendered.contains("blocked on 1 prerequisite shell"));
     assert!(rendered.contains("1 service untracked"));
     assert!(rendered.contains("1 terminal"));
-    assert!(rendered.contains("/ps to view"));
+    assert!(rendered.contains(":ps to view"));
     let _ = state.background_shells.terminate_all_running();
 }
 

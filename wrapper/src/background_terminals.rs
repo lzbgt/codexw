@@ -166,7 +166,7 @@ pub(crate) fn render_background_terminals(state: &AppState) -> String {
     if lines.is_empty() {
         return "No background terminals running.".to_string();
     }
-    lines.push("Use /clean to stop all running background tasks.".to_string());
+    lines.push("Use :clean to stop all running background tasks.".to_string());
     lines.join("\n")
 }
 

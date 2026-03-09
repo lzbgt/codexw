@@ -113,7 +113,7 @@ fn orchestration_prompt_suffix_distinguishes_blockers_sidecars_services_and_term
     assert!(suffix.contains("blocked on 1 agent wait and 1 prerequisite shell"));
     assert!(suffix.contains("1 service untracked"));
     assert!(suffix.contains("1 terminal"));
-    assert!(suffix.contains("/ps to view"));
+    assert!(suffix.contains(":ps to view"));
     let background = orchestration_background_summary(&state).expect("background summary");
     assert!(background.contains("prereqs=1"));
     assert!(background.contains("shell_sidecars=0"));
@@ -185,7 +185,7 @@ fn orchestration_worker_rendering_includes_cached_agents_and_background_tasks() 
     assert!(rendered.contains("Cached agent threads:"));
     assert!(rendered.contains("agent-1  [active]"));
     assert!(rendered.contains("inspect auth"));
-    assert!(rendered.contains("Use /multi-agents to refresh or switch agent threads."));
+    assert!(rendered.contains("Use :multi-agents to refresh or switch agent threads."));
     assert!(rendered.contains("Server-observed background terminals:"));
     assert!(rendered.contains("python worker.py"));
 }
@@ -362,7 +362,7 @@ fn orchestration_guidance_prefers_blockers_then_ready_services_then_sidecars() {
     let blocked_hint = orchestration_guidance_summary(&blocked).expect("blocked guidance");
     assert!(blocked_hint.contains("blocked on 1 prerequisite shell"));
     let blocked_view = render_orchestration_guidance(&blocked);
-    assert!(blocked_view.contains("Inspect /ps blockers"));
+    assert!(blocked_view.contains("Inspect :ps blockers"));
     let _ = blocked.background_shells.terminate_all_running();
 
     let ready = crate::state::AppState::new(true, false);
@@ -439,7 +439,7 @@ fn orchestration_guidance_surfaces_service_capability_conflicts_before_ready_reu
     assert!(hint.contains("capability conflict"));
     let rendered = render_orchestration_guidance(&services);
     assert!(rendered.contains("@api.http"));
-    assert!(rendered.contains("/ps capabilities"));
+    assert!(rendered.contains(":ps capabilities"));
     let _ = services.background_shells.terminate_all_running();
 }
 
@@ -460,8 +460,8 @@ fn orchestration_guidance_prioritizes_missing_blocking_service_dependencies() {
     let hint = orchestration_guidance_summary(&blocked).expect("dependency guidance");
     assert!(hint.contains("missing service capability @api.http"));
     let rendered = render_orchestration_guidance(&blocked);
-    assert!(rendered.contains("/ps capabilities"));
-    assert!(rendered.contains("/ps dependencies missing @api.http"));
+    assert!(rendered.contains(":ps capabilities"));
+    assert!(rendered.contains(":ps dependencies missing @api.http"));
     let blockers = render_orchestration_workers_with_filter(&blocked, WorkerFilter::Blockers);
     assert!(
         blockers.contains(
@@ -489,7 +489,7 @@ fn guidance_filter_renders_next_action_section() {
     let rendered = render_orchestration_workers_with_filter(&state, WorkerFilter::Guidance);
     assert!(rendered.contains("Next action:"));
     assert!(rendered.contains("blocked on 1 agent wait"));
-    assert!(rendered.contains("/multi-agents"));
+    assert!(rendered.contains(":multi-agents"));
 }
 
 #[test]
@@ -509,7 +509,7 @@ fn guidance_filter_surfaces_contract_fix_for_untracked_services() {
 
     let rendered = render_orchestration_guidance(&services);
     assert!(rendered.contains("missing readiness or attachment metadata"));
-    assert!(rendered.contains("/ps services untracked"));
+    assert!(rendered.contains(":ps services untracked"));
     assert!(rendered.contains(":ps contract bg-1 <json-object>"));
     assert!(rendered.contains(":ps relabel bg-1 <label|none>"));
     let _ = services.background_shells.terminate_all_running();
@@ -599,7 +599,7 @@ fn guidance_filter_uses_concrete_wait_for_booting_blocker_provider() {
         .expect("start blocked prerequisite");
 
     let rendered = render_orchestration_guidance(&services);
-    assert!(rendered.contains("/ps services booting @api.http"));
+    assert!(rendered.contains(":ps services booting @api.http"));
     assert!(rendered.contains(":ps wait bg-1 [timeoutMs]"));
     let _ = services.background_shells.terminate_all_running();
 }
@@ -840,7 +840,7 @@ fn focused_guidance_and_actions_can_target_one_capability() {
         .expect("focused guidance");
     assert!(guidance.contains("Next action (@api.http):"));
     assert!(guidance.contains("untracked service"));
-    assert!(guidance.contains("/ps services untracked @api.http"));
+    assert!(guidance.contains(":ps services untracked @api.http"));
     assert!(guidance.contains(":ps contract bg-1 <json-object>"));
 
     let operator_actions = render_orchestration_actions_for_capability(&services, "@api.http")
@@ -959,7 +959,7 @@ fn focused_ready_capability_actions_use_concrete_provider_ref() {
 
     let guidance = render_orchestration_guidance_for_capability(&services, "@api.http")
         .expect("focused guidance");
-    assert!(guidance.contains("/ps attach bg-1"));
+    assert!(guidance.contains(":ps attach bg-1"));
     assert!(guidance.contains(":ps run bg-1 health"));
     assert!(!guidance.contains(":ps run bg-1 health [json-args]"));
 
@@ -1332,7 +1332,7 @@ fn focused_blockers_can_target_one_capability() {
     let guidance = render_orchestration_guidance_for_capability(&blocked, "@api.http")
         .expect("focused guidance");
     assert!(guidance.contains(":ps provide bg-1 @api.http"));
-    assert!(guidance.contains("/ps dependencies missing @api.http"));
+    assert!(guidance.contains(":ps dependencies missing @api.http"));
 
     let operator_actions = render_orchestration_actions_for_capability(&blocked, "@api.http")
         .expect("focused operator actions");
