@@ -619,7 +619,8 @@ The dedicated design notes now live in [docs/codexw-broker-connectivity.md](docs
 - architecture options such as local API plus connector vs direct broker connectivity
 - a compatibility matrix against the `~/work/agent` broker and client protocol
 - session/event/security design questions that need answers before implementation
-- a phased plan and concrete TODO checklist
+- a concrete local API sketch, route matrix, and event-sourcing plan
+- a phased local API implementation plan and connector prototype plan
 
 This should be treated as a real future-work item and re-evaluated after the current architectural parity gaps are smaller. It is likely higher leverage than continuing endless small refactors once the local wrapper structure is sufficiently healthy.
 

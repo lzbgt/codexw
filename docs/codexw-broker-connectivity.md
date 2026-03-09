@@ -132,6 +132,24 @@ The current highest-leverage path is:
 
 That keeps the first implementation aligned with the existing wrapper architecture and still preserves a path to broker compatibility.
 
+## Related Design Set
+
+The broker/local-API design is now split across concrete implementation-facing
+documents:
+
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-broker-event-envelope.md](codexw-broker-event-envelope.md)
+- [codexw-broker-endpoint-audit.md](codexw-broker-endpoint-audit.md)
+- [codexw-broker-connector-decision.md](codexw-broker-connector-decision.md)
+- [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)
+- [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- [codexw-broker-session-identity.md](codexw-broker-session-identity.md)
+- [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
+- [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
+
 ## Compatibility Matrix
 
 ### Areas That Already Map Reasonably Well
@@ -654,6 +672,10 @@ This is now an explicit tracked design area, not an informal idea.
 The next high-leverage step is no longer broad design exploration. The
 remaining work is now implementation-facing:
 
+- route ownership and delivery order, now captured in
+  [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- semantic event publication strategy, now captured in
+  [docs/codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - a real implementation spike for the loopback local API, now framed in
   [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
 - a connector prototype after that, now framed in
