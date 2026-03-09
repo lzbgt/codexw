@@ -638,7 +638,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_status_ps_orchestration.rs`
   `/ps` orchestration selector, capability, dependency, and cleanup parser regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration/runtime.rs`
-  `/ps` orchestration runtime, capability, dependency, cleanup, and targeted worker-control regression tests.
+  `/ps` orchestration runtime test namespace with shared command helpers.
+- `wrapper/src/main_test_session_status_ps_orchestration/runtime/control.rs`
+  `/ps` orchestration runtime regression tests for poll/send/alias/cleanup and targeted worker control.
+- `wrapper/src/main_test_session_status_ps_orchestration/runtime/services.rs`
+  `/ps` orchestration runtime regression tests for service attachment, capability views, dependency views, and service-state filters.
 - `wrapper/src/client_dynamic_tools_tests_orchestration.rs`
   Orchestration dynamic-tool namespace tests plus filter/argument validation regressions.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance.rs`
@@ -747,7 +751,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused.rs`
   Capability-focused orchestration action renderer and remediation regression tests.
 - `wrapper/src/background_shells/tests/services.rs`
-  Reusable-service capability, readiness, dependency, and service-view regression tests.
+  Reusable-service regression test namespace for service updates and service/capability views.
+- `wrapper/src/background_shells/tests/services/updates.rs`
+  Reusable-service update, dependency-retarget, termination, and readiness transition regression tests.
+- `wrapper/src/background_shells/tests/services/views.rs`
+  Reusable-service capability reference, capability index, service-state filter, and attachment-view regression tests.
 - `wrapper/src/background_shells/tests/services/recipes.rs`
   Reusable-service attachment, recipe execution, and transport regression tests.
 - `wrapper/src/requests.rs`
