@@ -9,12 +9,21 @@ use crate::Cli;
 use crate::dispatch_submit_turns::submit_turn_input;
 use crate::output::Output;
 use crate::requests::send_command_exec_terminate;
+use crate::requests::send_thread_resume;
+use crate::requests::send_thread_start;
 use crate::requests::send_turn_interrupt;
 use crate::state::AppState;
 use crate::state::thread_id;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum LocalApiCommand {
+    StartSessionThread {
+        session_id: String,
+    },
+    AttachSessionThread {
+        session_id: String,
+        thread_id: String,
+    },
     StartTurn {
         session_id: String,
         prompt: String,
@@ -74,6 +83,38 @@ pub(crate) fn process_local_api_commands(
 ) -> Result<()> {
     for command in drain_commands(queue) {
         match command {
+            LocalApiCommand::StartSessionThread { session_id } => {
+                match send_thread_start(writer, state, cli, resolved_cwd, None) {
+                    Ok(()) => {
+                        output.line_stderr(format!(
+                            "[local-api] requested fresh thread start for session {session_id}"
+                        ))?;
+                    }
+                    Err(err) => {
+                        output.line_stderr(format!(
+                            "[local-api] failed to start fresh thread for session {session_id}: {err:#}"
+                        ))?;
+                    }
+                }
+            }
+            LocalApiCommand::AttachSessionThread {
+                session_id,
+                thread_id,
+            } => {
+                match send_thread_resume(writer, state, cli, resolved_cwd, thread_id.clone(), None)
+                {
+                    Ok(()) => {
+                        output.line_stderr(format!(
+                            "[local-api] requested thread attach for session {session_id}: {thread_id}"
+                        ))?;
+                    }
+                    Err(err) => {
+                        output.line_stderr(format!(
+                            "[local-api] failed to attach thread for session {session_id} ({thread_id}): {err:#}"
+                        ))?;
+                    }
+                }
+            }
             LocalApiCommand::StartTurn { session_id, prompt } => {
                 match submit_turn_input(&prompt, cli, resolved_cwd, state, writer) {
                     Ok(true) => {

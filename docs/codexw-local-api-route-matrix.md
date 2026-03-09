@@ -31,8 +31,8 @@ that `codexw` can be controlled remotely without scraping terminal output:
 | Route | Phase | Existing source of truth | Proposed local API handler | Minimum verification |
 | --- | --- | --- | --- | --- |
 | `GET /healthz` | 1 | none | `local_api/routes/system.rs` | basic route smoke test |
-| `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/routes/session.rs` | creates session id and optional attached thread |
-| `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/routes/session.rs` | attach existing thread id to session |
+| `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
+| `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues resume of an existing thread id |
 | `GET /api/v1/session/{session_id}` | 2 | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `local_api/routes/session.rs` | summary payload is stable and session-scoped |
 | `POST /api/v1/turn/start` | 2 | `dispatch_submit_turns.rs`, `input/*`, `requests/turn_start.rs` | `local_api/routes/turn.rs` | prompt text becomes a real turn request |
 | `POST /api/v1/turn/interrupt` | 2 | `dispatch_command_thread_control.rs`, `requests/turn_control.rs`, `app_input_interrupt.rs` | `local_api/routes/turn.rs` | active turn is interrupted through the same control path |

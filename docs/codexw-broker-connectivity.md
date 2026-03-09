@@ -717,7 +717,11 @@ That semantic event-stream milestone is now partially landed:
 - the current stream emits `session.updated`, `turn.updated`,
   `orchestration.updated`, `workers.updated`, `capabilities.updated`, and
   `transcript.updated`
+- explicit process-scoped session lifecycle routes now exist:
+  - `POST /api/v1/session/new`
+  - `POST /api/v1/session/attach`
 
-The next concrete code step is now session create/attach semantics plus
-connector-facing API coverage, not more route discovery. Structured service
-interaction payloads are already in place for `attach`, `wait`, and `run`.
+The next concrete code step is now connector-facing API coverage above the
+implemented session, transcript, orchestration, shell, and service surface, not
+more route discovery. Structured service interaction payloads are already in
+place for `attach`, `wait`, and `run`.

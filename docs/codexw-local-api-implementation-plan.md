@@ -36,6 +36,8 @@ Current implemented scope:
 - disabled-by-default loopback local API startup
 - configurable bind address and optional bearer token
 - `GET /healthz`
+- `POST /api/v1/session/new`
+- `POST /api/v1/session/attach`
 - `GET /api/v1/session`
 - `GET /api/v1/session/{session_id}`
 - `GET /api/v1/session/{session_id}/transcript`
@@ -67,8 +69,8 @@ Current non-goals of the landed slice:
   `contract`, and `relabel`
 
 That means the next implementation step is no longer transcript or basic shell
-control. It is higher-level shell service interactions and service mutation
-routes.
+control. It is higher-level session attachment semantics for connectors and
+broader remote-client coverage above the now-usable route surface.
 
 ## Scope
 
@@ -123,6 +125,8 @@ Acceptance criteria:
 
 ### Phase 2: Session And Turn Control
 
+Status: initial slice landed
+
 Deliverables:
 
 - `POST /api/v1/session/new`
@@ -135,6 +139,15 @@ Acceptance criteria:
 
 - API routes can drive the same underlying thread/session lifecycle as the TTY
 - responses include `session_id`, `thread_id`, and `turn_id` where relevant
+
+Current landed behavior:
+
+- `POST /api/v1/session/new` now means “reuse the current process-scoped local
+  API session and start a fresh Codex thread”
+- `POST /api/v1/session/attach` now means “reuse the current process-scoped
+  local API session and resume a specific existing thread id”
+- both routes enqueue onto the same runtime request path used by local
+  thread-switch handling rather than inventing a second session model
 
 ### Phase 3: Event Stream
 

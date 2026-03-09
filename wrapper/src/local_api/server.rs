@@ -328,6 +328,14 @@ fn route_authorized_request(
         return handle_turn_interrupt_route(request, &current_snapshot, command_queue);
     }
 
+    if request.method == "POST" && request.path == "/api/v1/session/new" {
+        return handle_session_new_route(&current_snapshot, command_queue);
+    }
+
+    if request.method == "POST" && request.path == "/api/v1/session/attach" {
+        return handle_session_attach_route(request, &current_snapshot, command_queue);
+    }
+
     if request.method == "POST" {
         if let Some(path) = request.path.strip_prefix("/api/v1/session/") {
             return route_session_scoped_post(
@@ -838,6 +846,79 @@ fn handle_turn_start_route(
         "session_id": snapshot.session_id,
         "thread_id": snapshot.thread_id,
         "active_turn_id": snapshot.active_turn_id,
+    }))
+}
+
+fn handle_session_new_route(
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+) -> HttpResponse {
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::StartSessionThread {
+            session_id: snapshot.session_id.clone(),
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue session creation: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+        "process_scoped": true,
+        "requested_action": "start_thread",
+    }))
+}
+
+fn handle_session_attach_route(
+    request: &HttpRequest,
+    snapshot: &LocalApiSnapshot,
+    command_queue: &SharedCommandQueue,
+) -> HttpResponse {
+    let body = match json_request_body(request) {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let Some(session_id) = body.get("session_id").and_then(Value::as_str) else {
+        return json_error_response(400, "validation_error", "missing session_id");
+    };
+    if session_id != snapshot.session_id {
+        return json_error_response(404, "session_not_found", "unknown session id");
+    }
+    let Some(thread_id) = body.get("thread_id").and_then(Value::as_str) else {
+        return json_error_response(400, "validation_error", "missing thread_id");
+    };
+    if thread_id.trim().is_empty() {
+        return json_error_response(400, "validation_error", "thread_id must not be empty");
+    }
+    if let Err(err) = enqueue_command(
+        command_queue,
+        LocalApiCommand::AttachSessionThread {
+            session_id: session_id.to_string(),
+            thread_id: thread_id.to_string(),
+        },
+    ) {
+        return json_error_response(
+            500,
+            "queue_unavailable",
+            &format!("failed to queue session attach: {err:#}"),
+        );
+    }
+    json_ok_response(json!({
+        "ok": true,
+        "accepted": true,
+        "queued": true,
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+        "target_thread_id": thread_id,
+        "process_scoped": true,
+        "requested_action": "attach_thread",
     }))
 }
 
