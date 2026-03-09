@@ -161,6 +161,21 @@ fn unique_service_ref_by_readiness(
     }
 }
 
+fn unique_running_service_ref(state: &AppState) -> Option<String> {
+    let refs = state
+        .orchestration
+        .background_shells
+        .running_service_snapshots()
+        .into_iter()
+        .map(|job| job.alias.unwrap_or(job.id))
+        .collect::<Vec<_>>();
+    if refs.len() == 1 {
+        refs.into_iter().next()
+    } else {
+        None
+    }
+}
+
 fn unique_shell_ref_by_intent(state: &AppState, intent: BackgroundShellIntent) -> Option<String> {
     let mut refs = state
         .orchestration
@@ -206,9 +221,20 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 "A blocking shell depends on missing service capability @{}.",
                 issue.capability
             ),
-            "Start a service shell that provides the missing reusable role, or retarget an existing running service with :ps provide."
-                .to_string(),
-            "Use /ps capabilities to inspect the live provider map and /ps blockers to inspect the blocked shell.".to_string(),
+            match unique_running_service_ref(state) {
+                Some(job_ref) => format!(
+                    "Start a service shell that provides the missing reusable role, or retarget the known running service with `:ps provide {job_ref} @{}` before waiting on the blocker.",
+                    issue.capability
+                ),
+                None => format!(
+                    "Start a service shell that provides the missing reusable role, or retarget an existing running service with `:ps provide <jobId|alias|n> @{}` before waiting on the blocker.",
+                    issue.capability
+                ),
+            },
+            format!(
+                "Use /ps capabilities @{} and /ps dependencies missing @{} to inspect the provider map and blocked shell.",
+                issue.capability, issue.capability
+            ),
         ];
     }
     if let Some(issue) = blocking_capability_issues
@@ -332,9 +358,14 @@ fn guidance_lines_for_capability(
         return Ok(match issue.status {
             BackgroundShellCapabilityDependencyState::Missing => vec![
                 format!("A blocking shell depends on missing service capability @{capability}."),
-                format!(
-                    "Start a provider for @{capability} or retarget an existing running service with `:ps provide <jobId|alias|n> @{capability}` before waiting on the shell result."
-                ),
+                match unique_running_service_ref(state) {
+                    Some(job_ref) => format!(
+                        "Start a provider for @{capability} or retarget the known running service with `:ps provide {job_ref} @{capability}` before waiting on the shell result."
+                    ),
+                    None => format!(
+                        "Start a provider for @{capability} or retarget an existing running service with `:ps provide <jobId|alias|n> @{capability}` before waiting on the shell result."
+                    ),
+                },
                 format!(
                     "Use /ps capabilities @{capability} and /ps dependencies missing @{capability} to inspect the exact blocker."
                 ),
@@ -372,9 +403,14 @@ fn guidance_lines_for_capability(
             BackgroundShellCapabilityIssueClass::Missing => {
                 vec![
                     format!("Reusable service capability @{capability} has no running provider."),
-                    format!(
-                        "Start a provider for @{capability} or retarget an existing running service with `:ps provide <jobId|alias|n> @{capability}`."
-                    ),
+                    match unique_running_service_ref(state) {
+                        Some(job_ref) => format!(
+                            "Start a provider for @{capability} or retarget the known running service with `:ps provide {job_ref} @{capability}`."
+                        ),
+                        None => format!(
+                            "Start a provider for @{capability} or retarget an existing running service with `:ps provide <jobId|alias|n> @{capability}`."
+                        ),
+                    },
                     format!(
                         "Use /ps capabilities @{capability} to confirm the missing-provider state."
                     ),
@@ -458,6 +494,8 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
     {
         let blocker_ref = first_blocking_ref_for_capability(state, &issue.capability)
             .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+        let service_ref =
+            unique_running_service_ref(state).unwrap_or_else(|| "<jobId|alias|n>".to_string());
         return match audience {
             ActionAudience::Operator => vec![
                 format!(
@@ -465,7 +503,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     issue.capability
                 ),
                 format!(
-                    "Run `:ps provide <jobId|alias|n> @{}` to retarget an existing running service, or start a new provider for that role.",
+                    "Run `:ps provide {service_ref} @{}` to retarget an existing running service, or start a new provider for that role.",
                     issue.capability
                 ),
                 format!(
@@ -486,7 +524,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     issue.capability
                 ),
                 format!(
-                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{}\"]}}` to retarget an existing running service, or start a new provider for that capability.",
+                    "Use `background_shell_update_service {{\"jobId\":\"{service_ref}\",\"capabilities\":[\"@{}\"]}}` to retarget an existing running service, or start a new provider for that capability.",
                     issue.capability
                 ),
                 format!(
@@ -835,12 +873,14 @@ fn action_lines_for_capability(
             (BackgroundShellCapabilityDependencyState::Missing, ActionAudience::Operator) => {
                 let blocker_ref = first_blocking_ref_for_capability(state, capability)
                     .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                let service_ref = unique_running_service_ref(state)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
                 vec![
                     format!(
                         "Run `:ps capabilities @{capability}` to inspect the missing provider map."
                     ),
                     format!(
-                        "Run `:ps provide <jobId|alias|n> @{capability}` to retarget an existing running service, or start a new provider for that role."
+                        "Run `:ps provide {service_ref} @{capability}` to retarget an existing running service, or start a new provider for that role."
                     ),
                     format!(
                         "Run `:ps depend {blocker_ref} <@capability...|none>` to retarget the blocked shell if it should wait on a different reusable role."
@@ -856,12 +896,14 @@ fn action_lines_for_capability(
             (BackgroundShellCapabilityDependencyState::Missing, ActionAudience::Tool) => {
                 let blocker_ref = first_blocking_ref_for_capability(state, capability)
                     .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                let service_ref = unique_running_service_ref(state)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
                 vec![
                     format!(
                         "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to inspect the missing provider map."
                     ),
                     format!(
-                        "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
+                        "Use `background_shell_update_service {{\"jobId\":\"{service_ref}\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
                     ),
                     format!(
                         "Use `background_shell_update_dependencies {{\"jobId\":\"{blocker_ref}\",\"dependsOnCapabilities\":[\"@other.role\"]}}` to retarget the blocked shell if it should depend on a different reusable role."
@@ -960,22 +1002,30 @@ fn action_lines_for_capability(
                 .service_capability_issue_for_ref(capability)?,
             audience,
         ) {
-            (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Operator) => vec![
-                format!(
-                    "Run `:ps capabilities @{capability}` to confirm there is no running provider."
-                ),
-                format!(
-                    "Run `:ps provide <jobId|alias|n> @{capability}` to retarget an existing running service, or start a new provider for that role."
-                ),
-            ],
-            (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Tool) => vec![
-                format!(
-                    "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to confirm there is no running provider."
-                ),
-                format!(
-                    "Use `background_shell_update_service {{\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
-                ),
-            ],
+            (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Operator) => {
+                let service_ref = unique_running_service_ref(state)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                vec![
+                    format!(
+                        "Run `:ps capabilities @{capability}` to confirm there is no running provider."
+                    ),
+                    format!(
+                        "Run `:ps provide {service_ref} @{capability}` to retarget an existing running service, or start a new provider for that role."
+                    ),
+                ]
+            }
+            (BackgroundShellCapabilityIssueClass::Missing, ActionAudience::Tool) => {
+                let service_ref = unique_running_service_ref(state)
+                    .unwrap_or_else(|| "<jobId|alias|n>".to_string());
+                vec![
+                    format!(
+                        "Use `background_shell_inspect_capability {{\"capability\":\"@{capability}\"}}` to confirm there is no running provider."
+                    ),
+                    format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{service_ref}\",\"capabilities\":[\"@{capability}\"]}}` to retarget an existing running service, or start a new provider for that capability."
+                    ),
+                ]
+            }
             (BackgroundShellCapabilityIssueClass::Ambiguous, ActionAudience::Operator) => vec![
                 format!("Run `:ps capabilities @{capability}` to inspect providers and consumers."),
                 {

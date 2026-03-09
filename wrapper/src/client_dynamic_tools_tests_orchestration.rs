@@ -87,6 +87,17 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
         .start_from_tool(
             &json!({
                 "command": "sleep 0.4",
+                "intent": "service"
+            }),
+            "/tmp",
+        )
+        .expect("start retargetable service");
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
                 "intent": "prerequisite",
                 "dependsOnCapabilities": ["api.http"]
             }),
@@ -127,7 +138,7 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
         .expect("dependency text");
     assert!(deps_text.contains("Dependencies:"));
     assert!(!deps_text.contains("Main agent state:"));
-    assert!(deps_text.contains("shell:bg-1 -> capability:@api.http"));
+    assert!(deps_text.contains("shell:bg-2 -> capability:@api.http"));
 
     let guidance = execute_dynamic_tool_call_with_state(
         &json!({
@@ -144,6 +155,7 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
         .as_str()
         .expect("guidance text");
     assert!(guidance_text.contains("missing service capability @api.http"));
+    assert!(guidance_text.contains(":ps provide bg-1 @api.http"));
 
     let actions = execute_dynamic_tool_call_with_state(
         &json!({
@@ -164,10 +176,10 @@ fn orchestration_list_workers_supports_filtered_capability_and_guidance_views() 
         actions_text.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
     );
     assert!(actions_text.contains(
-        "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
+        "background_shell_update_service {\"jobId\":\"bg-1\",\"capabilities\":[\"@api.http\"]}"
     ));
     assert!(actions_text.contains(
-        "background_shell_update_dependencies {\"jobId\":\"bg-1\",\"dependsOnCapabilities\":[\"@other.role\"]}"
+        "background_shell_update_dependencies {\"jobId\":\"bg-2\",\"dependsOnCapabilities\":[\"@other.role\"]}"
     ));
     let _ = state
         .orchestration

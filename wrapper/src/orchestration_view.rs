@@ -1180,7 +1180,7 @@ mod tests {
         assert!(hint.contains("missing service capability @api.http"));
         let rendered = render_orchestration_guidance(&blocked);
         assert!(rendered.contains("/ps capabilities"));
-        assert!(rendered.contains("/ps blockers"));
+        assert!(rendered.contains("/ps dependencies missing @api.http"));
         let blockers = render_orchestration_workers_with_filter(&blocked, WorkerFilter::Blockers);
         assert!(blockers.contains(
             "shell:bg-1 -> capability:@api.http  [dependsOnCapability:missing, blocking]"
@@ -1617,6 +1617,16 @@ mod tests {
             .start_from_tool(
                 &serde_json::json!({
                     "command": "sleep 0.4",
+                    "intent": "service"
+                }),
+                "/tmp",
+            )
+            .expect("start retargetable service");
+        blocked
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
                     "intent": "prerequisite",
                     "dependsOnCapabilities": ["api.http"]
                 }),
@@ -1638,22 +1648,27 @@ mod tests {
         let blockers =
             render_orchestration_blockers_for_capability(&blocked, "@api.http").expect("focus");
         assert!(blockers.contains("Dependencies (@api.http):"));
-        assert!(blockers.contains("shell:bg-1 -> capability:@api.http"));
+        assert!(blockers.contains("shell:bg-2 -> capability:@api.http"));
         assert!(!blockers.contains("db.redis"));
+
+        let guidance = render_orchestration_guidance_for_capability(&blocked, "@api.http")
+            .expect("focused guidance");
+        assert!(guidance.contains(":ps provide bg-1 @api.http"));
+        assert!(guidance.contains("/ps dependencies missing @api.http"));
 
         let operator_actions = render_orchestration_actions_for_capability(&blocked, "@api.http")
             .expect("focused operator actions");
-        assert!(operator_actions.contains(":ps provide <jobId|alias|n> @api.http"));
-        assert!(operator_actions.contains(":ps depend bg-1 <@capability...|none>"));
+        assert!(operator_actions.contains(":ps provide bg-1 @api.http"));
+        assert!(operator_actions.contains(":ps depend bg-2 <@capability...|none>"));
         assert!(operator_actions.contains(":clean blockers @api.http"));
 
         let tool_actions = render_orchestration_actions_for_tool_capability(&blocked, "@api.http")
             .expect("focused tool actions");
         assert!(tool_actions.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"capabilities\":[\"@api.http\"]}"
         ));
         assert!(tool_actions.contains(
-            "background_shell_update_dependencies {\"jobId\":\"bg-1\",\"dependsOnCapabilities\":[\"@other.role\"]}"
+            "background_shell_update_dependencies {\"jobId\":\"bg-2\",\"dependsOnCapabilities\":[\"@other.role\"]}"
         ));
         assert!(tool_actions.contains(
             "background_shell_clean {\"scope\":\"blockers\",\"capability\":\"@api.http\"}"
@@ -1704,5 +1719,46 @@ mod tests {
             "background_shell_update_service {\"jobId\":\"<jobId|alias|n>\",\"capabilities\":[\"@api.http\"]}"
         ));
         let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn actions_filter_uses_concrete_provider_ref_for_missing_capability_when_unique_service_exists()
+    {
+        let state = crate::state::AppState::new(true, false);
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service"
+                }),
+                "/tmp",
+            )
+            .expect("start retargetable service");
+        state
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite",
+                    "dependsOnCapabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start missing blocker");
+
+        let rendered = render_orchestration_actions(&state);
+        assert!(rendered.contains("Suggested actions:"));
+        assert!(rendered.contains(":ps provide bg-1 @api.http"));
+        assert!(rendered.contains(":ps depend bg-2 <@capability...|none>"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&state);
+        assert!(tool_rendered.contains(
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"capabilities\":[\"@api.http\"]}"
+        ));
+        assert!(tool_rendered.contains(
+            "background_shell_update_dependencies {\"jobId\":\"bg-2\",\"dependsOnCapabilities\":[\"@other.role\"]}"
+        ));
+        let _ = state.background_shells.terminate_all_running();
     }
 }
