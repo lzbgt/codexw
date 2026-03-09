@@ -725,15 +725,27 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions.rs`
   Shared orchestration guidance/action renderers plus recipe/ref helper logic for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance.rs`
-  Guidance generation for global and capability-focused orchestration remediation.
+  Guidance-generation namespace root for global and capability-focused orchestration remediation.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global.rs`
+  Global orchestration guidance generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/focused.rs`
+  Capability-focused orchestration guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions.rs`
-  Suggested-action generation for global and capability-focused orchestration remediation.
+  Suggested-action namespace root for global and capability-focused orchestration remediation.
+- `wrapper/src/orchestration_view/guidance_actions/actions/global.rs`
+  Global orchestration action generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/actions/focused.rs`
+  Capability-focused orchestration action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/tests/guidance_actions.rs`
   Orchestration guidance/action renderer test namespace.
 - `wrapper/src/orchestration_view/tests/guidance_actions/guidance.rs`
   Orchestration guidance renderer and summary regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions.rs`
-  Orchestration action renderer and remediation regression tests.
+  Orchestration action renderer test namespace.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/global.rs`
+  Global orchestration action renderer and remediation regression tests.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused.rs`
+  Capability-focused orchestration action renderer and remediation regression tests.
 - `wrapper/src/background_shells/tests/services.rs`
   Reusable-service capability, readiness, dependency, and service-view regression tests.
 - `wrapper/src/background_shells/tests/services/recipes.rs`
