@@ -168,6 +168,12 @@ fn route_session_scoped_get(path: &str, snapshot: &LocalApiSnapshot) -> HttpResp
         "shells" => shells::handle_shells_route(snapshot),
         "services" => services::handle_services_route(snapshot),
         "capabilities" => services::handle_capabilities_route(snapshot),
+        _ if rest.starts_with("services/") => {
+            services::handle_service_detail_route(snapshot, &rest["services/".len()..])
+        }
+        _ if rest.starts_with("capabilities/") => {
+            services::handle_capability_detail_route(snapshot, &rest["capabilities/".len()..])
+        }
         _ => json_error_response(404, "not_found", "unknown route"),
     }
 }

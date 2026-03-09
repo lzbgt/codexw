@@ -237,7 +237,9 @@ Current implemented behavior:
   - `/v1/agents/{agent_id}/sessions/{session_id}/shells`
   - `/v1/agents/{agent_id}/sessions/{session_id}/shells/{job_ref}/{poll|send|terminate}`
   - `/v1/agents/{agent_id}/sessions/{session_id}/services`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/services/{job_ref}`
   - `/v1/agents/{agent_id}/sessions/{session_id}/capabilities`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/capabilities/{capability}`
   - `/v1/agents/{agent_id}/sessions/{session_id}/services/{job_ref}/{provide|depend|contract|relabel|attach|wait|run}`
 - forwards only an allowlisted subset of HTTP requests under `proxy/...` to the
   local API path of the same suffix

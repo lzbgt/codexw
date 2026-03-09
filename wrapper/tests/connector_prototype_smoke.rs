@@ -570,6 +570,86 @@ fn connector_alias_service_run_maps_to_local_service_route() -> Result<()> {
 }
 
 #[test]
+fn connector_alias_service_and_capability_detail_routes_map_cleanly() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..2 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/services/dev.frontend");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session_id": "sess_1",
+                            "service": {
+                                "id": "bg-1",
+                                "alias": "dev.frontend",
+                                "service_capabilities": ["@frontend.dev"]
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_1/capabilities/@frontend.dev"
+                    );
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session_id": "sess_1",
+                            "capability": {
+                                "capability": "@frontend.dev",
+                                "providers": [{"job_id": "bg-1"}],
+                                "consumers": [{"job_id": "bg-2"}]
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let _connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(connector_port)?;
+    let client = BrokerClient::new(connector_port, "codexw-lab");
+
+    let service_response =
+        client.session_request("GET", "sess_1", "/services/dev.frontend", None, &[])?;
+    assert!(service_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(service_response.contains("\"alias\":\"dev.frontend\""));
+    assert!(service_response.contains("\"@frontend.dev\""));
+
+    let capability_response =
+        client.session_request("GET", "sess_1", "/capabilities/%40frontend.dev", None, &[])?;
+    assert!(capability_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(capability_response.contains("\"capability\":\"@frontend.dev\""));
+    assert!(capability_response.contains("\"job_id\":\"bg-1\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
+#[test]
 fn connector_alias_turn_and_service_routes_propagate_attachment_conflict() -> Result<()> {
     let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
     let local_addr = local_listener.local_addr().context("local api addr")?;

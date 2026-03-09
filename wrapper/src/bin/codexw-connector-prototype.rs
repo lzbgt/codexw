@@ -80,6 +80,30 @@ struct ProxyTarget {
     session_id_hint: Option<String>,
 }
 
+fn percent_decode_path_segment(value: &str) -> Option<String> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'%' => {
+                if index + 2 >= bytes.len() {
+                    return None;
+                }
+                let hex = std::str::from_utf8(&bytes[index + 1..index + 3]).ok()?;
+                let value = u8::from_str_radix(hex, 16).ok()?;
+                decoded.push(value);
+                index += 3;
+            }
+            byte => {
+                decoded.push(byte);
+                index += 1;
+            }
+        }
+    }
+    String::from_utf8(decoded).ok()
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let listener = TcpListener::bind(&cli.bind)
@@ -295,11 +319,29 @@ fn resolve_proxy_target(method: &str, path: &str, agent_id: &str) -> Option<Prox
                     is_sse: false,
                     session_id_hint: None,
                 }),
+                ["services", job_ref] if method == "GET" => {
+                    let job_ref = percent_decode_path_segment(job_ref)?;
+                    Some(ProxyTarget {
+                        local_path: format!("/api/v1/session/{session_id}/services/{job_ref}"),
+                        is_sse: false,
+                        session_id_hint: None,
+                    })
+                }
                 ["capabilities"] => Some(ProxyTarget {
                     local_path: format!("/api/v1/session/{session_id}/capabilities"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
+                ["capabilities", capability] if method == "GET" => {
+                    let capability = percent_decode_path_segment(capability)?;
+                    Some(ProxyTarget {
+                        local_path: format!(
+                            "/api/v1/session/{session_id}/capabilities/{capability}"
+                        ),
+                        is_sse: false,
+                        session_id_hint: None,
+                    })
+                }
                 ["services", job_ref, "provide"] => Some(ProxyTarget {
                     local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/provide"),
                     is_sse: false,
@@ -398,7 +440,9 @@ fn is_allowed_local_proxy_target(method: &str, local_path: &str, is_sse: bool) -
                 | ["api", "v1", "session", _, "transcript"]
                 | ["api", "v1", "session", _, "shells"]
                 | ["api", "v1", "session", _, "services"]
+                | ["api", "v1", "session", _, "services", _]
                 | ["api", "v1", "session", _, "capabilities"]
+                | ["api", "v1", "session", _, "capabilities", _]
                 | ["api", "v1", "session", _, "orchestration", "status"]
                 | ["api", "v1", "session", _, "orchestration", "dependencies"]
                 | ["api", "v1", "session", _, "orchestration", "workers"]
@@ -1136,6 +1180,16 @@ mod tests {
             "/api/v1/session/sess_1/services/bg-1/run",
             false,
         ));
+        assert!(is_allowed_local_proxy_target(
+            "GET",
+            "/api/v1/session/sess_1/services/dev.frontend",
+            false,
+        ));
+        assert!(is_allowed_local_proxy_target(
+            "GET",
+            "/api/v1/session/sess_1/capabilities/@frontend.dev",
+            false,
+        ));
     }
 
     #[test]
@@ -1393,6 +1447,17 @@ mod tests {
         .expect("services route");
         assert_eq!(services.local_path, "/api/v1/session/sess_1/services");
 
+        let service_detail = resolve_proxy_target(
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.frontend",
+            "codexw-lab",
+        )
+        .expect("service detail route");
+        assert_eq!(
+            service_detail.local_path,
+            "/api/v1/session/sess_1/services/dev.frontend"
+        );
+
         let capabilities = resolve_proxy_target(
             "GET",
             "/v1/agents/codexw-lab/sessions/sess_1/capabilities",
@@ -1402,6 +1467,17 @@ mod tests {
         assert_eq!(
             capabilities.local_path,
             "/api/v1/session/sess_1/capabilities"
+        );
+
+        let capability_detail = resolve_proxy_target(
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/capabilities/%40frontend.dev",
+            "codexw-lab",
+        )
+        .expect("capability detail route");
+        assert_eq!(
+            capability_detail.local_path,
+            "/api/v1/session/sess_1/capabilities/@frontend.dev"
         );
 
         let service_run = resolve_proxy_target(

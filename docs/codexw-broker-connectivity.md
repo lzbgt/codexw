@@ -155,7 +155,8 @@ The current implementation is now past pure route sketches:
 - `codexw` has a working loopback HTTP/SSE local API
 - the tracked connector prototype supports both raw `/proxy` passthrough and a
   first-pass broker-style alias surface for session, turn, transcript,
-  orchestration, event, shell, service, and capability flows
+  orchestration, event, shell, service, and capability flows, including
+  focused service-detail and capability-detail inspection routes
 - the broker-style alias surface now also includes attachment lease lifecycle
   routes for renew/release, so remote clients do not need raw `/proxy/...`
   access for normal lease management
