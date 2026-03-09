@@ -676,7 +676,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/core/orchestration.rs`
   Orchestration dynamic-tool status, filter, and dependency-view regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance.rs`
-  Tool-native orchestration guidance regression tests.
+  Tool-native orchestration guidance test namespace.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global.rs`
+  Global tool-native orchestration guidance regression tests.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused.rs`
+  Capability-focused tool-native orchestration guidance regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions.rs`
   Tool-native orchestration action test namespace.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global.rs`
@@ -815,7 +819,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/summary.rs`
   Orchestration snapshot, overview/runtime/background summaries, and ready-prompt suffix rendering.
 - `wrapper/src/orchestration_view/guidance_actions.rs`
-  Shared orchestration guidance/action renderers plus recipe/ref helper logic for operator and tool audiences.
+  Orchestration guidance/action namespace root and shared imports.
+- `wrapper/src/orchestration_view/guidance_actions/render.rs`
+  Shared orchestration guidance/action renderers and next-action summary helpers.
+- `wrapper/src/orchestration_view/guidance_actions/shared.rs`
+  Shared recipe/ref helper logic plus audience enums for operator and tool orchestration remediation.
 - `wrapper/src/orchestration_view/guidance_actions/guidance.rs`
   Guidance-generation namespace root for global and capability-focused orchestration remediation.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global.rs`
