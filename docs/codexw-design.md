@@ -596,7 +596,9 @@ The biggest known limits are architectural, not accidental.
 ## File Map
 
 - `wrapper/src/main.rs`
-  Thin entrypoint, module wiring, CLI flag definitions, and `main()`.
+  Thin entrypoint, module wiring, and `main()`.
+- `wrapper/src/main_cli.rs`
+  CLI flag definitions plus resume-startup argument rewrite and parse helpers.
 - `wrapper/src/main_test_approvals.rs`
   Approval-decision and auto-approval regression tests.
 - `wrapper/src/main_test_catalog.rs`
@@ -628,7 +630,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_runtime_prompt/submit.rs`
   Prompt submit, interrupt, and startup-resume-picker regression tests.
 - `wrapper/src/main_test_runtime_cli.rs`
-  CLI normalization, feedback parsing, and quoting regression tests.
+  Runtime CLI regression namespace root.
+- `wrapper/src/main_test_runtime_cli/cli.rs`
+  CLI normalization, resume-startup parsing, feedback parsing, and quoting regressions.
+- `wrapper/src/main_test_runtime_cli/runtime.rs`
+  Effective-cwd canonicalization and child-shutdown regressions.
 - `wrapper/src/input_test_mentions.rs`
   Linked-mention decoding regression tests.
 - `wrapper/src/input_test_build_items.rs`
@@ -834,7 +840,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/config_persistence/tests.rs`
   Config persistence regression tests for model/theme/service-tier/windows sandbox writes and theme reads.
 - `wrapper/src/app.rs`
-  Top-level runtime loop and backend wiring.
+  App runtime namespace root.
+- `wrapper/src/app/runtime.rs`
+  Top-level runtime loop, backend startup, event handling, and input routing.
+- `wrapper/src/app/resume.rs`
+  Resume-hint command construction and exit-hint emission helpers.
 - `wrapper/src/app_input_editing.rs`
   Editing/navigation key routing for prompt-accepting states.
 - `wrapper/src/app_input_controls.rs`
