@@ -244,14 +244,59 @@ pub(crate) fn route_request(
         return json_ok_response(session_payload(&current_snapshot));
     }
 
-    if let Some(session_id) = request.path.strip_prefix("/api/v1/session/") {
-        if session_id == current_snapshot.session_id {
-            return json_ok_response(session_payload(&current_snapshot));
-        }
-        return json_error_response(404, "session_not_found", "unknown session id");
+    if let Some(path) = request.path.strip_prefix("/api/v1/session/") {
+        return route_session_scoped_get(path, &current_snapshot);
     }
 
     json_error_response(404, "not_found", "unknown route")
+}
+
+fn route_session_scoped_get(path: &str, snapshot: &LocalApiSnapshot) -> HttpResponse {
+    let mut parts = path.splitn(2, '/');
+    let session_id = parts.next().unwrap_or_default();
+    if session_id != snapshot.session_id {
+        return json_error_response(404, "session_not_found", "unknown session id");
+    }
+    match parts.next() {
+        None => json_ok_response(session_payload(snapshot)),
+        Some("orchestration/status") => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "orchestration": snapshot.orchestration_status,
+        })),
+        Some("orchestration/dependencies") => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "dependencies": snapshot.orchestration_dependencies,
+        })),
+        Some("orchestration/workers") => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "workers": snapshot.workers,
+        })),
+        Some("shells") => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "shells": snapshot.workers.background_shells,
+        })),
+        Some("services") => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "services": snapshot
+                .workers
+                .background_shells
+                .iter()
+                .filter(|job| job.intent == "service")
+                .cloned()
+                .collect::<Vec<_>>(),
+        })),
+        Some("capabilities") => json_ok_response(json!({
+            "ok": true,
+            "session_id": snapshot.session_id,
+            "capabilities": snapshot.capabilities,
+        })),
+        _ => json_error_response(404, "not_found", "unknown route"),
+    }
 }
 
 fn handle_turn_start_route(
@@ -366,6 +411,7 @@ fn session_payload(snapshot: &LocalApiSnapshot) -> serde_json::Value {
         "started_turn_count": snapshot.started_turn_count,
         "completed_turn_count": snapshot.completed_turn_count,
         "active_personality": snapshot.active_personality,
+        "orchestration": snapshot.orchestration_status,
     })
 }
 

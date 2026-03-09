@@ -690,7 +690,13 @@ The local API spike has now started with a minimal loopback skeleton:
 - `GET /api/v1/session/{session_id}`
 - `POST /api/v1/turn/start`
 - `POST /api/v1/turn/interrupt`
+- `GET /api/v1/session/{session_id}/orchestration/status`
+- `GET /api/v1/session/{session_id}/orchestration/dependencies`
+- `GET /api/v1/session/{session_id}/orchestration/workers`
+- `GET /api/v1/session/{session_id}/shells`
+- `GET /api/v1/session/{session_id}/services`
+- `GET /api/v1/session/{session_id}/capabilities`
 - internal command queue from the HTTP listener into the main runtime loop
 
-The next concrete code step is the first semantic SSE stream and richer
-read/query routes, not more route discovery.
+The next concrete code step is the first semantic SSE stream plus transcript and
+mutation routes, not more route discovery.

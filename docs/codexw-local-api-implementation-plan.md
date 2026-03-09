@@ -38,17 +38,26 @@ Current implemented scope:
 - `GET /healthz`
 - `GET /api/v1/session`
 - `GET /api/v1/session/{session_id}`
+- `GET /api/v1/session/{session_id}/orchestration/status`
+- `GET /api/v1/session/{session_id}/orchestration/dependencies`
+- `GET /api/v1/session/{session_id}/orchestration/workers`
+- `GET /api/v1/session/{session_id}/shells`
+- `GET /api/v1/session/{session_id}/services`
+- `GET /api/v1/session/{session_id}/capabilities`
 - `POST /api/v1/turn/start`
 - `POST /api/v1/turn/interrupt`
 - internal API command queue from the HTTP listener into the main runtime loop
+- structured snapshot export for orchestration, shell, service, and capability state
 
 Current non-goals of the landed slice:
 
 - no SSE event stream yet
-- no orchestration, shell, or service routes yet
+- no transcript query routes yet
+- no shell or service mutation routes yet
 
-That means the next implementation step is no longer generic turn control.
-It is the first semantic event stream and richer read/query routes.
+That means the next implementation step is no longer generic turn control or
+basic read routes. It is the first semantic event stream plus transcript and
+mutation routes.
 
 ## Scope
 

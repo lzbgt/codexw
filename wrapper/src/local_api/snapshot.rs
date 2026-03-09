@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::time::SystemTime;
@@ -5,6 +6,18 @@ use std::time::UNIX_EPOCH;
 
 use serde::Serialize;
 
+use crate::background_shells::BackgroundShellCapabilityIssueClass;
+use crate::background_shells::BackgroundShellIntent;
+use crate::background_shells::BackgroundShellJobSnapshot;
+use crate::orchestration_registry::active_sidecar_agent_task_count;
+use crate::orchestration_registry::active_wait_task_count;
+use crate::orchestration_registry::blocking_dependency_count;
+use crate::orchestration_registry::main_agent_state_label;
+use crate::orchestration_registry::orchestration_dependency_edges;
+use crate::orchestration_registry::running_service_count_by_readiness;
+use crate::orchestration_registry::running_shell_count_by_intent;
+use crate::orchestration_registry::sidecar_dependency_count;
+use crate::orchestration_registry::wait_dependency_summary;
 use crate::state::AppState;
 
 #[derive(Debug, Clone, Serialize)]
@@ -18,6 +31,141 @@ pub(crate) struct LocalApiSnapshot {
     pub(crate) started_turn_count: u64,
     pub(crate) completed_turn_count: u64,
     pub(crate) active_personality: Option<String>,
+    pub(crate) orchestration_status: LocalApiOrchestrationStatus,
+    pub(crate) orchestration_dependencies: Vec<LocalApiDependencyEdge>,
+    pub(crate) workers: LocalApiWorkersSnapshot,
+    pub(crate) capabilities: Vec<LocalApiCapabilityEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiOrchestrationStatus {
+    pub(crate) main_agent_state: String,
+    pub(crate) wait_summary: Option<String>,
+    pub(crate) blocking_dependencies: usize,
+    pub(crate) sidecar_dependencies: usize,
+    pub(crate) wait_tasks: usize,
+    pub(crate) sidecar_agent_tasks: usize,
+    pub(crate) exec_prerequisites: usize,
+    pub(crate) exec_sidecars: usize,
+    pub(crate) exec_services: usize,
+    pub(crate) services_ready: usize,
+    pub(crate) services_booting: usize,
+    pub(crate) services_untracked: usize,
+    pub(crate) services_conflicted: usize,
+    pub(crate) service_capabilities: usize,
+    pub(crate) service_capability_conflicts: usize,
+    pub(crate) capability_dependencies_missing: usize,
+    pub(crate) capability_dependencies_booting: usize,
+    pub(crate) capability_dependencies_ambiguous: usize,
+    pub(crate) live_agent_task_count: usize,
+    pub(crate) cached_agent_thread_count: usize,
+    pub(crate) background_shell_job_count: usize,
+    pub(crate) background_terminal_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiDependencyEdge {
+    pub(crate) from: String,
+    pub(crate) to: String,
+    pub(crate) kind: String,
+    pub(crate) blocking: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiWorkersSnapshot {
+    pub(crate) main_agent_state: String,
+    pub(crate) wait_summary: Option<String>,
+    pub(crate) cached_agent_threads: Vec<LocalApiCachedAgentThread>,
+    pub(crate) live_agent_tasks: Vec<LocalApiLiveAgentTask>,
+    pub(crate) background_shells: Vec<LocalApiBackgroundShellJob>,
+    pub(crate) background_terminals: Vec<LocalApiBackgroundTerminal>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiCachedAgentThread {
+    pub(crate) id: String,
+    pub(crate) status: String,
+    pub(crate) preview: String,
+    pub(crate) updated_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiLiveAgentTask {
+    pub(crate) id: String,
+    pub(crate) tool: String,
+    pub(crate) status: String,
+    pub(crate) sender_thread_id: String,
+    pub(crate) receiver_thread_ids: Vec<String>,
+    pub(crate) prompt: Option<String>,
+    pub(crate) agent_statuses: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiBackgroundShellOrigin {
+    pub(crate) source_thread_id: Option<String>,
+    pub(crate) source_call_id: Option<String>,
+    pub(crate) source_tool: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiBackgroundShellJob {
+    pub(crate) id: String,
+    pub(crate) pid: u32,
+    pub(crate) command: String,
+    pub(crate) cwd: String,
+    pub(crate) intent: String,
+    pub(crate) label: Option<String>,
+    pub(crate) alias: Option<String>,
+    pub(crate) service_capabilities: Vec<String>,
+    pub(crate) dependency_capabilities: Vec<String>,
+    pub(crate) service_protocol: Option<String>,
+    pub(crate) service_endpoint: Option<String>,
+    pub(crate) attach_hint: Option<String>,
+    pub(crate) interaction_recipe_names: Vec<String>,
+    pub(crate) ready_pattern: Option<String>,
+    pub(crate) service_readiness: Option<String>,
+    pub(crate) origin: LocalApiBackgroundShellOrigin,
+    pub(crate) status: String,
+    pub(crate) exit_code: Option<i32>,
+    pub(crate) total_lines: u64,
+    pub(crate) recent_lines: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiBackgroundTerminal {
+    pub(crate) item_id: String,
+    pub(crate) process_id: String,
+    pub(crate) command_display: String,
+    pub(crate) waiting: bool,
+    pub(crate) recent_inputs: Vec<String>,
+    pub(crate) recent_output: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiCapabilityEntry {
+    pub(crate) capability: String,
+    pub(crate) issue: String,
+    pub(crate) providers: Vec<LocalApiCapabilityProvider>,
+    pub(crate) consumers: Vec<LocalApiCapabilityConsumer>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiCapabilityProvider {
+    pub(crate) job_id: String,
+    pub(crate) alias: Option<String>,
+    pub(crate) label: Option<String>,
+    pub(crate) readiness: Option<String>,
+    pub(crate) protocol: Option<String>,
+    pub(crate) endpoint: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub(crate) struct LocalApiCapabilityConsumer {
+    pub(crate) job_id: String,
+    pub(crate) alias: Option<String>,
+    pub(crate) label: Option<String>,
+    pub(crate) blocking: bool,
+    pub(crate) status: String,
 }
 
 pub(crate) type SharedSnapshot = Arc<RwLock<LocalApiSnapshot>>;
@@ -41,6 +189,10 @@ pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnap
         started_turn_count: 0,
         completed_turn_count: 0,
         active_personality: None,
+        orchestration_status: LocalApiOrchestrationStatus::default(),
+        orchestration_dependencies: Vec::new(),
+        workers: LocalApiWorkersSnapshot::default(),
+        capabilities: Vec::new(),
     }))
 }
 
@@ -53,5 +205,242 @@ pub(crate) fn sync_shared_snapshot(snapshot: &SharedSnapshot, state: &AppState) 
         guard.started_turn_count = state.started_turn_count;
         guard.completed_turn_count = state.completed_turn_count;
         guard.active_personality = state.active_personality.clone();
+        guard.orchestration_status = orchestration_status_snapshot(state);
+        guard.orchestration_dependencies = orchestration_dependencies_snapshot(state);
+        guard.workers = workers_snapshot(state);
+        guard.capabilities = capabilities_snapshot(state);
+    }
+}
+
+fn orchestration_status_snapshot(state: &AppState) -> LocalApiOrchestrationStatus {
+    LocalApiOrchestrationStatus {
+        main_agent_state: main_agent_state_label(state).to_string(),
+        wait_summary: wait_dependency_summary(state),
+        blocking_dependencies: blocking_dependency_count(state),
+        sidecar_dependencies: sidecar_dependency_count(state),
+        wait_tasks: active_wait_task_count(state),
+        sidecar_agent_tasks: active_sidecar_agent_task_count(state),
+        exec_prerequisites: running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite),
+        exec_sidecars: running_shell_count_by_intent(state, BackgroundShellIntent::Observation),
+        exec_services: running_shell_count_by_intent(state, BackgroundShellIntent::Service),
+        services_ready: running_service_count_by_readiness(
+            state,
+            crate::background_shells::BackgroundShellServiceReadiness::Ready,
+        ),
+        services_booting: running_service_count_by_readiness(
+            state,
+            crate::background_shells::BackgroundShellServiceReadiness::Booting,
+        ),
+        services_untracked: running_service_count_by_readiness(
+            state,
+            crate::background_shells::BackgroundShellServiceReadiness::Untracked,
+        ),
+        services_conflicted: state
+            .orchestration
+            .background_shells
+            .service_conflicting_job_count(),
+        service_capabilities: state
+            .orchestration
+            .background_shells
+            .unique_service_capability_count(),
+        service_capability_conflicts: state
+            .orchestration
+            .background_shells
+            .service_capability_conflict_count(),
+        capability_dependencies_missing: state
+            .orchestration
+            .background_shells
+            .capability_dependency_count_by_state(
+                crate::background_shells::BackgroundShellCapabilityDependencyState::Missing,
+            ),
+        capability_dependencies_booting: state
+            .orchestration
+            .background_shells
+            .capability_dependency_count_by_state(
+                crate::background_shells::BackgroundShellCapabilityDependencyState::Booting,
+            ),
+        capability_dependencies_ambiguous: state
+            .orchestration
+            .background_shells
+            .capability_dependency_count_by_state(
+                crate::background_shells::BackgroundShellCapabilityDependencyState::Ambiguous,
+            ),
+        live_agent_task_count: state.orchestration.live_agent_tasks.len(),
+        cached_agent_thread_count: state.orchestration.cached_agent_threads.len(),
+        background_shell_job_count: state.orchestration.background_shells.job_count(),
+        background_terminal_count: state.orchestration.background_terminals.len(),
+    }
+}
+
+fn orchestration_dependencies_snapshot(state: &AppState) -> Vec<LocalApiDependencyEdge> {
+    orchestration_dependency_edges(state)
+        .into_iter()
+        .map(|edge| LocalApiDependencyEdge {
+            from: edge.from,
+            to: edge.to,
+            kind: edge.kind,
+            blocking: edge.blocking,
+        })
+        .collect()
+}
+
+fn workers_snapshot(state: &AppState) -> LocalApiWorkersSnapshot {
+    let mut live_agent_tasks = state
+        .orchestration
+        .live_agent_tasks
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
+    live_agent_tasks.sort_by(|left, right| left.id.cmp(&right.id));
+
+    let mut background_terminals = state
+        .orchestration
+        .background_terminals
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
+    background_terminals.sort_by(|left, right| left.process_id.cmp(&right.process_id));
+
+    LocalApiWorkersSnapshot {
+        main_agent_state: main_agent_state_label(state).to_string(),
+        wait_summary: wait_dependency_summary(state),
+        cached_agent_threads: state
+            .orchestration
+            .cached_agent_threads
+            .iter()
+            .cloned()
+            .map(|thread| LocalApiCachedAgentThread {
+                id: thread.id,
+                status: thread.status,
+                preview: thread.preview,
+                updated_at: thread.updated_at,
+            })
+            .collect(),
+        live_agent_tasks: live_agent_tasks
+            .into_iter()
+            .map(|task| LocalApiLiveAgentTask {
+                id: task.id,
+                tool: task.tool,
+                status: task.status,
+                sender_thread_id: task.sender_thread_id,
+                receiver_thread_ids: task.receiver_thread_ids,
+                prompt: task.prompt,
+                agent_statuses: task.agent_statuses,
+            })
+            .collect(),
+        background_shells: state
+            .orchestration
+            .background_shells
+            .snapshots()
+            .into_iter()
+            .map(local_api_shell_job)
+            .collect(),
+        background_terminals: background_terminals
+            .into_iter()
+            .map(|terminal| LocalApiBackgroundTerminal {
+                item_id: terminal.item_id,
+                process_id: terminal.process_id,
+                command_display: terminal.command_display,
+                waiting: terminal.waiting,
+                recent_inputs: terminal.recent_inputs,
+                recent_output: terminal.recent_output,
+            })
+            .collect(),
+    }
+}
+
+fn local_api_shell_job(snapshot: BackgroundShellJobSnapshot) -> LocalApiBackgroundShellJob {
+    LocalApiBackgroundShellJob {
+        id: snapshot.id,
+        pid: snapshot.pid,
+        command: snapshot.command,
+        cwd: snapshot.cwd,
+        intent: snapshot.intent.as_str().to_string(),
+        label: snapshot.label,
+        alias: snapshot.alias,
+        service_capabilities: snapshot.service_capabilities,
+        dependency_capabilities: snapshot.dependency_capabilities,
+        service_protocol: snapshot.service_protocol,
+        service_endpoint: snapshot.service_endpoint,
+        attach_hint: snapshot.attach_hint,
+        interaction_recipe_names: snapshot
+            .interaction_recipes
+            .into_iter()
+            .map(|recipe| recipe.name)
+            .collect(),
+        ready_pattern: snapshot.ready_pattern,
+        service_readiness: snapshot.service_readiness.map(|value| value.as_str().to_string()),
+        origin: LocalApiBackgroundShellOrigin {
+            source_thread_id: snapshot.origin.source_thread_id,
+            source_call_id: snapshot.origin.source_call_id,
+            source_tool: snapshot.origin.source_tool,
+        },
+        status: snapshot.status,
+        exit_code: snapshot.exit_code,
+        total_lines: snapshot.total_lines,
+        recent_lines: snapshot.recent_lines,
+    }
+}
+
+fn capabilities_snapshot(state: &AppState) -> Vec<LocalApiCapabilityEntry> {
+    let manager = &state.orchestration.background_shells;
+    let dependency_summaries = manager.capability_dependency_summaries();
+    let mut capabilities = manager
+        .service_capability_index()
+        .into_iter()
+        .map(|(capability, _)| capability)
+        .collect::<std::collections::BTreeSet<_>>();
+    capabilities.extend(
+        dependency_summaries
+            .iter()
+            .map(|summary| summary.capability.clone()),
+    );
+
+    let mut entries = Vec::new();
+    for capability in capabilities {
+        let issue = manager
+            .service_capability_issue_for_ref(&capability)
+            .unwrap_or(BackgroundShellCapabilityIssueClass::Missing);
+        let providers = manager
+            .running_service_providers_for_capability(&capability)
+            .into_iter()
+            .map(|job| LocalApiCapabilityProvider {
+                job_id: job.id,
+                alias: job.alias,
+                label: job.label,
+                readiness: job.service_readiness.map(|value| value.as_str().to_string()),
+                protocol: job.service_protocol,
+                endpoint: job.service_endpoint,
+            })
+            .collect::<Vec<_>>();
+        let consumers = dependency_summaries
+            .iter()
+            .filter(|summary| summary.capability == capability)
+            .map(|summary| LocalApiCapabilityConsumer {
+                job_id: summary.job_id.clone(),
+                alias: summary.job_alias.clone(),
+                label: summary.job_label.clone(),
+                blocking: summary.blocking,
+                status: summary.status.as_str().to_string(),
+            })
+            .collect::<Vec<_>>();
+        entries.push(LocalApiCapabilityEntry {
+            capability,
+            issue: capability_issue_label(issue).to_string(),
+            providers,
+            consumers,
+        });
+    }
+    entries.sort_by(|left, right| left.capability.cmp(&right.capability));
+    entries
+}
+
+fn capability_issue_label(issue: BackgroundShellCapabilityIssueClass) -> &'static str {
+    match issue {
+        BackgroundShellCapabilityIssueClass::Healthy => "healthy",
+        BackgroundShellCapabilityIssueClass::Missing => "missing",
+        BackgroundShellCapabilityIssueClass::Booting => "booting",
+        BackgroundShellCapabilityIssueClass::Untracked => "untracked",
+        BackgroundShellCapabilityIssueClass::Ambiguous => "ambiguous",
     }
 }
