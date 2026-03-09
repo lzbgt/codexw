@@ -636,6 +636,10 @@ The biggest known limits are architectural, not accidental.
   Tool-native orchestration guidance regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions.rs`
   Tool-native orchestration action regression tests.
+- `wrapper/src/client_dynamic_tools_tests_shells/management.rs`
+  Background-shell dynamic-tool cleanup, alias/send, and generic shell-management regressions.
+- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls.rs`
+  Background-shell service metadata, capability index, attachment, and dependency-mutation regressions.
 - `wrapper/src/app.rs`
   Top-level runtime loop and backend wiring.
 - `wrapper/src/app_input_editing.rs`
@@ -713,6 +717,8 @@ The biggest known limits are architectural, not accidental.
   Shared orchestration guidance/action renderers plus recipe/ref helper logic for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions.rs`
   Suggested-action generation for global and capability-focused orchestration remediation.
+- `wrapper/src/orchestration_view/tests/guidance_actions.rs`
+  Orchestration guidance/action renderer regression tests.
 - `wrapper/src/requests.rs`
   Outbound request namespace root plus shared `send_json(...)` transport helper.
 - `wrapper/src/requests/request_types.rs`
