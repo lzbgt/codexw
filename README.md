@@ -15,6 +15,9 @@ see [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status
 For the current broker client/lease policy contract and explicit unsupported
 boundary, see [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
 and [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md).
+For the criteria that would promote the current broker/local-API stack from a
+strong prototype into a supported adapter layer, see
+[docs/codexw-broker-adapter-promotion.md](docs/codexw-broker-adapter-promotion.md).
 
 ## Architecture
 

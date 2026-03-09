@@ -4,6 +4,8 @@ This document turns the connector mapping design into a concrete prototype plan.
 
 For the concise implementation/proof snapshot, see
 [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md).
+For the criteria that would move this work from prototype to supported adapter,
+see [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md).
 
 The goal is not full production broker support. The goal is to validate that a
 thin connector can expose `codexw` remotely without distorting the local API.
@@ -352,3 +354,8 @@ After the prototype, the project should decide one of:
 
 That decision should be based on the prototype results, not on assumptions made
 before the local API exists.
+
+The concrete promotion criteria for that decision now live in
+[codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md), so
+this plan stays focused on building and proving the prototype rather than
+repeating the adapter contract here.

@@ -1,0 +1,243 @@
+# codexw Broker Adapter Promotion
+
+This document defines what must be true before the current broker/local-API
+stack should be treated as a supported adapter layer rather than only a strong
+prototype.
+
+It does not redefine the whole broker architecture. It answers a narrower
+question:
+
+- what contract areas must be stable
+- what proof must exist
+- what policy choices must be explicit
+- what unsupported boundary must remain clear
+
+## Purpose
+
+Use this document when deciding whether the current stack should remain:
+
+- a high-value remote-control prototype for lab use
+
+or be promoted into:
+
+- a supported adapter contract that external clients can build against more
+  seriously
+
+## Promotion Does Not Mean Full Broker Parity
+
+Promotion does **not** mean:
+
+- full `agentd` protocol compatibility
+- implementing every broker/client surface from `~/work/agent`
+- distributed lease coordination
+- multi-daemon session replication
+- production browser/mobile UX in this repo
+- production deployment registration and auth infrastructure
+
+Promotion means a smaller, explicit claim:
+
+- the local API is the canonical runtime contract
+- the connector is a supported adapter for a defined subset of broker-style
+  routes and SSE behavior
+- the client/lease model is explicit enough that independent consumers can act
+  correctly without reverse-engineering implementation details
+
+## Required Contract Areas
+
+### 1. Route Contract
+
+The supported route families must be explicit and stable enough to document and
+test:
+
+- session lifecycle and inspection
+- attachment renew/release
+- turn start/interrupt
+- transcript fetch
+- orchestration status/workers/dependencies
+- shell list/detail/control
+- service list/detail/control
+- capability list/detail
+- `client_event`
+- session SSE event stream
+
+Promotion requires:
+
+- route ownership is documented
+- request and response shapes are documented
+- connector alias mapping is documented
+- unsupported routes fail explicitly rather than implicitly
+
+### 2. Error Contract
+
+The current structured error envelope must remain a deliberate public contract:
+
+- `status`
+- `code`
+- `message`
+- `retryable`
+- `details`
+
+Promotion requires:
+
+- lease conflicts such as `attachment_conflict` remain structured
+- validation failures remain field-accurate
+- the connector preserves structured local-API errors instead of collapsing
+  them into generic text
+
+### 3. Event Contract
+
+The event surface must be stable enough for remote consumers:
+
+- session and turn updates
+- transcript updates
+- orchestration updates
+- capability/service-related updates
+- client-published semantic events
+
+Promotion requires:
+
+- explicit event-envelope fields
+- explicit SSE replay/resume semantics with `Last-Event-ID`
+- no dependency on terminal-rendered output as the remote contract
+
+### 4. Client Policy Contract
+
+The lease/ownership rules must be clear enough to function as an adapter
+contract instead of a prototype behavior note:
+
+- owner
+- observer
+- rival
+
+Promotion requires:
+
+- lease-owned versus observer-readable operations are documented
+- renew/release rules are explicit
+- conflict semantics are explicit
+- connector-side client/lease projection behavior is explicit
+
+This policy is currently described in
+[codexw-broker-client-policy.md](codexw-broker-client-policy.md). Promotion
+means treating that as part of the supported adapter contract, not only a
+prototype note.
+
+### 5. Explicit Unsupported Boundary
+
+Promotion requires a stable statement of what is intentionally unsupported:
+
+- unsupported `agentd` surfaces
+- distributed deployment behaviors
+- scene/entity models
+- audio/video expectations
+- parity assumptions `codexw` does not intend to honor
+
+That boundary should remain aligned with
+[codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md).
+
+## Proof Requirements
+
+Promotion should require more than route availability.
+
+### Required Automated Proof
+
+At minimum, the repo should continue to have process-level proof for:
+
+- session create/attach/list/inspect
+- attachment renew/release
+- turn start/interrupt
+- transcript and orchestration inspection
+- shell and service control
+- focused service/capability detail
+- SSE consumption and `Last-Event-ID` resume
+- structured conflict propagation
+- `client_event` publish plus replay/resume
+- the real Python broker-style fixture as an external consumer shape
+
+### Required Multi-Client Proof
+
+Promotion should require stable process-level proof for:
+
+- owner and observer coexistence
+- rival mutation rejection
+- explicit release and takeover
+- repeated role reversal
+- event replay/resume after ownership changes
+- client-event behavior under lease rules
+
+### Recommended Additional Proof Before Promotion
+
+Useful but not strictly required for the current prototype:
+
+- a small compatibility matrix beyond the Python fixture
+- route-by-route contract assertions instead of relying only on workflow tests
+- explicit negative tests for unsupported broker surfaces through the connector
+
+## Operational Requirements
+
+Promotion should not happen unless these are still true:
+
+1. the local API remains the canonical runtime surface
+2. the connector remains thin and does not own shadow session state
+3. the connector does not invent independent lease semantics
+4. status docs can describe the supported surface without major caveats on every
+   route family
+
+If promotion requires the connector to own session state, event history, or
+independent coordination logic, that is a signal to revisit the architecture
+instead of promoting it.
+
+## Decision Matrix
+
+After the current prototype phase, the project should be able to choose one of:
+
+### Promote To Supported Adapter
+
+Choose this when:
+
+- route, error, event, and policy contracts are explicit
+- multi-client proof is strong enough for intended consumers
+- the connector remains a thin adapter
+- the unsupported boundary is explicit and acceptable
+
+### Keep As Prototype
+
+Choose this when:
+
+- the surface is useful but still moving
+- event or policy behavior is still changing
+- consumers still need implementation knowledge to behave correctly
+
+### Rework The Adapter Model
+
+Choose this when:
+
+- the connector needs shadow state
+- the local API is too awkward for remote consumption
+- broker-facing behavior forces distortions that should instead be solved in the
+  local API or a different adapter design
+
+## Current Best Reading Of Repo State
+
+Based on the repo as it exists now:
+
+- the route surface is already broad enough
+- the connector alias surface is already broad enough
+- process-level proof is already stronger than a normal prototype
+- the biggest remaining work is contract hardening, not route invention
+
+That means the next meaningful work is:
+
+1. continue tightening the client/lease policy as an adapter contract
+2. continue making the unsupported boundary explicit
+3. continue adding adversarial multi-client proof until the contract is
+   defensible, not only functional
+4. then decide explicitly whether to promote from prototype to supported
+   adapter
+
+## Companion Docs
+
+- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
+- [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)

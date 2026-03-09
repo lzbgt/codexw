@@ -7,6 +7,7 @@ design set:
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
+- [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 
 Its goal is simple:
 
@@ -190,7 +191,8 @@ The biggest remaining gaps are above the route layer, not below it:
 1. explicit client-policy and attachment semantics beyond the current
    process-scoped lease model, now captured in
    [codexw-broker-client-policy.md](codexw-broker-client-policy.md) but not yet
-   promoted into a harder adapter contract
+   promoted into the harder adapter criteria captured in
+   [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 2. broader connector behavior under sustained multi-client contention beyond the
    now-covered conflict, recovery, explicit handoff, and repeated
    role-reversal workflows
@@ -198,6 +200,8 @@ The biggest remaining gaps are above the route layer, not below it:
    scope for `codexw`, now captured in
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 4. eventual promotion from prototype connector to a more formal adapter layer
+   is still a deliberate decision point, now defined in
+   [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 
 ## Recommended Next Work
 
@@ -205,8 +209,9 @@ If continuing on this track, the highest-leverage next tasks are:
 
 1. tighten the connector/client policy contract, especially around lease
    ownership and competing clients, using
-   [codexw-broker-client-policy.md](codexw-broker-client-policy.md) as the
-   current source of truth
+   [codexw-broker-client-policy.md](codexw-broker-client-policy.md) together
+   with
+   [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 2. add more adversarial multi-client workflows, especially longer-lived lease
    churn and more complex observer/rival/owner permutations beyond the
    now-covered conflict, recovery, explicit handoff, and repeated
@@ -214,3 +219,6 @@ If continuing on this track, the highest-leverage next tasks are:
 3. keep the out-of-scope boundary explicit through
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) so prototype
    expansion does not drift into parity assumptions
+4. use [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+   as the explicit checklist for deciding whether the connector stays
+   prototype-grade or becomes a supported adapter layer
