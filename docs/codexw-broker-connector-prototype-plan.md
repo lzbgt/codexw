@@ -151,6 +151,17 @@ Recommended follow-up scenarios:
 8. validate unique `@capability` handling through encoded route parameters
 9. verify reconnect behavior for SSE clients
 
+Current automated coverage now includes a real process-level smoke path:
+
+- the tracked connector binary is started as a subprocess
+- a fake local-API server is bound behind it
+- a remote client drives the connector over TCP/HTTP
+- the smoke test currently verifies:
+  - broker-style `sessions/{session_id}/attach` alias mapping
+  - `session_id` body projection for attach aliases
+  - client/lease header projection into local-API JSON bodies
+  - alias-based SSE event forwarding and broker metadata wrapping
+
 ## Deliverables
 
 The prototype should produce:
