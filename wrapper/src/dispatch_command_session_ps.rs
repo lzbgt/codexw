@@ -421,7 +421,7 @@ pub(crate) fn handle_ps_command(
                 Some(filter) => filter,
                 None => {
                     output.line_stderr(
-                        "[session] usage: :ps capabilities [@capability|healthy|missing|booting|ambiguous]",
+                        "[session] usage: :ps capabilities [@capability|healthy|missing|booting|untracked|ambiguous]",
                     )?;
                     return Ok(true);
                 }
@@ -550,7 +550,7 @@ pub(crate) fn handle_ps_command(
         output.block_stdout("Workers", &rendered)?;
     } else {
         output.line_stderr(
-            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|depend <jobId|alias|@capability|n> <@capability...|none>|contract <jobId|alias|@capability|n> <json-object>|relabel <jobId|alias|@capability|n> <label|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
+            "[session] usage: :ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|untracked|ambiguous]|terminals|attach|wait|run|poll|send|terminate|alias|unalias|provide <jobId|alias|@capability|n> <@capability...|none>|depend <jobId|alias|@capability|n> <@capability...|none>|contract <jobId|alias|@capability|n> <json-object>|relabel <jobId|alias|@capability|n> <label|none>|clean [blockers [@capability]|shells|services [@capability]|terminals]]",
         )?;
     }
     Ok(true)

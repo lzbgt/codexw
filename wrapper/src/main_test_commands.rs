@@ -29,6 +29,9 @@ fn help_lines_are_derived_from_command_metadata() {
     assert!(rendered.contains(":resume [thread-id|n]"));
     assert!(rendered.contains("resume a saved thread"));
     assert!(rendered.contains(":feedback <category> [reason] [--logs|--no-logs]"));
+    assert!(rendered.contains(
+        ":ps [guidance [@capability]|actions [@capability]|blockers [@capability]|dependencies [all|blocking|sidecars|missing|booting|ambiguous|satisfied] [@capability]|agents|shells|services [all|ready|booting|untracked|conflicts] [@capability]|capabilities [@capability|healthy|missing|booting|untracked|ambiguous]"
+    ));
 }
 
 #[test]

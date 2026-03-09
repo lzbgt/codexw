@@ -262,7 +262,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
             ),
             "Use /ps capabilities or /ps services to inspect the provider and readiness state."
                 .to_string(),
-            "Use :ps wait <job> when the booting service has a readiness contract.".to_string(),
+            "Use :ps wait <jobId|alias|@capability|n> [timeoutMs] when the booting service has a readiness contract.".to_string(),
         ];
     }
     if prereqs > 0 {
@@ -272,7 +272,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 pluralize(prereqs, "prerequisite shell", "prerequisite shells")
             ),
             "Inspect /ps blockers to identify the gating job.".to_string(),
-            "Use :ps wait <job> for services with readiness contracts or :ps poll <job> to inspect raw output.".to_string(),
+            "Use :ps wait <jobId|alias|@capability|n> [timeoutMs] for services with readiness contracts or :ps poll <jobId|alias|@capability|n> to inspect raw output.".to_string(),
         ];
     }
     if waits > 0 {
@@ -305,7 +305,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 if ready_services == 1 { "is" } else { "are" }
             ),
             "Use /ps services to inspect attachment metadata and available recipes.".to_string(),
-            "Use :ps attach <job> or :ps run <job> <recipe> to reuse the service directly."
+            "Use :ps attach <jobId|alias|@capability|n> or :ps run <jobId|alias|@capability|n> <recipe> [json-args] to reuse the service directly."
                 .to_string(),
         ];
     }
@@ -316,7 +316,7 @@ fn guidance_lines(state: &AppState) -> Vec<String> {
                 pluralize(booting_services, "service shell is", "service shells are")
             ),
             "Use /ps services to inspect readiness state and startup metadata.".to_string(),
-            "Use :ps wait <job> [timeoutMs] when later work depends on service readiness."
+            "Use :ps wait <jobId|alias|@capability|n> [timeoutMs] when later work depends on service readiness."
                 .to_string(),
         ];
     }
@@ -725,14 +725,14 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     Some(job_ref) => format!(
                         "Run `:ps attach {job_ref}` to inspect endpoint and recipe details."
                     ),
-                    None => "Run `:ps attach <job|@capability>` to inspect endpoint and recipe details."
+                    None => "Run `:ps attach <jobId|alias|@capability|n>` to inspect endpoint and recipe details."
                         .to_string(),
                 },
                 match provider_ref.as_deref() {
                     Some(job_ref) => format!(
                         "Run `:ps run {job_ref} <recipe> [json-args]` to reuse the ready service directly."
                     ),
-                    None => "Run `:ps run <job|@capability> <recipe> [json-args]` to reuse the ready service directly."
+                    None => "Run `:ps run <jobId|alias|@capability|n> <recipe> [json-args]` to reuse the ready service directly."
                         .to_string(),
                 },
             ],
@@ -742,13 +742,13 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     Some(job_ref) => format!(
                         "Use `background_shell_attach {{\"jobId\":\"{job_ref}\"}}` to inspect endpoint and recipe details for the ready service."
                     ),
-                    None => "Use `background_shell_attach {\"jobId\":\"@capability\"}` to inspect endpoint and recipe details for the service you choose.".to_string(),
+                    None => "Use `background_shell_attach {\"jobId\":\"<jobId|alias|@capability>\"}` to inspect endpoint and recipe details for the service you choose.".to_string(),
                 },
                 match provider_ref.as_deref() {
                     Some(job_ref) => format!(
                         "Use `background_shell_invoke_recipe {{\"jobId\":\"{job_ref}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
                     ),
-                    None => "Use `background_shell_invoke_recipe {\"jobId\":\"@capability\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
+                    None => "Use `background_shell_invoke_recipe {\"jobId\":\"<jobId|alias|@capability>\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
                 },
             ],
         };
@@ -764,7 +764,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     Some(job_ref) => format!(
                         "Run `:ps wait {job_ref} [timeoutMs]` for the booting service you need."
                     ),
-                    None => "Run `:ps wait <job|@capability> [timeoutMs]` for the booting service you need."
+                    None => "Run `:ps wait <jobId|alias|@capability|n> [timeoutMs]` for the booting service you need."
                         .to_string(),
                 },
                 "Run `:ps capabilities booting` to keep the capability view focused.".to_string(),
@@ -775,7 +775,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     Some(job_ref) => format!(
                         "Use `background_shell_wait_ready {{\"jobId\":\"{job_ref}\",\"timeoutMs\":5000}}` for the booting service you need."
                     ),
-                    None => "Use `background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}` for the booting service you need.".to_string(),
+                    None => "Use `background_shell_wait_ready {\"jobId\":\"<jobId|alias|@capability>\",\"timeoutMs\":5000}` for the booting service you need.".to_string(),
                 },
                 "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
             ],

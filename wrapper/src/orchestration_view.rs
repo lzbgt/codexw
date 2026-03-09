@@ -1610,6 +1610,142 @@ mod tests {
     }
 
     #[test]
+    fn global_ready_service_actions_use_explicit_reference_syntax_when_provider_is_not_unique() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "printf 'READY\\n'; sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start first ready service");
+        services
+            .background_shells
+            .wait_ready_for_operator("bg-1", 1000)
+            .expect("wait for first ready service");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "printf 'READY\\n'; sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["db.redis"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start second ready service");
+        services
+            .background_shells
+            .wait_ready_for_operator("bg-2", 1000)
+            .expect("wait for second ready service");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains(":ps attach <jobId|alias|@capability|n>"));
+        assert!(rendered.contains(":ps run <jobId|alias|@capability|n> <recipe> [json-args]"));
+        assert!(!rendered.contains(":ps attach <job|@capability>"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(
+            tool_rendered
+                .contains("background_shell_attach {\"jobId\":\"<jobId|alias|@capability>\"}")
+        );
+        assert!(tool_rendered.contains(
+            "background_shell_invoke_recipe {\"jobId\":\"<jobId|alias|@capability>\",\"recipe\":\"...\"}"
+        ));
+        assert!(!tool_rendered.contains("background_shell_attach {\"jobId\":\"@capability\"}"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn global_booting_service_actions_use_explicit_reference_syntax_when_provider_is_not_unique() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start first booting service");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["db.redis"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start second booting service");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains(":ps wait <jobId|alias|@capability|n> [timeoutMs]"));
+        assert!(!rendered.contains(":ps wait <job|@capability> [timeoutMs]"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains(
+            "background_shell_wait_ready {\"jobId\":\"<jobId|alias|@capability>\",\"timeoutMs\":5000}"
+        ));
+        assert!(!tool_rendered.contains(
+            "background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}"
+        ));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn global_untracked_service_actions_use_explicit_reference_syntax_when_provider_is_not_unique()
+    {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"]
+                }),
+                "/tmp",
+            )
+            .expect("start first untracked service");
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["db.redis"]
+                }),
+                "/tmp",
+            )
+            .expect("start second untracked service");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains(":ps contract <jobId|alias|@capability|n> <json-object>"));
+        assert!(rendered.contains(":ps relabel <jobId|alias|@capability|n> <label|none>"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains(
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+        ));
+        assert!(tool_rendered.contains(
+            "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"label\":\"service-label\"}"
+        ));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
     fn focused_blockers_can_target_one_capability() {
         let blocked = crate::state::AppState::new(true, false);
         blocked
