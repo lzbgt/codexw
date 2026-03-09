@@ -18,6 +18,10 @@ pub(crate) fn orchestration_guidance_summary(state: &AppState) -> Option<String>
     guidance_lines(state).first().cloned()
 }
 
+pub(crate) fn orchestration_guidance_summary_for_tool(state: &AppState) -> Option<String> {
+    guidance_lines_for_tool(state).first().cloned()
+}
+
 pub(crate) fn render_orchestration_guidance(state: &AppState) -> String {
     let lines = guidance_lines(state);
     if lines.is_empty() {

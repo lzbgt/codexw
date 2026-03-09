@@ -72,6 +72,7 @@ fn orchestration_status_reports_worker_and_guidance_summary() {
     assert!(rendered.contains("cap_deps_missing=1"));
     assert!(rendered.contains("next action"));
     assert!(rendered.contains("missing service capability @api.http"));
+    assert!(!rendered.contains(":ps provide"));
     let _ = state
         .orchestration
         .background_shells

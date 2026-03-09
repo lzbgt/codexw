@@ -11,7 +11,7 @@ use crate::background_shells::BackgroundShellOrigin;
 use crate::orchestration_view::DependencyFilter;
 use crate::orchestration_view::DependencySelection;
 use crate::orchestration_view::WorkerFilter;
-use crate::orchestration_view::orchestration_guidance_summary;
+use crate::orchestration_view::orchestration_guidance_summary_for_tool;
 use crate::orchestration_view::orchestration_overview_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
 use crate::orchestration_view::render_orchestration_actions_for_tool;
@@ -593,7 +593,7 @@ fn render_orchestration_status_for_tool(state: &AppState) -> String {
     if let Some(runtime) = orchestration_runtime_summary(state) {
         lines.push(format!("runtime         {runtime}"));
     }
-    if let Some(guidance) = orchestration_guidance_summary(state) {
+    if let Some(guidance) = orchestration_guidance_summary_for_tool(state) {
         lines.push(format!("next action     {guidance}"));
     }
     lines.join("\n")

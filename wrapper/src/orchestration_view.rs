@@ -22,6 +22,7 @@ use crate::state::summarize_text;
 mod guidance_actions;
 
 pub(crate) use guidance_actions::orchestration_guidance_summary;
+pub(crate) use guidance_actions::orchestration_guidance_summary_for_tool;
 pub(crate) use guidance_actions::render_orchestration_actions;
 pub(crate) use guidance_actions::render_orchestration_actions_for_capability;
 pub(crate) use guidance_actions::render_orchestration_actions_for_tool;
