@@ -665,6 +665,17 @@ fn service_attach_route_returns_attachment_summary() {
         .expect("attachment summary should be a string");
     assert!(attachment.contains("Endpoint: http://127.0.0.1:3000"));
     assert!(attachment.contains("health"));
+    assert_eq!(body["attachment_text"], body["attachment"]);
+    assert_eq!(body["interaction"]["kind"], "attach");
+    assert_eq!(body["service"]["id"], "bg-1");
+    assert_eq!(body["service"]["service_protocol"], "http");
+    assert!(
+        matches!(
+            body["service"]["service_readiness"].as_str(),
+            Some("ready") | Some("booting")
+        ),
+        "service readiness should be present in structured payload"
+    );
     let _ = manager.terminate_all_running();
 }
 
@@ -690,6 +701,11 @@ fn service_wait_route_returns_ready_status() {
         .expect("wait result should be a string");
     assert!(result.contains("already ready") || result.contains("became ready"));
     assert!(result.contains("Ready pattern: READY"));
+    assert_eq!(body["result_text"], body["result"]);
+    assert_eq!(body["interaction"]["kind"], "wait");
+    assert_eq!(body["interaction"]["timeout_ms"], 2000);
+    assert_eq!(body["service"]["id"], "bg-1");
+    assert_eq!(body["service"]["service_readiness"], "ready");
     let _ = manager.terminate_all_running();
 }
 
@@ -715,6 +731,12 @@ fn service_run_route_invokes_service_recipe() {
         .expect("run result should be a string");
     assert!(result.contains("Invoked recipe `health`"));
     assert!(result.contains("Action: stdin \"status\""));
+    assert_eq!(body["result_text"], body["result"]);
+    assert_eq!(body["interaction"]["kind"], "run");
+    assert_eq!(body["recipe"]["name"], "health");
+    assert_eq!(body["recipe"]["args"], Value::Null);
+    assert_eq!(body["service"]["id"], "bg-1");
+    assert_eq!(body["service"]["interaction_recipe_names"][0], "health");
     let _ = manager.terminate_all_running();
 }
 

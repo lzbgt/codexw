@@ -718,6 +718,6 @@ That semantic event-stream milestone is now partially landed:
   `orchestration.updated`, `workers.updated`, `capabilities.updated`, and
   `transcript.updated`
 
-The next concrete code step is now richer structured response payloads for
-service interactions plus eventual session create/attach semantics, not more
-route discovery.
+The next concrete code step is now session create/attach semantics plus
+connector-facing API coverage, not more route discovery. Structured service
+interaction payloads are already in place for `attach`, `wait`, and `run`.

@@ -28,6 +28,7 @@ use super::SharedEventLog;
 use super::SharedSnapshot;
 use super::control::enqueue_command;
 use super::events::events_since;
+use super::snapshot::local_api_shell_job;
 
 const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const READ_TIMEOUT: Duration = Duration::from_millis(250);
@@ -537,7 +538,14 @@ fn handle_service_attach_route(
             "ok": true,
             "session_id": session_id,
             "shell_id": shell.id,
+            "service": current_shell_value(background_shells, &shell.id)
+                .unwrap_or_else(|| json!(shell.clone())),
+            "interaction": {
+                "kind": "attach",
+                "reference": reference,
+            },
             "attachment": attachment,
+            "attachment_text": attachment,
         })),
         Err(err) => json_error_response(400, "interaction_error", &err),
     }
@@ -571,6 +579,10 @@ fn handle_service_wait_route(
     };
     let mut arguments = serde_json::Map::new();
     arguments.insert("jobId".to_string(), Value::String(shell.id.clone()));
+    let timeout_ms = object
+        .get("timeoutMs")
+        .and_then(Value::as_u64)
+        .unwrap_or(crate::background_shells::DEFAULT_READY_WAIT_TIMEOUT_MS);
     if let Some(timeout_ms) = object.get("timeoutMs") {
         arguments.insert("timeoutMs".to_string(), timeout_ms.clone());
     }
@@ -579,7 +591,15 @@ fn handle_service_wait_route(
             "ok": true,
             "session_id": session_id,
             "shell_id": shell.id,
+            "service": current_shell_value(background_shells, &shell.id)
+                .unwrap_or_else(|| json!(shell.clone())),
+            "interaction": {
+                "kind": "wait",
+                "reference": reference,
+                "timeout_ms": timeout_ms,
+            },
             "result": result,
+            "result_text": result,
         })),
         Err(err) => json_error_response(400, "interaction_error", &err),
     }
@@ -625,12 +645,26 @@ fn handle_service_run_route(
     if let Some(wait_for_ready_ms) = object.get("waitForReadyMs") {
         arguments.insert("waitForReadyMs".to_string(), wait_for_ready_ms.clone());
     }
+    let args_value = object.get("args").cloned();
+    let wait_for_ready_ms = object.get("waitForReadyMs").and_then(Value::as_u64);
     match background_shells.invoke_recipe_from_tool(&Value::Object(arguments)) {
         Ok(result) => json_ok_response(json!({
             "ok": true,
             "session_id": session_id,
             "shell_id": shell.id,
+            "service": current_shell_value(background_shells, &shell.id)
+                .unwrap_or_else(|| json!(shell.clone())),
+            "interaction": {
+                "kind": "run",
+                "reference": reference,
+            },
+            "recipe": {
+                "name": recipe.trim(),
+                "args": args_value,
+                "wait_for_ready_ms": wait_for_ready_ms,
+            },
             "result": result,
+            "result_text": result,
         })),
         Err(err) => json_error_response(400, "interaction_error", &err),
     }
@@ -1078,6 +1112,18 @@ fn resolve_shell_snapshot(
         }
     }
     Err(("shell_not_found", "unknown shell reference"))
+}
+
+fn current_shell_value(
+    background_shells: &BackgroundShellManager,
+    shell_id: &str,
+) -> Option<Value> {
+    background_shells
+        .snapshots()
+        .into_iter()
+        .find(|snapshot| snapshot.id == shell_id)
+        .map(local_api_shell_job)
+        .and_then(|shell| serde_json::to_value(shell).ok())
 }
 
 fn handle_service_update_route(

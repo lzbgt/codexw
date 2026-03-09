@@ -382,7 +382,9 @@ fn workers_snapshot(state: &AppState) -> LocalApiWorkersSnapshot {
     }
 }
 
-fn local_api_shell_job(snapshot: BackgroundShellJobSnapshot) -> LocalApiBackgroundShellJob {
+pub(crate) fn local_api_shell_job(
+    snapshot: BackgroundShellJobSnapshot,
+) -> LocalApiBackgroundShellJob {
     LocalApiBackgroundShellJob {
         id: snapshot.id,
         pid: snapshot.pid,

@@ -210,9 +210,15 @@ Current status:
 - synchronous service interaction routes now exist for `attach`, `wait`, and
   `run`, backed by the live `BackgroundShellManager` rather than the fire-and-
   forget command queue
-- the main remaining service-side gap is response shaping: remote clients still
-  receive operator-oriented result strings for attach/wait/run instead of fully
-  structured machine-native payloads
+- those service interaction routes now return structured machine-usable payloads
+  alongside compatibility text fields:
+  - `service` snapshot payload
+  - `interaction` metadata
+  - `recipe` metadata for `run`
+  - legacy `attachment` / `result` text preserved as `attachment_text` /
+    `result_text`
+- the next service-side gap is session creation/attach semantics, not service
+  route payload shape
 
 ## Candidate Code Ownership
 
