@@ -327,6 +327,86 @@ The most realistic initial target is:
 - allow a connector or bridge to adapt between the systems
 - avoid promising strict wire compatibility until the local API exists and the gap analysis is complete
 
+## Phase 0 Audit Worksheet
+
+The first audit should classify each relevant `~/work/agent` surface into one of:
+
+- `direct fit`
+  - `codexw` already has an equivalent semantic surface and only needs API exposure
+- `adapter fit`
+  - the concept fits, but needs a bridge or reshaping layer
+- `out of scope`
+  - not a sensible first target for `codexw`
+
+### Broker Surfaces
+
+| `~/work/agent` surface | Initial classification | Why |
+| --- | --- | --- |
+| `GET /v1/agents/{agent_id}/proxy/...` | adapter fit | `codexw` does not yet expose a local HTTP API, but a connector could map future local endpoints into this broker path |
+| `GET /v1/agents/{agent_id}/proxy_sse/...` | adapter fit | `codexw` can plausibly expose SSE event streams, but does not have a public stream API yet |
+| `GET /v1/events` | adapter fit | the broker event stream concept fits well, but `codexw` first needs its own stable event vocabulary |
+| outbound `wss://.../v1/agent/connect` | adapter fit | likely phase-2+ unless `codexw` adopts direct broker connectivity |
+
+### Session And Client Surfaces
+
+| `~/work/agent` surface | Initial classification | Why |
+| --- | --- | --- |
+| `POST /api/v1/session/new` | direct fit | `codexw` already has explicit thread/session lifecycle concepts and can define a local wrapper session handle |
+| `POST /api/v1/session/client_event` | adapter fit | the collaboration idea fits, but `codexw` does not yet have a public client-event ingest model |
+| `GET /api/v1/session/scene` | out of scope | `codexw` currently has no durable scene/entity model comparable to `agentd` |
+| `POST /api/v1/session/scene/apply` | out of scope | same reason; not a first-phase remote-control requirement |
+
+### Run And Event Surfaces
+
+| `~/work/agent` surface | Initial classification | Why |
+| --- | --- | --- |
+| `POST /api/v1/run` | adapter fit | `codexw` can expose turn-start semantics, but its runtime is thread/turn-based rather than an `agentd` run engine |
+| run-event envelopes | adapter fit | item/turn/status/orchestration events already exist internally, but need a public envelope contract |
+| artifact signaling | adapter fit | `codexw` has transcript and attachment semantics but not a standalone artifact API yet |
+
+### `codexw`-Specific High-Value Surfaces That `agent` Does Not Define Directly
+
+These should not be forced into the `agent` shape blindly:
+
+- orchestration worker views
+- dependency graph views
+- wrapper-owned background shell jobs
+- reusable service capability registry
+- `:ps`-style service mutation controls
+
+Those are likely to require either:
+
+- new `codexw`-specific endpoints
+- or a thin compatibility vocabulary layered on top of the more generic `agent` event model
+
+## Concrete Phase 0 Deliverables
+
+The first investigation pass should produce these artifacts:
+
+1. `endpoint-audit.md`
+   - one row per relevant `~/work/agent` endpoint or event family
+   - classification: `direct fit`, `adapter fit`, `out of scope`
+   - owner/source of truth inside `codexw`
+   - implementation notes
+
+2. `event-envelope-sketch.md`
+   - proposed `codexw` event envelope for transcript, status, orchestration, shells, and services
+   - explicit mapping to any reused `agent` vocabulary
+
+3. `session-identity-note.md`
+   - mapping between:
+     - local thread ids
+     - wrapper session ids
+     - remote client session ids
+     - resume/attach semantics
+
+4. `connector-decision.md`
+   - recommend one of:
+     - local API first
+     - local API plus connector
+     - direct broker connectivity
+   - with explicit tradeoffs
+
 ## Session Model Questions
 
 These questions must be decided before implementation:
