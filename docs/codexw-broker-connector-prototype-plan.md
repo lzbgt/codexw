@@ -160,6 +160,37 @@ The prototype should produce:
 - a list of unsupported broker surfaces
 - a list of adapter-only `codexw` extensions
 
+## Current Prototype Status
+
+An initial standalone prototype now exists as:
+
+- `cargo run --bin codexw-connector-prototype -- --agent-id <id> --deployment-id <id> --local-api-base <url>`
+
+Current implemented behavior:
+
+- listens on its own loopback HTTP bind address
+- requires an exact `{agent_id}` segment in:
+  - `/v1/agents/{agent_id}/proxy/...`
+  - `/v1/agents/{agent_id}/proxy_sse/...`
+- forwards only an allowlisted subset of HTTP requests under `proxy/...` to the
+  local API path of the same suffix
+- forwards SSE requests under `proxy_sse/...` to the local API event stream
+- wraps SSE `data:` payloads with:
+  - `source: "codexw"`
+  - `broker.agent_id`
+  - `broker.deployment_id`
+- supports:
+  - optional incoming connector bearer auth
+  - optional outgoing local-API bearer auth
+
+Current explicit limitations:
+
+- no broker registration handshake yet
+- no broker-side policy beyond the current static allowlist and agent-id path ownership
+- no shadow session/deployment store
+- no remote lease policy beyond what the local API already enforces
+- no persistence or reconnect bookkeeping outside SSE `Last-Event-ID` passthrough
+
 ## Decision After Prototype
 
 After the prototype, the project should decide one of:

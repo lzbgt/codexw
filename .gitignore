@@ -1,4 +1,6 @@
 bin/
+!wrapper/src/bin/
+!wrapper/src/bin/*.rs
 ref/
 wrapper/target/
 *.log

@@ -69,8 +69,9 @@ Current non-goals of the landed slice:
   `contract`, and `relabel`
 
 That means the next implementation step is no longer transcript or basic shell
-control. It is higher-level session attachment semantics for connectors and
-broader remote-client coverage above the now-usable route surface.
+control. It is connector-facing coverage above the now-usable route surface:
+attachment policy, route stability, and enough semantic payloads for a thin
+adapter to proxy the local API remotely.
 
 ## Scope
 

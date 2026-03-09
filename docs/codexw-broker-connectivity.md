@@ -757,3 +757,18 @@ more route discovery. Structured service interaction payloads are already in
 place for `attach`, `wait`, and `run`, and explicit attach/lease semantics now
 exist for the current process-scoped session contract. The next gap is
 connector-specific client/lease policy above that single-process model.
+
+That connector-facing work has now started with a first standalone prototype:
+
+- binary: `cargo run --bin codexw-connector-prototype -- ...`
+- broker-facing HTTP prefix:
+  - `/v1/agents/{agent_id}/proxy/...`
+- broker-facing SSE prefix:
+  - `/v1/agents/{agent_id}/proxy_sse/...`
+- current prototype behavior:
+  - forwards an allowlisted subset of local-API routes through a generic proxy prefix
+  - bridges SSE from the local API
+  - wraps SSE payloads with `source` and `broker` metadata
+  - supports optional incoming connector bearer auth
+  - supports optional outgoing local-API bearer auth
+  - rejects proxy requests outside the approved session/turn/orchestration/shell/service route families
