@@ -163,6 +163,9 @@ The current implementation is now past pure route sketches:
   flows
 - that fixture is also exercised by a process-level connector smoke test, so it
   is no longer just a convenience script but a verified consumer-side artifact
+- the fixture-backed smoke coverage now proves not only session create / turn /
+  transcript, but also shell start, service attach / wait / run, and
+  structured lease-conflict propagation through the broker-style alias surface
 - the broker-style alias surface now also includes attachment lease lifecycle
   routes for renew/release, so remote clients do not need raw `/proxy/...`
   access for normal lease management

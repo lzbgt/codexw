@@ -56,8 +56,13 @@ consumable.
 This script closes that gap.
 
 The repo now also includes process-level smoke coverage that invokes this
-fixture against the real connector binary, so the fixture is not just a
-documentation example.
+fixture against the real connector binary for:
+
+- session create / turn / transcript
+- shell start plus service attach / wait / run
+- lease-conflict propagation through broker-style alias routes
+
+So the fixture is not just a documentation example.
 
 ## Invocation Shape
 

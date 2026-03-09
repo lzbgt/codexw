@@ -18,6 +18,12 @@ It is also covered by a process-level smoke path, so the repo now verifies both:
 - the connector as a broker-style route adapter
 - the minimal client shape that consumes those aliases
 
+That fixture-backed smoke coverage now includes:
+
+- session create / turn / transcript
+- shell start plus service attach / wait / run
+- structured `attachment_conflict` propagation for a conflicting leased client
+
 ## Objective
 
 Prototype a connector that:
