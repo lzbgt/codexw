@@ -672,7 +672,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/main_test_session_status/runtime.rs`
   Generic status-runtime test namespace root.
 - `wrapper/src/main_test_session_status/runtime/status.rs`
-  Generic status-runtime, notification-completion, background-terminal, and prompt-status regression tests.
+  Generic status-runtime regression namespace root.
+- `wrapper/src/main_test_session_status/runtime/status/notifications.rs`
+  Notification-completion, approval-resolution, and realtime-thread-status regression tests.
+- `wrapper/src/main_test_session_status/runtime/status/background.rs`
+  Background-terminal retention and prompt-status background summary regression tests.
 - `wrapper/src/main_test_session_status/runtime/orchestration.rs`
   Status snapshot/orchestration regression namespace root.
 - `wrapper/src/main_test_session_status/runtime/orchestration/background.rs`
@@ -876,7 +880,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/events/requests.rs`
   Inbound server-request handling, including approval/tool requests and unsupported-method fallback.
 - `wrapper/src/events/notifications.rs`
-  Inbound notification handling for realtime, turn, item, skill-refresh, and Windows sandbox notifications.
+  Inbound notification namespace root for realtime, system, turn, and item notifications.
+- `wrapper/src/events/notifications/system.rs`
+  Skill-refresh and Windows sandbox completion notification handling.
+- `wrapper/src/events/notifications/turns.rs`
+  Turn lifecycle notification routing.
+- `wrapper/src/events/notifications/items.rs`
+  Item completion, buffer, and status notification routing.
 - `wrapper/src/notification_realtime.rs`
   Realtime, account, app-list, and thread-status notification handling.
 - `wrapper/src/notification_turn_started.rs`
@@ -886,9 +896,15 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/notification_item_buffers.rs`
   Turn-item delta buffering, plan/diff streaming, terminal-interaction logging, and task-complete event capture.
 - `wrapper/src/notification_item_status.rs`
-  Item-start status updates, reroute reporting, approval-resolution reporting, and turn-error reporting.
+  Item-status notification namespace root plus reroute and approval-resolution reporting.
+- `wrapper/src/notification_item_status/item.rs`
+  Item-start status updates and collab/background status-line initialization.
 - `wrapper/src/notification_item_completion.rs`
-  Turn-item completion rendering for assistant text, commands, file changes, reasoning, and tool items.
+  Turn-item completion namespace root and completion-status reconciliation.
+- `wrapper/src/notification_item_completion/item.rs`
+  Completion rendering for assistant text, commands, file changes, reasoning, and tool items.
+- `wrapper/src/notification_item_completion/status.rs`
+  Completion-time status-line clearing and collab wait-status reconciliation.
 - `wrapper/src/catalog.rs`
   App and skill catalog parsing for app-server payloads.
 - `wrapper/src/history_render.rs`
