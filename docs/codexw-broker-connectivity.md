@@ -167,6 +167,10 @@ The current implementation is now past pure route sketches:
   service attach/wait/run -> capability inspection workflow, a realistic
   service-mutation workflow (`provide` / `depend` / `contract` / `relabel`),
   and alias-based event-stream resume behavior via `Last-Event-ID`
+- that smoke coverage now also proves a single broker-style workflow can mix
+  service attach / wait / run control with SSE resume, which is the closest
+  current approximation of a real remote client following live state while
+  interacting with reusable services
 
 ## Compatibility Matrix
 

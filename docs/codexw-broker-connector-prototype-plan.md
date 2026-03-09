@@ -175,6 +175,12 @@ Current automated coverage now includes a real process-level smoke path:
     - wait for service readiness
     - run service recipe
     - inspect capabilities
+  - a realistic broker-style service-control plus SSE-resume workflow:
+    - create session
+    - consume initial service event stream
+    - attach / wait / run through service aliases
+    - reconnect the event stream with `Last-Event-ID`
+    - observe capability state after the service interaction path
   - a realistic broker-style service-mutation workflow:
     - create session
     - provide capabilities
@@ -188,6 +194,8 @@ Current automated coverage now includes a real process-level smoke path:
   - `session_id` body projection for attach aliases
   - client/lease header projection into local-API JSON bodies
   - alias-based SSE event forwarding and broker metadata wrapping
+  - coherent service interaction behavior under SSE reconnect conditions instead
+    of only isolated alias checks
 
 ## Deliverables
 
