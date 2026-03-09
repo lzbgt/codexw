@@ -22,6 +22,7 @@ That fixture-backed smoke coverage now includes:
 
 - session create / turn / transcript
 - shell start plus service attach / wait / run
+- service mutation through the real broker-style fixture client
 - structured `attachment_conflict` propagation for a conflicting leased client
 - focused service-detail and capability-detail inspection
 - event-stream consumption and `Last-Event-ID` resume

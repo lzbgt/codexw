@@ -170,6 +170,9 @@ The current implementation is now past pure route sketches:
   capability-detail reads plus event-stream resume through `Last-Event-ID`,
   using the standalone broker-style client fixture rather than only raw test
   harness helpers
+- the standalone broker-style client fixture is also now process-level verified
+  for service mutation flows (`provide` / `depend` / `contract` / `relabel`),
+  not only read/attach/run paths
 - the broker-style alias surface now also includes attachment lease lifecycle
   routes for renew/release, so remote clients do not need raw `/proxy/...`
   access for normal lease management
