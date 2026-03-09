@@ -2,7 +2,8 @@
 
 This document defines what must be true before the current broker/local-API
 stack should be treated as a supported adapter layer rather than only a strong
-prototype.
+prototype. For the current recommendation based on the present proof surface,
+see [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
 
 It does not redefine the whole broker architecture. It answers a narrower
 question:
@@ -241,15 +242,17 @@ That means the next meaningful work is:
 
 1. continue adding adversarial multi-client proof until the contract is
    defensible, not only functional
-2. use the explicit adapter contract plus the proof matrix to decide whether
-   the current evidence is already sufficient for promotion
-3. then decide explicitly whether to promote from prototype to supported
-   adapter
+2. use the explicit adapter contract plus the proof matrix to validate or
+   challenge the current recommendation in
+   [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
+3. reopen the promotion question only if new evidence materially changes that
+   recommendation
 
 ## Companion Docs
 
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+- [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)

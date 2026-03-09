@@ -9,6 +9,7 @@ design set:
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
 Its goal is simple:
@@ -233,8 +234,9 @@ The biggest remaining gaps are above the route layer, not below it:
    scope for `codexw`, now captured in
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 4. eventual promotion from prototype connector to a more formal adapter layer
-   is still a deliberate decision point, now defined in
-   [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+   is still a deliberate decision point, but the current recommendation is now
+   written down explicitly in
+   [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 
 The remaining gaps are therefore no longer basic validation fidelity or missing
 contract language. They are promotion judgment and broader architectural
@@ -252,8 +254,8 @@ If continuing on this track, the highest-leverage next tasks are:
 1. use
    [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md),
    [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md), and
-   [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
-   together to decide whether the current proof is already promotion-grade
+   [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
+   together to validate or challenge the current recommendation
 2. add more adversarial multi-client workflows, especially longer-lived lease
    churn and more complex observer/rival/owner permutations beyond the
    now-covered observer-readable contention, conflict/recovery, explicit

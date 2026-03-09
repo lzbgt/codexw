@@ -159,6 +159,10 @@ The current implementation is now past pure route sketches:
 For the concise implementation/proof snapshot, see
 [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md).
 
+For the current recommendation on whether that proof is already sufficient to
+promote the stack beyond prototype framing, see
+[codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
+
 - `codexw` has a working loopback HTTP/SSE local API
 - the tracked connector prototype supports both raw `/proxy` passthrough and a
   first-pass broker-style alias surface for session, turn, transcript,

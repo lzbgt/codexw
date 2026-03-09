@@ -99,8 +99,7 @@ text. The adapter contract now exists explicitly in
 the process-level proof surface is broad.
 
 That means the next high-leverage work is not more route invention or policy
-freezing. It is using this matrix together with
-[codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md) to
-decide whether the current proof level is already sufficient for adapter
-promotion or whether the project still wants more adversarial stress coverage
-before making that decision.
+freezing. The repo now has enough evidence to support a concrete recommendation
+in [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
+Further work is mostly about either reinforcing that recommendation with more
+adversarial stress coverage or revising it if contradictory evidence appears.

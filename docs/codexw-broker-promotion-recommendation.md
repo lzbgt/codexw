@@ -1,0 +1,155 @@
+# codexw Broker Promotion Recommendation
+
+This document answers the question left open by the broader broker docs:
+
+- should the current broker/local-API stack remain only a strong prototype
+- or should it now be treated as a supported adapter layer for the declared
+  contract
+
+## Recommendation
+
+Recommend promoting the current broker/local-API stack to a **supported
+experimental adapter** for the contract frozen in
+[codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md).
+
+That recommendation is intentionally narrower than:
+
+- full `agentd` parity
+- production deployment infrastructure
+- production browser/mobile UX
+- multi-daemon lease coordination
+- a general-purpose public SDK commitment
+
+The recommended claim is:
+
+- the local API is the canonical runtime contract
+- the connector is a supported adapter for the documented broker-style subset
+- the owner / observer / rival and lease semantics are part of the supported
+  contract
+- the structured error and SSE replay behavior are part of the supported
+  contract
+- the unsupported boundary remains explicit and enforced
+
+## Why Promotion Is Now Justified
+
+This recommendation is based on facts already present in the repo.
+
+### 1. Contract Language Is Frozen
+
+The repo now has explicit documents for:
+
+- the adapter contract:
+  [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- client policy and role semantics:
+  [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
+- unsupported boundaries:
+  [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- promotion criteria:
+  [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- proof mapping:
+  [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+
+That means promotion is no longer blocked on missing design language.
+
+### 2. Proof Coverage Is Broad And Process-Level
+
+The current proof set is not only unit-level. It includes:
+
+- local API route tests
+- connector unit tests
+- connector process-level smoke tests
+- the standalone Python broker-style client fixture exercised as a real
+  subprocess client
+
+The proof matrix now marks all major contract areas as `strong proof`, including:
+
+- route contract
+- error contract
+- event contract
+- client policy contract
+- unsupported boundary
+
+### 3. The Remaining Gaps Are Optional Hardening, Not Missing Contract Basics
+
+The remaining gaps still mentioned in the repo are things like:
+
+- longer-lived contention churn
+- broader adversarial permutations
+- route-by-route proof density beyond representative workflows
+
+Those are good hardening tasks, but they are not evidence that the current
+adapter claim is false.
+
+### 4. The Connector Still Preserves The Intended Architecture
+
+Promotion is justified partly because the connector has *not* drifted into a
+shadow runtime. The code and docs still support the intended authority model:
+
+- local API remains canonical
+- connector remains thin
+- lease semantics come from the local API contract, not an invented connector
+  shadow model
+
+That makes promotion much safer than if the connector had started owning
+independent coordination state.
+
+## Why This Should Still Be Experimental
+
+The recommendation is **supported experimental adapter**, not
+fully-general production adapter.
+
+That qualifier remains appropriate because:
+
+- the session model is still process-scoped
+- there is no multi-daemon coordination claim
+- there is no production auth/deployment stack claim
+- the route surface is still intentionally selective
+- the client fixture is strong evidence, but not the same thing as a mature SDK
+
+So the right move is not to keep calling it “only a prototype,” but also not to
+oversell it as a production-complete broker system.
+
+## Recommended Wording For Repo Status
+
+Recommended concise status:
+
+- `codexw` now has a supported experimental broker adapter for its documented
+  broker-facing contract.
+- The supported claim applies to the documented route, error, event, lease, and
+  unsupported-boundary surface.
+- Full broker parity and production deployment semantics remain out of scope.
+
+## Recommended Immediate Follow-Ons
+
+Promotion should change the framing of next work.
+
+The next high-leverage tasks should be:
+
+1. keep adding adversarial proof as hardening, not as proof that the contract is
+   still undefined
+2. tighten doc wording anywhere that still says the stack is merely a prototype
+   when it is actually a supported experimental adapter
+3. preserve the unsupported boundary explicitly so promotion does not silently
+   expand the claim surface
+4. only reopen the promotion decision if the connector starts needing shadow
+   state or if the local API authority model changes
+
+## Decision Rule
+
+Unless a newly discovered contradiction appears in the proof matrix, the
+working recommendation should now be:
+
+- **promote to supported experimental adapter**
+
+not:
+
+- keep as mere prototype by default
+
+## Companion Docs
+
+- [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
+- [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
