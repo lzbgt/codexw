@@ -56,6 +56,15 @@ pub(crate) struct Cli {
     #[arg(long, default_value_t = false)]
     pub(crate) yolo: bool,
 
+    #[arg(long, default_value_t = false)]
+    pub(crate) local_api: bool,
+
+    #[arg(long, default_value = "127.0.0.1:0")]
+    pub(crate) local_api_bind: String,
+
+    #[arg(long)]
+    pub(crate) local_api_token: Option<String>,
+
     #[arg(trailing_var_arg = true)]
     pub(crate) prompt: Vec<String>,
 }
@@ -156,6 +165,7 @@ fn option_arity(token: &str) -> Option<OptionArity> {
             | "--raw-json"
             | "--no-experimental-api"
             | "--yolo"
+            | "--local-api"
     ) {
         return Some(OptionArity::FlagOnly);
     }
@@ -170,6 +180,8 @@ fn option_arity(token: &str) -> Option<OptionArity> {
             | "--cwd"
             | "--model"
             | "--model-provider"
+            | "--local-api-bind"
+            | "--local-api-token"
     ) {
         return Some(OptionArity::TakesValue);
     }

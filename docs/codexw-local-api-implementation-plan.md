@@ -27,6 +27,28 @@ If this spike succeeds, `codexw` will be in a position to support:
 
 without scraping terminal scrollback.
 
+## Current Implementation Status
+
+The first code slice has started.
+
+Current implemented scope:
+
+- disabled-by-default loopback local API startup
+- configurable bind address and optional bearer token
+- `GET /healthz`
+- `GET /api/v1/session`
+- `GET /api/v1/session/{session_id}`
+
+Current non-goals of the landed slice:
+
+- no turn-control routes yet
+- no SSE event stream yet
+- no orchestration, shell, or service routes yet
+
+That means the next implementation step is no longer “start a server at all.”
+It is extending the existing loopback skeleton with turn routes and the first
+semantic event stream.
+
 ## Scope
 
 ### In Scope

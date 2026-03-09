@@ -11,6 +11,10 @@ use crate::config_persistence::load_persisted_theme;
 use crate::dispatch_command_utils::join_prompt;
 use crate::editor::LineEditor;
 use crate::events::process_server_line;
+use crate::local_api::new_process_session_id;
+use crate::local_api::new_shared_snapshot;
+use crate::local_api::start_local_api;
+use crate::local_api::sync_shared_snapshot;
 use crate::output::Output;
 use crate::prompt_state::prompt_accepts_input;
 use crate::prompt_state::update_prompt;
@@ -52,6 +56,15 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     let mut writer = stdin;
     let mut state = AppState::new(cli.auto_continue, cli.raw_json);
     let mut editor = LineEditor::default();
+    let local_api_snapshot = new_shared_snapshot(new_process_session_id(), resolved_cwd.clone());
+    sync_shared_snapshot(&local_api_snapshot, &state);
+    let local_api_handle = start_local_api(&cli, local_api_snapshot.clone())?;
+    if let Some(handle) = local_api_handle.as_ref() {
+        output.line_stderr(format!(
+            "[session] local API listening on http://{}",
+            handle.bind_addr()
+        ))?;
+    }
 
     match load_persisted_theme() {
         Ok(Some(theme_name)) => set_theme(&theme_name),
@@ -102,9 +115,13 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
             }
             Err(_) => break,
         }
+        sync_shared_snapshot(&local_api_snapshot, &state);
     }
 
     emit_resume_exit_hint(&mut output, &state, &resolved_cwd)?;
+    if let Some(handle) = local_api_handle {
+        handle.shutdown()?;
+    }
     shutdown_child(writer, child)?;
     Ok(())
 }

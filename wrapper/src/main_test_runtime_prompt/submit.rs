@@ -80,6 +80,9 @@ fn submit_is_ignored_while_local_command_is_active() {
         raw_json: false,
         no_experimental_api: false,
         yolo: false,
+        local_api: false,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
         prompt: Vec::new(),
     });
 
@@ -121,6 +124,9 @@ fn startup_resume_picker_accepts_bare_numeric_selection() {
         raw_json: false,
         no_experimental_api: false,
         yolo: false,
+        local_api: false,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
         prompt: Vec::new(),
     });
     let mut state = AppState::new(true, false);

@@ -22,6 +22,9 @@ fn cli_with_defaults() -> Cli {
         raw_json: false,
         no_experimental_api: false,
         yolo: false,
+        local_api: false,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
         prompt: Vec::new(),
     }
 }

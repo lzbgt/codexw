@@ -489,6 +489,7 @@ dependencies = [
  "serde_json",
  "syntect",
  "tempfile",
+ "thiserror 2.0.18",
  "toml_edit",
  "unicode-segmentation",
  "unicode-width 0.2.0",

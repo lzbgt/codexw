@@ -51,6 +51,7 @@ mod history_render;
 mod history_state;
 mod history_text;
 mod input;
+mod local_api;
 mod main_cli;
 mod model_catalog;
 mod model_personality_actions;

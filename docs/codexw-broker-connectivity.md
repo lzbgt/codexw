@@ -680,3 +680,14 @@ remaining work is now implementation-facing:
   [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
 - a connector prototype after that, now framed in
   [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
+
+The local API spike has now started with a minimal loopback skeleton:
+
+- disabled-by-default listener
+- optional bearer token
+- `GET /healthz`
+- `GET /api/v1/session`
+- `GET /api/v1/session/{session_id}`
+
+The next concrete code step is turn control plus the first semantic SSE stream,
+not more route discovery.
