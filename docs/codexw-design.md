@@ -1129,7 +1129,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/background_shells/recipes/parse.rs`
   Typed service-recipe parse namespace root.
 - `wrapper/src/background_shells/recipes/parse/schema.rs`
-  Typed service-recipe schema, parameter-schema, and action parsing helpers.
+  Typed service-recipe schema namespace root.
+- `wrapper/src/background_shells/recipes/parse/recipes.rs`
+  Typed service-recipe recipe-schema and parameter-schema parsing helpers.
+- `wrapper/src/background_shells/recipes/parse/actions.rs`
+  Typed service-recipe action parsing plus HTTP header and expected-status validation helpers.
 - `wrapper/src/background_shells/recipes/parse/arguments.rs`
   Typed service-recipe argument-map parsing, parameter resolution, and placeholder substitution helpers.
 - `wrapper/src/background_shells/recipes/render.rs`
@@ -1230,6 +1234,8 @@ The biggest known limits are architectural, not accidental.
   Reusable-service recipe metadata regression namespace root.
 - `wrapper/src/background_shells/tests/services/recipes/metadata/attachment.rs`
   Reusable-service attachment-summary, attach-metadata, and informational-recipe regression tests.
+- `wrapper/src/background_shells/tests/services/recipes/metadata/parsing.rs`
+  Reusable-service recipe-schema parsing and validation regression tests.
 - `wrapper/src/background_shells/tests/services/recipes/metadata/parameters.rs`
   Reusable-service recipe-parameter default, override, and required-argument regression tests.
 - `wrapper/src/background_shells/tests/services/recipes/invoke.rs`

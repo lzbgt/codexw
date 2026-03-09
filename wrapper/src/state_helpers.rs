@@ -1,5 +1,6 @@
 mod buffers;
 mod json;
+#[cfg(test)]
 mod tests;
 mod text;
 
