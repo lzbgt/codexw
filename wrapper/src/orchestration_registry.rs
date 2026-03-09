@@ -16,7 +16,6 @@ pub(crate) use self::graph::running_shell_count_by_intent;
 pub(crate) use self::graph::sidecar_dependency_count;
 pub(crate) use self::graph::task_role;
 pub(crate) use self::graph::wait_dependency_summary;
-pub(crate) use self::graph::wait_dependency_threads;
 pub(crate) use self::tracking::track_collab_agent_task_completed;
 pub(crate) use self::tracking::track_collab_agent_task_started;
 

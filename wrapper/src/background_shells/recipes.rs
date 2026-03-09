@@ -106,7 +106,7 @@ fn parse_background_shell_interaction_parameters(
     Ok(parsed)
 }
 
-pub(super) fn parse_recipe_arguments_map(
+pub(crate) fn parse_recipe_arguments_map(
     value: Option<&serde_json::Value>,
     field_name: &str,
 ) -> Result<HashMap<String, String>, String> {
@@ -517,7 +517,7 @@ fn parse_background_shell_expected_status(
     Ok(Some(status))
 }
 
-pub(super) fn interaction_action_summary(action: &BackgroundShellInteractionAction) -> String {
+pub(crate) fn interaction_action_summary(action: &BackgroundShellInteractionAction) -> String {
     match action {
         BackgroundShellInteractionAction::Informational => "info".to_string(),
         BackgroundShellInteractionAction::Stdin {
