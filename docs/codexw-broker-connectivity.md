@@ -166,7 +166,9 @@ The current implementation is now past pure route sketches:
   orchestration inspection workflow, a realistic create -> shell ->
   service attach/wait/run -> capability inspection workflow, a realistic
   service-mutation workflow (`provide` / `depend` / `contract` / `relabel`),
-  and alias-based event-stream resume behavior via `Last-Event-ID`
+  alias-based event-stream resume behavior via `Last-Event-ID`, and structured
+  `attachment_conflict` propagation with lease-holder details on conflicting
+  turn/service mutations through the broker-style alias surface
 - that smoke coverage now also proves a single broker-style workflow can mix
   service attach / wait / run control with SSE resume, which is the closest
   current approximation of a real remote client following live state while

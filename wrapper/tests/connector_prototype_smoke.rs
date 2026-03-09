@@ -570,6 +570,168 @@ fn connector_alias_service_run_maps_to_local_service_route() -> Result<()> {
 }
 
 #[test]
+fn connector_alias_turn_and_service_routes_propagate_attachment_conflict() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..3 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/new");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse create body")?;
+                    assert_eq!(body["thread_id"], "thread_1");
+                    assert_eq!(body["client_id"], "remote-owner");
+                    assert_eq!(body["lease_seconds"], 60);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_1",
+                                "thread_id": "thread_1",
+                                "attachment": {
+                                    "client_id": "remote-owner",
+                                    "lease_seconds": 60,
+                                    "lease_expires_at_ms": 1893456000000_u64,
+                                    "lease_active": true
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/turn/start");
+                    let body: Value = serde_json::from_slice(&request.body)
+                        .context("parse conflicting turn body")?;
+                    assert_eq!(body["client_id"], "remote-other");
+                    write_http_response(
+                        &mut stream,
+                        409,
+                        "Conflict",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": false,
+                            "error": {
+                                "status": 409,
+                                "code": "attachment_conflict",
+                                "message": "active attachment lease is owned by another client",
+                                "retryable": false,
+                                "details": {
+                                    "requested_client_id": "remote-other",
+                                    "current_attachment": {
+                                        "client_id": "remote-owner",
+                                        "lease_seconds": 60,
+                                        "lease_expires_at_ms": 1893456000000_u64,
+                                        "lease_active": true
+                                    }
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/services/dev.api/run");
+                    let body: Value = serde_json::from_slice(&request.body)
+                        .context("parse conflicting service body")?;
+                    assert_eq!(body["client_id"], "remote-other");
+                    assert_eq!(body["recipe"], "health");
+                    write_http_response(
+                        &mut stream,
+                        409,
+                        "Conflict",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": false,
+                            "error": {
+                                "status": 409,
+                                "code": "attachment_conflict",
+                                "message": "active attachment lease is owned by another client",
+                                "retryable": false,
+                                "details": {
+                                    "requested_client_id": "remote-other",
+                                    "current_attachment": {
+                                        "client_id": "remote-owner",
+                                        "lease_seconds": 60,
+                                        "lease_expires_at_ms": 1893456000000_u64,
+                                        "lease_active": true
+                                    }
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let _connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(connector_port)?;
+    let client = BrokerClient::new(connector_port, "codexw-lab");
+
+    let create_response = client.create_session(
+        "{\"thread_id\":\"thread_1\"}",
+        &[
+            ("Content-Type", "application/json"),
+            ("X-Codexw-Client-Id", "remote-owner"),
+            ("X-Codexw-Lease-Seconds", "60"),
+        ],
+    )?;
+    assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(create_response.contains("\"session_id\":\"sess_1\""));
+
+    let turn_response = client.session_request(
+        "POST",
+        "sess_1",
+        "/turns",
+        Some("{\"prompt\":\"Summarize current work\"}"),
+        &[
+            ("Content-Type", "application/json"),
+            ("X-Codexw-Client-Id", "remote-other"),
+        ],
+    )?;
+    assert!(turn_response.starts_with("HTTP/1.1 409 Conflict\r\n"));
+    assert!(turn_response.contains("\"code\":\"attachment_conflict\""));
+    assert!(turn_response.contains("\"requested_client_id\":\"remote-other\""));
+    assert!(turn_response.contains("\"client_id\":\"remote-owner\""));
+    assert!(turn_response.contains("\"lease_active\":true"));
+
+    let run_response = client.session_request(
+        "POST",
+        "sess_1",
+        "/services/dev.api/run",
+        Some("{\"recipe\":\"health\"}"),
+        &[
+            ("Content-Type", "application/json"),
+            ("X-Codexw-Client-Id", "remote-other"),
+        ],
+    )?;
+    assert!(run_response.starts_with("HTTP/1.1 409 Conflict\r\n"));
+    assert!(run_response.contains("\"code\":\"attachment_conflict\""));
+    assert!(run_response.contains("\"requested_client_id\":\"remote-other\""));
+    assert!(run_response.contains("\"client_id\":\"remote-owner\""));
+    assert!(run_response.contains("\"lease_seconds\":60"));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
+#[test]
 fn connector_broker_style_workflow_covers_turn_transcript_and_orchestration() -> Result<()> {
     let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
     let local_addr = local_listener.local_addr().context("local api addr")?;

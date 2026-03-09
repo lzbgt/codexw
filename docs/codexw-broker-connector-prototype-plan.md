@@ -188,6 +188,10 @@ Current automated coverage now includes a real process-level smoke path:
     - update contract metadata
     - relabel service
     - inspect services and capabilities
+  - a realistic broker-style conflict workflow:
+    - create session with an active lease
+    - attempt turn/service mutation from another client identity
+    - observe forwarded `attachment_conflict` details with lease-holder context
   - alias-based SSE forwarding with `Last-Event-ID` passthrough on reconnect
   - broker-style `sessions/{session_id}/shells` alias mapping for shell start
   - broker-style `sessions/{session_id}/services/{job_ref}/run` alias mapping
@@ -196,6 +200,8 @@ Current automated coverage now includes a real process-level smoke path:
   - alias-based SSE event forwarding and broker metadata wrapping
   - coherent service interaction behavior under SSE reconnect conditions instead
     of only isolated alias checks
+  - local-API structured error envelopes surviving the connector path for
+    attachment-lease conflicts on broker-style alias routes
 
 ## Deliverables
 
