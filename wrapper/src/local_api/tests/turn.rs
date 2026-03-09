@@ -1,0 +1,88 @@
+use std::sync::Arc;
+use std::sync::RwLock;
+
+use super::LocalApiCommand;
+use super::get_request;
+use super::json_body;
+use super::new_command_queue;
+use super::post_json_request;
+use super::route_request;
+use super::sample_snapshot;
+use crate::local_api::snapshot::LocalApiSnapshot;
+
+#[test]
+fn turn_start_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/turn/start",
+            serde_json::json!({
+                "session_id": "sess_test",
+                "input": { "text": "review this diff" }
+            }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    assert_eq!(
+        json_body(&response.body)["accepted"],
+        serde_json::Value::Bool(true)
+    );
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::StartTurn {
+            session_id: "sess_test".to_string(),
+            prompt: "review this diff".to_string(),
+        })
+    );
+}
+
+#[test]
+fn turn_start_requires_attached_thread() {
+    let snapshot = Arc::new(RwLock::new(LocalApiSnapshot {
+        thread_id: None,
+        ..sample_snapshot().read().expect("snapshot").clone()
+    }));
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/turn/start",
+            serde_json::json!({
+                "session_id": "sess_test",
+                "input": { "text": "review this diff" }
+            }),
+        ),
+        &snapshot,
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 409);
+    assert_eq!(
+        json_body(&response.body)["error"]["code"],
+        "thread_not_attached"
+    );
+}
+
+#[test]
+fn turn_interrupt_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/turn/interrupt",
+            serde_json::json!({ "session_id": "sess_test" }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::InterruptTurn {
+            session_id: "sess_test".to_string(),
+        })
+    );
+}

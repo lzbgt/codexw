@@ -30,48 +30,48 @@ that `codexw` can be controlled remotely without scraping terminal output:
 
 | Route | Phase | Existing source of truth | Proposed local API handler | Minimum verification |
 | --- | --- | --- | --- | --- |
-| `GET /healthz` | 1 | none | `local_api/routes/system.rs` | basic route smoke test |
-| `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
-| `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues resume of an existing thread id |
+| `GET /healthz` | 1 | none | `local_api/routes.rs`, `local_api/server.rs` | basic route smoke test |
+| `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
+| `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues resume of an existing thread id |
 | `GET /api/v1/session/{session_id}` | 2 | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `local_api/routes/session.rs` | summary payload is stable and session-scoped |
 | `POST /api/v1/turn/start` | 2 | `dispatch_submit_turns.rs`, `input/*`, `requests/turn_start.rs` | `local_api/routes/turn.rs` | prompt text becomes a real turn request |
 | `POST /api/v1/turn/interrupt` | 2 | `dispatch_command_thread_control.rs`, `requests/turn_control.rs`, `app_input_interrupt.rs` | `local_api/routes/turn.rs` | active turn is interrupted through the same control path |
 | `GET /api/v1/session/{session_id}/transcript` | 3 | transcript state + `transcript_*` summaries | `local_api/routes/transcript.rs` | bounded semantic snapshot without ANSI |
-| `GET /api/v1/session/{session_id}/events` | 3 | runtime mutations across `events/*`, `notification_*`, `background_shells/*`, `orchestration_registry/*` | `local_api/events.rs`, `local_api/server.rs` | Implemented. SSE stream emits semantic envelopes, supports `Last-Event-ID` replay, and survives idle time with heartbeats |
+| `GET /api/v1/session/{session_id}/events` | 3 | runtime mutations across `events/*`, `notification_*`, `background_shells/*`, `orchestration_registry/*` | `local_api/events.rs`, `local_api/routes.rs`, `local_api/server.rs` | Implemented. SSE stream emits semantic envelopes, supports `Last-Event-ID` replay, and survives idle time with heartbeats |
 | `GET /api/v1/session/{session_id}/orchestration/status` | 4 | `orchestration_view/summary/*` | `local_api/routes/orchestration.rs` | compact orchestration summary matches local status view semantics |
 | `GET /api/v1/session/{session_id}/orchestration/workers` | 4 | `orchestration_view/workers/*` | `local_api/routes/orchestration.rs` | filter parsing and focused worker render correctness |
 | `GET /api/v1/session/{session_id}/orchestration/dependencies` | 4 | `orchestration_view/dependencies.rs` | `local_api/routes/orchestration.rs` | dependency filters and focused capability queries work |
 | `GET /api/v1/session/{session_id}/shells` | 4 | `background_shells/execution/manage/lifecycle/list.rs` | `local_api/routes/shells.rs` | lists current shell jobs without terminal formatting assumptions |
-| `POST /api/v1/session/{session_id}/shells/start` | 4 | `background_shells/execution/manage/lifecycle/start.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Queues wrapper-owned shell startup with existing tool validation and local-API origin tagging |
-| `POST /api/v1/session/{session_id}/shells/{job_ref}/poll` | 4 | `background_shells/execution/interact/tools/jobs.rs` | `local_api/server.rs`, `local_api/snapshot.rs` | Implemented. Resolves `job_ref` by id, alias, index, or unique capability and returns semantic shell snapshot data |
-| `POST /api/v1/session/{session_id}/shells/{job_ref}/send` | 4 | `background_shells/execution/interact/tools/jobs.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Queues stdin writes against resolved shell jobs |
-| `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate` | 4 | `background_shells/execution/interact/tools/jobs.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Queues one-job termination against resolved shell refs |
+| `POST /api/v1/session/{session_id}/shells/start` | 4 | `background_shells/execution/manage/lifecycle/start.rs` | `local_api/routes/shells.rs`, `local_api/control.rs` | Implemented. Queues wrapper-owned shell startup with existing tool validation and local-API origin tagging |
+| `POST /api/v1/session/{session_id}/shells/{job_ref}/poll` | 4 | `background_shells/execution/interact/tools/jobs.rs` | `local_api/routes/shells.rs`, `local_api/snapshot.rs` | Implemented. Resolves `job_ref` by id, alias, index, or unique capability and returns semantic shell snapshot data |
+| `POST /api/v1/session/{session_id}/shells/{job_ref}/send` | 4 | `background_shells/execution/interact/tools/jobs.rs` | `local_api/routes/shells.rs`, `local_api/control.rs` | Implemented. Queues stdin writes against resolved shell jobs |
+| `POST /api/v1/session/{session_id}/shells/{job_ref}/terminate` | 4 | `background_shells/execution/interact/tools/jobs.rs` | `local_api/routes/shells.rs`, `local_api/control.rs` | Implemented. Queues one-job termination against resolved shell refs |
 | `GET /api/v1/session/{session_id}/services` | 4 | `background_shells/services/render/views/services/tool.rs` | `local_api/routes/services.rs` | service-state filters match existing dynamic-tool semantics |
 | `GET /api/v1/session/{session_id}/capabilities` | 4 | `background_shells/services/render/views/capabilities/list.rs` | `local_api/routes/services.rs` | capability-state filters and focused refs work |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/provide` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Capability mutation queues the same update path as `:ps provide` / `background_shell_update_service` |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/depend` | 5 | `background_shells/services/updates/dependencies/apply.rs` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Dependency retargeting queues the same update path as `:ps depend` / `background_shell_update_dependencies` |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/contract` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Contract mutation requires at least one mutable contract field and reuses live service update validation |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/relabel` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/server.rs`, `local_api/control.rs` | Implemented. Label mutation queues the same update path as `:ps relabel` |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/attach` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/server.rs` | Implemented. Resolves `job_ref` through the snapshot and returns structured `service` + `interaction` payloads while preserving the legacy attachment summary text |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/wait` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/server.rs` | Implemented. Waits on live service readiness with optional `timeoutMs` and returns structured `service` + `interaction` payloads while preserving the legacy result text |
-| `POST /api/v1/session/{session_id}/services/{job_ref}/run` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/server.rs` | Implemented. Invokes a service recipe with optional `args` / `waitForReadyMs` and returns structured `service` + `recipe` + `interaction` payloads while preserving the legacy result text |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/provide` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/routes/services.rs`, `local_api/control.rs` | Implemented. Capability mutation queues the same update path as `:ps provide` / `background_shell_update_service` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/depend` | 5 | `background_shells/services/updates/dependencies/apply.rs` | `local_api/routes/services.rs`, `local_api/control.rs` | Implemented. Dependency retargeting queues the same update path as `:ps depend` / `background_shell_update_dependencies` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/contract` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/routes/services.rs`, `local_api/control.rs` | Implemented. Contract mutation requires at least one mutable contract field and reuses live service update validation |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/relabel` | 5 | `background_shells/services/updates/service/apply/*` | `local_api/routes/services.rs`, `local_api/control.rs` | Implemented. Label mutation queues the same update path as `:ps relabel` |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/attach` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/routes/services.rs` | Implemented. Resolves `job_ref` through the snapshot and returns structured `service` + `interaction` payloads while preserving the legacy attachment summary text |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/wait` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/routes/services.rs` | Implemented. Waits on live service readiness with optional `timeoutMs` and returns structured `service` + `interaction` payloads while preserving the legacy result text |
+| `POST /api/v1/session/{session_id}/services/{job_ref}/run` | 5 | `background_shells/execution/interact/tools/services.rs` | `local_api/routes/services.rs` | Implemented. Invokes a service recipe with optional `args` / `waitForReadyMs` and returns structured `service` + `recipe` + `interaction` payloads while preserving the legacy result text |
 
 ## Suggested Module Layout
 
-Recommended new module tree:
+Current module tree:
 
 - `wrapper/src/local_api.rs`
 - `wrapper/src/local_api/server.rs`
-- `wrapper/src/local_api/auth.rs`
-- `wrapper/src/local_api/errors.rs`
-- `wrapper/src/local_api/events.rs`
-- `wrapper/src/local_api/routes/system.rs`
+- `wrapper/src/local_api/routes.rs`
 - `wrapper/src/local_api/routes/session.rs`
 - `wrapper/src/local_api/routes/turn.rs`
 - `wrapper/src/local_api/routes/transcript.rs`
 - `wrapper/src/local_api/routes/orchestration.rs`
 - `wrapper/src/local_api/routes/shells.rs`
 - `wrapper/src/local_api/routes/services.rs`
+- `wrapper/src/local_api/control.rs`
+- `wrapper/src/local_api/snapshot.rs`
+- `wrapper/src/local_api/events.rs`
 
 This keeps the local API aligned with the current `codexw` separation:
 
@@ -101,12 +101,12 @@ This minimizes churn because later routes depend on:
 
 ## Cross-Cutting Requirements
 
-Every route family should share:
+Every route family currently shares:
 
-- one JSON error contract
+- one JSON error contract from `local_api/routes.rs`
 - one session lookup path
 - one thread/session identity model
-- one auth gate abstraction
+- one auth gate abstraction in `local_api/routes.rs`
 - one job-ref parser policy
 
 Do not duplicate route-specific versions of:

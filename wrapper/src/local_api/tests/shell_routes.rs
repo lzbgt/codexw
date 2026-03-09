@@ -1,0 +1,95 @@
+use super::LocalApiCommand;
+use super::json_body;
+use super::new_command_queue;
+use super::post_json_request;
+use super::route_request;
+use super::sample_snapshot;
+
+#[test]
+fn shell_start_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/start",
+            serde_json::json!({ "command": "echo hi" }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::StartShell {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({ "command": "echo hi" }),
+        })
+    );
+}
+
+#[test]
+fn shell_poll_route_returns_selected_shell_snapshot() {
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/bg-1/poll",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &new_command_queue(),
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let body = json_body(&response.body);
+    assert_eq!(body["shell"]["id"], "bg-1");
+}
+
+#[test]
+fn shell_send_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/bg-1/send",
+            serde_json::json!({ "text": "status" }),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::SendShellInput {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({
+                "jobId": "bg-1",
+                "text": "status",
+                "appendNewline": true
+            }),
+        })
+    );
+}
+
+#[test]
+fn shell_terminate_route_enqueues_local_api_command() {
+    let queue = new_command_queue();
+    let response = route_request(
+        &post_json_request(
+            "/api/v1/session/sess_test/shells/bg-1/terminate",
+            serde_json::json!({}),
+        ),
+        &sample_snapshot(),
+        &queue,
+        None,
+    );
+    assert_eq!(response.status, 200);
+    let queued = queue.lock().expect("queue");
+    assert_eq!(
+        queued.front(),
+        Some(&LocalApiCommand::TerminateShell {
+            session_id: "sess_test".to_string(),
+            arguments: serde_json::json!({ "jobId": "bg-1" }),
+        })
+    );
+}

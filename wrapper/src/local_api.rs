@@ -1,5 +1,6 @@
 mod control;
 mod events;
+mod routes;
 mod server;
 mod snapshot;
 

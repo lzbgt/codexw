@@ -235,23 +235,34 @@ Current status:
 
 ## Candidate Code Ownership
 
-### New Modules Likely Needed
+### Current Module Ownership
 
 - `wrapper/src/local_api.rs`
-  - namespace root for the local API server
+  - namespace root and test-only re-exports
 - `wrapper/src/local_api/server.rs`
-  - listener start/stop and route wiring
+  - TCP listener lifecycle, HTTP parsing, connection handling, and response writeout
+- `wrapper/src/local_api/routes.rs`
+  - shared auth, JSON helpers, session lookup, `job_ref` resolution, and top-level route dispatch
 - `wrapper/src/local_api/routes/session.rs`
+  - session inspect/new/attach route handlers
 - `wrapper/src/local_api/routes/turn.rs`
+  - turn start/interrupt route handlers
+- `wrapper/src/local_api/routes/transcript.rs`
+  - transcript snapshot route handler
 - `wrapper/src/local_api/routes/orchestration.rs`
+  - orchestration status/worker/dependency route handlers
 - `wrapper/src/local_api/routes/shells.rs`
+  - shell list/start/poll/send/terminate route handlers
 - `wrapper/src/local_api/routes/services.rs`
+  - service/capability list and service mutation/interaction route handlers
+- `wrapper/src/local_api/control.rs`
+  - queued runtime control commands for session, turn, shell, and service mutations
+- `wrapper/src/local_api/snapshot.rs`
+  - structured snapshot assembly for sessions, orchestration, transcript, shells, services, and capabilities
 - `wrapper/src/local_api/events.rs`
-  - SSE fanout and event serialization
-- `wrapper/src/local_api/errors.rs`
-  - stable JSON error shapes
+  - SSE event log, replay, and semantic local-API event publication
 
-### Existing Modules To Reuse
+### Existing Modules Reused By The Local API
 
 - `wrapper/src/state.rs`
 - `wrapper/src/requests/thread_switch_common/*`
@@ -260,6 +271,10 @@ Current status:
 - `wrapper/src/orchestration_registry/*`
 - `wrapper/src/state_helpers/*`
 - `wrapper/src/events/*`
+
+The remaining code-level follow-up is not creating more top-level local-API
+modules. It is keeping the current split stable and only extracting smaller
+helpers if one of the route-family files becomes a hotspot again.
 
 ## Critical Integration Constraint
 
@@ -293,7 +308,8 @@ terminal-render code.
 
 ## Error Model Requirements
 
-Phase 1 should standardize:
+Phase 1 should standardize, through the shared helpers already living in
+`wrapper/src/local_api/routes.rs`:
 
 - `session_*`
 - `thread_*`
@@ -304,7 +320,8 @@ Phase 1 should standardize:
 - `validation_*`
 
 Errors should always be JSON and should never expose raw terminal-only wording
-as the primary contract.
+as the primary contract. A dedicated `local_api/errors.rs` module is not
+required unless the current shared helper layer becomes too large or divergent.
 
 ## Security Defaults
 
