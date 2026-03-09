@@ -30,7 +30,7 @@ The current design optimizes for:
 The runtime has thirteen main layers.
 
 1. Backend process management
-   `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs` start `codex app-server`, wire stdio, forward key environment such as proxy variables, own raw-mode lifecycle, and manage stdin/stdout/tick event sources. Callers now import the process/input helpers directly from `runtime_event_sources.rs` and `runtime_keys.rs` instead of routing through an extra facade.
+   `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/input/decode.rs`, `runtime_event_sources/input/thread.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs` start `codex app-server`, wire stdio, forward key environment such as proxy variables, own raw-mode lifecycle, and manage stdin/stdout/tick event sources. Callers now import the process/input helpers directly from `runtime_event_sources.rs` and `runtime_keys.rs` instead of routing through an extra facade.
 
 2. JSON-RPC transport
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
@@ -75,7 +75,7 @@ Resume-preview helpers live across `history_render.rs`, `history_state.rs`, and 
 Catalog display helpers are split across `catalog_connector_views.rs`, `catalog_feature_views.rs`, `catalog_backend_views.rs`, `catalog_thread_list.rs`, and `catalog_file_search.rs`, and callers now import those concrete app/skill/experimental/thread/search helpers directly.
 Status display helpers are split across `status_value.rs`, `status_config.rs`, `status_account.rs`, `status_rate_windows.rs`, `status_rate_credits.rs`, and `status_token_usage.rs`, with rate-limit and token-usage callers importing the concrete helpers directly.
 Transcript display helpers now live directly across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, without an extra transcript compatibility layer in the runtime path.
-Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, and event-source threads now imported directly from those concrete modules.
+Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/input/decode.rs`, `runtime_event_sources/input/thread.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, event-source threads, and bracketed-paste decoding now imported directly from those concrete modules.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers now live across `state.rs` and `state_helpers.rs`, with `state.rs` owning `AppState`, `ProcessOutputBuffer`, request-id generation, constructor/reset helpers, and attachment transfer behavior directly.
 Orchestration registry helpers are split across `orchestration_registry.rs`, `orchestration_registry/graph.rs`, and `orchestration_registry/tracking.rs`, with `orchestration_registry.rs` kept as the shared type/root module, `orchestration_registry/graph.rs` owning dependency-edge derivation plus wait/sidecar/runtime count helpers, and `orchestration_registry/tracking.rs` owning live collab-task parsing plus cached-agent-thread updates.
@@ -750,7 +750,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/runtime_event_sources.rs`
   `AppEvent` enum plus stdout/tick event-source namespace root.
 - `wrapper/src/runtime_event_sources/input.rs`
-  Keyboard-input event source, bracketed-paste decoding, and terminal input normalization tests.
+  Keyboard-input namespace root.
+- `wrapper/src/runtime_event_sources/input/decode.rs`
+  Keyboard-event normalization, bracketed-paste decoding, pending-marker handling, and paste buffering helpers.
+- `wrapper/src/runtime_event_sources/input/thread.rs`
+  Keyboard input reader and stdin event-source thread helpers.
 - `wrapper/src/runtime_event_sources/terminal.rs`
   Raw terminal mode, bracketed-paste mode, and terminal-charset reset helpers.
 - `wrapper/src/runtime_keys.rs`
