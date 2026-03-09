@@ -49,6 +49,17 @@ impl BackgroundShellManager {
             .collect())
     }
 
+    pub(crate) fn running_service_refs_by_readiness(
+        &self,
+        readiness: BackgroundShellServiceReadiness,
+    ) -> Vec<String> {
+        self.running_service_snapshots()
+            .into_iter()
+            .filter(|job| job.service_readiness == Some(readiness))
+            .map(|snapshot| mutable_job_ref(&snapshot))
+            .collect()
+    }
+
     pub(crate) fn set_running_service_contract(
         &self,
         job_id: &str,

@@ -1281,7 +1281,8 @@ mod tests {
         let rendered = render_orchestration_actions(&services);
         assert!(rendered.contains("Suggested actions:"));
         assert!(rendered.contains(":ps services untracked"));
-        assert!(rendered.contains(":ps contract <jobId|alias|@capability|n> <json-object>"));
+        assert!(rendered.contains(":ps contract bg-1 <json-object>"));
+        assert!(rendered.contains(":ps relabel bg-1 <label|none>"));
 
         let tool_rendered = render_orchestration_actions_for_tool(&services);
         assert!(tool_rendered.contains("Suggested actions:"));
@@ -1289,7 +1290,10 @@ mod tests {
             tool_rendered.contains("background_shell_list_services {\"status\":\"untracked\"}")
         );
         assert!(tool_rendered.contains(
-            "background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}"
+        ));
+        assert!(tool_rendered.contains(
+            "background_shell_update_service {\"jobId\":\"bg-1\",\"label\":\"service-label\"}"
         ));
 
         let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
@@ -1411,6 +1415,41 @@ mod tests {
     }
 
     #[test]
+    fn actions_filter_uses_concrete_wait_for_single_booting_service() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start booting service");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains("Suggested actions:"));
+        assert!(rendered.contains(":ps services booting"));
+        assert!(rendered.contains(":ps wait bg-1 [timeoutMs]"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains("Suggested actions:"));
+        assert!(tool_rendered.contains("background_shell_list_services {\"status\":\"booting\"}"));
+        assert!(
+            tool_rendered
+                .contains("background_shell_wait_ready {\"jobId\":\"bg-1\",\"timeoutMs\":5000}")
+        );
+
+        let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
+        assert!(filtered.contains("Suggested actions:"));
+        assert!(filtered.contains(":ps wait bg-1 [timeoutMs]"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
     fn focused_ready_capability_actions_use_concrete_provider_ref() {
         let services = crate::state::AppState::new(true, false);
         services
@@ -1442,6 +1481,45 @@ mod tests {
             tool_actions
                 .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"...\"}")
         );
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
+    fn actions_filter_uses_concrete_provider_ref_for_single_ready_service() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "printf 'READY\\n'; sleep 0.4",
+                    "intent": "service",
+                    "capabilities": ["api.http"],
+                    "readyPattern": "READY"
+                }),
+                "/tmp",
+            )
+            .expect("start ready service");
+        services
+            .background_shells
+            .wait_ready_for_operator("bg-1", 1000)
+            .expect("wait for ready service");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains("Suggested actions:"));
+        assert!(rendered.contains(":ps attach bg-1"));
+        assert!(rendered.contains(":ps run bg-1 <recipe> [json-args]"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains("Suggested actions:"));
+        assert!(tool_rendered.contains("background_shell_attach {\"jobId\":\"bg-1\"}"));
+        assert!(
+            tool_rendered
+                .contains("background_shell_invoke_recipe {\"jobId\":\"bg-1\",\"recipe\":\"...\"}")
+        );
+
+        let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
+        assert!(filtered.contains("Suggested actions:"));
+        assert!(filtered.contains(":ps attach bg-1"));
         let _ = services.background_shells.terminate_all_running();
     }
 

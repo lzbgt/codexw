@@ -146,6 +146,21 @@ fn first_provider_ref_for_capability(state: &AppState, capability: &str) -> Opti
         .and_then(|refs| refs.into_iter().next())
 }
 
+fn unique_service_ref_by_readiness(
+    state: &AppState,
+    readiness: BackgroundShellServiceReadiness,
+) -> Option<String> {
+    let refs = state
+        .orchestration
+        .background_shells
+        .running_service_refs_by_readiness(readiness);
+    if refs.len() == 1 {
+        refs.into_iter().next()
+    } else {
+        None
+    }
+}
+
 fn guidance_lines(state: &AppState) -> Vec<String> {
     let waits = active_wait_task_count(state);
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
@@ -620,54 +635,110 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
         };
     }
     if ready_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Ready);
         return match audience {
             ActionAudience::Operator => vec![
                 "Run `:ps services ready` to inspect reusable service metadata.".to_string(),
-                "Run `:ps attach <job|@capability>` to inspect endpoint and recipe details."
-                    .to_string(),
-                "Run `:ps run <job|@capability> <recipe> [json-args]` to reuse the ready service directly."
-                    .to_string(),
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Run `:ps attach {job_ref}` to inspect endpoint and recipe details."
+                    ),
+                    None => "Run `:ps attach <job|@capability>` to inspect endpoint and recipe details."
+                        .to_string(),
+                },
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Run `:ps run {job_ref} <recipe> [json-args]` to reuse the ready service directly."
+                    ),
+                    None => "Run `:ps run <job|@capability> <recipe> [json-args]` to reuse the ready service directly."
+                        .to_string(),
+                },
             ],
             ActionAudience::Tool => vec![
                 "Use `background_shell_list_services {\"status\":\"ready\"}` to inspect reusable service metadata.".to_string(),
-                "Use `background_shell_attach {\"jobId\":\"@capability\"}` to inspect endpoint and recipe details for the service you choose.".to_string(),
-                "Use `background_shell_invoke_recipe {\"jobId\":\"@capability\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Use `background_shell_attach {{\"jobId\":\"{job_ref}\"}}` to inspect endpoint and recipe details for the ready service."
+                    ),
+                    None => "Use `background_shell_attach {\"jobId\":\"@capability\"}` to inspect endpoint and recipe details for the service you choose.".to_string(),
+                },
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Use `background_shell_invoke_recipe {{\"jobId\":\"{job_ref}\",\"recipe\":\"...\"}}` to reuse the ready service directly."
+                    ),
+                    None => "Use `background_shell_invoke_recipe {\"jobId\":\"@capability\",\"recipe\":\"...\"}` to reuse the ready service directly.".to_string(),
+                },
             ],
         };
     }
     if booting_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Booting);
         return match audience {
             ActionAudience::Operator => vec![
                 "Run `:ps services booting` to inspect readiness state and startup metadata."
                     .to_string(),
-                "Run `:ps wait <job|@capability> [timeoutMs]` for the booting service you need."
-                    .to_string(),
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Run `:ps wait {job_ref} [timeoutMs]` for the booting service you need."
+                    ),
+                    None => "Run `:ps wait <job|@capability> [timeoutMs]` for the booting service you need."
+                        .to_string(),
+                },
                 "Run `:ps capabilities booting` to keep the capability view focused.".to_string(),
             ],
             ActionAudience::Tool => vec![
                 "Use `background_shell_list_services {\"status\":\"booting\"}` to inspect readiness state and startup metadata.".to_string(),
-                "Use `background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}` for the booting service you need.".to_string(),
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Use `background_shell_wait_ready {{\"jobId\":\"{job_ref}\",\"timeoutMs\":5000}}` for the booting service you need."
+                    ),
+                    None => "Use `background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}` for the booting service you need.".to_string(),
+                },
                 "Use `background_shell_list_capabilities {\"status\":\"booting\"}` to keep the capability view focused.".to_string(),
             ],
         };
     }
     if untracked_services > 0 {
+        let provider_ref =
+            unique_service_ref_by_readiness(state, BackgroundShellServiceReadiness::Untracked);
         return match audience {
             ActionAudience::Operator => vec![
                 "Run `:ps services untracked` to inspect reusable services that still lack readiness or attachment contract metadata."
                     .to_string(),
-                "Run `:ps contract <jobId|alias|@capability|n> <json-object>` to add fields such as `readyPattern`, `protocol`, `endpoint`, `attachHint`, or `recipes`."
-                    .to_string(),
-                "Run `:ps relabel <jobId|alias|@capability|n> <label|none>` if the service also needs a clearer operator-facing identity."
-                    .to_string(),
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Run `:ps contract {job_ref} <json-object>` to add fields such as `readyPattern`, `protocol`, `endpoint`, `attachHint`, or `recipes`."
+                    ),
+                    None => "Run `:ps contract <jobId|alias|@capability|n> <json-object>` to add fields such as `readyPattern`, `protocol`, `endpoint`, `attachHint`, or `recipes`."
+                        .to_string(),
+                },
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Run `:ps relabel {job_ref} <label|none>` if the service also needs a clearer operator-facing identity."
+                    ),
+                    None => "Run `:ps relabel <jobId|alias|@capability|n> <label|none>` if the service also needs a clearer operator-facing identity."
+                        .to_string(),
+                },
             ],
             ActionAudience::Tool => vec![
                 "Use `background_shell_list_services {\"status\":\"untracked\"}` to inspect reusable services that still lack readiness or attachment contract metadata."
                     .to_string(),
-                "Use `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}` to add reusable contract metadata in place."
-                    .to_string(),
-                "Use `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"label\":\"service-label\"}` if the service also needs a clearer operator-facing identity."
-                    .to_string(),
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{job_ref}\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}}` to add reusable contract metadata in place."
+                    ),
+                    None => "Use `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"readyPattern\":\"READY\",\"protocol\":\"http\",\"endpoint\":\"http://127.0.0.1:3000\"}` to add reusable contract metadata in place."
+                        .to_string(),
+                },
+                match provider_ref.as_deref() {
+                    Some(job_ref) => format!(
+                        "Use `background_shell_update_service {{\"jobId\":\"{job_ref}\",\"label\":\"service-label\"}}` if the service also needs a clearer operator-facing identity."
+                    ),
+                    None => "Use `background_shell_update_service {\"jobId\":\"<jobId|alias|@capability>\",\"label\":\"service-label\"}` if the service also needs a clearer operator-facing identity."
+                        .to_string(),
+                },
             ],
         };
     }
