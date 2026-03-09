@@ -299,6 +299,181 @@ For phase 1, every event should satisfy two constraints:
 
 That avoids overfitting the first API to a single WebUI or terminal proxy.
 
+## Example Local API Payloads
+
+These examples are intentionally small and semantic. They are not final protocol commitments.
+
+### `POST /api/v1/session/new`
+
+Request:
+
+```json
+{
+  "cwd": "/work/repo",
+  "objective": "Continue the highest-leverage engineering work."
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "session_id": "sess_01HX...",
+  "cwd": "/work/repo",
+  "active_thread_id": null,
+  "automation_mode": "auto"
+}
+```
+
+### `POST /api/v1/session/attach`
+
+Request:
+
+```json
+{
+  "session_id": "sess_01HX...",
+  "thread_id": "thread_abc123"
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "session_id": "sess_01HX...",
+  "thread_id": "thread_abc123",
+  "model": "gpt-5-codex",
+  "personality": "balanced",
+  "collaboration_mode": "plan"
+}
+```
+
+### `POST /api/v1/turn/start`
+
+Request:
+
+```json
+{
+  "session_id": "sess_01HX...",
+  "text": "Review the recent changes and continue with the next highest-leverage task."
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "session_id": "sess_01HX...",
+  "thread_id": "thread_abc123",
+  "turn_id": "turn_def456"
+}
+```
+
+### `GET /api/v1/orchestration/status`
+
+Response:
+
+```json
+{
+  "ok": true,
+  "session_id": "sess_01HX...",
+  "main_agent": {
+    "state": "blocked",
+    "reason": "waiting_on_shell_prerequisite"
+  },
+  "counts": {
+    "waits": 1,
+    "sidecar_agents": 2,
+    "exec_prereqs": 1,
+    "exec_services": 1,
+    "terminals": 0
+  },
+  "next_action": {
+    "kind": "tool_call",
+    "tool": "background_shell_wait_ready",
+    "arguments": {
+      "jobId": "bg-2",
+      "timeoutMs": 5000
+    }
+  }
+}
+```
+
+### `GET /api/v1/events`
+
+Representative SSE event:
+
+```text
+event: orchestration.updated
+data: {"session_id":"sess_01HX...","counts":{"waits":1,"exec_prereqs":1},"next_action":{"kind":"tool_call","tool":"background_shell_poll","arguments":{"jobId":"bg-1"}}}
+```
+
+## Event Envelope Candidate
+
+The likely phase-1 event envelope should stay simple:
+
+```json
+{
+  "type": "status.updated",
+  "session_id": "sess_01HX...",
+  "thread_id": "thread_abc123",
+  "turn_id": "turn_def456",
+  "ts_unix_ms": 1760000000000,
+  "data": {
+    "working": true,
+    "elapsed_ms": 12450
+  }
+}
+```
+
+Candidate required fields:
+
+- `type`
+- `session_id`
+- `ts_unix_ms`
+- `data`
+
+Candidate optional fields:
+
+- `thread_id`
+- `turn_id`
+- `item_id`
+- `source`
+
+For compatibility with the `~/work/agent` direction, the envelope should remain:
+
+- machine-readable
+- append-only
+- reconnect-friendly
+- usable without parsing terminal-formatted text
+
+## Security And Deployment Matrix
+
+The first implementation should choose one row explicitly rather than leaving auth/deployment implicit.
+
+| Mode | Exposure | Auth model | Browser support | Broker-ready | Recommended use |
+| --- | --- | --- | --- | --- | --- |
+| Loopback-only local API | localhost only | optional local bearer token | limited, same-host only | not directly | safest phase-1 path |
+| Local API + connector | localhost API, remote via connector | local token + connector auth | yes, via connector/broker | yes | best compatibility path |
+| Direct broker in `codexw` | remote reachable | broker token and/or mTLS | yes | yes | later phase only |
+
+Recommended initial choice:
+
+- phase 1: loopback-only local API, optional bearer token
+- phase 2: local API plus connector
+- phase 3: evaluate whether direct broker connectivity is worth the complexity
+
+## Open Implementation Risks
+
+- reconnect and replay semantics may be harder than the initial API shape suggests
+- multi-client mutation ordering could force explicit actor ownership rules
+- exposing shell/service control remotely increases the blast radius of auth mistakes
+- app-server version drift may make some internal events harder to stabilize as public API contracts
+- browser-safe auth may pressure the API shape earlier than expected if a WebUI becomes the first client
+
 ## Mapping Against `~/work/agent`
 
 The likely compatibility plan is partial, not immediate full parity.
