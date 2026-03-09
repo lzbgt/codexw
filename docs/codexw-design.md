@@ -672,7 +672,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/core.rs`
   Orchestration dynamic-tool core test namespace.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/core/specs.rs`
-  Dynamic-tool schema bundle regression tests.
+  Dynamic-tool schema regression namespace root.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/core/specs/bundle.rs`
+  Full dynamic-tool bundle ordering regression tests.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/core/specs/background_shells.rs`
+  Background-shell dynamic-tool schema-group regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/core/orchestration.rs`
   Orchestration dynamic-tool status, filter, and dependency-view regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance.rs`
@@ -696,7 +700,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools/specs/workspace.rs`
   Workspace inspection dynamic-tool schema bundle.
 - `wrapper/src/client_dynamic_tools/specs/background_shells.rs`
-  Background-shell/service dynamic-tool schema bundle.
+  Background-shell dynamic-tool schema namespace root.
+- `wrapper/src/client_dynamic_tools/specs/background_shells/jobs.rs`
+  Generic background-shell lifecycle/control dynamic-tool schema bundle.
+- `wrapper/src/client_dynamic_tools/specs/background_shells/services.rs`
+  Reusable-service capability, metadata, readiness, and recipe dynamic-tool schema bundle.
 - `wrapper/src/client_dynamic_tools/execution.rs`
   Client dynamic-tool execution namespace root.
 - `wrapper/src/client_dynamic_tools/execution/orchestration.rs`
@@ -919,6 +927,7 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/background_shells/tests/services.rs`
   Reusable-service regression test namespace for service updates and service/capability views.
 - `wrapper/src/background_shells/tests/services/updates.rs`
+  Reusable-service mutation/readiness regression namespace root.
 - `wrapper/src/background_shells/tests/services/updates/mutations.rs`
   Reusable-service metadata mutation, dependency-retarget, and capability-scoped termination regression tests.
 - `wrapper/src/background_shells/tests/services/updates/readiness.rs`
