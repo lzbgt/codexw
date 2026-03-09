@@ -785,6 +785,38 @@ fn actions_filter_uses_concrete_poll_for_single_generic_blocker() {
 }
 
 #[test]
+fn actions_filter_uses_real_reference_placeholder_for_non_unique_generic_blockers() {
+    let services = crate::state::AppState::new(true, false);
+    services
+        .background_shells
+        .start_from_tool(
+            &serde_json::json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite"
+            }),
+            "/tmp",
+        )
+        .expect("start first generic blocker");
+    services
+        .background_shells
+        .start_from_tool(
+            &serde_json::json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite"
+            }),
+            "/tmp",
+        )
+        .expect("start second generic blocker");
+
+    let tool_rendered = render_orchestration_actions_for_tool(&services);
+    assert!(
+        tool_rendered.contains("background_shell_poll {\"jobId\":\"<jobId|alias|@capability>\"}")
+    );
+    assert!(!tool_rendered.contains("background_shell_poll {\"jobId\":\"bg-...\"}"));
+    let _ = services.background_shells.terminate_all_running();
+}
+
+#[test]
 fn focused_actions_for_untracked_capability_render_contract_fixes() {
     let services = crate::state::AppState::new(true, false);
     services

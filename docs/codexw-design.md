@@ -133,7 +133,7 @@ This keeps all user-visible state transitions serialized through one place.
 - the last status line
 - pending JSON-RPC requests keyed by request id
 - streamed command/file/process output buffers used to coalesce incremental backend events into completed render blocks
-- cached agent-thread ids from the most recent `/agent` or `/multi-agents` listing
+- cached agent-thread ids from the most recent `:agent` or `:multi-agents` listing
 
 ## Orchestration Model
 
@@ -156,7 +156,7 @@ The intended runtime roles are:
 
 This is deliberately close to upstream Codex's split:
 
-- `/agent` and `/multi-agents` are thread-selection UI, not the orchestration engine
+- `:agent` and `:multi-agents` are thread-selection UI, not the orchestration engine
 - the real multi-agent workflow in upstream Codex is the collaboration tool surface:
   - `spawn_agent`
   - `send_input`
@@ -180,9 +180,9 @@ The intended orchestration policy in `codexw` is:
 
 In practical terms:
 
-- `/agent` and `/multi-agents` should expose and switch cognitive workers
-- `/ps` should expose execution workers and observed backend terminals
-- `/status` should summarize the orchestration state explicitly instead of collapsing it into a generic background counter
+- `:agent` and `:multi-agents` should expose and switch cognitive workers
+- `:ps` should expose execution workers and observed backend terminals
+- `:status` should summarize the orchestration state explicitly instead of collapsing it into a generic background counter
 
 ### Current implementation state
 
@@ -205,7 +205,7 @@ The current `codexw` implementation now reflects that model partially:
   - `prerequisite` for critical-path shell work that should count as blocking
   - `observation` for non-blocking sidecar execution such as tests, searches, or crawls
   - `service` for reusable long-lived helpers such as dev servers
-  - optional `label` text for operator-facing status and `/ps` output
+  - optional `label` text for operator-facing status and `:ps` output
   - optional `capabilities` array for service jobs, so later turns can resolve helpers by role such as `@api.http` or `@frontend`
   - optional `readyPattern` text for service jobs, so the wrapper can promote them from `booting` to `ready` when logs match a concrete milestone
   - optional `protocol`, `endpoint`, and `attachHint` text for service jobs, so the wrapper can expose structured attachment metadata for later turns and worker tasks
@@ -217,10 +217,10 @@ The current `codexw` implementation now reflects that model partially:
   - `redis` actions may declare RESP command arrays plus expectation checks so Redis-family services can expose typed verbs without forcing the caller to manually serialize raw RESP over a generic `tcp` action
 - live `collabAgentToolCall` items are now tracked as in-turn cognitive work:
   - active collab-agent calls are kept in a live registry while the turn is running
-  - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `/multi-agents`
+  - `receiverThreadIds` and `agentsStates` opportunistically refresh the cached agent-thread view even before the user runs `:multi-agents`
   - `wait` calls are tracked separately as main-agent dependencies, so the wrapper can tell the difference between "subagents are running" and "the foreground agent is actually blocked waiting on them"
-- `/ps` renders the tracked worker snapshot: cached cognitive workers from `/agent` or `/multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
-- `/ps` now also supports worker-class filters:
+- `:ps` renders the tracked worker snapshot: cached cognitive workers from `:agent` or `:multi-agents`, backend-observed background terminals, and wrapper-owned background shell jobs
+- `:ps` now also supports worker-class filters:
   - `:ps blockers` for blocking waits and prerequisite shells
   - `:ps dependencies` for the current dependency-edge graph without the rest of the worker snapshot
     - `:ps dependencies blocking|sidecars|missing|booting|ambiguous|satisfied [@capability]` filters the dependency graph to one issue/state class and can narrow it to a single reusable role
@@ -232,7 +232,7 @@ The current `codexw` implementation now reflects that model partially:
     - `:ps capabilities @api.http` drills into one capability directly and shows providers plus current consumers
     - `:ps capabilities healthy|missing|booting|untracked|ambiguous` filters the capability index to one health/issue class
   - `:ps terminals` for backend-observed terminals only
-- `/ps` also has per-job local-shell actions now:
+- `:ps` also has per-job local-shell actions now:
   - `:ps attach <jobId|alias|@capability|n>` renders the structured attachment metadata for one service shell job
   - `:ps wait <jobId|alias|@capability|n> [timeoutMs]` blocks until one service shell reaches its declared `readyPattern`
   - `:ps run <jobId|alias|@capability|n> <recipe> [json-args]` invokes one declared service recipe through the wrapper-owned typed action layer, with optional per-invocation arguments
@@ -292,10 +292,10 @@ The current `codexw` implementation now reflects that model partially:
   - the model-facing dynamic tool layer now also includes filtered capability listing, so orchestration can ask for only missing, booting, ambiguous, or healthy service roles instead of scraping the full reusable-service registry
   - the model-facing dynamic tool layer now also includes live shell metadata mutation, so orchestration can assign or clear stable in-session aliases through `background_shell_set_alias`, replace or clear a service shell's declared `capabilities`, live `label`, or attachment-contract fields such as `protocol`, `endpoint`, `attachHint`, `readyPattern`, and `recipes` through `background_shell_update_service`, and can retarget or clear any running job's declared `dependsOnCapabilities` set through `background_shell_update_dependencies`, instead of forcing a restart when a reusable role, attach contract, or dependency edge needs to change
   - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
-- `/ps` also has in-session attachment naming now:
-  - `:ps alias <jobId|alias|@capability|n> <name>` assigns a stable alias to one local shell job through the same job-reference syntax used by the other `/ps` control commands
+- `:ps` also has in-session attachment naming now:
+  - `:ps alias <jobId|alias|@capability|n> <name>` assigns a stable alias to one local shell job through the same job-reference syntax used by the other `:ps` control commands
   - `:ps unalias <name|jobId|alias|@capability|n>` removes that alias either by the alias token itself or by resolving the target job reference directly
-  - aliases are session-local, operator-visible in `/ps`, and reusable anywhere the existing `jobId` reference surface is accepted, including poll, send, and terminate flows from both operator commands and dynamic tools
+  - aliases are session-local, operator-visible in `:ps`, and reusable anywhere the existing `jobId` reference surface is accepted, including poll, send, and terminate flows from both operator commands and dynamic tools
   - this gives long-lived service shells a first-class continuity handle without pretending they are repo-global or backend-native objects
 - cleanup is now scoped along the same control boundary:
   - `:clean blockers` and `:ps clean blockers` terminate only wrapper-owned prerequisite shells
@@ -304,7 +304,7 @@ The current `codexw` implementation now reflects that model partially:
   - `:clean services @api.http` and `:ps clean services @api.http` terminate all running providers for one reusable service capability, which is the intended conflict-resolution path when a capability is ambiguous across multiple service shells
   - `:clean terminals` uses the backend `thread/backgroundTerminals/clean` API without touching local shell jobs
   - agent waits remain inspectable but are not directly terminable from the wrapper, so blocker cleanup is honest about targeting only controllable prerequisite shells
-- `/status` now reports an orchestration breakdown with:
+- `:status` now reports an orchestration breakdown with:
   - `main=1`
   - blocking and sidecar dependency-edge counts derived from the live orchestration graph
   - live wait count from in-progress `wait` collab calls
@@ -315,7 +315,7 @@ The current `codexw` implementation now reflects that model partially:
   - live ready, booting, and untracked service-shell counts within that execution-service class
   - live conflicted-service count for reusable helpers that currently participate in capability collisions
   - live collab-agent task count from the current turn
-  - cached agent-thread count from the latest `/agent` or `/multi-agents` listing
+  - cached agent-thread count from the latest `:agent` or `:multi-agents` listing
   - wrapper-owned background shell count
   - backend thread-terminal count
 - the ready prompt now consumes the same orchestration state:
@@ -323,26 +323,26 @@ The current `codexw` implementation now reflects that model partially:
   - it distinguishes sidecars, reusable services, and server terminals instead of showing only a flat background-task count
   - reusable services can now surface as `booting`, `ready`, or `untracked` directly in that prompt suffix
   - reusable services can also surface as `conflicted` when capability reuse is ambiguous
-  - it keeps `/ps` and `/clean` as the action hints for inspecting or stopping async work
-- that orchestration state is now actionable from `/ps` itself, not just visible:
+  - it keeps `:ps` and `:clean` as the action hints for inspecting or stopping async work
+- that orchestration state is now actionable from `:ps` itself, not just visible:
   - the full worker view remains the default
-  - filtered `/ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
-  - `/ps blockers @capability` narrows the blocking view to one reusable dependency role instead of forcing the operator to scan every prerequisite and wait edge
-- `/ps guidance` now uses the same graph to emit a highest-priority next-step hint instead of only another raw worker listing, and `/ps guidance @capability` narrows that hint to one reusable role; if the focused role is currently backed by an untracked service provider, the hint now stays in contract-fix mode instead of collapsing to generic healthy reuse. Global guidance now also surfaces untracked reusable services explicitly instead of letting them fall through to generic sidecar guidance, so a lone untracked provider can point directly at contract-fix steps before it is treated as reusable. Operator-facing guidance and prompt/status hints now consistently use session-command syntax such as `:ps`, `:clean`, and `:multi-agents` instead of mixing slash and colon forms
-  - `/ps actions` is the operator-facing remediation companion: it renders concrete follow-up commands inferred from the current state, such as `:ps capabilities @api.http`, `:ps provide <jobId|alias|n> <@capability...|none>`, `:ps depend <jobId|alias|n> <@capability...|none>`, `:ps contract <jobId|alias|@capability|n> <json-object>`, `:clean services @api.http`, or `:ps wait bg-1 5000`, and untracked reusable services now surface explicit contract-fix suggestions instead of falling through as generic sidecars; `/ps actions @capability` narrows those suggestions to one reusable role and now surfaces the same focused contract-fix guidance when the provider for that role is still untracked. When the wrapper already knows the exact provider or blocker job for a focused role, including booting, untracked, healthy, missing, or ambiguous focused views, those remediation steps now use that concrete mutable ref directly instead of a generic placeholder, and the same concrete-ref behavior now also applies to global single-provider booting, untracked, and healthy service branches, global booting blocker remediation, the generic single-blocker prerequisite branch, and missing-role retarget suggestions when there is exactly one running service shell that can be repurposed. When a unique ready provider also declares recipes, those focused and global remediation steps now prefer the best known executable recipe rather than just the first declared one, favor health/status-style verbs when available, and include concrete example JSON arguments when the selected recipe has required or defaulted parameters. They still fall back to attach-only guidance when the declared recipes are descriptive-only or otherwise non-executable. When those global ready, booting, or untracked branches cannot be narrowed to one provider, the fallback remediation still uses the real `jobId|alias|@capability|n` syntax instead of the older vague `<job>` shorthand. Global missing-blocker guidance now uses that same concrete ref too when a single service is available to retarget. In that generic blocker case, the remediation now prefers concrete `poll` steps instead of implying `wait_ready` on plain prerequisite shells that have no readiness contract. When the focused role is missing or ambiguous, the retarget suggestions intentionally use concrete mutable job refs such as `jobId`, alias, or numeric index unless the wrapper still lacks a unique mutable target, because the capability selector is not uniquely resolvable in those states; ambiguous-role remediation now also suggests moving a provider to `@other.role` or clearing its capability set entirely instead of reapplying the same conflicting role
-- `/status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `/ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
+  - filtered `:ps` views let the operator jump directly to the class of worker they care about instead of scanning a mixed snapshot
+  - `:ps blockers @capability` narrows the blocking view to one reusable dependency role instead of forcing the operator to scan every prerequisite and wait edge
+- `:ps guidance` now uses the same graph to emit a highest-priority next-step hint instead of only another raw worker listing, and `:ps guidance @capability` narrows that hint to one reusable role; if the focused role is currently backed by an untracked service provider, the hint now stays in contract-fix mode instead of collapsing to generic healthy reuse. Global guidance now also surfaces untracked reusable services explicitly instead of letting them fall through to generic sidecar guidance, so a lone untracked provider can point directly at contract-fix steps before it is treated as reusable. Operator-facing guidance and prompt/status hints now consistently use session-command syntax such as `:ps`, `:clean`, and `:multi-agents` instead of mixing slash and colon forms
+  - `:ps actions` is the operator-facing remediation companion: it renders concrete follow-up commands inferred from the current state, such as `:ps capabilities @api.http`, `:ps provide <jobId|alias|n> <@capability...|none>`, `:ps depend <jobId|alias|n> <@capability...|none>`, `:ps contract <jobId|alias|@capability|n> <json-object>`, `:clean services @api.http`, or `:ps wait bg-1 5000`, and untracked reusable services now surface explicit contract-fix suggestions instead of falling through as generic sidecars; `:ps actions @capability` narrows those suggestions to one reusable role and now surfaces the same focused contract-fix guidance when the provider for that role is still untracked. When the wrapper already knows the exact provider or blocker job for a focused role, including booting, untracked, healthy, missing, or ambiguous focused views, those remediation steps now use that concrete mutable ref directly instead of a generic placeholder, and the same concrete-ref behavior now also applies to global single-provider booting, untracked, and healthy service branches, global booting blocker remediation, the generic single-blocker prerequisite branch, and missing-role retarget suggestions when there is exactly one running service shell that can be repurposed. When a unique ready provider also declares recipes, those focused and global remediation steps now prefer the best known executable recipe rather than just the first declared one, favor health/status-style verbs when available, and include concrete example JSON arguments when the selected recipe has required or defaulted parameters. They still fall back to attach-only guidance when the declared recipes are descriptive-only or otherwise non-executable. When those global ready, booting, or untracked branches cannot be narrowed to one provider, the fallback remediation still uses the real `jobId|alias|@capability|n` syntax instead of the older vague `<job>` shorthand. Global missing-blocker guidance now uses that same concrete ref too when a single service is available to retarget. In that generic blocker case, the remediation now prefers concrete `poll` steps instead of implying `wait_ready` on plain prerequisite shells that have no readiness contract. When the focused role is missing or ambiguous, the retarget suggestions intentionally use concrete mutable job refs such as `jobId`, alias, or numeric index unless the wrapper still lacks a unique mutable target, because the capability selector is not uniquely resolvable in those states; ambiguous-role remediation now also suggests moving a provider to `@other.role` or clearing its capability set entirely instead of reapplying the same conflicting role
+- `:status` runtime output also exposes a compact `background cls` line with the shell-intent, service-readiness, and terminal class counts, so the operator-facing summary does not require opening `:ps` just to tell whether async work is blocking, merely observational, or a service that is still booting
 - that compact summary now also carries capability-dependency issue counts (`cap_deps_missing`, `cap_deps_booting`, `cap_deps_ambiguous`), so durable service dependency health is visible without opening the detailed capability registry
 - that compact summary now also carries conflicted-service counts, so capability-collision health is visible without opening the detailed service registry
-- `/status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives the first concrete operator step as well as raw counts and dependency edges
+- `:status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives the first concrete operator step as well as raw counts and dependency edges
 - the same orchestration graph is now available to the model-side dynamic tool layer too:
   - `orchestration_status` mirrors the compact orchestration summary plus the first concrete tool-native next action rather than a descriptive guidance headline
-  - `orchestration_list_workers` mirrors the `/ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, `guidance`, or `actions`; when `filter=guidance` or `filter=actions`, it returns concrete dynamic-tool suggestions instead of operator slash commands, and `filter=blockers|guidance|actions` can additionally take `capability=@...` to focus the result on one reusable role
-  - `orchestration_suggest_actions` is the focused model-side companion to `/ps actions`, returns only the concrete dynamic-tool remediation steps suggested by the current orchestration state, including live retarget actions such as `background_shell_update_service` and `background_shell_update_dependencies` when a missing, ambiguous, mis-targeted, or under-described service capability can be fixed in place, and can optionally narrow that suggestion set to one `@capability`; in missing or ambiguous states those mutation suggestions intentionally use concrete mutable job refs instead of `jobId=@capability`, because the capability selector is not unique enough to mutate safely, and ambiguous-role fixes now recommend either replacing the role with `@other.role` or clearing `capabilities` with `null`. When a unique ready provider declares recipes, the tool-side guidance/action surface now prefers the best known executable recipe instead of a placeholder invoke target, favors health/status-style verbs when available, includes concrete example `args` payloads when the selected recipe has required or defaulted parameters, and falls back to attach-only guidance when the declared recipes are descriptive-only or otherwise non-executable
+  - `orchestration_list_workers` mirrors the `:ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, `guidance`, or `actions`; when `filter=guidance` or `filter=actions`, it returns concrete dynamic-tool suggestions instead of operator session commands, and `filter=blockers|guidance|actions` can additionally take `capability=@...` to focus the result on one reusable role
+  - `orchestration_suggest_actions` is the focused model-side companion to `:ps actions`, returns only the concrete dynamic-tool remediation steps suggested by the current orchestration state, including live retarget actions such as `background_shell_update_service` and `background_shell_update_dependencies` when a missing, ambiguous, mis-targeted, or under-described service capability can be fixed in place, and can optionally narrow that suggestion set to one `@capability`; in missing or ambiguous states those mutation suggestions intentionally use concrete mutable job refs instead of `jobId=@capability`, because the capability selector is not unique enough to mutate safely, and ambiguous-role fixes now recommend either replacing the role with `@other.role` or clearing `capabilities` with `null`. When a unique ready provider declares recipes, the tool-side guidance/action surface now prefers the best known executable recipe instead of a placeholder invoke target, favors health/status-style verbs when available, includes concrete example `args` payloads when the selected recipe has required or defaulted parameters, and falls back to attach-only guidance when the declared recipes are descriptive-only or otherwise non-executable
   - `orchestration_list_dependencies` mirrors the focused dependency-edge view with optional filters such as `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`, plus an optional `capability` selector for one reusable role
   - `background_shell_list_services` mirrors the focused reusable-service registry with optional filters such as `ready`, `booting`, `untracked`, or `conflicts`, plus an optional `capability` selector for one reusable role
   - `background_shell_clean` mirrors the local cleanup control surface with `scope=all|blockers|shells|services`; `scope=blockers` can optionally target one reusable dependency role with `capability=@...`, and `scope=services` can optionally target one reusable provider role with `capability=@...`, so model-side orchestration can resolve blocked prerequisite jobs or ambiguous service providers instead of only reporting the conflict
 
-That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `/multi-agents`, `/ps`, ready status, and transcript summaries all read from that same model.
+That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `:multi-agents`, `:ps`, ready status, and transcript summaries all read from that same model.
 `codexw` also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.
 
 The next architectural step, if deeper orchestration is needed, is not basic state unification anymore. It is richer policy and scheduling on top of the unified state, for example:
@@ -536,7 +536,7 @@ Current user-facing capabilities include:
 - slash-command help and completion
 - fuzzy and ambiguous slash suggestions
 - numbered file mention and thread resume pickers in scrollback
-- rich `/status` output, including turn counts, active request time, token usage, account state, and rate limits
+- rich `:status` output, including turn counts, active request time, token usage, account state, and rate limits
 - real collaboration-mode controls through `/plan` and `/collab`, backed by `collaborationMode/list` plus `turn/start.collaborationMode`
 - backend-backed `/experimental` listing through `experimentalFeature/list`
 - backend-backed text realtime controls through `/realtime start|send|stop`, backed by `thread/realtime/*`
@@ -544,7 +544,7 @@ Current user-facing capabilities include:
 - in-session numbered permissions presets for `/approvals` and `/permissions`, backed by `turn/start.approvalPolicy`, `turn/start.sandboxPolicy`, and matching thread/local-command overrides
 - local runtime toggles for `/fast` service-tier selection and `/theme` syntax-highlighting theme selection, both aligned with persisted Codex config state
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
-- backend-backed `/agent` and `/multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
+- backend-backed `:agent` and `:multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
 - client dynamic tools on new threads via `thread/start.dynamicTools`, covering both read-only workspace inspection (`workspace_list_dir`, `workspace_stat_path`, `workspace_read_file`, `workspace_find_files`, `workspace_search_text`) and wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_attach`, `background_shell_wait_ready`, `background_shell_invoke_recipe`, `background_shell_list`, `background_shell_terminate`), including service readiness contracts via `readyPattern`, explicit readiness waits, and service attachment metadata via `protocol` / `endpoint` / `attachHint` / `recipes`
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
@@ -694,9 +694,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/session_realtime_item.rs`
   Realtime item rendering plus text/transcript extraction from streamed realtime payloads.
 - `wrapper/src/session_snapshot_overview.rs`
-  Core `/status` overview lines for cwd, thread, sandbox, model, collaboration, and attachment state.
+  Core `:status` overview lines for cwd, thread, sandbox, model, collaboration, and attachment state.
 - `wrapper/src/session_snapshot_runtime.rs`
-  Runtime `/status` lines for realtime state, account, activity timing, rate limits, token usage, and last reply summaries.
+  Runtime `:status` lines for realtime state, account, activity timing, rate limits, token usage, and last reply summaries.
 - `wrapper/src/requests.rs`
   Outbound request namespace root plus shared `send_json(...)` transport helper.
 - `wrapper/src/requests/request_types.rs`
@@ -808,11 +808,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/dispatch_command_session_catalog_models.rs`
   Session model-display commands such as models, model selection, and personality workflows.
 - `wrapper/src/dispatch_command_session_status.rs`
-  Session display/status commands such as attachments, permissions, `/status`, config display, and realtime status.
+  Session display/status commands such as attachments, permissions, `:status`, config display, and realtime status.
 - `wrapper/src/dispatch_command_session_collab.rs`
   Collaboration and plan-mode session command workflows.
 - `wrapper/src/dispatch_command_session_ps.rs`
-  Background-terminal cleanup and `/ps` status messaging.
+  Background-terminal cleanup and `:ps` status messaging.
 - `wrapper/src/dispatch_command_session_meta.rs`
   Session meta workflows such as feedback, logout, and recognized-but-unported native popup paths.
 - `wrapper/src/dispatch_command_utils.rs`

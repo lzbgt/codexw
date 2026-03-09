@@ -1282,7 +1282,7 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
                     ));
                 } else {
                     lines.push(
-                        "Use `background_shell_poll {\"jobId\":\"bg-...\"}` on the blocker you care about."
+                        "Use `background_shell_poll {\"jobId\":\"<jobId|alias|@capability>\"}` on the blocker you care about."
                             .to_string(),
                     );
                 }
