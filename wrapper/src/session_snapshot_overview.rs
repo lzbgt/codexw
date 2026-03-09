@@ -2,7 +2,7 @@ use crate::Cli;
 use crate::collaboration_view::summarize_active_collaboration_mode;
 use crate::model_catalog::effective_model_entry;
 use crate::model_personality_view::summarize_active_personality;
-use crate::orchestration_view::orchestration_guidance_summary;
+use crate::orchestration_view::orchestration_next_action_summary;
 use crate::orchestration_view::orchestration_overview_summary;
 use crate::policy::approval_policy;
 use crate::policy::thread_sandbox_mode;
@@ -86,8 +86,8 @@ pub(crate) fn render_status_overview(
         "orchestration   {}",
         orchestration_overview_summary(state)
     ));
-    if let Some(guidance) = orchestration_guidance_summary(state) {
-        lines.push(format!("next action     {guidance}"));
+    if let Some(next_action) = orchestration_next_action_summary(state) {
+        lines.push(format!("next action     {next_action}"));
     }
     if !state.models.is_empty() {
         lines.push(format!("models cached   {}", state.models.len()));

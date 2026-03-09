@@ -41,7 +41,7 @@ fn dynamic_tool_specs_include_workspace_tools() {
 }
 
 #[test]
-fn orchestration_status_reports_worker_and_guidance_summary() {
+fn orchestration_status_reports_worker_and_next_action_summary() {
     let state = AppState::new(true, false);
     state
         .orchestration
@@ -71,7 +71,9 @@ fn orchestration_status_reports_worker_and_guidance_summary() {
     assert!(rendered.contains("orchestration   main=1"));
     assert!(rendered.contains("cap_deps_missing=1"));
     assert!(rendered.contains("next action"));
-    assert!(rendered.contains("missing service capability @api.http"));
+    assert!(
+        rendered.contains("background_shell_inspect_capability {\"capability\":\"@api.http\"}")
+    );
     assert!(!rendered.contains(":ps provide"));
     let _ = state
         .orchestration

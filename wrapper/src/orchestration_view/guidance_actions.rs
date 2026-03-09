@@ -14,12 +14,19 @@ use super::DependencySelection;
 use super::pluralize;
 use super::render_orchestration_dependencies;
 
+#[cfg(test)]
 pub(crate) fn orchestration_guidance_summary(state: &AppState) -> Option<String> {
     guidance_lines(state).first().cloned()
 }
 
-pub(crate) fn orchestration_guidance_summary_for_tool(state: &AppState) -> Option<String> {
-    guidance_lines_for_tool(state).first().cloned()
+pub(crate) fn orchestration_next_action_summary(state: &AppState) -> Option<String> {
+    action_lines(state, ActionAudience::Operator)
+        .first()
+        .cloned()
+}
+
+pub(crate) fn orchestration_next_action_summary_for_tool(state: &AppState) -> Option<String> {
+    action_lines(state, ActionAudience::Tool).first().cloned()
 }
 
 pub(crate) fn render_orchestration_guidance(state: &AppState) -> String {

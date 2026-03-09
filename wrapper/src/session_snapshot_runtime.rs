@@ -1,7 +1,7 @@
 use crate::Cli;
 use crate::background_terminals::background_terminal_count;
 use crate::orchestration_view::orchestration_background_summary;
-use crate::orchestration_view::orchestration_guidance_summary;
+use crate::orchestration_view::orchestration_next_action_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
 use crate::session_prompt_status_active::format_elapsed;
 use crate::state::AppState;
@@ -43,8 +43,8 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
     if let Some(summary) = orchestration_runtime_summary(state) {
         lines.push(format!("workers         {summary}"));
     }
-    if let Some(guidance) = orchestration_guidance_summary(state) {
-        lines.push(format!("next action     {guidance}"));
+    if let Some(next_action) = orchestration_next_action_summary(state) {
+        lines.push(format!("next action     {next_action}"));
     }
 
     if let Some(account) = render_account_summary(state.account_info.as_ref()) {

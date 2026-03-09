@@ -11,7 +11,7 @@ use crate::background_shells::BackgroundShellOrigin;
 use crate::orchestration_view::DependencyFilter;
 use crate::orchestration_view::DependencySelection;
 use crate::orchestration_view::WorkerFilter;
-use crate::orchestration_view::orchestration_guidance_summary_for_tool;
+use crate::orchestration_view::orchestration_next_action_summary_for_tool;
 use crate::orchestration_view::orchestration_overview_summary;
 use crate::orchestration_view::orchestration_runtime_summary;
 use crate::orchestration_view::render_orchestration_actions_for_tool;
@@ -37,7 +37,7 @@ pub(crate) fn dynamic_tool_specs() -> Value {
     Value::Array(vec![
         json!({
             "name": "orchestration_status",
-            "description": "Summarize the current orchestration state, including worker counts, dependency health, and the highest-priority next action when one exists.",
+            "description": "Summarize the current orchestration state, including worker counts, dependency health, and the first concrete tool-native next action when one exists.",
             "inputSchema": {
                 "type": "object",
                 "properties": {}
@@ -593,8 +593,8 @@ fn render_orchestration_status_for_tool(state: &AppState) -> String {
     if let Some(runtime) = orchestration_runtime_summary(state) {
         lines.push(format!("runtime         {runtime}"));
     }
-    if let Some(guidance) = orchestration_guidance_summary_for_tool(state) {
-        lines.push(format!("next action     {guidance}"));
+    if let Some(next_action) = orchestration_next_action_summary_for_tool(state) {
+        lines.push(format!("next action     {next_action}"));
     }
     lines.join("\n")
 }

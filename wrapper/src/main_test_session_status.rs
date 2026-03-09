@@ -536,7 +536,9 @@ fn status_runtime_reports_background_classes() {
     assert!(rendered.contains(
         "background cls  prereqs=1 shell_sidecars=1 services=1 services_ready=0 services_booting=0 services_untracked=1 services_conflicted=0 cap_deps_missing=0 cap_deps_booting=0 cap_deps_ambiguous=0 terminals=1"
     ));
-    assert!(rendered.contains("next action     Main agent is blocked on 1 prerequisite shell."));
+    assert!(rendered.contains(
+        "next action     Run `:ps blockers` to inspect the gating shell or wait dependency."
+    ));
     let _ = state.background_shells.terminate_all_running();
 }
 
