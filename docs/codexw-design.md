@@ -626,6 +626,12 @@ The biggest known limits are architectural, not accidental.
   Model catalog extraction regression tests.
 - `wrapper/src/main_test_session_personality_status.rs`
   Personality rendering, prompt-status, and status-snapshot regression tests.
+- `wrapper/src/main_test_session_selections.rs`
+  Session-selection test harness helpers, rollout-path messaging regressions, and selection namespace roots.
+- `wrapper/src/main_test_session_selections/pickers.rs`
+  Model, permissions, personality, theme, and fast-mode picker regression tests.
+- `wrapper/src/main_test_session_selections/threads.rs`
+  Init, agent-thread, thread-switch, dynamic-tool advertisement, and Windows sandbox selection regressions.
 - `wrapper/src/main_test_session_status.rs`
   Thread-status, prompt-status, realtime-status snapshot, ready-state prompt, and collab wait regression tests.
 - `wrapper/src/main_test_session_status_ps_orchestration.rs`
@@ -841,6 +847,12 @@ The biggest known limits are architectural, not accidental.
   Session catalog-list commands such as apps, skills, MCP, and experimental flags.
 - `wrapper/src/dispatch_command_session_catalog_models.rs`
   Session model-display commands such as models, model selection, and personality workflows.
+- `wrapper/src/selection_flow.rs`
+  Session picker orchestration, pending-selection routing, and shared selection presets/constants.
+- `wrapper/src/selection_flow/model.rs`
+  Model and reasoning-effort picker rendering, selector resolution, and persistence/application helpers.
+- `wrapper/src/selection_flow/options.rs`
+  Personality, permissions, theme, and fast-mode picker rendering plus persistence/application helpers.
 - `wrapper/src/dispatch_command_session_status.rs`
   Session display/status commands such as attachments, permissions, `:status`, config display, and realtime status.
 - `wrapper/src/dispatch_command_session_collab.rs`
