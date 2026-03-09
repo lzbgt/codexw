@@ -1,7 +1,8 @@
 use crate::background_shells::BackgroundShellInteractionRecipe;
 use crate::background_shells::BackgroundShellManager;
-use crate::background_shells::normalize_service_label_update;
-use crate::background_shells::parse_service_recipe_updates;
+
+use super::super::super::super::helpers::normalize_service_label_update;
+use super::super::super::super::helpers::parse_service_recipe_updates;
 
 pub(super) fn parse_service_recipes_for_tool(
     object: &serde_json::Map<String, serde_json::Value>,

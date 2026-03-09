@@ -1,7 +1,8 @@
 use crate::background_shells::BackgroundShellManager;
-use crate::background_shells::parse_service_capabilities_argument;
-use crate::background_shells::parse_service_string_update_argument;
-use crate::background_shells::render_service_metadata_update_summary;
+
+use super::super::super::super::helpers::parse_service_capabilities_argument;
+use super::super::super::super::helpers::parse_service_string_update_argument;
+use super::super::super::super::helpers::render_service_metadata_update_summary;
 
 impl BackgroundShellManager {
     pub(crate) fn update_service_from_tool(
@@ -83,25 +84,30 @@ impl BackgroundShellManager {
 
         let resolved_job_id = self.resolve_job_reference(job_id)?;
         let normalized_capabilities = match capabilities {
-            Some(capabilities) => {
-                Some(self.set_running_service_capabilities(&resolved_job_id, &capabilities)?)
-            }
+            Some(capabilities) => Some(
+                self.set_running_service_capabilities(&resolved_job_id, capabilities.as_ref())?,
+            ),
             None => None,
         };
         let normalized_label = match label {
             Some(label) => Some(self.set_running_service_label(&resolved_job_id, label)?),
             None => None,
         };
-        let (normalized_protocol, normalized_endpoint, normalized_attach_hint, normalized_ready_pattern, recipe_count) =
-            super::contract::apply_service_contract_updates(
-                self,
-                &resolved_job_id,
-                protocol,
-                endpoint,
-                attach_hint,
-                ready_pattern,
-                interaction_recipes,
-            )?;
+        let (
+            normalized_protocol,
+            normalized_endpoint,
+            normalized_attach_hint,
+            normalized_ready_pattern,
+            recipe_count,
+        ) = super::contract::apply_service_contract_updates(
+            self,
+            &resolved_job_id,
+            protocol,
+            endpoint,
+            attach_hint,
+            ready_pattern,
+            interaction_recipes,
+        )?;
 
         Ok(render_service_metadata_update_summary(
             &resolved_job_id,

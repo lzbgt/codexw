@@ -1,7 +1,8 @@
 use crate::background_shells::BackgroundShellInteractionRecipe;
 use crate::background_shells::BackgroundShellManager;
-use crate::background_shells::normalize_service_label_update;
-use crate::background_shells::render_service_metadata_update_summary;
+
+use super::super::super::super::helpers::normalize_service_label_update;
+use super::super::super::super::helpers::render_service_metadata_update_summary;
 
 impl BackgroundShellManager {
     pub(crate) fn update_service_contract_for_operator(

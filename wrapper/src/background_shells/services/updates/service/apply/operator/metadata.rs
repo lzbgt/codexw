@@ -1,5 +1,6 @@
 use crate::background_shells::BackgroundShellManager;
-use crate::background_shells::render_service_metadata_update_summary;
+
+use super::super::super::super::helpers::render_service_metadata_update_summary;
 
 impl BackgroundShellManager {
     pub(crate) fn update_service_label_for_operator(

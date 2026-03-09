@@ -3,28 +3,28 @@ use std::process::ChildStdin;
 
 use anyhow::Result;
 
+#[path = "dispatch_command_session_meta/account.rs"]
+mod account;
+#[path = "dispatch_command_session_meta/sandbox.rs"]
+mod sandbox;
+#[path = "dispatch_command_session_meta/session.rs"]
+mod session;
+
 use crate::Cli;
-use crate::config_persistence::resolve_codex_home;
 use crate::dispatch_command_thread_common::require_idle_turn;
-use crate::dispatch_command_utils::parse_feedback_args;
 use crate::editor::LineEditor;
 use crate::input::build_turn_input;
 use crate::output::Output;
-use crate::policy::thread_sandbox_mode;
-use crate::requests::send_feedback_upload;
 use crate::requests::send_list_agent_threads;
-use crate::requests::send_logout_account;
 use crate::requests::send_thread_start;
 use crate::requests::send_turn_start;
-use crate::requests::send_windows_sandbox_setup_start;
-use crate::selection_flow::apply_theme_choice;
-use crate::selection_flow::open_theme_picker;
-use crate::selection_flow::toggle_fast_mode;
 use crate::state::AppState;
-use crate::state::summarize_text;
-use crate::windows_sandbox_read_grants::WINDOWS_SANDBOX_READ_ROOT_USAGE;
-use crate::windows_sandbox_read_grants::grant_read_root_non_elevated;
-use crate::windows_sandbox_read_grants::parse_windows_sandbox_read_root_arg;
+use account::handle_feedback_command;
+use account::handle_logout_command;
+use sandbox::handle_sandbox_add_read_dir_command;
+use sandbox::handle_setup_default_sandbox_command;
+use session::handle_fast_command;
+use session::handle_theme_command;
 
 pub(crate) const INIT_PROMPT: &str = include_str!("prompt_for_init_command.md");
 
@@ -41,46 +41,10 @@ pub(crate) fn try_handle_session_meta_command(
     writer: &mut ChildStdin,
 ) -> Result<Option<bool>> {
     let result = match command {
-        "feedback" => {
-            let owned = args.iter().map(|s| (*s).to_string()).collect::<Vec<_>>();
-            let Some(parsed) = parse_feedback_args(&owned) else {
-                output.line_stderr(
-                    "[session] usage: :feedback <bug|bad_result|good_result|safety_check|other> [reason] [--logs|--no-logs]",
-                )?;
-                return Ok(Some(true));
-            };
-            let current_thread = state.thread_id.clone();
-            output.line_stderr(format!(
-                "[feedback] submitting {} feedback",
-                summarize_text(&parsed.classification)
-            ))?;
-            send_feedback_upload(
-                writer,
-                state,
-                parsed.classification,
-                parsed.reason,
-                current_thread,
-                parsed.include_logs,
-            )?;
-            true
-        }
-        "logout" => {
-            output.line_stderr("[session] logging out")?;
-            send_logout_account(writer, state)?;
-            true
-        }
-        "fast" => {
-            toggle_fast_mode(state, output)?;
-            true
-        }
-        "theme" => {
-            if args.is_empty() {
-                open_theme_picker(state, output)?;
-            } else {
-                apply_theme_choice(&args.join(" "), state, output)?;
-            }
-            true
-        }
+        "feedback" => handle_feedback_command(args, state, output, writer)?,
+        "logout" => handle_logout_command(state, output, writer)?,
+        "fast" => handle_fast_command(state, output)?,
+        "theme" => handle_theme_command(args, state, output)?,
         "init" => {
             if !args.is_empty() {
                 output.line_stderr("[session] usage: :init")?;
@@ -106,49 +70,10 @@ pub(crate) fn try_handle_session_meta_command(
             true
         }
         "setup-default-sandbox" => {
-            if !args.is_empty() {
-                output.line_stderr("[session] usage: :setup-default-sandbox")?;
-                return Ok(Some(true));
-            }
-            if !cfg!(target_os = "windows") {
-                output
-                    .line_stderr("[session] /setup-default-sandbox is only available on Windows")?;
-                return Ok(Some(true));
-            }
-            output.line_stderr("[session] starting Windows sandbox setup (elevated)")?;
-            send_windows_sandbox_setup_start(writer, state, resolved_cwd, "elevated")?;
-            true
+            handle_setup_default_sandbox_command(args, resolved_cwd, state, output, writer)?
         }
         "sandbox-add-read-dir" => {
-            let Some(read_root) = parse_windows_sandbox_read_root_arg(raw_args) else {
-                output.line_stderr(WINDOWS_SANDBOX_READ_ROOT_USAGE)?;
-                return Ok(Some(true));
-            };
-            if !cfg!(target_os = "windows") {
-                output
-                    .line_stderr("[session] /sandbox-add-read-dir is only available on Windows")?;
-                return Ok(Some(true));
-            }
-            let codex_home = resolve_codex_home(state.codex_home_override.as_deref())?;
-            output.line_stderr(format!(
-                "[session] granting sandbox read access to {} ...",
-                summarize_text(&read_root)
-            ))?;
-            match grant_read_root_non_elevated(
-                &thread_sandbox_mode(cli, state),
-                Path::new(resolved_cwd),
-                codex_home.as_path(),
-                Path::new(&read_root),
-            ) {
-                Ok(path) => output.line_stderr(format!(
-                    "[session] sandbox read access granted for {}",
-                    path.display()
-                ))?,
-                Err(err) => output.line_stderr(format!(
-                    "[session] failed to grant sandbox read access: {err}"
-                ))?,
-            }
-            true
+            handle_sandbox_add_read_dir_command(raw_args, cli, resolved_cwd, state, output)?
         }
         _ => return Ok(None),
     };
