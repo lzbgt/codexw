@@ -372,6 +372,43 @@ fn orchestration_suggest_actions_can_use_concrete_wait_for_booting_blocker_provi
 }
 
 #[test]
+fn orchestration_suggest_actions_can_use_concrete_poll_for_single_generic_blocker() {
+    let state = AppState::new(true, false);
+    state
+        .orchestration
+        .background_shells
+        .start_from_tool(
+            &json!({
+                "command": "sleep 0.4",
+                "intent": "prerequisite"
+            }),
+            "/tmp",
+        )
+        .expect("start generic blocker");
+
+    let result = execute_dynamic_tool_call_with_state(
+        &json!({
+            "tool": "orchestration_suggest_actions"
+        }),
+        "/tmp",
+        &state,
+    );
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("actions text");
+    assert!(text.contains("Suggested actions:"));
+    assert!(text.contains("orchestration_list_workers {\"filter\":\"blockers\"}"));
+    assert!(text.contains("background_shell_poll {\"jobId\":\"bg-1\"}"));
+    assert!(text.contains("background_shell_clean {\"scope\":\"blockers\"}"));
+    assert!(!text.contains("background_shell_wait_ready"));
+    let _ = state
+        .orchestration
+        .background_shells
+        .terminate_all_running();
+}
+
+#[test]
 fn orchestration_suggest_actions_can_use_concrete_wait_for_single_booting_service() {
     let state = AppState::new(true, false);
     state

@@ -161,6 +161,23 @@ fn unique_service_ref_by_readiness(
     }
 }
 
+fn unique_shell_ref_by_intent(state: &AppState, intent: BackgroundShellIntent) -> Option<String> {
+    let mut refs = state
+        .orchestration
+        .background_shells
+        .snapshots()
+        .into_iter()
+        .filter(|job| job.status == "running" && job.intent == intent)
+        .map(|job| job.alias.unwrap_or(job.id))
+        .collect::<Vec<_>>();
+    refs.sort();
+    refs.dedup();
+    match refs.as_slice() {
+        [job_ref] => Some(job_ref.clone()),
+        _ => None,
+    }
+}
+
 fn guidance_lines(state: &AppState) -> Vec<String> {
     let waits = active_wait_task_count(state);
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);
@@ -572,20 +589,48 @@ fn action_lines(state: &AppState, audience: ActionAudience) -> Vec<String> {
         };
     }
     if prereqs > 0 {
+        let blocker_ref = unique_shell_ref_by_intent(state, BackgroundShellIntent::Prerequisite);
         return match audience {
-            ActionAudience::Operator => vec![
-                "Run `:ps blockers` to inspect the gating shell or wait dependency.".to_string(),
-                "Run `:ps poll <job>` or `:ps wait <job> [timeoutMs]` on the blocker you care about."
-                    .to_string(),
-                "Run `:clean blockers` to abandon the current blocking prerequisite work."
-                    .to_string(),
-            ],
-            ActionAudience::Tool => vec![
-                "Use `orchestration_list_workers {\"filter\":\"blockers\"}` to inspect the gating shell or wait dependency.".to_string(),
-                "Use `background_shell_poll {\"jobId\":\"bg-...\"}` or `background_shell_wait_ready {\"jobId\":\"@capability\",\"timeoutMs\":5000}` on the blocker you care about."
-                    .to_string(),
-                "Use `background_shell_clean {\"scope\":\"blockers\"}` to abandon the current blocking prerequisite work.".to_string(),
-            ],
+            ActionAudience::Operator => {
+                let mut lines = vec![
+                    "Run `:ps blockers` to inspect the gating shell or wait dependency."
+                        .to_string(),
+                ];
+                if let Some(job_ref) = blocker_ref.as_deref() {
+                    lines.push(format!(
+                        "Run `:ps poll {job_ref}` to inspect the blocking shell output directly."
+                    ));
+                } else {
+                    lines.push(
+                        "Run `:ps poll <jobId|alias|@capability|n>` on the blocker you care about."
+                            .to_string(),
+                    );
+                }
+                lines.push(
+                    "Run `:clean blockers` to abandon the current blocking prerequisite work."
+                        .to_string(),
+                );
+                lines
+            }
+            ActionAudience::Tool => {
+                let mut lines = vec![
+                    "Use `orchestration_list_workers {\"filter\":\"blockers\"}` to inspect the gating shell or wait dependency.".to_string(),
+                ];
+                if let Some(job_ref) = blocker_ref.as_deref() {
+                    lines.push(format!(
+                        "Use `background_shell_poll {{\"jobId\":\"{job_ref}\"}}` to inspect the blocking shell output directly."
+                    ));
+                } else {
+                    lines.push(
+                        "Use `background_shell_poll {\"jobId\":\"bg-...\"}` on the blocker you care about."
+                            .to_string(),
+                    );
+                }
+                lines.push(
+                    "Use `background_shell_clean {\"scope\":\"blockers\"}` to abandon the current blocking prerequisite work.".to_string(),
+                );
+                lines
+            }
         };
     }
     if waits > 0 {

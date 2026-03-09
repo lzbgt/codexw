@@ -1355,6 +1355,40 @@ mod tests {
     }
 
     #[test]
+    fn actions_filter_uses_concrete_poll_for_single_generic_blocker() {
+        let services = crate::state::AppState::new(true, false);
+        services
+            .background_shells
+            .start_from_tool(
+                &serde_json::json!({
+                    "command": "sleep 0.4",
+                    "intent": "prerequisite"
+                }),
+                "/tmp",
+            )
+            .expect("start generic blocker");
+
+        let rendered = render_orchestration_actions(&services);
+        assert!(rendered.contains("Suggested actions:"));
+        assert!(rendered.contains(":ps blockers"));
+        assert!(rendered.contains(":ps poll bg-1"));
+        assert!(rendered.contains(":clean blockers"));
+        assert!(!rendered.contains(":ps wait <job> [timeoutMs]"));
+
+        let tool_rendered = render_orchestration_actions_for_tool(&services);
+        assert!(tool_rendered.contains("Suggested actions:"));
+        assert!(tool_rendered.contains("orchestration_list_workers {\"filter\":\"blockers\"}"));
+        assert!(tool_rendered.contains("background_shell_poll {\"jobId\":\"bg-1\"}"));
+        assert!(tool_rendered.contains("background_shell_clean {\"scope\":\"blockers\"}"));
+        assert!(!tool_rendered.contains("background_shell_wait_ready"));
+
+        let filtered = render_orchestration_workers_with_filter(&services, WorkerFilter::Actions);
+        assert!(filtered.contains("Suggested actions:"));
+        assert!(filtered.contains(":ps poll bg-1"));
+        let _ = services.background_shells.terminate_all_running();
+    }
+
+    #[test]
     fn focused_actions_for_untracked_capability_render_contract_fixes() {
         let services = crate::state::AppState::new(true, false);
         services
