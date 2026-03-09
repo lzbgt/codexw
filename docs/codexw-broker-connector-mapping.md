@@ -203,6 +203,10 @@ The first connector prototype should ship with a small compatibility table:
 | `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works with `session_id` body injection when missing |
 | `/v1/agents/{agent_id}/sessions/{session_id}/turns` | `/api/v1/session/{session_id}/turn/start` | works as alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/events` | `/api/v1/session/{session_id}/events` | works as alias SSE surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/shells` | `/api/v1/session/{session_id}/shells` and `/shells/start` | works as method-sensitive alias surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/services` | `/api/v1/session/{session_id}/services` | works as alias surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/capabilities` | `/api/v1/session/{session_id}/capabilities` | works as alias surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/services/{job_ref}/run` | `/api/v1/session/{session_id}/services/{job_ref}/run` | works as alias surface |
 | orchestration/service extensions | `codexw`-specific routes | connector-extension |
 
 That table should be kept concrete and testable.

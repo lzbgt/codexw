@@ -158,6 +158,8 @@ Current automated coverage now includes a real process-level smoke path:
 - a remote client drives the connector over TCP/HTTP
 - the smoke test currently verifies:
   - broker-style `sessions/{session_id}/attach` alias mapping
+  - broker-style `sessions/{session_id}/shells` alias mapping for shell start
+  - broker-style `sessions/{session_id}/services/{job_ref}/run` alias mapping
   - `session_id` body projection for attach aliases
   - client/lease header projection into local-API JSON bodies
   - alias-based SSE event forwarding and broker metadata wrapping
@@ -192,6 +194,11 @@ Current implemented behavior:
   - `/v1/agents/{agent_id}/sessions/{session_id}/transcript`
   - `/v1/agents/{agent_id}/sessions/{session_id}/events`
   - `/v1/agents/{agent_id}/sessions/{session_id}/orchestration/{status|workers|dependencies}`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/shells`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/shells/{job_ref}/{poll|send|terminate}`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/services`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/capabilities`
+  - `/v1/agents/{agent_id}/sessions/{session_id}/services/{job_ref}/{provide|depend|contract|relabel|attach|wait|run}`
 - forwards only an allowlisted subset of HTTP requests under `proxy/...` to the
   local API path of the same suffix
 - forwards SSE requests under `proxy_sse/...` to the local API event stream

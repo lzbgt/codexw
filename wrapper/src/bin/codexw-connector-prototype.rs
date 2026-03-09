@@ -164,7 +164,7 @@ fn handle_connection(mut stream: TcpStream, cli: &Cli) -> Result<()> {
         }
     }
 
-    let Some(target) = resolve_proxy_target(&request.path, &cli.agent_id) else {
+    let Some(target) = resolve_proxy_target(&request.method, &request.path, &cli.agent_id) else {
         write_response(
             &mut stream,
             &json_error_response(404, "not_found", "unknown connector route", None),
@@ -202,7 +202,7 @@ fn handle_connection(mut stream: TcpStream, cli: &Cli) -> Result<()> {
     Ok(())
 }
 
-fn resolve_proxy_target(path: &str, agent_id: &str) -> Option<ProxyTarget> {
+fn resolve_proxy_target(method: &str, path: &str, agent_id: &str) -> Option<ProxyTarget> {
     let proxy_prefix = format!("/v1/agents/{agent_id}/proxy/");
     if let Some(stripped) = path.strip_prefix(&proxy_prefix) {
         return Some(ProxyTarget {
@@ -253,6 +253,75 @@ fn resolve_proxy_target(path: &str, agent_id: &str) -> Option<ProxyTarget> {
                 }),
                 ["transcript"] => Some(ProxyTarget {
                     local_path: format!("/api/v1/session/{session_id}/transcript"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["shells"] => Some(ProxyTarget {
+                    local_path: if method == "GET" {
+                        format!("/api/v1/session/{session_id}/shells")
+                    } else {
+                        format!("/api/v1/session/{session_id}/shells/start")
+                    },
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["shells", job_ref, "poll"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/shells/{job_ref}/poll"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["shells", job_ref, "send"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/shells/{job_ref}/send"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["shells", job_ref, "terminate"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/shells/{job_ref}/terminate"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["capabilities"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/capabilities"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services", job_ref, "provide"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/provide"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services", job_ref, "depend"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/depend"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services", job_ref, "contract"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/contract"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services", job_ref, "relabel"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/relabel"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services", job_ref, "attach"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/attach"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services", job_ref, "wait"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/wait"),
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
+                ["services", job_ref, "run"] => Some(ProxyTarget {
+                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/run"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
@@ -1004,6 +1073,7 @@ mod tests {
     #[test]
     fn resolve_proxy_target_maps_http_and_sse_routes() {
         let http = resolve_proxy_target(
+            "POST",
             "/v1/agents/codexw-lab/proxy/api/v1/session/new",
             "codexw-lab",
         )
@@ -1013,6 +1083,7 @@ mod tests {
         assert!(http.session_id_hint.is_none());
 
         let sse = resolve_proxy_target(
+            "GET",
             "/v1/agents/codexw-lab/proxy_sse/api/v1/session/sess_1/events",
             "codexw-lab",
         )
@@ -1025,8 +1096,12 @@ mod tests {
     #[test]
     fn resolve_proxy_target_rejects_wrong_agent_for_proxy_routes() {
         assert!(
-            resolve_proxy_target("/v1/agents/other/proxy/api/v1/session/new", "codexw-lab")
-                .is_none()
+            resolve_proxy_target(
+                "POST",
+                "/v1/agents/other/proxy/api/v1/session/new",
+                "codexw-lab",
+            )
+            .is_none()
         );
     }
 
@@ -1196,44 +1271,117 @@ mod tests {
 
     #[test]
     fn resolve_proxy_target_maps_broker_style_session_alias_routes() {
-        let list = resolve_proxy_target("/v1/agents/codexw-lab/sessions", "codexw-lab")
+        let list = resolve_proxy_target("GET", "/v1/agents/codexw-lab/sessions", "codexw-lab")
             .expect("list route");
         assert_eq!(list.local_path, "/api/v1/session");
         assert!(!list.is_sse);
         assert!(list.session_id_hint.is_none());
 
-        let inspect = resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1", "codexw-lab")
-            .expect("inspect route");
+        let inspect =
+            resolve_proxy_target("GET", "/v1/agents/codexw-lab/sessions/sess_1", "codexw-lab")
+                .expect("inspect route");
         assert_eq!(inspect.local_path, "/api/v1/session/sess_1");
 
-        let attach =
-            resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1/attach", "codexw-lab")
-                .expect("attach route");
+        let attach = resolve_proxy_target(
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/attach",
+            "codexw-lab",
+        )
+        .expect("attach route");
         assert_eq!(attach.local_path, "/api/v1/session/attach");
         assert_eq!(attach.session_id_hint.as_deref(), Some("sess_1"));
 
-        let turns =
-            resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1/turns", "codexw-lab")
-                .expect("turn route");
+        let turns = resolve_proxy_target(
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/turns",
+            "codexw-lab",
+        )
+        .expect("turn route");
         assert_eq!(turns.local_path, "/api/v1/session/sess_1/turn/start");
 
         let transcript = resolve_proxy_target(
+            "GET",
             "/v1/agents/codexw-lab/sessions/sess_1/transcript",
             "codexw-lab",
         )
         .expect("transcript route");
         assert_eq!(transcript.local_path, "/api/v1/session/sess_1/transcript");
 
-        let events =
-            resolve_proxy_target("/v1/agents/codexw-lab/sessions/sess_1/events", "codexw-lab")
-                .expect("events route");
+        let events = resolve_proxy_target(
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/events",
+            "codexw-lab",
+        )
+        .expect("events route");
         assert_eq!(events.local_path, "/api/v1/session/sess_1/events");
         assert!(events.is_sse);
+
+        let shell_list = resolve_proxy_target(
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells",
+            "codexw-lab",
+        )
+        .expect("shell list route");
+        assert_eq!(shell_list.local_path, "/api/v1/session/sess_1/shells");
+
+        let shell_start = resolve_proxy_target(
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells",
+            "codexw-lab",
+        )
+        .expect("shell start route");
+        assert_eq!(
+            shell_start.local_path,
+            "/api/v1/session/sess_1/shells/start"
+        );
+
+        let shell_send = resolve_proxy_target(
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells/bg-2/send",
+            "codexw-lab",
+        )
+        .expect("shell send route");
+        assert_eq!(
+            shell_send.local_path,
+            "/api/v1/session/sess_1/shells/bg-2/send"
+        );
+
+        let services = resolve_proxy_target(
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/services",
+            "codexw-lab",
+        )
+        .expect("services route");
+        assert_eq!(services.local_path, "/api/v1/session/sess_1/services");
+
+        let capabilities = resolve_proxy_target(
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/capabilities",
+            "codexw-lab",
+        )
+        .expect("capabilities route");
+        assert_eq!(
+            capabilities.local_path,
+            "/api/v1/session/sess_1/capabilities"
+        );
+
+        let service_run = resolve_proxy_target(
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/run",
+            "codexw-lab",
+        )
+        .expect("service run route");
+        assert_eq!(
+            service_run.local_path,
+            "/api/v1/session/sess_1/services/dev.api/run"
+        );
     }
 
     #[test]
     fn resolve_proxy_target_rejects_wrong_agent_for_alias_routes() {
-        assert!(resolve_proxy_target("/v1/agents/other/sessions/sess_1", "codexw-lab").is_none());
+        assert!(
+            resolve_proxy_target("GET", "/v1/agents/other/sessions/sess_1", "codexw-lab").is_none()
+        );
     }
 
     #[test]

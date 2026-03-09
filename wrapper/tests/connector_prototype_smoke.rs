@@ -163,6 +163,132 @@ fn connector_alias_events_route_wraps_broker_metadata() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn connector_alias_shell_start_projects_client_and_lease_headers() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+        let request = read_http_request(&mut stream)?;
+        assert_eq!(request.method, "POST");
+        assert_eq!(request.path, "/api/v1/session/sess_1/shells/start");
+
+        let body: Value = serde_json::from_slice(&request.body).context("parse forwarded body")?;
+        assert_eq!(body["command"], "sleep 5");
+        assert_eq!(body["intent"], "observation");
+        assert_eq!(body["client_id"], "remote-term");
+        assert_eq!(body["lease_seconds"], 30);
+
+        write_http_response(
+            &mut stream,
+            200,
+            "OK",
+            &[("Content-Type", "application/json")],
+            serde_json::to_vec(&json!({
+                "ok": true,
+                "job": {
+                    "job_id": "bg-1",
+                    "intent": "observation"
+                }
+            }))?
+            .as_slice(),
+        )?;
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let _connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(connector_port)?;
+
+    let body = "{\"command\":\"sleep 5\",\"intent\":\"observation\"}";
+    let request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/shells HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: remote-term\r\n",
+            "X-Codexw-Lease-Seconds: 30\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        body.len(),
+        body
+    );
+    let response = send_raw_request(connector_port, &request)?;
+    assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(response.contains("\"job_id\":\"bg-1\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
+#[test]
+fn connector_alias_service_run_maps_to_local_service_route() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+        let request = read_http_request(&mut stream)?;
+        assert_eq!(request.method, "POST");
+        assert_eq!(request.path, "/api/v1/session/sess_1/services/dev.api/run");
+
+        let body: Value = serde_json::from_slice(&request.body).context("parse forwarded body")?;
+        assert_eq!(body["recipe"], "health");
+        assert_eq!(body["client_id"], "mobile-ios");
+
+        write_http_response(
+            &mut stream,
+            200,
+            "OK",
+            &[("Content-Type", "application/json")],
+            serde_json::to_vec(&json!({
+                "ok": true,
+                "service": {
+                    "job_id": "dev.api",
+                    "label": "API"
+                },
+                "recipe": {
+                    "name": "health"
+                },
+                "result": "healthy"
+            }))?
+            .as_slice(),
+        )?;
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let _connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(connector_port)?;
+
+    let body = "{\"recipe\":\"health\"}";
+    let request = format!(
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/services/dev.api/run HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "X-Codexw-Client-Id: mobile-ios\r\n",
+            "Content-Length: {}\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+        body.len(),
+        body
+    );
+    let response = send_raw_request(connector_port, &request)?;
+    assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(response.contains("\"name\":\"health\""));
+    assert!(response.contains("\"result\":\"healthy\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
 fn spawn_connector(port: u16, local_api_port: u16) -> Result<ChildGuard> {
     let binary = connector_binary()?;
     let child = Command::new(binary)

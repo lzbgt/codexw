@@ -155,7 +155,7 @@ The current implementation is now past pure route sketches:
 - `codexw` has a working loopback HTTP/SSE local API
 - the tracked connector prototype supports both raw `/proxy` passthrough and a
   first-pass broker-style alias surface for session, turn, transcript,
-  orchestration, and event flows
+  orchestration, event, shell, service, and capability flows
 - the repo now also has a process-level connector smoke test proving that a
   remote client can drive the connector over TCP while a fake local API is
   served behind it
