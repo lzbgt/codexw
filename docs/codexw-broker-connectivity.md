@@ -651,4 +651,8 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 
 This is now an explicit tracked design area, not an informal idea.
 
-The next high-leverage step is not implementation. It is a compatibility and API audit that turns the broad broker idea into a bounded remote-control contract for `codexw`.
+The next high-leverage step is no longer broad design exploration. The remaining
+work is:
+
+- a concrete connector mapping and prototype plan
+- then a real implementation spike for a loopback-only local API
