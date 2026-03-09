@@ -4,3 +4,5 @@ use super::super::*;
 mod http;
 #[path = "invoke/socket.rs"]
 mod socket;
+#[path = "invoke/stdin.rs"]
+mod stdin;

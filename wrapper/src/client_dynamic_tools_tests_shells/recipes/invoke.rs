@@ -6,3 +6,5 @@ use super::super::json;
 mod http;
 #[path = "invoke/socket.rs"]
 mod socket;
+#[path = "invoke/stdin.rs"]
+mod stdin;
