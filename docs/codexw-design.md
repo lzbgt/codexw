@@ -694,7 +694,9 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance.rs`
   Tool-native orchestration guidance test namespace.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global.rs`
-  Global tool-native orchestration guidance regression tests.
+  Global tool-native orchestration guidance test namespace root.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services.rs`
+  Global tool-native orchestration guidance regression tests for reusable-service states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused.rs`
   Capability-focused tool-native orchestration guidance test namespace root.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused/services.rs`
@@ -702,7 +704,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions.rs`
   Tool-native orchestration action test namespace.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global.rs`
-  Global tool-native orchestration action regression tests.
+  Global tool-native orchestration action test namespace root.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/blockers.rs`
+  Global tool-native orchestration action regression tests for blocking dependency states.
+- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services.rs`
+  Global tool-native orchestration action regression tests for reusable-service states.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused.rs`
   Capability-focused tool-native orchestration action test namespace root.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused/services.rs`
@@ -883,7 +889,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global/blockers.rs`
   Global blocker/wait/capability guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/global/services.rs`
-  Global ready/booting/untracked/conflict/sidecar/terminal guidance generation for operator and tool audiences.
+  Global reusable-service guidance namespace root.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/conflicts.rs`
+  Global conflict guidance generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/availability.rs`
+  Global ready/booting/untracked service guidance generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/guidance/global/services/residuals.rs`
+  Global sidecar and terminal guidance generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/focused.rs`
   Capability-focused orchestration guidance namespace root.
 - `wrapper/src/orchestration_view/guidance_actions/guidance/focused/blockers.rs`
@@ -897,7 +909,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global/blockers.rs`
   Global blocker/wait/capability action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions/global/services.rs`
-  Global ready/booting/untracked/conflict/sidecar/terminal action generation for operator and tool audiences.
+  Global reusable-service action namespace root.
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/services/conflicts.rs`
+  Global conflict action generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/services/availability.rs`
+  Global ready/booting/untracked service action generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/guidance_actions/actions/global/services/residuals.rs`
+  Global sidecar and terminal action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions/focused.rs`
   Capability-focused orchestration action namespace root.
 - `wrapper/src/orchestration_view/guidance_actions/actions/focused/blockers.rs`
@@ -919,7 +937,11 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/blockers.rs`
   Global blocker/capability action renderer and remediation regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services.rs`
-  Global service/recipe action renderer and remediation regression tests.
+  Global reusable-service action renderer test namespace root.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services/conflicts.rs`
+  Global service-conflict action renderer and remediation regression tests.
+- `wrapper/src/orchestration_view/tests/guidance_actions/actions/global/services/availability.rs`
+  Global ready/booting/untracked service action renderer and recipe remediation regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused.rs`
   Capability-focused orchestration action renderer test namespace root.
 - `wrapper/src/orchestration_view/tests/guidance_actions/actions/focused/blockers.rs`
