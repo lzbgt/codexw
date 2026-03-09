@@ -166,6 +166,10 @@ The current implementation is now past pure route sketches:
 - the fixture-backed smoke coverage now proves not only session create / turn /
   transcript, but also shell start, service attach / wait / run, and
   structured lease-conflict propagation through the broker-style alias surface
+- the fixture-backed smoke coverage also now proves focused service-detail and
+  capability-detail reads plus event-stream resume through `Last-Event-ID`,
+  using the standalone broker-style client fixture rather than only raw test
+  harness helpers
 - the broker-style alias surface now also includes attachment lease lifecycle
   routes for renew/release, so remote clients do not need raw `/proxy/...`
   access for normal lease management

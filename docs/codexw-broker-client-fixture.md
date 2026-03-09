@@ -61,6 +61,8 @@ fixture against the real connector binary for:
 - session create / turn / transcript
 - shell start plus service attach / wait / run
 - lease-conflict propagation through broker-style alias routes
+- focused service-detail and capability-detail inspection
+- event stream consumption and `Last-Event-ID` resume
 
 So the fixture is not just a documentation example.
 
