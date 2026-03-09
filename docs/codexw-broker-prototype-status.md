@@ -130,6 +130,12 @@ the real connector binary:
   - lease-owned service mutation
   - focused service-detail inspection
   - resumed `Last-Event-ID` event consumption
+- one adversarial multi-client workflow that mixes:
+  - owner-created leased session
+  - observer event consumption
+  - conflicting rival mutation with structured lease conflict details
+  - owner mutation recovery
+  - observer `Last-Event-ID` resume
 
 This process-level proof comes from two complementary surfaces:
 
@@ -166,7 +172,8 @@ The biggest remaining gaps are above the route layer, not below it:
 
 1. explicit client-policy and attachment semantics beyond the current
    process-scoped lease model
-2. connector behavior under more realistic long-lived multi-client workflows
+2. broader connector behavior under sustained multi-client contention beyond the
+   now-covered conflict-and-recovery workflow
 3. a clearer statement of which broker/client surfaces are intentionally out of
    scope for `codexw`
 4. eventual promotion from prototype connector to a more formal adapter layer
@@ -178,7 +185,7 @@ If continuing on this track, the highest-leverage next tasks are:
 1. tighten the connector/client policy contract, especially around lease
    ownership and competing clients
 2. add more adversarial multi-client workflows, especially overlapping leases
-   and competing long-lived event consumers instead of only single-client
-   sequential resume paths
+   and competing long-lived event consumers beyond the now-covered single
+   conflict-and-recovery path
 3. keep the design docs aligned so this status file remains the concise source
    of truth while the other docs stay architectural

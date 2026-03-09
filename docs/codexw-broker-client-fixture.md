@@ -77,6 +77,12 @@ fixture against the real connector binary for:
   - focused service-detail verification
   - resumed event consumption with `Last-Event-ID`
   - through the real standalone Python fixture, not only Rust smoke helpers
+- one adversarial multi-client workflow that mixes:
+  - owner-created leased session
+  - observer event consumption
+  - conflicting rival mutation with structured lease conflict details
+  - owner mutation recovery
+  - observer `Last-Event-ID` resume
 
 So the fixture is not just a documentation example.
 

@@ -188,6 +188,10 @@ For the concise implementation/proof snapshot, see
   lease-owned service mutation, focused service-detail inspection, and resumed
   `Last-Event-ID` event consumption through the broker-style alias surface
 - the standalone broker-style client fixture is also now process-level verified
+  for one adversarial multi-client workflow with owner lease control, observer
+  event consumption, structured rival conflict propagation, owner mutation
+  recovery, and resumed `Last-Event-ID` event consumption
+- the standalone broker-style client fixture is also now process-level verified
   for session listing and turn interrupt flows, session attach plus
   orchestration status / workers / dependencies inspection, and shell list /
   detail / send / poll / terminate control paths
