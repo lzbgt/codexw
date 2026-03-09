@@ -961,7 +961,13 @@ The biggest known limits are architectural, not accidental.
 - `wrapper/src/orchestration_view/dependencies.rs`
   Orchestration dependency-edge rendering and dependency-filter empty-state helpers.
 - `wrapper/src/orchestration_view/workers.rs`
-  Orchestration worker-section rendering for main-agent, live-agent, cached-agent, shell, service, capability, and terminal views.
+  Orchestration worker-section rendering namespace root.
+- `wrapper/src/orchestration_view/workers/main_agent.rs`
+  Main-agent status line plus dependency-section rendering.
+- `wrapper/src/orchestration_view/workers/agents.rs`
+  Live-agent-task and cached-agent-thread rendering helpers.
+- `wrapper/src/orchestration_view/workers/background.rs`
+  Server-observed terminal-only worker rendering helpers.
 - `wrapper/src/orchestration_view/summary.rs`
   Orchestration-summary namespace root for snapshot and prompt/background summary helpers.
 - `wrapper/src/orchestration_view/summary/snapshots.rs`
@@ -1020,6 +1026,12 @@ The biggest known limits are architectural, not accidental.
   Capability-focused blocking-dependency action generation for operator and tool audiences.
 - `wrapper/src/orchestration_view/guidance_actions/actions/focused/services.rs`
   Capability-focused reusable-service action generation for operator and tool audiences.
+- `wrapper/src/orchestration_view/tests.rs`
+  Orchestration renderer test namespace root.
+- `wrapper/src/orchestration_view/tests/summary.rs`
+  Orchestration summary and prompt/background rendering regression tests.
+- `wrapper/src/orchestration_view/tests/workers.rs`
+  Orchestration worker-view rendering regression tests.
 - `wrapper/src/orchestration_view/tests/guidance_actions.rs`
   Orchestration guidance/action renderer test namespace.
 - `wrapper/src/orchestration_view/tests/guidance_actions/guidance.rs`

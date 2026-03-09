@@ -28,7 +28,6 @@ pub(crate) use serde_json::json;
 pub(crate) use std::process::ChildStdin;
 pub(crate) use std::process::Command;
 pub(crate) use std::time::Duration;
-pub(crate) use std::time::Instant;
 
 #[path = "main_test_session_status/prompt.rs"]
 mod prompt;
