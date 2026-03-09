@@ -78,6 +78,7 @@ Transcript display helpers now live directly across `transcript_completion_rende
 Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, and event-source threads now imported directly from those concrete modules.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers now live across `state.rs` and `state_helpers.rs`, with `state.rs` owning `AppState`, `ProcessOutputBuffer`, request-id generation, constructor/reset helpers, and attachment transfer behavior directly.
+Orchestration registry helpers are split across `orchestration_registry.rs`, `orchestration_registry/graph.rs`, and `orchestration_registry/tracking.rs`, with `orchestration_registry.rs` kept as the shared type/root module, `orchestration_registry/graph.rs` owning dependency-edge derivation plus wait/sidecar/runtime count helpers, and `orchestration_registry/tracking.rs` owning live collab-task parsing plus cached-agent-thread updates.
 Command catalog helpers are split across `commands_entry_session_catalog.rs`, `commands_entry_session_modes.rs`, `commands_entry_thread.rs`, `commands_entry_runtime.rs`, and `commands_catalog.rs`: grouped command-entry data lives in the `commands_entry_*` modules, and `commands_catalog.rs` assembles the shared table directly while providing the public entrypoint, descriptions, help-line generation, and stable command-name ordering.
 Command completion helpers live in `commands_completion_apply.rs`, `commands_completion_render.rs`, and `commands_match.rs`: completion application stays in the extracted apply helper, rendering and quoting stay in the render helper, and cursor parsing, fuzzy scoring, and prefix logic live in the matcher module.
 Command-dispatch helpers are split across `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation_session.rs`, `dispatch_command_thread_navigation_identity.rs`, `dispatch_command_thread_review.rs`, `dispatch_command_thread_control.rs`, `dispatch_command_thread_view.rs`, `dispatch_command_thread_draft.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_ps.rs`, `dispatch_command_session_ps/parse.rs`, `dispatch_command_session_ps/clean.rs`, `dispatch_command_session_ps/control.rs`, `dispatch_command_session_ps/views.rs`, `dispatch_command_session_meta.rs`, and `dispatch_command_utils.rs`, with `dispatch_commands.rs` kept as the top-level slash-command router.
@@ -855,6 +856,12 @@ The biggest known limits are architectural, not accidental.
   Personality, permissions, theme, and fast-mode picker rendering plus persistence/application helpers.
 - `wrapper/src/dispatch_command_session_status.rs`
   Session display/status commands such as attachments, permissions, `:status`, config display, and realtime status.
+- `wrapper/src/orchestration_registry.rs`
+  Shared orchestration task types and public registry entrypoints.
+- `wrapper/src/orchestration_registry/graph.rs`
+  Dependency-edge derivation, main-agent scheduler state, wait summaries, and shell/service count helpers.
+- `wrapper/src/orchestration_registry/tracking.rs`
+  Live collab-agent task parsing plus cached agent-thread merge/update behavior.
 - `wrapper/src/dispatch_command_session_collab.rs`
   Collaboration and plan-mode session command workflows.
 - `wrapper/src/dispatch_command_session_ps.rs`

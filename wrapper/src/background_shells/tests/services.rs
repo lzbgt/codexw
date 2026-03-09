@@ -431,7 +431,17 @@ fn service_capability_reference_ignores_completed_service_jobs() {
             "/tmp",
         )
         .expect("start provider");
-    std::thread::sleep(std::time::Duration::from_millis(200));
+    let started = std::time::Instant::now();
+    while started.elapsed() < std::time::Duration::from_secs(1) {
+        let snapshots = manager.snapshots();
+        if snapshots
+            .iter()
+            .all(|snapshot| snapshot.id != "bg-1" || snapshot.status != "running")
+        {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
 
     let err = manager
         .resolve_job_reference("@api.http")
