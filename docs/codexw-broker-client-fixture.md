@@ -51,8 +51,8 @@ Before this fixture, the repo already had:
 - connector subprocess smoke tests
 
 What it did not have was a reusable client-side artifact outside the test
-suite. That made the connector internally verified but not yet manually
-consumable.
+suite. That gap is now closed: the connector is both internally verified and
+manually consumable through this standalone fixture.
 
 This script closes that gap.
 

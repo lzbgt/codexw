@@ -19,17 +19,17 @@ Build the smallest useful local API that can:
 3. stream transcript/status/orchestration events
 4. inspect and control wrapper-owned shell/service state
 
-If this spike succeeds, `codexw` will be in a position to support:
+The current implementation already puts `codexw` in a position to support:
 
 - a local WebUI or browser client
 - local automation
-- a future broker connector
+- the current broker connector prototype
 
 without scraping terminal scrollback.
 
 ## Current Implementation Status
 
-The first code slice has started.
+The first local-API and connector slices are already implemented and verified.
 
 Current implemented scope:
 

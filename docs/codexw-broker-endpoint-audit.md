@@ -25,7 +25,7 @@ Its purpose is to map relevant `~/work/agent` broker/client surfaces to current
 | --- | --- | --- | --- |
 | `GET /v1/agents/{agent_id}/proxy/...` | `adapter fit` | local API plus connector | `codexw` now exposes local HTTP endpoints, and the connector already proxies an allowlisted subset of them |
 | `GET /v1/agents/{agent_id}/proxy_sse/...` | `adapter fit` | local SSE/event layer plus connector | Public local SSE exists today, and the connector already bridges allowlisted event streams with replay support |
-| `GET /v1/events` | `adapter fit` | future broker connector/event bridge | Broker-level fan-in event streaming is still a future aggregation layer; current implementation is session-scoped event streaming |
+| `GET /v1/events` | `adapter fit` | current connector plus future broker event bridge | Broker-level fan-in event streaming is still a future aggregation layer; current implementation is session-scoped event streaming carried by the existing connector |
 | outbound `GET /v1/agent/connect` websocket | `adapter fit` | future connector or direct broker mode | Still a later-phase transport option rather than part of the current loopback HTTP/SSE plus connector design |
 
 ## Session And Client Surfaces

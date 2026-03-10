@@ -42,7 +42,7 @@ Definition:
 
 Properties:
 
-- created by the future local API
+- created by the current local API
 - identifies one active remote control context
 - may or may not already be attached to a concrete local thread
 
@@ -91,7 +91,7 @@ Examples:
 
 - local CLI resume command with a `thread_id`
 - remote API `session/attach` call
-- future broker connector attach flow
+- current broker connector attach flow
 
 Role in broker design:
 
@@ -170,6 +170,22 @@ All first-phase events should include:
 - `thread_id` when attached
 
 That preserves both the remote-control identity and the underlying conversation identity.
+
+## Current Status
+
+This identity model is no longer only a design proposal. The current local API
+already implements the first-pass session split described above:
+
+- `POST /api/v1/session/new`
+- `POST /api/v1/session/attach`
+- `GET /api/v1/session/{session_id}`
+- `POST /api/v1/session/{session_id}/attachment/renew`
+- `POST /api/v1/session/{session_id}/attachment/release`
+
+The broker-style connector and fixture coverage also already consume that
+process-scoped `session_id` plus `thread_id` contract. The remaining open
+questions are therefore about future multi-client or multi-daemon policy, not
+whether the wrapper/local-thread identity split exists at all.
 
 ## Open Questions
 

@@ -13,7 +13,7 @@ The goal is to preserve `codexw`'s existing runtime truth:
 and expose those through a stable event bus that can feed:
 
 - loopback SSE clients
-- a future broker connector
+- the current broker connector prototype
 - local WebUI/mobile clients
 
 ## Core Principle
@@ -265,7 +265,7 @@ Semantic event structs should be created before JSON serialization.
 That keeps:
 
 - SSE output
-- future broker connector forwarding
+- connector forwarding
 - route-level tests
 
 all aligned on the same semantic payload.
@@ -331,5 +331,5 @@ This plan is complete when:
 2. event serialization is independent of terminal rendering
 3. the SSE implementation can subscribe to one semantic bus instead of many ad
    hoc hooks
-4. the future broker connector can forward the same envelope without inventing
+4. the broker connector can forward the same envelope without inventing
    its own event semantics
