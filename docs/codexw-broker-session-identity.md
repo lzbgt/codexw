@@ -102,7 +102,7 @@ Role in broker design:
 
 ## Recommended Mapping
 
-### Phase 1
+### Current Session Split
 
 - wrapper API creates `session_id`
 - `session_id` may begin unattached
@@ -114,7 +114,7 @@ Role in broker design:
 
 This gives the API a stable wrapper-scoped handle without hiding the underlying Codex thread identity.
 
-### Phase 2
+### Deferred Multi-Client Extension
 
 - broker/connector introduces client identity and deployment routing
 - one `session_id` may be observed by more than one client attachment
@@ -164,7 +164,7 @@ Effect:
 
 ### Event Streams
 
-All first-phase events should include:
+All current session-scoped events should include:
 
 - `session_id`
 - `thread_id` when attached

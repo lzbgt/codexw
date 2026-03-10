@@ -90,7 +90,8 @@ With this interpretation:
 - `codexw` local API is the canonical runtime contract
 - `~/work/agent` compatibility is pursued through a connector/adapter layer
 - payload vocabulary reuse is encouraged where it helps
-- full drop-in protocol equivalence is explicitly not required in Phase 1
+- full drop-in protocol equivalence is explicitly not required for the current
+  supported adapter scope
 
 ## Why Level 2 Is Correct
 
@@ -149,9 +150,10 @@ That label should appear in:
 - the endpoint audit
 - implementation notes where relevant
 
-## Phase 1 Compatibility Deliverable
+## Initial Compatibility Deliverable
 
-Phase 1 should produce a short matrix with three columns:
+The initial compatibility pass should produce a short matrix with three
+columns:
 
 1. local `codexw` route or event
 2. mapped `~/work/agent` surface, if any

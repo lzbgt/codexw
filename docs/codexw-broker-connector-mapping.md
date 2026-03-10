@@ -1,10 +1,10 @@
 # codexw Broker Connector Mapping
 
-This document describes the first-pass mapping from the proposed `codexw` local
-API to a broker-facing connector model inspired by `~/work/agent`.
+This document describes the first-pass mapping from the implemented `codexw`
+local API to a broker-facing connector model inspired by `~/work/agent`.
 
-It is not a wire-compatibility promise. It is the intended adapter plan for a
-phase-2 connector prototype.
+It is not a wire-compatibility promise. It is the adapter mapping record for the
+current connector-oriented architecture.
 
 ## Purpose
 
@@ -144,13 +144,13 @@ Recommended rule:
 
 ## Auth Mapping
 
-### Phase 1
+### Current Local Boundary
 
 - local `codexw` API:
   - loopback-only
   - optional bearer token
 
-### Phase 2 Connector
+### Connector Boundary
 
 - connector handles remote broker auth:
   - broker-side OIDC/JWT or client token rules

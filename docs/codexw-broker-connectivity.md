@@ -605,7 +605,7 @@ The most realistic initial target is:
 - allow a connector or bridge to adapt between the systems
 - avoid promising strict wire compatibility until the local API exists and the gap analysis is complete
 
-## Phase 0 Audit Worksheet
+## Historical Phase 0 Audit Worksheet
 
 The first audit should classify each relevant `~/work/agent` surface into one of:
 
@@ -706,7 +706,7 @@ The remote event stream should prefer stable semantic events such as:
 
 It should not expose terminal-only concerns such as wrapped prompt layout or ANSI block formatting as public protocol.
 
-## Phased Plan
+## Historical Phased Plan
 
 ### Phase 0: Compatibility Audit
 
@@ -731,6 +731,12 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 - evaluate whether the `~/work/agent` C framework can consume the same event/session contract without wrapper-specific hacks
 
 ### Phase 3: Decide Native Broker Support
+
+Those labels are retained here as implementation history and design sequencing,
+not as the current project state. The local API and connector prototype
+described in Phases 1 and 2 now exist; the remaining open question is whether
+any further promotion or transport expansion beyond the supported experimental
+adapter is warranted.
 
 - after real connector experience, choose whether direct broker connectivity belongs in `codexw`
 
