@@ -67,6 +67,9 @@ At minimum:
 - route and contract claims should be covered by route/unit tests
 - policy-sensitive claims should be covered by process-level smoke or fixture
   proof where practical
+- source-of-truth status/policy/proof docs should continue to satisfy the
+  automated consistency guard in
+  [../wrapper/tests/doc_consistency.rs](../wrapper/tests/doc_consistency.rs)
 - proof docs should say clearly whether the claim is:
   - recommendation only
   - supported shape
@@ -106,6 +109,9 @@ Confirm all of the following:
   true
 - no doc regresses to "prototype only" wording for the documented supported
   broker surface
+- the automated doc guard in
+  [../wrapper/tests/doc_consistency.rs](../wrapper/tests/doc_consistency.rs)
+  still passes for the broker status/policy/proof set
 - unsupported broker routes are still described as intentionally unsupported,
   not merely missing
 - hardening ideas remain in the hardening catalog unless they became active
@@ -135,6 +141,9 @@ Confirm all of the following:
 
 - the product is still described as terminal-first / scrollback-first if that
   remains the active recommendation
+- the automated doc guard in
+  [../wrapper/tests/doc_consistency.rs](../wrapper/tests/doc_consistency.rs)
+  still passes for the native status/policy/proof set
 - alternate-screen, audio, and backend-owned async parity are still explicit
   unsupported areas unless there is an intentional policy change
 - optional polish or parity ideas remain in the native hardening catalog unless

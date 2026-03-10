@@ -152,6 +152,19 @@ The statuses are:
     but it is still more of a product-governance claim than a runtime behavior
     claim
 
+### 9. Native support-claim docs are kept in sync automatically
+
+- Status: `strong`
+- Claim:
+  - the native-side status/policy/proof source docs are guarded against the
+    most important wording drift
+- Evidence:
+  - [wrapper/tests/doc_consistency.rs](../wrapper/tests/doc_consistency.rs)
+  - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
+- Notes:
+  - this does not replace human review, but it does turn the highest-signal
+    support-claim invariants into a regression-proof surface
+
 ## What Would Upgrade Or Change This Matrix
 
 The matrix should change if any of these happen:
