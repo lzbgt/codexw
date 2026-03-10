@@ -577,6 +577,9 @@ That means the highest-leverage future work is concentrated in:
 - deeper async execution parity if app-server ever exposes public control over model-owned `item/commandExecution` sessions
 - continued doc/runtime consistency work so the design notes stay trustworthy as the implementation evolves
 
+The focused assessment for those non-broker gaps now lives in
+[codexw-native-gap-assessment.md](codexw-native-gap-assessment.md).
+
 ## Approval and Automation Posture
 
 `codexw` defaults to a fully automated posture.

@@ -9,6 +9,7 @@ deeper docs disagree, update both in the same batch.
 Primary source docs:
 
 - [docs/codexw-design.md](docs/codexw-design.md)
+- [docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md)
 - [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md)
 - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
 - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
@@ -57,6 +58,7 @@ Concrete tasks:
 
 Primary source:
 - [docs/codexw-design.md](docs/codexw-design.md)
+- [docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md)
 
 ### 3. Promotion Follow-Through
 

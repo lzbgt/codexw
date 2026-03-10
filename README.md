@@ -8,6 +8,8 @@ The repo also includes a companion skill at `skills/session-autopilot/`. That sk
 
 For a fuller design and internals walkthrough, see [docs/codexw-design.md](docs/codexw-design.md).
 For the repo-level backlog of still-open work, see [TODOS.md](TODOS.md).
+For the main non-broker remaining gaps, see
+[docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md).
 For the remote-access track specifically, see [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md): `codexw` now has an initial disabled-by-default loopback local API with health/session inspection, turn start/interrupt control, structured orchestration/shell/service/capability query routes, and a semantic SSE session event stream intended to become the broker-facing foundation.
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
