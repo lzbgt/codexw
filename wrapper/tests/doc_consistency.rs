@@ -330,6 +330,52 @@ fn broker_and_native_docs_link_to_automated_support_claim_guard() {
 }
 
 #[test]
+fn broker_docs_preserve_fixture_diversity_claims() {
+    let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
+    let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
+    let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
+    let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
+
+    assert_contains(
+        &broker_status,
+        "Python and Node",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains(
+        &broker_status,
+        "scripts/codexw_broker_client.py",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains(
+        &broker_status,
+        "scripts/codexw_broker_client_node.mjs",
+        "docs/codexw-broker-adapter-status.md",
+    );
+
+    assert_contains(
+        &broker_fixture,
+        "scripts/codexw_broker_client.py",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_fixture,
+        "scripts/codexw_broker_client_node.mjs",
+        "docs/codexw-broker-client-fixture.md",
+    );
+
+    assert_contains(
+        &broker_hardening,
+        "Python and Node fixtures",
+        "docs/codexw-broker-hardening-catalog.md",
+    );
+    assert_contains(
+        &checklist,
+        "Python and Node",
+        "docs/codexw-support-claim-checklist.md",
+    );
+}
+
+#[test]
 fn broker_docs_do_not_regress_to_stale_phase_wording_for_current_adapter_state() {
     let docs = [
         (

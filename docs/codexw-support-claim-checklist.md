@@ -109,6 +109,10 @@ Confirm all of the following:
   true
 - no doc regresses to "prototype only" wording for the documented supported
   broker surface
+- the current broker fixture diversity claim stays explicit:
+  - standalone broker-style client fixtures in Python and Node
+  - `scripts/codexw_broker_client.py`
+  - `scripts/codexw_broker_client_node.mjs`
 - the automated doc guard in
   [../wrapper/tests/doc_consistency.rs](../wrapper/tests/doc_consistency.rs)
   still passes for the broker status/policy/proof set
@@ -123,7 +127,8 @@ If the broker contract changes, also confirm:
 
 - the connector allowlist docs still match the implemented route surface
 - local API docs and connector docs describe the same broker-facing behavior
-- fixture docs still match the currently verified reference clients
+- fixture docs still match the currently verified reference clients in Python
+  and Node
 
 ## Native Checklist
 
