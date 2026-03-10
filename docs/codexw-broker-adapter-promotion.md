@@ -82,11 +82,11 @@ Promotion requires:
 - the connector preserves structured local-API errors instead of collapsing
   them into generic text
 
-The current prototype already has process-level proof for malformed injected
-JSON request bodies, malformed lease-header projection, and preserved local
-field-validation errors through the connector path. The remaining promotion work
-in this area is contract freezing and wording, not basic implementation
-coverage.
+The current adapter stack already has process-level proof for malformed
+injected JSON request bodies, malformed lease-header projection, and preserved
+local field-validation errors through the connector path. The remaining
+promotion work in this area is contract freezing and wording, not basic
+implementation coverage.
 
 ### 3. Event Contract
 
@@ -107,7 +107,7 @@ Promotion requires:
 ### 4. Client Policy Contract
 
 The lease/ownership rules must be clear enough to function as an adapter
-contract instead of a prototype behavior note:
+contract instead of an implementation-detail note:
 
 - owner
 - observer
@@ -175,7 +175,7 @@ Promotion should require stable process-level proof for:
 
 ### Recommended Additional Proof Before Promotion
 
-Useful but not strictly required beyond the already-landed prototype proof set:
+Useful but not strictly required beyond the already-landed proof set:
 
 - a small compatibility matrix beyond the standalone broker fixtures
 - broader sustained churn or longevity coverage beyond the current named,
@@ -197,7 +197,8 @@ instead of promoting it.
 
 ## Decision Matrix
 
-After the current prototype phase, the project should be able to choose one of:
+With the current contract and proof set in place, the project should be able to
+choose one of:
 
 ### Promote To Supported Adapter
 

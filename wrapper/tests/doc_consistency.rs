@@ -539,3 +539,27 @@ fn broker_and_native_support_docs_keep_current_support_level_wording() {
         assert_contains_case_insensitive(contents, "scrollback-first", name);
     }
 }
+
+#[test]
+fn current_state_broker_docs_do_not_regress_to_current_prototype_wording() {
+    let docs = [
+        (
+            "docs/codexw-broker-adapter-promotion.md",
+            read_repo_file("docs/codexw-broker-adapter-promotion.md"),
+        ),
+        (
+            "docs/codexw-broker-connectivity.md",
+            read_repo_file("docs/codexw-broker-connectivity.md"),
+        ),
+        (
+            "docs/codexw-broker-out-of-scope.md",
+            read_repo_file("docs/codexw-broker-out-of-scope.md"),
+        ),
+    ];
+
+    for (name, contents) in docs {
+        assert_not_contains(&contents, "current prototype", name);
+        assert_not_contains(&contents, "prototype proof set", name);
+        assert_not_contains(&contents, "prototype behavior note", name);
+    }
+}

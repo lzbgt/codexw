@@ -55,7 +55,7 @@ These remain clearly in scope:
 
 These are plausible future extensions, but not required now:
 
-- stronger adapter hardening beyond the current prototype connector
+- stronger adapter hardening beyond the current connector
 - more formal SDKs or reusable client libraries
 - browser/mobile UI layers in this repo
 - richer client presence or collaboration state above the current lease model
@@ -105,7 +105,7 @@ Out of scope:
 
 ### 6. Production Security Claims
 
-Out of scope for the current prototype:
+Out of scope for the current supported-experimental adapter:
 
 - claiming production-grade auth, secret handling, or tenant isolation
 - claiming deployment-ready zero-trust broker support

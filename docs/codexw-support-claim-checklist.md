@@ -109,6 +109,8 @@ Confirm all of the following:
   true
 - no doc regresses to "prototype only" wording for the documented supported
   broker surface
+- current-state broker docs do not regress to stale wording like
+  `current prototype`, `prototype proof set`, or `prototype behavior note`
 - the current broker fixture diversity claim stays explicit:
   - standalone broker-style client fixtures in Python and Node
   - `scripts/codexw_broker_client.py`

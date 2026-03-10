@@ -884,7 +884,7 @@ That connector-facing work has now started with a first standalone prototype:
   - `/v1/agents/{agent_id}/proxy/...`
 - broker-facing SSE prefix:
   - `/v1/agents/{agent_id}/proxy_sse/...`
-- current prototype behavior:
+- current adapter behavior:
   - forwards an allowlisted subset of local-API routes through a generic proxy prefix
   - bridges SSE from the local API
   - wraps SSE payloads with `source` and `broker` metadata

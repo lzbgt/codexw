@@ -1,6 +1,6 @@
 # codexw Local API Event Sourcing Plan
 
-This document explains how the local API should produce semantic events without
+This document explains how the local API produces semantic events without
 scraping terminal output.
 
 The goal is to preserve `codexw`'s existing runtime truth:
@@ -31,8 +31,7 @@ Instead, emit events when the actual runtime state changes.
 
 ## Event Producers Already Present In `codexw`
 
-The codebase already has natural mutation points that can become event
-producers.
+The codebase already has natural mutation points that act as event producers.
 
 ### Session and Turn Lifecycle
 
@@ -117,12 +116,12 @@ Suggested internal shape:
 - session-scoped filtering
 - no persistence requirement for the first spike
 
-The first implementation does not need durable replay. It only needs a clean
-semantic publication path.
+The current implementation does not need durable replay. It already relies on a
+clean semantic publication path.
 
 ## Suggested Internal Types
 
-Not final Rust names, but a recommended structure:
+The concrete module graph has evolved, but the recommended structure is still:
 
 - `LocalApiEvent`
   - already normalized, session-scoped semantic event
@@ -146,9 +145,9 @@ At:
 - successful thread attach
 - successful thread resume/fork/start completion
 
-Likely emission owners:
+Emission owners:
 
-- future `local_api/routes/session.rs`
+- `local_api/routes/session.rs`
 - `response_thread_runtime.rs`
 - `response_thread_loaded.rs`
 
@@ -173,7 +172,7 @@ At:
 - item deltas accumulate into a meaningful new snapshot if streaming items are
   intended
 
-For the first spike, a conservative model is acceptable:
+For the current implementation, a conservative model remains acceptable:
 
 - emit transcript items on item completion
 - optionally emit coarse updates for long-running items later
@@ -270,9 +269,9 @@ That keeps:
 
 all aligned on the same semantic payload.
 
-## First Implementation Recommendation
+## Current Implementation Recommendation
 
-For the local API spike:
+For the implemented local API plus connector stack:
 
 1. add a simple in-memory event bus
 2. publish only the required initial semantic families:
@@ -284,7 +283,8 @@ For the local API spike:
 3. add `shell.updated`, `service.updated`, and `capability.updated` only where
    cheap and already well-structured
 
-This keeps the first spike small while still proving the event model.
+This keeps the event model small and semantic while still supporting the
+current loopback SSE and connector surfaces.
 
 ## Test Strategy
 

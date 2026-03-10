@@ -1,10 +1,13 @@
 # codexw Broker Event Envelope Sketch
 
-This document captures the first concrete event-envelope candidate for brokered
-or remotely accessible `codexw` APIs.
+This document captures the event-envelope shape that emerged from the brokered
+or remotely accessible `codexw` API work.
 
 The goal is to expose stable semantic state transitions rather than terminal
 presentation artifacts.
+
+It should now be read as a historical design record plus a current semantic
+reference, not as an unimplemented future proposal.
 
 ## Core Envelope
 
@@ -42,7 +45,7 @@ Candidate envelope:
 
 Optional means “present only when semantically relevant,” not “randomly omitted.”
 
-## First-Phase Event Families
+## Current Event Families
 
 ### Session
 
@@ -159,7 +162,7 @@ But it should stay `codexw`-native in content:
 - thread/turn/item ids should preserve existing `codexw` concepts
 - orchestration and shell/service events should expose wrapper-owned semantics directly
 
-## Open Questions
+## Remaining Design Questions
 
 - Should event replay be explicit via cursor or event id?
 - Which events should be snapshotted versus emitted only as deltas?
