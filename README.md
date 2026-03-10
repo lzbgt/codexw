@@ -14,9 +14,14 @@ For the current native-side product recommendation and support boundaries, see
 [docs/codexw-native-product-recommendation.md](docs/codexw-native-product-recommendation.md)
 and
 [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md).
+For the operational meaning of native-side "supported", see
+[docs/codexw-native-support-policy.md](docs/codexw-native-support-policy.md).
 For a concise native-side status snapshot and evidence map, see
 [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
 and [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md).
+For optional native-side hardening work that is useful but not a current
+support blocker, see
+[docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md).
 For the remote-access track specifically, see [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md): `codexw` now has an initial disabled-by-default loopback local API with health/session inspection, turn start/interrupt control, structured orchestration/shell/service/capability query routes, and a semantic SSE session event stream intended to become the broker-facing foundation.
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).

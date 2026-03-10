@@ -13,8 +13,10 @@ Related docs:
 
 - [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
 - [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
+- [codexw-native-support-policy.md](codexw-native-support-policy.md)
 - [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
+- [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
 - [../TODOS.md](../TODOS.md)
 
 ## Current Supported Shape

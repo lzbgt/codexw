@@ -11,9 +11,11 @@ Primary source docs:
 - [docs/codexw-design.md](docs/codexw-design.md)
 - [docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md)
 - [docs/codexw-native-product-recommendation.md](docs/codexw-native-product-recommendation.md)
+- [docs/codexw-native-support-policy.md](docs/codexw-native-support-policy.md)
 - [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
 - [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
+- [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
 - [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md)
 - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
 - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
@@ -59,6 +61,7 @@ Concrete tasks:
   - README
   - native gap docs
   - native status/proof docs
+  - native support policy docs
   - design docs
   - repo backlog
 - only reopen alternate-screen/native TUI work if a concrete workflow is
@@ -66,6 +69,9 @@ Concrete tasks:
 - only reopen audio/realtime expansion if a concrete supported target is chosen
 - keep the wrapper-owned async shell boundary explicit whenever orchestration or
   local-API work expands
+- keep optional native-side polish or parity ideas in
+  [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
+  unless they become real support-level blockers
 
 Primary source:
 - [docs/codexw-design.md](docs/codexw-design.md)

@@ -17,6 +17,9 @@ The implementation lives in `wrapper/`, while `ref/` is only a local upstream re
 For the concise native-side product decision and evidence summary, see
 [codexw-native-product-status.md](codexw-native-product-status.md) and
 [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md).
+For native-side support semantics and optional hardening work, see
+[codexw-native-support-policy.md](codexw-native-support-policy.md) and
+[codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md).
 
 ## Design Goals
 
