@@ -1,11 +1,18 @@
 # codexw Local API Sketch
 
-This document is the first concrete sketch for a local daemon-facing API that
-could later be exposed directly to same-host clients or bridged through a
-broker connector.
+This document is the original local daemon-facing API sketch for `codexw`.
+It now serves as a compact conceptual companion to the implemented surface,
+not as the sole current source of truth for what exists today.
 
-It is intentionally narrower than a full protocol spec. The goal is to define
-the minimum viable surface that preserves `codexw`'s real runtime semantics.
+For current implementation scope and route ownership, use:
+
+- [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [docs/codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [docs/codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+
+This sketch remains intentionally narrower than a full protocol spec. Its job
+is to preserve the design intent and resource model behind the local API,
+rather than to duplicate the full implemented route inventory.
 
 ## Design Goals
 
@@ -318,7 +325,9 @@ Preferred error-code families:
 
 ## Explicit Phase 1 Non-Goals
 
-This sketch does not yet define:
+Even though much of the local API is now implemented, this sketch still does
+not define the following broader areas because they remain intentionally out
+of scope for the first local-API/connector phase:
 
 - websocket transport
 - broker auth

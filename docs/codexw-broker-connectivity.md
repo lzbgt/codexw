@@ -9,7 +9,9 @@ Define how `codexw` could evolve from a local terminal wrapper into a remotely r
 - a remote terminal
 - other automation clients
 
-This document is an investigation and design-planning artifact. It is not a commitment to immediate implementation.
+This document started as an investigation and design-planning artifact.
+It now serves as the high-level broker/local-API overview and index into the
+more specific design, implementation, proof, and support-policy documents.
 
 ## Why This Matters
 
@@ -618,8 +620,8 @@ The first audit should classify each relevant `~/work/agent` surface into one of
 
 | `~/work/agent` surface | Initial classification | Why |
 | --- | --- | --- |
-| `GET /v1/agents/{agent_id}/proxy/...` | adapter fit | `codexw` does not yet expose a local HTTP API, but a connector could map future local endpoints into this broker path |
-| `GET /v1/agents/{agent_id}/proxy_sse/...` | adapter fit | `codexw` can plausibly expose SSE event streams, but does not have a public stream API yet |
+| `GET /v1/agents/{agent_id}/proxy/...` | adapter fit | implemented through the current connector prototype against the loopback local HTTP API; still an adapter layer rather than a direct native broker surface |
+| `GET /v1/agents/{agent_id}/proxy_sse/...` | adapter fit | implemented through the current connector prototype against the loopback local SSE API; replay and `Last-Event-ID` behavior are already process-level proven |
 | `GET /v1/events` | adapter fit | the broker event stream concept fits well, but `codexw` first needs its own stable event vocabulary |
 | outbound `wss://.../v1/agent/connect` | adapter fit | likely phase-2+ unless `codexw` adopts direct broker connectivity |
 
@@ -732,32 +734,40 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 
 - after real connector experience, choose whether direct broker connectivity belongs in `codexw`
 
-## TODOs
+## Historical Design Checklist
 
-- Audit `codexw` state and event surfaces against:
-  - `/Users/zongbaolu/work/agent/DESIGN.md`
-  - `/Users/zongbaolu/work/agent/broker/README.md`
-  - `/Users/zongbaolu/work/agent/docs/PROTOCOL.md`
-  - `/Users/zongbaolu/work/agent/docs/CLIENT.md`
-- Write a first `codexw` local API sketch covering:
-  - now tracked in [docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md)
-- Decide whether the first implementation target is:
-  - now tracked in [docs/codexw-broker-connector-decision.md](docs/codexw-broker-connector-decision.md)
-- Define the minimal compatibility target:
-  - now tracked in [docs/codexw-broker-compatibility-target.md](docs/codexw-broker-compatibility-target.md)
-- Evaluate whether the user’s C agent framework can share:
-  - now tracked in [docs/codexw-broker-shared-assumptions.md](docs/codexw-broker-shared-assumptions.md)
-- Keep the connector/client policy contract explicit:
-  - now tracked in [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
-- Keep the unsupported boundary explicit:
-  - now tracked in [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
+The earlier open-ended design TODOs from this document have now been broken
+out into tracked artifacts. The relevant current sources of truth are:
+
+- endpoint compatibility audit:
+  [docs/codexw-broker-endpoint-audit.md](docs/codexw-broker-endpoint-audit.md)
+- local API route and implementation planning:
+  [docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md),
+  [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
+- connector architecture and mapping:
+  [docs/codexw-broker-connector-decision.md](docs/codexw-broker-connector-decision.md),
+  [docs/codexw-broker-connector-mapping.md](docs/codexw-broker-connector-mapping.md),
+  [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
+- frozen adapter contract, client policy, and explicit unsupported boundary:
+  [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md),
+  [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md),
+  [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
+- current implementation/proof/support state:
+  [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md),
+  [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md),
+  [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md)
+- promotion criteria and recommendation:
+  [docs/codexw-broker-adapter-promotion.md](docs/codexw-broker-adapter-promotion.md),
+  [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
 
 ## Current Status
 
-This is now an explicit tracked design area, not an informal idea.
+This is now an explicit tracked design and implementation area, not an
+informal idea or a pre-implementation hypothesis.
 
-The next high-leverage step is no longer broad design exploration. The
-remaining work is now implementation-facing:
+The broad design exploration phase is largely complete. The remaining work is
+mostly implementation hardening, support-level judgment, and connector/client
+proof expansion:
 
 - route ownership and delivery order, now captured in
   [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
@@ -778,6 +788,10 @@ remaining work is now implementation-facing:
   [docs/codexw-broker-adapter-promotion.md](docs/codexw-broker-adapter-promotion.md)
 - the mapping from those criteria to current process-level proof, now captured
   in [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
+- the current promotion recommendation, now captured in
+  [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
+- the operational meaning of the current support level, now captured in
+  [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md)
 
 The local API spike has now started with a minimal loopback skeleton:
 
