@@ -232,7 +232,7 @@ The current stack is still intentionally limited:
 The biggest remaining gaps are now mostly judgment, maintenance, and optional
 hardening above the already-proven route surface:
 
-1. keep the supported-experimental claim coherent across README, status docs,
+1. keep the supported experimental adapter claim coherent across README, status docs,
    proof docs, and future release-facing language
 2. preserve the explicit unsupported boundary whenever the connector alias
    surface grows

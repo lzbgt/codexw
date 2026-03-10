@@ -3,7 +3,7 @@
 This document answers the current decision question left open by the broader
 broker docs:
 
-- should the current supported-experimental adapter claim remain in place
+- should the current supported experimental adapter claim remain in place
 - or should the repo retreat to a narrower non-supported/prototype framing
 
 ## Recommendation

@@ -2,7 +2,7 @@
 
 This document defines what must be true before the current broker/local-API
 stack should be treated as a supported adapter layer under the current
-supported-experimental claim. For the current recommendation based on the
+supported experimental adapter claim. For the current recommendation based on the
 present proof surface, see
 [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
 For the operational meaning of that support level after promotion, see
@@ -18,7 +18,7 @@ question:
 
 ## Purpose
 
-Use this document when checking whether the current supported-experimental
+Use this document when checking whether the current supported experimental
 adapter claim should remain in place, be strengthened, or be reconsidered.
 
 ## Promotion Does Not Mean Full Broker Parity

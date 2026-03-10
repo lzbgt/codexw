@@ -2,7 +2,7 @@
 
 This document is the home for optional broker-adapter hardening work that is
 useful, evidence-increasing, and worth tracking, but is **not** a blocker for
-the current supported-experimental recommendation.
+the current supported experimental adapter recommendation.
 
 Use this document to keep future stress ideas visible without overstating them
 as missing contract basics in the backlog or adapter-status docs.

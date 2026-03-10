@@ -51,7 +51,7 @@ Concrete tasks:
 
 Why this is still active:
 - the broker stack is no longer blocked on missing contract definition
-- the active work is now preserving a coherent supported-experimental surface,
+- the active work is now preserving a coherent supported experimental adapter surface,
   not proving that the contract exists at all
 
 ### 2. Native Product Gaps Outside The Broker Track
