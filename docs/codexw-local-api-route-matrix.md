@@ -14,10 +14,14 @@ This is intentionally narrower than a full protocol spec. The wire shapes live
 in [codexw-local-api-sketch.md](codexw-local-api-sketch.md). This document is
 about implementation ownership and delivery order.
 
-## Phase 1 Goal
+## Initial Goal
 
-The first implementation slice should expose only the routes needed to prove
-that `codexw` can be controlled remotely without scraping terminal output:
+This section records the original minimum route goal for the first local-API
+implementation slice. It is historical context now, not a claim that the API
+is still at that stage.
+
+The initial slice was supposed to expose only the routes needed to prove that
+`codexw` can be controlled remotely without scraping terminal output:
 
 - session create/attach/inspect
 - turn start/interrupt
@@ -28,7 +32,7 @@ that `codexw` can be controlled remotely without scraping terminal output:
 
 ## Route Ownership Matrix
 
-| Route | Phase | Existing source of truth | Proposed local API handler | Minimum verification |
+| Route | Original phase | Existing source of truth | Proposed local API handler | Minimum verification |
 | --- | --- | --- | --- | --- |
 | `GET /healthz` | 1 | none | `local_api/routes/dispatch.rs`, `local_api/server.rs` | basic route smoke test |
 | `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
@@ -187,10 +191,10 @@ into shared local-API helpers.
 
 ## Exit Criteria
 
-The route matrix phase is complete when:
+The original route-matrix phase is complete when:
 
-1. every Phase 1 route has a named implementation owner
-2. every Phase 1 route has a test target
+1. every initial route has a named implementation owner
+2. every initial route has a test target
 3. local API modules can be created without inventing a second state model
 4. the implementation sequence is obvious enough that the next step is code,
    not more route discovery

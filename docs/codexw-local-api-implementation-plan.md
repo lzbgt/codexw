@@ -82,7 +82,7 @@ control. It is connector-facing coverage above the now-usable route surface:
 attachment policy, route stability, and enough semantic payloads for a thin
 adapter to proxy the local API remotely.
 
-That adapter layer has now started to absorb a minimal amount of client policy:
+That adapter layer now already absorbs a minimal amount of client policy:
 the connector prototype can project `X-Codexw-Client-Id` and
 `X-Codexw-Lease-Seconds` into supported mutating local-API JSON bodies. The
 remaining work is policy depth and broker/client semantics above that minimal
@@ -122,6 +122,13 @@ Recommended first spike:
 This avoids creating a second daemon binary too early.
 
 ## Phase Breakdown
+
+The phase labels below are retained as historical sequencing markers. They no
+longer mean that the local API is still sitting at a pre-implementation
+planning stage. For the current route surface, use:
+
+- [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [docs/codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 
 ### Phase 1: API Skeleton
 
@@ -376,8 +383,8 @@ terminal-render code.
 
 ## Error Model Requirements
 
-Phase 1 should standardize, through the shared route helper layer now living in
-`wrapper/src/local_api/routes/shared.rs` and
+The current implementation should standardize, through the shared route helper
+layer now living in `wrapper/src/local_api/routes/shared.rs` and
 `wrapper/src/local_api/routes/dispatch.rs`:
 
 - `session_*`
@@ -395,7 +402,7 @@ layer becomes too large or divergent.
 
 ## Security Defaults
 
-Phase 1 recommendation:
+Recommended default:
 
 - bind only to `127.0.0.1`
 - local API disabled by default

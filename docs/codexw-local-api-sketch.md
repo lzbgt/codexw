@@ -77,7 +77,14 @@ A wrapper-owned long-lived shell job.
 
 A reusable role advertised by one or more running service shells.
 
-## Phase 1 Routes
+## Initial Route Sketch
+
+The route groups below preserve the original initial API sketch. They are
+useful as a compact conceptual map, but they are no longer the authoritative
+"what is implemented today" list. For the current route surface, use:
+
+- [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [docs/codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 
 ### Session Lifecycle
 
@@ -191,7 +198,7 @@ Request:
 Server-sent event stream using the envelope from
 [docs/codexw-broker-event-envelope.md](docs/codexw-broker-event-envelope.md).
 
-Phase 1 event families:
+Original initial event families:
 
 - `session.*`
 - `turn.*`
@@ -323,7 +330,7 @@ Preferred error-code families:
 - `capability_*`
 - `validation_*`
 
-## Explicit Phase 1 Non-Goals
+## Explicit Initial-Slice Non-Goals
 
 Even though much of the local API is now implemented, this sketch still does
 not define the following broader areas because they remain intentionally out
@@ -336,7 +343,7 @@ of scope for the first local-API/connector phase:
 - binary audio streaming
 - general scene/entity APIs
 
-## Phase 1 Success Criteria
+## Initial-Slice Success Criteria
 
 The local API is sufficient when it can support:
 

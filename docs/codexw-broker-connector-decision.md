@@ -1,7 +1,16 @@
 # codexw Broker Connector Decision
 
-This document resolves the remaining `connector-decision.md` placeholder from
-`docs/codexw-broker-connectivity.md`.
+This document captures the original architecture decision for how broker
+connectivity should be layered into `codexw`.
+
+It is now primarily a historical decision record, not a statement that the
+connector and local API are still hypothetical. The current implemented state
+and support recommendation live in:
+
+- [docs/codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
+- [docs/codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
+- [docs/codexw-broker-support-policy.md](codexw-broker-support-policy.md)
+- [docs/codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
 The decision question is:
 
@@ -32,13 +41,14 @@ Strengths:
 Weaknesses:
 
 - does not satisfy universal connectivity by itself
-- still needs a later bridge or connector for cross-network access
+- on its own, it still needs a later bridge or connector for cross-network
+  access
 - risks creating a local API that is awkward to broker later if not designed
   carefully
 
 Best use:
 
-- Phase 1 implementation vehicle
+- the initial implementation vehicle
 
 ### Option B: Local API Plus Connector
 
@@ -120,10 +130,19 @@ Recommended path:
 
 That means:
 
-- Phase 1 should implement the local daemon-facing API as the canonical contract
-- Phase 2 should add a connector that maps that API to a broker protocol
+- the local daemon-facing API should be the canonical contract
+- a connector should map that API to a broker-facing protocol
 - direct broker mode should remain explicitly deferred unless later evidence
   shows the connector layer is an unacceptable burden
+
+That sequencing has now largely happened:
+
+- the loopback local API exists
+- the connector prototype exists
+- broker-style alias routes and process-level broker client fixtures exist
+
+What remains is support-level judgment, contract discipline, and optional
+hardening rather than the original architecture decision itself.
 
 ## Why This Is The Best Fit For codexw
 
@@ -157,9 +176,10 @@ sequence should be:
    vocabulary from `~/work/agent`
 5. evaluate incompatibilities before considering any direct broker mode
 
-## Explicit Non-Goals For Phase 1
+## Explicit Non-Goals For The Initial Slice
 
-Phase 1 should not try to do all of the following at once:
+The original first slice was intentionally not supposed to do all of the
+following at once:
 
 - direct broker auth inside `codexw`
 - mobile/web/terminal client support
