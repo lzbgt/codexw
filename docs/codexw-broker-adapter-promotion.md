@@ -238,13 +238,15 @@ Based on the repo as it exists now:
 - the route surface is already broad enough
 - the connector alias surface is already broad enough
 - process-level proof is already stronger than a normal prototype
-- the biggest remaining work is promotion judgment and adversarial confidence,
-  not route invention or missing contract text
+- the biggest remaining work is promotion judgment, support follow-through, and
+  optional adversarial hardening, not route invention or missing contract text
 
 That means the next meaningful work is:
 
-1. continue adding adversarial multi-client proof until the contract is
-   defensible, not only functional
+1. use
+   [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
+   as the home for optional churn, replay, and adversarial expansions instead
+   of treating them as active blockers by default
 2. use the explicit adapter contract plus the proof matrix to validate or
    challenge the current recommendation in
    [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
@@ -260,5 +262,6 @@ That means the next meaningful work is:
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
 - [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)

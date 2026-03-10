@@ -13,6 +13,7 @@ design set:
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+- [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
 
 Its goal is simple:
 
@@ -224,26 +225,21 @@ The current stack is still intentionally limited:
 
 ## Highest-Leverage Remaining Gaps
 
-The biggest remaining gaps are above the route layer, not below it:
+The biggest remaining gaps are now mostly judgment, maintenance, and optional
+hardening above the already-proven route surface:
 
-1. explicit client-policy and attachment semantics are now stronger for named
-   and anonymous callers, and are now frozen explicitly in
-   [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md);
-   the remaining question is whether the current proof level is already enough
-   to promote that contract
-2. broader connector behavior under sustained multi-client contention beyond the
-   now-covered observer-readable contention, conflict/recovery, explicit
-   handoff, repeated role-reversal, and client-event handoff workflows
-3. eventual promotion from prototype connector to a more formal adapter layer
-   is still a deliberate decision point, but the current recommendation is now
-   written down explicitly in
-   [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md),
-   and the operational meaning of that support level is now frozen in
-   [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
+1. keep the supported-experimental claim coherent across README, status docs,
+   proof docs, and future release-facing language
+2. preserve the explicit unsupported boundary whenever the connector alias
+   surface grows
+3. treat additional churn, replay, and adversarial workflows as optional
+   hardening tracked in
+   [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md),
+   not as evidence that the adapter contract is still undefined
 
-The remaining gaps are therefore no longer basic validation fidelity or missing
-contract language. They are promotion judgment and broader architectural
-choices above the current route/error/event surface.
+The remaining gaps are therefore no longer basic validation fidelity, missing
+contract language, or missing multi-client proof for the currently claimed
+surface. They are support follow-through and optional confidence hardening.
 
 The unsupported boundary itself is now also process-level defended through the
 connector smoke suite, including explicit rejection of out-of-scope broker-style
@@ -259,13 +255,12 @@ If continuing on this track, the highest-leverage next tasks are:
    [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md), and
    [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
    together to validate or challenge the current recommendation
-2. add more adversarial multi-client workflows, especially longer-lived lease
-   churn and more complex observer/rival/owner permutations beyond the
-   now-covered observer-readable contention, conflict/recovery, explicit
-   handoff, repeated role-reversal, and client-event handoff paths
-3. keep the out-of-scope boundary explicit through
+2. keep the out-of-scope boundary explicit through
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) so prototype
    expansion does not drift into parity assumptions
+3. keep optional churn, replay, and adversarial ideas in
+   [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
+   unless they become active blockers because of a regression or contradiction
 4. keep
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
    as the explicit checklist for deciding whether the connector stays

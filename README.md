@@ -29,6 +29,9 @@ stability and breaking-change expectations, see
 [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md).
 For a concise mapping from those criteria to the currently verified proof
 surface, see [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md).
+For optional broker hardening work that is useful but not a blocker for the
+current recommendation, see
+[docs/codexw-broker-hardening-catalog.md](docs/codexw-broker-hardening-catalog.md).
 
 ## Architecture
 

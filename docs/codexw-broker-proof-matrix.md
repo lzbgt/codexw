@@ -105,4 +105,6 @@ That means the next high-leverage work is not more route invention or policy
 freezing. The repo now has enough evidence to support a concrete recommendation
 in [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
 Further work is mostly about either reinforcing that recommendation with more
-adversarial stress coverage or revising it if contradictory evidence appears.
+adversarial stress coverage cataloged in
+[codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md), or
+revising it if contradictory evidence appears.

@@ -134,11 +134,14 @@ The next high-leverage tasks should be:
 
 1. keep adding adversarial proof as hardening, not as proof that the contract is
    still undefined
-2. tighten doc wording anywhere that still says the stack is merely a prototype
+2. keep those optional hardening items centralized in
+   [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
+   instead of leaving them phrased as active blockers in status docs
+3. tighten doc wording anywhere that still says the stack is merely a prototype
    when it is actually a supported experimental adapter
-3. preserve the unsupported boundary explicitly so promotion does not silently
+4. preserve the unsupported boundary explicitly so promotion does not silently
    expand the claim surface
-4. only reopen the promotion decision if the connector starts needing shadow
+5. only reopen the promotion decision if the connector starts needing shadow
    state or if the local API authority model changes
 
 ## Decision Rule
@@ -161,3 +164,4 @@ not:
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)

@@ -13,29 +13,35 @@ Primary source docs:
 - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
 - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
 - [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md)
+- [docs/codexw-broker-hardening-catalog.md](docs/codexw-broker-hardening-catalog.md)
 
 ## Highest-Leverage Active Work
 
-### 1. Broker Adapter Hardening Above The Current Contract
+### 1. Broker Adapter Support Follow-Through
 
 Status:
 - the broker-facing adapter contract is now explicitly documented
 - the current recommendation is to treat it as a supported experimental adapter
-- the strongest remaining gaps are no longer missing routes or missing policy language
+- the strongest remaining gaps are no longer missing routes or missing policy
+  language
 
 Concrete tasks:
-- extend process-level proof beyond the already-covered adversarial lease and SSE workflows into longer-running contention churn and more repeated ownership changes
-- continue proving that observer-readable routes stay available under lease contention while lease-owned mutations remain blocked correctly
 - keep unsupported broker boundary enforcement explicit whenever new alias routes or connector features are added
 - keep route, error, event, and lease behavior aligned between:
   - local API
   - connector alias layer
   - Python broker client fixture
   - broker-facing docs
+- keep the current support-level wording aligned across:
+  - README
+  - broker status docs
+  - promotion docs
+  - proof docs
 
 Why this is still active:
 - the broker stack is no longer blocked on missing contract definition
-- the remaining leverage is in confidence and operational hardening, not basic surface area
+- the active work is now preserving a coherent supported-experimental surface,
+  not proving that the contract exists at all
 
 ### 2. Native Product Gaps Outside The Broker Track
 
@@ -68,14 +74,25 @@ Concrete tasks:
 
 ## Secondary Work
 
-### 4. Documentation Hygiene
+### 4. Optional Broker Hardening Catalog Maintenance
+
+Concrete tasks:
+- keep optional churn, replay, and adversarial workflow ideas in
+  [docs/codexw-broker-hardening-catalog.md](docs/codexw-broker-hardening-catalog.md)
+  instead of treating them as active blockers by default
+- move an item from the hardening catalog back into this backlog only if:
+  - a regression appears
+  - a contradiction appears
+  - the supported contract expands
+
+### 5. Documentation Hygiene
 
 Concrete tasks:
 - keep the top-level docs synchronized so the same status does not have to be inferred from multiple long design files
 - prefer adding or updating source-of-truth docs over copying large overlapping sections into multiple files
 - keep this file updated when major broker or local-API milestones land
 
-### 5. Structural Cleanup When It Compounds
+### 6. Structural Cleanup When It Compounds
 
 Concrete tasks:
 - continue splitting oversized files only when the split removes a real maintenance hotspot
