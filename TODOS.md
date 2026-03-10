@@ -10,6 +10,8 @@ Primary source docs:
 
 - [docs/codexw-design.md](docs/codexw-design.md)
 - [docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md)
+- [docs/codexw-native-product-recommendation.md](docs/codexw-native-product-recommendation.md)
+- [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
 - [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md)
 - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
 - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
@@ -51,14 +53,22 @@ Status:
 - the main remaining gaps are architectural or UX-level
 
 Concrete tasks:
-- evaluate alternate-screen/native TUI parity work versus keeping the current scrollback-first model
-- improve realtime UX beyond the current text-only path
-- investigate whether upstream-style audio UX should exist in `codexw` at all, and if yes, what the minimal supported scope is
-- continue clarifying the architecture gap between wrapper-owned async shell behavior and native Codex process/session behavior
+- keep the terminal-first recommendation and support boundary explicit across:
+  - README
+  - native gap docs
+  - design docs
+  - repo backlog
+- only reopen alternate-screen/native TUI work if a concrete workflow is
+  blocked by the current scrollback-first model
+- only reopen audio/realtime expansion if a concrete supported target is chosen
+- keep the wrapper-owned async shell boundary explicit whenever orchestration or
+  local-API work expands
 
 Primary source:
 - [docs/codexw-design.md](docs/codexw-design.md)
 - [docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md)
+- [docs/codexw-native-product-recommendation.md](docs/codexw-native-product-recommendation.md)
+- [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
 
 ### 3. Promotion Follow-Through
 

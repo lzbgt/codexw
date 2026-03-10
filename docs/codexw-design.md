@@ -579,6 +579,10 @@ That means the highest-leverage future work is concentrated in:
 
 The focused assessment for those non-broker gaps now lives in
 [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md).
+The current recommendation and support boundary for those gaps now live in
+[codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
+and
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md).
 
 ## Approval and Automation Posture
 

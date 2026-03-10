@@ -14,6 +14,8 @@ Related docs:
 - [codexw-design.md](codexw-design.md)
 - [../TODOS.md](../TODOS.md)
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 
 ## Current State
 
@@ -183,11 +185,31 @@ The facts favor options 1 and 2 for now:
 So the near-term task is to keep describing this as an explicit architectural
 boundary, not to imply that native process/session parity is already achievable.
 
+## Relationship To Current Recommendation
+
+This document is the assessment layer for native-side remaining work.
+
+The current source-of-truth recommendation and support boundary are in:
+
+- [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
+
+That means:
+
+- this document explains the remaining gaps and why they matter
+- the recommendation doc says what `codexw` should optimize for right now
+- the support-boundary doc says what is supported versus explicitly
+  unsupported today
+
+Future edits should keep those three documents aligned rather than treating
+this assessment alone as the whole product decision.
+
 ## Highest-Leverage Next Work
 
 The next high-value tasks in this area are:
 
-1. Keep the scrollback-first decision explicit across docs and backlog.
+1. Keep the recommendation and support-boundary docs aligned with the actual
+   product and backlog state.
 2. Keep realtime/audio scope explicit, so future readers do not assume audio
    parity is merely unfinished implementation work.
 3. Keep the wrapper-owned async shell boundary explicit whenever orchestration
