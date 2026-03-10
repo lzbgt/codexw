@@ -436,3 +436,38 @@ fn broker_design_docs_do_not_regress_to_stale_remaining_question_wording() {
         assert_not_contains(&contents, "remaining broker-design TODO", name);
     }
 }
+
+#[test]
+fn historical_broker_and_local_api_docs_keep_their_record_framing() {
+    let broker_connector_decision = read_repo_file("docs/codexw-broker-connector-decision.md");
+    let local_api_sketch = read_repo_file("docs/codexw-local-api-sketch.md");
+    let broker_compatibility_target = read_repo_file("docs/codexw-broker-compatibility-target.md");
+    let broker_shared_assumptions = read_repo_file("docs/codexw-broker-shared-assumptions.md");
+    let local_api_plan = read_repo_file("docs/codexw-local-api-implementation-plan.md");
+
+    assert_contains(
+        &broker_connector_decision,
+        "historical decision record",
+        "docs/codexw-broker-connector-decision.md",
+    );
+    assert_contains(
+        &local_api_sketch,
+        "conceptual companion",
+        "docs/codexw-local-api-sketch.md",
+    );
+    assert_contains(
+        &broker_compatibility_target,
+        "records the broker compatibility target decision",
+        "docs/codexw-broker-compatibility-target.md",
+    );
+    assert_contains(
+        &broker_shared_assumptions,
+        "records the broker shared-assumptions assessment",
+        "docs/codexw-broker-shared-assumptions.md",
+    );
+    assert_contains(
+        &local_api_plan,
+        "Current Implementation Status",
+        "docs/codexw-local-api-implementation-plan.md",
+    );
+}
