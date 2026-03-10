@@ -17,7 +17,7 @@ Its purpose is to map relevant `~/work/agent` broker/client surfaces to current
 - `adapter fit`
   - the concept is valid for `codexw`, but the shapes differ enough that a bridge or connector layer is expected
 - `out of scope`
-  - not a sensible first-phase target for `codexw`
+  - not a sensible initial supported-adapter target for `codexw`
 
 ## Broker Surfaces
 

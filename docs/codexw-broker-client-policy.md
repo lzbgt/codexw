@@ -9,7 +9,7 @@ be allowed to do concurrently, and which operations must remain lease-owned.
 
 ## Purpose
 
-This document defines the first explicit policy contract for:
+This document defines the current explicit policy contract for:
 
 - attachment ownership
 - observer behavior
@@ -40,7 +40,7 @@ This document does not replace those facts. It names their intended policy.
 
 ## Client Roles
 
-First-phase remote clients should be understood as one of three roles.
+Current remote clients should be understood as one of three roles.
 
 ### 1. Owner
 
@@ -93,7 +93,7 @@ This is not a separate API identity class. It is a runtime policy state.
 
 ## Lease-Owned Operations
 
-The following operations are first-phase lease-owned operations and should
+The following operations are current lease-owned operations and should
 continue to require the active owner:
 
 - session mutation:
@@ -135,7 +135,7 @@ The following operations should remain readable without lease ownership:
 
 ## Renewal and Expiry Rules
 
-First-phase rules:
+Current rules:
 
 1. only the current owner may renew the active lease
 2. only the current owner may explicitly release the active lease
@@ -189,7 +189,7 @@ The following are intentionally not guaranteed in this first policy contract:
 
 ## Practical Summary
 
-The first-phase contract is:
+The current contract is:
 
 - one owner at a time
 - many observers allowed

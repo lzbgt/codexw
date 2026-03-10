@@ -169,7 +169,7 @@ For the operational meaning of that recommended support level, see
 
 - `codexw` has a working loopback HTTP/SSE local API
 - the tracked connector prototype supports both raw `/proxy` passthrough and a
-  first-pass broker-style alias surface for session, turn, transcript,
+  broker-style alias surface for session, turn, transcript,
   orchestration, event, shell, service, and capability flows, including
   focused service-detail and capability-detail inspection routes
 - the repo also includes a small broker-style client fixture script that drives
@@ -283,7 +283,7 @@ The following table captures the highest-value existing local surfaces that coul
 | background shell jobs | `background_shells/*` | `POST /api/v1/shells/*`, `GET /api/v1/shells` | One of the highest-value remote-control surfaces |
 | reusable services / capabilities | `background_shells/services/*` | `GET /api/v1/services`, `GET /api/v1/capabilities` | Needed for mobile/WebUI service attachment and orchestration reuse |
 | model / personality / approvals | selection flow + request overrides | `GET /api/v1/session/config`, `POST /api/v1/session/config` | Useful, but lower priority than status and turn control |
-| local prompt/editor state | terminal-only editor modules | no public API in phase 1 | Treat as local-only presentation detail |
+| local prompt/editor state | terminal-only editor modules | no public API in the current supported adapter scope | Treat as local-only presentation detail |
 
 The right first implementation is not “remote terminal mirroring.” It is exposing the stable semantic layers already present underneath the terminal renderer.
 
@@ -381,7 +381,7 @@ This is not the final wire contract. It is a candidate shape for the first audit
 - `POST /api/v1/services/{job}/update`
 - `POST /api/v1/services/{job}/update_dependencies`
 
-## First-Pass Event Model Sketch
+## Event Model Sketch
 
 The first remote stream should prefer a small set of stable semantic events:
 
@@ -395,7 +395,8 @@ The first remote stream should prefer a small set of stable semantic events:
 - `service.updated`
 - `capability.updated`
 
-For phase 1, every event should satisfy two constraints:
+For the current supported adapter scope, every event should satisfy two
+constraints:
 
 1. it can be generated from existing internal state without depending on terminal-render logic
 2. it is useful to more than one client type
@@ -516,7 +517,7 @@ data: {"session_id":"sess_01HX...","counts":{"waits":1,"exec_prereqs":1},"next_a
 
 ## Event Envelope Candidate
 
-The likely phase-1 event envelope should stay simple:
+The current adapter event envelope should stay simple:
 
 ```json
 {
@@ -559,15 +560,15 @@ The first implementation should choose one row explicitly rather than leaving au
 
 | Mode | Exposure | Auth model | Browser support | Broker-ready | Recommended use |
 | --- | --- | --- | --- | --- | --- |
-| Loopback-only local API | localhost only | optional local bearer token | limited, same-host only | not directly | safest phase-1 path |
+| Loopback-only local API | localhost only | optional local bearer token | limited, same-host only | not directly | safest initial rollout path |
 | Local API + connector | localhost API, remote via connector | local token + connector auth | yes, via connector/broker | yes | best compatibility path |
 | Direct broker in `codexw` | remote reachable | broker token and/or mTLS | yes | yes | later phase only |
 
 Recommended initial choice:
 
-- phase 1: loopback-only local API, optional bearer token
-- phase 2: local API plus connector
-- phase 3: evaluate whether direct broker connectivity is worth the complexity
+- initial rollout: loopback-only local API, optional bearer token
+- current supported adapter shape: local API plus connector
+- deferred expansion: evaluate whether direct broker connectivity is worth the complexity
 
 ## Open Implementation Risks
 
@@ -632,7 +633,7 @@ The first audit should classify each relevant `~/work/agent` surface into one of
 | `POST /api/v1/session/new` | direct fit | `codexw` already has explicit thread/session lifecycle concepts and can define a local wrapper session handle |
 | `POST /api/v1/session/client_event` | direct fit | implemented in the local API and exposed through the broker-style fixture client | The collaboration idea now has a public local-API ingest route plus connector/fixture coverage |
 | `GET /api/v1/session/scene` | out of scope | `codexw` currently has no durable scene/entity model comparable to `agentd` |
-| `POST /api/v1/session/scene/apply` | out of scope | same reason; not a first-phase remote-control requirement |
+| `POST /api/v1/session/scene/apply` | out of scope | same reason; not part of the current supported remote-control scope |
 
 ### Run And Event Surfaces
 
@@ -687,7 +688,7 @@ These questions must be decided before implementation:
 These need explicit design before any implementation work:
 
 - whether the first remote API binds only to loopback
-- whether browser access is supported in phase 1
+- whether browser access is supported in the current adapter scope
 - whether auth is bearer-token only or broker-shaped from the start
 - whether outbound broker identity should reuse the `agent` project’s mTLS/client-auth assumptions
 
@@ -714,7 +715,7 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 - list exact mismatches instead of assuming compatibility
 - write a surface inventory:
   - local-only
-  - remotely exposable in phase 1
+  - remotely exposable in the initial supported adapter scope
   - exposed later only with architectural changes
 
 ### Phase 1: Local API Design

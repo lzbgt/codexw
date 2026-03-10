@@ -129,7 +129,8 @@ contracts:
 
 ## Explicitly Deferred Compatibility
 
-The following should remain out of scope for first-phase compatibility claims:
+The following should remain out of scope for the current supported adapter
+compatibility claim:
 
 - audio/media streaming parity
 - general scene/entity APIs

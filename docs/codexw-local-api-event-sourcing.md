@@ -275,7 +275,7 @@ all aligned on the same semantic payload.
 For the local API spike:
 
 1. add a simple in-memory event bus
-2. publish only the required first-phase families:
+2. publish only the required initial semantic families:
    - `session.*`
    - `turn.*`
    - `transcript.item`
@@ -327,7 +327,8 @@ Start with semantic transitions only.
 
 This plan is complete when:
 
-1. the local API spike has named event producers for every first-phase family
+1. the local API spike has named event producers for every required initial
+   semantic family
 2. event serialization is independent of terminal rendering
 3. the SSE implementation can subscribe to one semantic bus instead of many ad
    hoc hooks
