@@ -173,8 +173,8 @@ For the operational meaning of that recommended support level, see
   orchestration, event, shell, service, and capability flows, including
   focused service-detail and capability-detail inspection routes
 - the repo also includes a small broker-style client fixture script that drives
-  the connector outside the test suite for manual and prototype remote-control
-  flows
+  the connector outside the test suite for manual and experimental
+  remote-control flows
 - that fixture is also exercised by a process-level connector smoke test, so it
   is no longer just a convenience script but a verified consumer-side artifact
 - the fixture-backed smoke coverage now proves not only session create / turn /
@@ -877,7 +877,8 @@ place for `attach`, `wait`, and `run`, and explicit attach/lease semantics now
 exist for the current process-scoped session contract. The next gap is
 connector-specific client/lease policy above that single-process model.
 
-That connector-facing work has now started with a first standalone prototype:
+That connector-facing work is now available through a standalone connector
+adapter binary:
 
 - binary: `cargo run --bin codexw-connector-prototype -- ...`
 - broker-facing HTTP prefix:

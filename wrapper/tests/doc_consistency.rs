@@ -312,6 +312,18 @@ fn current_state_docs_do_not_reintroduce_remaining_connector_wording_drifts() {
             "prototype expansion",
         ),
         (
+            "docs/codexw-broker-connectivity.md",
+            "manual and prototype remote-control",
+        ),
+        (
+            "docs/codexw-broker-connectivity.md",
+            "first standalone prototype",
+        ),
+        (
+            "docs/codexw-broker-connector-prototype-plan.md",
+            "initial standalone prototype",
+        ),
+        (
             "docs/codexw-native-product-recommendation.md",
             "connector/prototype proof surface",
         ),

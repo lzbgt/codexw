@@ -302,9 +302,9 @@ The prototype should produce:
 - a list of adapter-only `codexw` extensions
 - one small reusable broker-style client fixture outside the test suite
 
-## Current Prototype Status
+## Current Adapter Status
 
-An initial standalone prototype now exists as:
+A standalone connector adapter binary now exists as:
 
 - `cargo run --bin codexw-connector-prototype -- --agent-id <id> --deployment-id <id> --local-api-base <url>`
 
