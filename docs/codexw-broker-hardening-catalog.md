@@ -5,7 +5,7 @@ useful, evidence-increasing, and worth tracking, but is **not** a blocker for
 the current supported-experimental recommendation.
 
 Use this document to keep future stress ideas visible without overstating them
-as missing contract basics in the backlog or prototype-status docs.
+as missing contract basics in the backlog or adapter-status docs.
 
 ## Purpose
 

@@ -1,11 +1,10 @@
 # codexw Broker Promotion Recommendation
 
-This document answers the question left open by the broader broker docs:
+This document answers the current decision question left open by the broader
+broker docs:
 
-- should the current broker/local-API stack remain below supported-adapter
-  status
-- or should it now be treated as a supported adapter layer for the declared
-  contract
+- should the current supported-experimental adapter claim remain in place
+- or should the repo retreat to a narrower non-supported/prototype framing
 
 ## Recommendation
 

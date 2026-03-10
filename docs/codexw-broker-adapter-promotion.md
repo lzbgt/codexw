@@ -1,9 +1,10 @@
 # codexw Broker Adapter Promotion
 
 This document defines what must be true before the current broker/local-API
-stack should be treated as a supported adapter layer rather than only a strong
-prototype. For the current recommendation based on the present proof surface,
-see [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
+stack should be treated as a supported adapter layer under the current
+supported-experimental claim. For the current recommendation based on the
+present proof surface, see
+[codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
 For the operational meaning of that support level after promotion, see
 [codexw-broker-support-policy.md](codexw-broker-support-policy.md).
 
@@ -17,14 +18,8 @@ question:
 
 ## Purpose
 
-Use this document when deciding whether the current stack should remain:
-
-- a high-value remote-control prototype for lab use
-
-or be promoted into:
-
-- a supported adapter contract that external clients can build against more
-  seriously
+Use this document when checking whether the current supported-experimental
+adapter claim should remain in place, be strengthened, or be reconsidered.
 
 ## Promotion Does Not Mean Full Broker Parity
 

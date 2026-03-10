@@ -123,7 +123,7 @@ When a breaking change is necessary, the batch should do all of the following:
 
 1. update the adapter contract doc
 2. update the support policy doc
-3. update the prototype-status doc
+3. update the adapter-status doc
 4. update the proof matrix if the proof story changed
 5. update process-level proof and fixture coverage
 
