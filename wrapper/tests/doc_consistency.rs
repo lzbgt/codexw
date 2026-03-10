@@ -471,3 +471,71 @@ fn historical_broker_and_local_api_docs_keep_their_record_framing() {
         "docs/codexw-local-api-implementation-plan.md",
     );
 }
+
+#[test]
+fn todos_keeps_active_work_separate_from_optional_hardening() {
+    let todos = read_repo_file("TODOS.md");
+
+    assert_contains(&todos, "## Highest-Leverage Active Work", "TODOS.md");
+    assert_contains(&todos, "## Secondary Work", "TODOS.md");
+    assert_contains(
+        &todos,
+        "### 4. Optional Broker Hardening Catalog Maintenance",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-broker-hardening-catalog.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-native-hardening-catalog.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "instead of treating them as active blockers by default",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "move an item from the hardening catalog back into this backlog only if:",
+        "TODOS.md",
+    );
+}
+
+#[test]
+fn broker_and_native_support_docs_keep_current_support_level_wording() {
+    let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
+    let broker_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
+    let broker_recommendation = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
+    let broker_policy = read_repo_file("docs/codexw-broker-support-policy.md");
+    let native_status = read_repo_file("docs/codexw-native-product-status.md");
+    let native_recommendation = read_repo_file("docs/codexw-native-product-recommendation.md");
+    let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
+
+    for (name, contents) in [
+        ("docs/codexw-broker-adapter-status.md", &broker_status),
+        ("docs/codexw-broker-adapter-promotion.md", &broker_promotion),
+        (
+            "docs/codexw-broker-promotion-recommendation.md",
+            &broker_recommendation,
+        ),
+        ("docs/codexw-broker-support-policy.md", &broker_policy),
+    ] {
+        assert_contains(contents, "supported experimental adapter", name);
+    }
+
+    for (name, contents) in [
+        ("docs/codexw-native-product-status.md", &native_status),
+        (
+            "docs/codexw-native-product-recommendation.md",
+            &native_recommendation,
+        ),
+        ("docs/codexw-native-support-policy.md", &native_policy),
+    ] {
+        assert_contains_case_insensitive(contents, "terminal-first", name);
+        assert_contains_case_insensitive(contents, "scrollback-first", name);
+    }
+}
