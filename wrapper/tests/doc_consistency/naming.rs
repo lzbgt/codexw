@@ -53,6 +53,10 @@ fn current_state_docs_do_not_reintroduce_remaining_connector_wording_drifts() {
             "initial standalone prototype",
         ),
         (
+            "docs/codexw-broker-connector-decision.md",
+            "the connector prototype exists",
+        ),
+        (
             "docs/codexw-native-product-recommendation.md",
             "connector/prototype proof surface",
         ),

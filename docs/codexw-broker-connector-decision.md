@@ -138,7 +138,7 @@ That means:
 That sequencing has now largely happened:
 
 - the loopback local API exists
-- the connector prototype exists
+- the connector adapter exists
 - broker-style alias routes and process-level broker client fixtures exist
 
 What remains is support-level judgment, contract discipline, and optional
