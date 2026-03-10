@@ -120,7 +120,7 @@ Why not a blocker:
 
 Examples:
 
-- a second lightweight client fixture beyond the current Python one
+- an additional consumer shape beyond the current Python and Node fixtures
 - a tiny connector consumer that simulates a longer-lived remote dashboard
 - a narrowly scoped browser-side or Node-side consumer proof
 

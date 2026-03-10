@@ -28,7 +28,7 @@ Its goal is simple:
 
 1. a loopback local HTTP/SSE API in the main `codexw` runtime
 2. a standalone connector prototype that exposes broker-style alias routes
-3. a standalone broker-style Python client fixture
+3. standalone broker-style client fixtures in Python and Node
 4. process-level smoke coverage for the connector and the fixture
 
 This is no longer just a design exploration.
