@@ -237,7 +237,8 @@ Based on the repo as it exists now:
 
 - the route surface is already broad enough
 - the connector alias surface is already broad enough
-- process-level proof is already stronger than a normal prototype
+- process-level proof already supports the current supported experimental
+  adapter recommendation
 - the biggest remaining work is promotion judgment, support follow-through, and
   optional adversarial hardening, not route invention or missing contract text
 
@@ -255,7 +256,7 @@ That means the next meaningful work is:
 
 ## Companion Docs
 
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)

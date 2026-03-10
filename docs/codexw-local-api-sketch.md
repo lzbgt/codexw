@@ -8,7 +8,7 @@ For current implementation scope and route ownership, use:
 
 - [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 - [docs/codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
-- [docs/codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [docs/codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 
 This sketch remains intentionally narrower than a full protocol spec. Its job
 is to preserve the design intent and resource model behind the local API,

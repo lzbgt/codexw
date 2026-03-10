@@ -151,7 +151,7 @@ it into `TODOS.md` in the same batch that documents the reason.
 
 ## Companion Docs
 
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)

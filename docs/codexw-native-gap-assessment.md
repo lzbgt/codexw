@@ -13,7 +13,7 @@ Related docs:
 
 - [codexw-design.md](codexw-design.md)
 - [../TODOS.md](../TODOS.md)
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
 - [codexw-native-support-policy.md](codexw-native-support-policy.md)
 - [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)

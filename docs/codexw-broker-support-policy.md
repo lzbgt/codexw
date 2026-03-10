@@ -8,7 +8,7 @@ It is the operational-policy companion to:
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 
 It does not redefine the adapter contract. It answers a narrower question:
 
@@ -180,7 +180,7 @@ and update the relevant docs, usually a subset of:
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 
@@ -208,7 +208,7 @@ fully frozen production platform API.
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)

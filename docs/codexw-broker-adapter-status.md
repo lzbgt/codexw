@@ -1,4 +1,4 @@
-# codexw Broker Prototype Status
+# codexw Broker Adapter Status
 
 This document is the concise implementation-status companion to the broader
 design set:
@@ -24,7 +24,7 @@ Its goal is simple:
 
 ## Current Status
 
-`codexw` now has a real, working remote-control prototype stack:
+`codexw` now has a real, working remote-control broker/local-API adapter stack:
 
 1. a loopback local HTTP/SSE API in the main `codexw` runtime
 2. a standalone connector prototype that exposes broker-style alias routes
@@ -197,9 +197,10 @@ For a promotion-oriented mapping from those workflows back to route, error,
 event, policy, and unsupported-boundary claims, see
 [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md).
 
-## What Is Stable Enough For Prototype Consumers
+## What Is Stable Enough To Build Against
 
-For prototype or lab use, the following are now strong enough to build against:
+Within the current supported experimental adapter scope, the following are now
+strong enough to build against:
 
 - the local API route family and structured error envelope
 - the connector alias surface for session/turn/orchestration/shell/service work
@@ -207,14 +208,15 @@ For prototype or lab use, the following are now strong enough to build against:
 - SSE resume semantics for remote clients
 - the standalone broker fixtures as reference clients
 
-These are still prototype surfaces, but they are no longer speculative.
+These are still explicitly experimental surfaces, but they are no longer
+speculative.
 
 The same is now true for the current validation/error surface: malformed
 connector-side injected request bodies and malformed client/lease headers return
 structured `validation_error` responses, and structured local field-validation
 errors are preserved instead of being collapsed into generic transport failures.
 
-## What Is Still Prototype-Grade
+## What Remains Explicitly Limited
 
 The current stack is still intentionally limited:
 
@@ -265,6 +267,6 @@ If continuing on this track, the highest-leverage next tasks are:
    unless they become active blockers because of a regression or contradiction
 4. keep
    [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
-   as the explicit checklist for deciding whether the connector stays
-   prototype-grade or becomes a supported adapter layer, together with
+   as the explicit checklist for validating or challenging the current
+   supported experimental adapter recommendation, together with
    [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)

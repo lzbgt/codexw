@@ -152,14 +152,14 @@ documents:
 - [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
 - [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
 The current implementation is now past pure route sketches:
 
 For the concise implementation/proof snapshot, see
-[codexw-broker-prototype-status.md](codexw-broker-prototype-status.md).
+[codexw-broker-adapter-status.md](codexw-broker-adapter-status.md).
 
 For the current recommendation on whether that proof is already sufficient to
 promote the stack beyond prototype framing, see
@@ -753,7 +753,7 @@ out into tracked artifacts. The relevant current sources of truth are:
   [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md),
   [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
 - current implementation/proof/support state:
-  [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md),
+  [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md),
   [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md),
   [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md)
 - promotion criteria and recommendation:

@@ -2,7 +2,8 @@
 
 This document answers the question left open by the broader broker docs:
 
-- should the current broker/local-API stack remain only a strong prototype
+- should the current broker/local-API stack remain below supported-adapter
+  status
 - or should it now be treated as a supported adapter layer for the declared
   contract
 
@@ -161,7 +162,7 @@ not:
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)

@@ -3,7 +3,7 @@
 This document turns the connector mapping design into a concrete prototype plan.
 
 For the concise implementation/proof snapshot, see
-[codexw-broker-prototype-status.md](codexw-broker-prototype-status.md).
+[codexw-broker-adapter-status.md](codexw-broker-adapter-status.md).
 For the criteria that would move this work from prototype to supported adapter,
 see [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md).
 

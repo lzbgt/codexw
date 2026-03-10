@@ -1,7 +1,7 @@
 # codexw Broker Client Policy
 
 This document resolves the remaining “client-policy and attachment semantics”
-gap called out by the broker prototype status.
+gap previously called out by the broker adapter status.
 
 The core question is not whether `codexw` can carry `client_id` and
 `lease_seconds` today. It can. The real question is what remote clients should

@@ -3,8 +3,8 @@
 This document maps the broker/local-API adapter claims to concrete repo
 evidence.
 
-Use it when deciding whether the current stack is only a strong prototype or is
-close to promotion under
+Use it when checking whether the current supported experimental adapter claim
+is still justified under
 [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md).
 
 It does not redefine the broker design. It answers a narrower question:
@@ -15,7 +15,7 @@ It does not redefine the broker design. It answers a narrower question:
 
 ## Companion Docs
 
-- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
@@ -45,7 +45,7 @@ Status labels:
 
 | Area | Status | Evidence | Remaining gap |
 | --- | --- | --- | --- |
-| Session lifecycle and inspection | strong proof | [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md), [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/fixture/session/lifecycle.rs](../wrapper/tests/connector_prototype_smoke/fixture/session/lifecycle.rs), [wrapper/src/local_api/tests/session/lifecycle.rs](../wrapper/src/local_api/tests/session/lifecycle.rs), [wrapper/src/local_api/tests/session/read.rs](../wrapper/src/local_api/tests/session/read.rs), [wrapper/src/bin/codexw_connector_prototype/tests/routing.rs](../wrapper/src/bin/codexw_connector_prototype/tests/routing.rs) | No major prototype gap on the currently claimed session route surface. |
+| Session lifecycle and inspection | strong proof | [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md), [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/fixture/session/lifecycle.rs](../wrapper/tests/connector_prototype_smoke/fixture/session/lifecycle.rs), [wrapper/src/local_api/tests/session/lifecycle.rs](../wrapper/src/local_api/tests/session/lifecycle.rs), [wrapper/src/local_api/tests/session/read.rs](../wrapper/src/local_api/tests/session/read.rs), [wrapper/src/bin/codexw_connector_prototype/tests/routing.rs](../wrapper/src/bin/codexw_connector_prototype/tests/routing.rs) | No major gap on the currently claimed session route surface. |
 | Attachment renew/release | strong proof | [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/fixture/session/lifecycle.rs](../wrapper/tests/connector_prototype_smoke/fixture/session/lifecycle.rs), [wrapper/src/local_api/tests/session/attachment.rs](../wrapper/src/local_api/tests/session/attachment.rs) | No major prototype gap. |
 | Turn start/interrupt | strong proof | [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/fixture/session/turns.rs](../wrapper/tests/connector_prototype_smoke/fixture/session/turns.rs) | Steer/resume semantics remain outside the current adapter proof set. |
 | Transcript inspection | strong proof | [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/fixture/session/turns.rs](../wrapper/tests/connector_prototype_smoke/fixture/session/turns.rs) | No major prototype gap. |
@@ -92,8 +92,9 @@ Status labels:
 
 ## Current Read
 
-The current broker/local-API stack is already stronger than a normal prototype
-in route coverage and process-level workflow proof.
+The current broker/local-API stack already has broad route coverage and
+process-level workflow proof for the current supported experimental adapter
+recommendation.
 
 The weakest remaining areas are no longer missing routes or missing contract
 text. The adapter contract now exists explicitly in

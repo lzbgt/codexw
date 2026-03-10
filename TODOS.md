@@ -16,7 +16,7 @@ Primary source docs:
 - [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
 - [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
-- [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md)
+- [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
 - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
 - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
 - [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md)
@@ -93,7 +93,7 @@ Concrete tasks:
 - avoid reintroducing stale wording that describes the adapter as “only a prototype” where the current docs now recommend supported experimental status
 - if a newly discovered contradiction appears in the proof matrix, update:
   - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
-  - [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md)
+  - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
   - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
 
 ## Secondary Work

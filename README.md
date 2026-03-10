@@ -25,13 +25,13 @@ support blocker, see
 For the remote-access track specifically, see [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md): `codexw` now has an initial disabled-by-default loopback local API with health/session inspection, turn start/interrupt control, structured orchestration/shell/service/capability query routes, and a semantic SSE session event stream intended to become the broker-facing foundation.
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
-For a concise implementation/proof snapshot of the broker/local-API prototype,
-see [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md).
+For a concise implementation/proof snapshot of the broker/local-API adapter,
+see [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md).
 For the current broker client/lease policy contract and explicit unsupported
 boundary, see [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
 and [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md).
-For the criteria that would promote the current broker/local-API stack from a
-strong prototype into a supported adapter layer, see
+For the criteria behind the current supported experimental adapter claim, and
+what would justify revising that claim, see
 [docs/codexw-broker-adapter-promotion.md](docs/codexw-broker-adapter-promotion.md).
 
 For the current recommendation on that promotion question, see
