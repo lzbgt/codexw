@@ -7,6 +7,8 @@ It complements:
 
 - [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
 - [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
+- [codexw-native-product-status.md](codexw-native-product-status.md)
+- [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-design.md](codexw-design.md)
 
 The purpose of this doc is to stop architectural differences from being treated

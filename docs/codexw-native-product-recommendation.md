@@ -11,6 +11,8 @@ what `codexw` should actually optimize for right now.
 Related docs:
 
 - [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
+- [codexw-native-product-status.md](codexw-native-product-status.md)
+- [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-design.md](codexw-design.md)
 - [../TODOS.md](../TODOS.md)
 

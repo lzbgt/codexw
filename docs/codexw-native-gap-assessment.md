@@ -16,6 +16,8 @@ Related docs:
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
 - [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
+- [codexw-native-product-status.md](codexw-native-product-status.md)
+- [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 
 ## Current State
 
@@ -193,6 +195,8 @@ The current source-of-truth recommendation and support boundary are in:
 
 - [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
 - [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
+- [codexw-native-product-status.md](codexw-native-product-status.md)
+- [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 
 That means:
 
@@ -200,6 +204,8 @@ That means:
 - the recommendation doc says what `codexw` should optimize for right now
 - the support-boundary doc says what is supported versus explicitly
   unsupported today
+- the product-status doc gives the concise current snapshot
+- the proof-matrix doc maps those native claims to actual repository evidence
 
 Future edits should keep those three documents aligned rather than treating
 this assessment alone as the whole product decision.

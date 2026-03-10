@@ -14,6 +14,10 @@ It does not patch the upstream Codex binary. Instead, it:
 
 The implementation lives in `wrapper/`, while `ref/` is only a local upstream reference checkout.
 
+For the concise native-side product decision and evidence summary, see
+[codexw-native-product-status.md](codexw-native-product-status.md) and
+[codexw-native-proof-matrix.md](codexw-native-proof-matrix.md).
+
 ## Design Goals
 
 The current design optimizes for:

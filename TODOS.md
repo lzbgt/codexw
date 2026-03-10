@@ -12,6 +12,8 @@ Primary source docs:
 - [docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md)
 - [docs/codexw-native-product-recommendation.md](docs/codexw-native-product-recommendation.md)
 - [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
+- [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
+- [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
 - [docs/codexw-broker-prototype-status.md](docs/codexw-broker-prototype-status.md)
 - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
 - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
@@ -56,6 +58,7 @@ Concrete tasks:
 - keep the terminal-first recommendation and support boundary explicit across:
   - README
   - native gap docs
+  - native status/proof docs
   - design docs
   - repo backlog
 - only reopen alternate-screen/native TUI work if a concrete workflow is
@@ -69,6 +72,8 @@ Primary source:
 - [docs/codexw-native-gap-assessment.md](docs/codexw-native-gap-assessment.md)
 - [docs/codexw-native-product-recommendation.md](docs/codexw-native-product-recommendation.md)
 - [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
+- [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
+- [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
 
 ### 3. Promotion Follow-Through
 
