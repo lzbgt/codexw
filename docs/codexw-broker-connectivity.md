@@ -168,7 +168,7 @@ For the operational meaning of that recommended support level, see
 [codexw-broker-support-policy.md](codexw-broker-support-policy.md).
 
 - `codexw` has a working loopback HTTP/SSE local API
-- the tracked connector prototype supports both raw `/proxy` passthrough and a
+- the tracked connector adapter supports both raw `/proxy` passthrough and a
   broker-style alias surface for session, turn, transcript,
   orchestration, event, shell, service, and capability flows, including
   focused service-detail and capability-detail inspection routes
@@ -621,8 +621,8 @@ The first audit should classify each relevant `~/work/agent` surface into one of
 
 | `~/work/agent` surface | Initial classification | Why |
 | --- | --- | --- |
-| `GET /v1/agents/{agent_id}/proxy/...` | adapter fit | implemented through the current connector prototype against the loopback local HTTP API; still an adapter layer rather than a direct native broker surface |
-| `GET /v1/agents/{agent_id}/proxy_sse/...` | adapter fit | implemented through the current connector prototype against the loopback local SSE API; replay and `Last-Event-ID` behavior are already process-level proven |
+| `GET /v1/agents/{agent_id}/proxy/...` | adapter fit | implemented through the current connector adapter against the loopback local HTTP API; still an adapter layer rather than a direct native broker surface |
+| `GET /v1/agents/{agent_id}/proxy_sse/...` | adapter fit | implemented through the current connector adapter against the loopback local SSE API; replay and `Last-Event-ID` behavior are already process-level proven |
 | `GET /v1/events` | adapter fit | the broker event stream concept fits well, but `codexw` first needs its own stable event vocabulary |
 | outbound `wss://.../v1/agent/connect` | adapter fit | likely a later transport step unless `codexw` adopts direct broker connectivity |
 
@@ -734,7 +734,7 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 ### Historical Step 3: Decide Native Broker Support
 
 Those labels are retained here as implementation history and design sequencing,
-not as the current project state. The local API and connector prototype
+not as the current project state. The local API and initial connector adapter path
 described in Historical Steps 1 and 2 now exist; the remaining open question is whether
 any further promotion or transport expansion beyond the supported experimental
 adapter is warranted.
@@ -782,7 +782,7 @@ proof expansion:
   [docs/codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - a real implementation spike for the loopback local API, now framed in
   [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
-- a connector prototype after that, now framed in
+- a connector adapter after that, now framed in
   [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
 - the connector/client policy contract, now captured in
   [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)

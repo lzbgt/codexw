@@ -27,7 +27,7 @@ Its goal is simple:
 `codexw` now has a real, working remote-control broker/local-API adapter stack:
 
 1. a loopback local HTTP/SSE API in the main `codexw` runtime
-2. a standalone connector prototype that exposes broker-style alias routes
+2. a standalone connector adapter that exposes broker-style alias routes
 3. standalone broker-style client fixtures in Python and Node
 4. process-level smoke coverage for the connector and the fixture
 
@@ -82,7 +82,7 @@ The current local API includes:
 
 ## Implemented Connector Surface
 
-The standalone connector prototype now supports both raw passthrough and
+The standalone connector adapter now supports both raw passthrough and
 broker-style alias routes.
 
 Implemented broker-style aliases include:

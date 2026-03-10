@@ -23,7 +23,7 @@ The current implementation already puts `codexw` in a position to support:
 
 - a local WebUI or browser client
 - local automation
-- the current broker connector prototype
+- the current broker connector adapter
 
 without scraping terminal scrollback.
 
@@ -83,7 +83,7 @@ attachment policy, route stability, and enough semantic payloads for a thin
 adapter to proxy the local API remotely.
 
 That adapter layer now already absorbs a minimal amount of client policy:
-the connector prototype can project `X-Codexw-Client-Id` and
+the connector adapter can project `X-Codexw-Client-Id` and
 `X-Codexw-Lease-Seconds` into supported mutating local-API JSON bodies. The
 remaining work is policy depth and broker/client semantics above that minimal
 projection, not whether the local API can carry client/lease intent at all.

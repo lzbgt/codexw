@@ -271,6 +271,39 @@ fn support_claim_source_docs_exist_and_are_linked() {
 }
 
 #[test]
+fn current_state_docs_do_not_revert_to_connector_prototype_wording() {
+    for relative in [
+        "docs/codexw-broker-adapter-status.md",
+        "docs/codexw-broker-client-fixture.md",
+        "docs/codexw-broker-connectivity.md",
+        "docs/codexw-local-api-event-sourcing.md",
+        "docs/codexw-local-api-implementation-plan.md",
+        "docs/codexw-broker-shared-assumptions.md",
+    ] {
+        let contents = read_repo_file(relative);
+        assert_not_contains(&contents, "connector prototype", relative);
+        assert_not_contains(&contents, "standalone connector prototype", relative);
+        assert_not_contains(&contents, "current broker connector prototype", relative);
+    }
+
+    assert_contains(
+        &read_repo_file("docs/codexw-broker-adapter-status.md"),
+        "standalone connector adapter",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains(
+        &read_repo_file("docs/codexw-broker-client-fixture.md"),
+        "current connector adapter surface",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &read_repo_file("docs/codexw-local-api-implementation-plan.md"),
+        "current broker connector adapter",
+        "docs/codexw-local-api-implementation-plan.md",
+    );
+}
+
+#[test]
 fn support_claim_docs_do_not_reference_stale_broker_status_filename() {
     let docs = [
         ("README.md", read_repo_file("README.md")),

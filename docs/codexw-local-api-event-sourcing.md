@@ -13,7 +13,7 @@ The goal is to preserve `codexw`'s existing runtime truth:
 and expose those through a stable event bus that can feed:
 
 - loopback SSE clients
-- the current broker connector prototype
+- the current broker connector adapter
 - local WebUI/mobile clients
 
 ## Core Principle

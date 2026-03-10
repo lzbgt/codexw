@@ -6,7 +6,7 @@ this repo:
 - [scripts/codexw_broker_client.py](../scripts/codexw_broker_client.py)
 - [scripts/codexw_broker_client_node.mjs](../scripts/codexw_broker_client_node.mjs)
 
-The goal is practical consumption of the connector prototype, not a production
+The goal is practical consumption of the current connector adapter surface, not a production
 SDK. It is a standard-library-only helper that lets developers drive the
 broker-style alias surface without writing one-off `curl` sequences.
 
@@ -301,7 +301,7 @@ This fixture is not:
 - a generic `agentd` client
 - a websocket client
 
-It is a concrete companion to the connector prototype, not a compatibility
+It is a concrete companion to the current connector adapter surface, not a compatibility
 promise.
 
 ## Relationship To Other Broker Docs
