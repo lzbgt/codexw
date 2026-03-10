@@ -15,6 +15,7 @@ Related docs:
 - [codexw-native-product-status.md](codexw-native-product-status.md)
 - [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
 - [codexw-design.md](codexw-design.md)
+- [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
 
 ## Reading This Matrix
 

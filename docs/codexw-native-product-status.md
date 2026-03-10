@@ -18,6 +18,7 @@ Related docs:
 - [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
 - [../TODOS.md](../TODOS.md)
+- [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
 
 ## Current Supported Shape
 

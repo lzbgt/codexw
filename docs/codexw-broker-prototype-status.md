@@ -14,6 +14,7 @@ design set:
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
+- [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
 
 Its goal is simple:
 

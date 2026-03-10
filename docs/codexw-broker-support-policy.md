@@ -187,6 +187,10 @@ and update the relevant docs, usually a subset of:
 The goal is to keep status, contract, support level, and proof claims aligned
 instead of letting one doc quietly outrun the others.
 
+For the shorter operational review checklist that should be used before
+strengthening or rewriting support-level wording, see
+[codexw-support-claim-checklist.md](codexw-support-claim-checklist.md).
+
 ## Current Interpretation
 
 Under this policy, the repo's present recommendation is:
@@ -207,3 +211,4 @@ fully frozen production platform API.
 - [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)

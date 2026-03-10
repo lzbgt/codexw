@@ -21,6 +21,7 @@ Primary source docs:
 - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
 - [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md)
 - [docs/codexw-broker-hardening-catalog.md](docs/codexw-broker-hardening-catalog.md)
+- [docs/codexw-support-claim-checklist.md](docs/codexw-support-claim-checklist.md)
 
 ## Highest-Leverage Active Work
 
@@ -114,6 +115,8 @@ Concrete tasks:
 - keep the top-level docs synchronized so the same status does not have to be inferred from multiple long design files
 - prefer adding or updating source-of-truth docs over copying large overlapping sections into multiple files
 - keep this file updated when major broker or local-API milestones land
+- use [docs/codexw-support-claim-checklist.md](docs/codexw-support-claim-checklist.md)
+  whenever a batch changes support-level wording across broker/native docs
 
 ### 6. Structural Cleanup When It Compounds
 

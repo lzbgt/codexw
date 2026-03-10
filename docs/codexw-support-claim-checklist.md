@@ -1,0 +1,214 @@
+# codexw Support Claim Checklist
+
+This document is the operational checklist for keeping `codexw`'s public
+support claims internally consistent.
+
+It exists because the repo now has:
+
+- broker-side recommendation / contract / proof / support-policy docs
+- native-side recommendation / status / proof / support-policy docs
+- a visible repo backlog in [../TODOS.md](../TODOS.md)
+
+Those docs explain *what* the current supported shapes are. This checklist is
+the shorter companion that answers:
+
+- what must be reviewed before changing support-level wording
+- which docs must stay aligned
+- what evidence is expected before a support claim is strengthened
+- what wording regressions should be treated as bugs
+
+## When To Use This Checklist
+
+Use this checklist whenever a batch does one or more of:
+
+- changes README support wording
+- changes a status document
+- changes a recommendation or promotion document
+- changes a support policy document
+- changes proof-matrix conclusions
+- changes route families, error envelopes, event semantics, or lease rules on
+  the broker side
+- changes the native product boundary or reopens previously unsupported native
+  parity work
+
+If the batch changes behavior *and* changes support-level language, this
+checklist should be reviewed in the same turn.
+
+## Global Rules
+
+### 1. Status, Recommendation, Policy, And Proof Must Agree
+
+Do not let one doc say:
+
+- "supported experimental adapter"
+
+while another still says:
+
+- "only a prototype"
+
+unless the difference is deliberate and explicitly explained.
+
+Likewise, do not let native docs claim:
+
+- "terminal-first supported product"
+
+while another doc casually implies:
+
+- alternate-screen or audio parity is part of the active support claim
+
+without an explicit policy change.
+
+### 2. Evidence Comes Before Stronger Claims
+
+If support language becomes stronger, the proof surface must also be reviewed.
+
+At minimum:
+
+- route and contract claims should be covered by route/unit tests
+- policy-sensitive claims should be covered by process-level smoke or fixture
+  proof where practical
+- proof docs should say clearly whether the claim is:
+  - recommendation only
+  - supported shape
+  - supported experimental adapter
+  - optional hardening / future work
+
+### 3. Unsupported Boundaries Must Stay Explicit
+
+The repo should not drift into vague wording such as:
+
+- "future parity work"
+- "not done yet"
+- "prototype limitations"
+
+when the actual state is:
+
+- intentionally unsupported boundary
+- optional hardening
+- deferred by product decision
+
+## Broker Checklist
+
+When broker-facing wording changes, review:
+
+- [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
+- [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
+- [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
+- [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
+
+Confirm all of the following:
+
+- the support level still says `supported experimental adapter` if that remains
+  true
+- no doc regresses to "prototype only" wording for the documented supported
+  broker surface
+- unsupported broker routes are still described as intentionally unsupported,
+  not merely missing
+- hardening ideas remain in the hardening catalog unless they became active
+  blockers
+- the proof matrix still matches the strongest verified route / error / event /
+  lease claims
+
+If the broker contract changes, also confirm:
+
+- the connector allowlist docs still match the implemented route surface
+- local API docs and connector docs describe the same broker-facing behavior
+- fixture docs still match the currently verified reference clients
+
+## Native Checklist
+
+When native-side wording changes, review:
+
+- [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
+- [codexw-native-support-policy.md](codexw-native-support-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
+- [codexw-native-product-status.md](codexw-native-product-status.md)
+- [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
+- [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
+- [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
+
+Confirm all of the following:
+
+- the product is still described as terminal-first / scrollback-first if that
+  remains the active recommendation
+- alternate-screen, audio, and backend-owned async parity are still explicit
+  unsupported areas unless there is an intentional policy change
+- optional polish or parity ideas remain in the native hardening catalog unless
+  they became active blockers
+- status docs do not casually imply that unsupported parity work is an active
+  shipping commitment
+
+## README / Backlog Checklist
+
+Whenever support wording changes, review:
+
+- [../README.md](../README.md)
+- [../TODOS.md](../TODOS.md)
+- [codexw-design.md](codexw-design.md)
+
+Confirm all of the following:
+
+- README points to the current source-of-truth docs instead of stale summary
+  wording
+- `TODOS.md` distinguishes active support-level work from optional hardening
+- design docs do not contradict the current recommendation/status docs
+
+## Release Note / Change Summary Checklist
+
+If you write release notes, milestone notes, or a status summary outside the
+repo, the wording should pass this check:
+
+### Broker-side allowed wording
+
+- "supported experimental adapter"
+- "documented broker-facing adapter contract"
+- "explicit unsupported broker boundary"
+- "proof-backed connector/local-API surface"
+
+### Broker-side wording to avoid unless truly accurate
+
+- "only a prototype"
+- "best effort only"
+- "fully stable public broker platform"
+
+### Native-side allowed wording
+
+- "terminal-first supported product shape"
+- "scrollback-first interactive client"
+- "wrapper-owned async shell model"
+- "explicitly unsupported alternate-screen/audio/backend-owned parity"
+
+### Native-side wording to avoid unless the policy changed
+
+- "full native Codex parity is an active commitment"
+- "audio support is part of the current product promise"
+- "alternate-screen parity is expected by default"
+
+## If A Contradiction Is Found
+
+If you find a contradiction, do not fix only one file.
+
+Update the smallest coherent set together:
+
+- recommendation or promotion doc
+- support policy
+- status snapshot
+- proof matrix
+- README / TODO if the contradiction is user-visible
+
+The goal is to keep support claims synchronized, not merely locally corrected.
+
+## Companion Docs
+
+- [../README.md](../README.md)
+- [../TODOS.md](../TODOS.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
+- [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+- [codexw-broker-prototype-status.md](codexw-broker-prototype-status.md)
+- [codexw-native-support-policy.md](codexw-native-support-policy.md)
+- [codexw-native-product-status.md](codexw-native-product-status.md)
+- [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)

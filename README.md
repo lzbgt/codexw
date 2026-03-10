@@ -41,6 +41,9 @@ For the current frozen broker-facing adapter contract itself, see
 For the operational meaning of "supported experimental adapter", including
 stability and breaking-change expectations, see
 [docs/codexw-broker-support-policy.md](docs/codexw-broker-support-policy.md).
+For the operational checklist that keeps broker/native support wording aligned,
+see
+[docs/codexw-support-claim-checklist.md](docs/codexw-support-claim-checklist.md).
 For a concise mapping from those criteria to the currently verified proof
 surface, see [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md).
 For optional broker hardening work that is useful but not a blocker for the

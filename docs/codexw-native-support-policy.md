@@ -131,3 +131,9 @@ Use the other native docs for different questions:
   [codexw-native-product-status.md](codexw-native-product-status.md)
 - evidence map:
   [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
+- support-claim review checklist:
+  [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
+
+For batches that change native support wording across status, policy, proof, or
+README surfaces, use the operational checklist in
+[codexw-support-claim-checklist.md](codexw-support-claim-checklist.md).
