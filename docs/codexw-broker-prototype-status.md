@@ -135,6 +135,8 @@ the real connector binary:
 - preserved local field-level validation failures through the connector
 - focused service-detail and capability-detail reads after mutation workflows
 - client-event publish and replay/resume
+- explicit route-by-route local-API session lifecycle assertions
+- explicit route-by-route connector allowlist and broker-alias mapping
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation

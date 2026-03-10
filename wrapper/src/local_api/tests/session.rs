@@ -375,6 +375,100 @@ fn session_attachment_release_rejects_wrong_client() {
 }
 
 #[test]
+fn session_lifecycle_and_inspection_routes_have_explicit_contract_coverage() {
+    let get_cases = [
+        (
+            "/api/v1/session",
+            Some(("session_id", "sess_test")),
+            Some(("session.scope", "process")),
+        ),
+        (
+            "/api/v1/session/sess_test",
+            Some(("session.id", "sess_test")),
+            Some(("session.attachment.id", "attach:sess_test")),
+        ),
+    ];
+
+    for (path, first_expectation, second_expectation) in get_cases {
+        let response = route_request(
+            &get_request(path),
+            &sample_snapshot(),
+            &new_command_queue(),
+            None,
+        );
+        assert_eq!(
+            response.status, 200,
+            "expected GET contract success for {path}"
+        );
+        let body = json_body(&response.body);
+        if let Some((field, value)) = first_expectation {
+            assert_json_path_eq(&body, field, value, path);
+        }
+        if let Some((field, value)) = second_expectation {
+            assert_json_path_eq(&body, field, value, path);
+        }
+    }
+
+    let post_cases = [
+        (
+            "/api/v1/session/new",
+            serde_json::json!({
+                "client_id": "client_web",
+                "lease_seconds": 120
+            }),
+            "session.new",
+        ),
+        (
+            "/api/v1/session/attach",
+            serde_json::json!({
+                "session_id": "sess_test",
+                "thread_id": "thread_resume_target",
+                "client_id": "client_web",
+                "lease_seconds": 180
+            }),
+            "session.attach",
+        ),
+        (
+            "/api/v1/session/sess_test/attachment/renew",
+            serde_json::json!({
+                "client_id": "client_web",
+                "lease_seconds": 60
+            }),
+            "attachment.renew",
+        ),
+        (
+            "/api/v1/session/sess_test/attachment/release",
+            serde_json::json!({
+                "client_id": "client_web"
+            }),
+            "attachment.release",
+        ),
+    ];
+
+    for (path, body_json, operation_kind) in post_cases {
+        let response = route_request(
+            &post_json_request(path, body_json),
+            &sample_snapshot(),
+            &new_command_queue(),
+            None,
+        );
+        assert_eq!(
+            response.status, 200,
+            "expected POST contract success for {path}"
+        );
+        let body = json_body(&response.body);
+        assert_json_path_eq(&body, "session.id", "sess_test", path);
+        assert_json_path_eq(&body, "session.scope", "process", path);
+        assert_json_path_eq(&body, "operation.kind", operation_kind, path);
+        assert_eq!(
+            body["accepted"],
+            Value::Bool(true),
+            "expected accepted=true for {path}"
+        );
+    }
+}
+
+#[test]
 fn top_level_client_event_requires_known_session_id() {
     let response = route_request(
         &post_json_request(
@@ -419,5 +513,19 @@ fn client_event_rejects_conflicting_active_client() {
     assert_eq!(
         body["error"]["details"]["current_attachment"]["client_id"],
         "client_web"
+    );
+}
+
+fn assert_json_path_eq(body: &Value, path: &str, expected: &str, context: &str) {
+    let mut current = body;
+    for segment in path.split('.') {
+        current = current
+            .get(segment)
+            .unwrap_or_else(|| panic!("missing path segment {segment} for {context}: {body}"));
+    }
+    assert_eq!(
+        current,
+        &Value::String(expected.to_string()),
+        "unexpected value for {path} in {context}"
     );
 }

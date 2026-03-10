@@ -183,8 +183,8 @@ Promotion should require stable process-level proof for:
 Useful but not strictly required beyond the already-landed prototype proof set:
 
 - a small compatibility matrix beyond the Python fixture
-- route-by-route contract assertions that go beyond the current representative
-  positive and negative workflow coverage
+- broader sustained churn or longevity coverage beyond the current named,
+  anonymous, handoff, reversal, and observer-readable contention workflows
 
 ## Operational Requirements
 

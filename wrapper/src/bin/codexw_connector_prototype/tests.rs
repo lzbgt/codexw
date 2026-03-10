@@ -49,36 +49,49 @@ fn resolve_proxy_target_rejects_wrong_agent_for_proxy_routes() {
 
 #[test]
 fn allowlist_accepts_supported_http_routes() {
-    assert!(is_allowed_local_proxy_target(
-        "POST",
-        "/api/v1/session/new",
-        false,
-    ));
-    assert!(is_allowed_local_proxy_target(
-        "GET",
-        "/api/v1/session/sess_1/orchestration/workers",
-        false,
-    ));
-    assert!(is_allowed_local_proxy_target(
-        "POST",
-        "/api/v1/session/sess_1/services/bg-1/run",
-        false,
-    ));
-    assert!(is_allowed_local_proxy_target(
-        "GET",
-        "/api/v1/session/sess_1/services/dev.frontend",
-        false,
-    ));
-    assert!(is_allowed_local_proxy_target(
-        "GET",
-        "/api/v1/session/sess_1/shells/dev.api",
-        false,
-    ));
-    assert!(is_allowed_local_proxy_target(
-        "GET",
-        "/api/v1/session/sess_1/capabilities/@frontend.dev",
-        false,
-    ));
+    let cases = [
+        ("GET", "/healthz"),
+        ("GET", "/api/v1/session"),
+        ("GET", "/api/v1/session/sess_1"),
+        ("GET", "/api/v1/session/sess_1/transcript"),
+        ("GET", "/api/v1/session/sess_1/client_event"),
+        ("GET", "/api/v1/session/sess_1/shells"),
+        ("GET", "/api/v1/session/sess_1/shells/bg-1"),
+        ("GET", "/api/v1/session/sess_1/services"),
+        ("GET", "/api/v1/session/sess_1/services/dev.frontend"),
+        ("GET", "/api/v1/session/sess_1/capabilities"),
+        ("GET", "/api/v1/session/sess_1/capabilities/@frontend.dev"),
+        ("GET", "/api/v1/session/sess_1/orchestration/status"),
+        ("GET", "/api/v1/session/sess_1/orchestration/dependencies"),
+        ("GET", "/api/v1/session/sess_1/orchestration/workers"),
+        ("POST", "/api/v1/session/new"),
+        ("POST", "/api/v1/session/attach"),
+        ("POST", "/api/v1/session/client_event"),
+        ("POST", "/api/v1/session/sess_1/attachment/renew"),
+        ("POST", "/api/v1/session/sess_1/attachment/release"),
+        ("POST", "/api/v1/session/sess_1/client_event"),
+        ("POST", "/api/v1/session/sess_1/turn/start"),
+        ("POST", "/api/v1/session/sess_1/turn/interrupt"),
+        ("POST", "/api/v1/session/sess_1/shells/start"),
+        ("POST", "/api/v1/session/sess_1/shells/bg-1/poll"),
+        ("POST", "/api/v1/session/sess_1/shells/bg-1/send"),
+        ("POST", "/api/v1/session/sess_1/shells/bg-1/terminate"),
+        ("POST", "/api/v1/session/sess_1/services/update"),
+        ("POST", "/api/v1/session/sess_1/services/bg-1/provide"),
+        ("POST", "/api/v1/session/sess_1/services/bg-1/depend"),
+        ("POST", "/api/v1/session/sess_1/services/bg-1/contract"),
+        ("POST", "/api/v1/session/sess_1/services/bg-1/relabel"),
+        ("POST", "/api/v1/session/sess_1/services/bg-1/attach"),
+        ("POST", "/api/v1/session/sess_1/services/bg-1/wait"),
+        ("POST", "/api/v1/session/sess_1/services/bg-1/run"),
+    ];
+
+    for (method, path) in cases {
+        assert!(
+            is_allowed_local_proxy_target(method, path, false),
+            "expected allowlist acceptance for {method} {path}"
+        );
+    }
 }
 
 #[test]
@@ -88,11 +101,17 @@ fn allowlist_accepts_only_session_event_sse_route() {
         "/api/v1/session/sess_1/events",
         true,
     ));
-    assert!(!is_allowed_local_proxy_target(
-        "GET",
-        "/api/v1/session/sess_1/transcript",
-        true,
-    ));
+
+    for (method, path) in [
+        ("GET", "/api/v1/session/sess_1/transcript"),
+        ("POST", "/api/v1/session/sess_1/events"),
+        ("GET", "/api/v1/session/sess_1/services"),
+    ] {
+        assert!(
+            !is_allowed_local_proxy_target(method, path, true),
+            "expected SSE allowlist rejection for {method} {path}"
+        );
+    }
 }
 
 #[test]
@@ -240,169 +259,243 @@ fn prepare_upstream_body_rejects_non_object_json_when_injecting() {
 
 #[test]
 fn resolve_proxy_target_maps_broker_style_session_alias_routes() {
-    let list = resolve_proxy_target("GET", "/v1/agents/codexw-lab/sessions", "codexw-lab")
-        .expect("list route");
-    assert_eq!(list.local_path, "/api/v1/session");
-    assert!(!list.is_sse);
-    assert!(list.session_id_hint.is_none());
+    let cases = [
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions",
+            "/api/v1/session",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions",
+            "/api/v1/session/new",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1",
+            "/api/v1/session/sess_1",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/attach",
+            "/api/v1/session/attach",
+            false,
+            Some("sess_1"),
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/attachment/renew",
+            "/api/v1/session/sess_1/attachment/renew",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/attachment/release",
+            "/api/v1/session/sess_1/attachment/release",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/client-events",
+            "/api/v1/session/sess_1/client_event",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/turns",
+            "/api/v1/session/sess_1/turn/start",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/interrupt",
+            "/api/v1/session/sess_1/turn/interrupt",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/transcript",
+            "/api/v1/session/sess_1/transcript",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/events",
+            "/api/v1/session/sess_1/events",
+            true,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells",
+            "/api/v1/session/sess_1/shells",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells",
+            "/api/v1/session/sess_1/shells/start",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells/%40api.http",
+            "/api/v1/session/sess_1/shells/@api.http",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells/bg-2/poll",
+            "/api/v1/session/sess_1/shells/bg-2/poll",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells/bg-2/send",
+            "/api/v1/session/sess_1/shells/bg-2/send",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells/bg-2/terminate",
+            "/api/v1/session/sess_1/shells/bg-2/terminate",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/services",
+            "/api/v1/session/sess_1/services",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.frontend",
+            "/api/v1/session/sess_1/services/dev.frontend",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/provide",
+            "/api/v1/session/sess_1/services/dev.api/provide",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/depend",
+            "/api/v1/session/sess_1/services/dev.api/depend",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/contract",
+            "/api/v1/session/sess_1/services/dev.api/contract",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/relabel",
+            "/api/v1/session/sess_1/services/dev.api/relabel",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/attach",
+            "/api/v1/session/sess_1/services/dev.api/attach",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/wait",
+            "/api/v1/session/sess_1/services/dev.api/wait",
+            false,
+            None,
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/run",
+            "/api/v1/session/sess_1/services/dev.api/run",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/capabilities",
+            "/api/v1/session/sess_1/capabilities",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/capabilities/%40frontend.dev",
+            "/api/v1/session/sess_1/capabilities/@frontend.dev",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/orchestration/status",
+            "/api/v1/session/sess_1/orchestration/status",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/orchestration/workers",
+            "/api/v1/session/sess_1/orchestration/workers",
+            false,
+            None,
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/orchestration/dependencies",
+            "/api/v1/session/sess_1/orchestration/dependencies",
+            false,
+            None,
+        ),
+    ];
 
-    let create = resolve_proxy_target("POST", "/v1/agents/codexw-lab/sessions", "codexw-lab")
-        .expect("create route");
-    assert_eq!(create.local_path, "/api/v1/session/new");
-    assert!(!create.is_sse);
-    assert!(create.session_id_hint.is_none());
-
-    let inspect =
-        resolve_proxy_target("GET", "/v1/agents/codexw-lab/sessions/sess_1", "codexw-lab")
-            .expect("inspect route");
-    assert_eq!(inspect.local_path, "/api/v1/session/sess_1");
-
-    let attach = resolve_proxy_target(
-        "POST",
-        "/v1/agents/codexw-lab/sessions/sess_1/attach",
-        "codexw-lab",
-    )
-    .expect("attach route");
-    assert_eq!(attach.local_path, "/api/v1/session/attach");
-    assert_eq!(attach.session_id_hint.as_deref(), Some("sess_1"));
-
-    let shell_detail = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/shells/%40api.http",
-        "codexw-lab",
-    )
-    .expect("shell detail route");
-    assert_eq!(
-        shell_detail.local_path,
-        "/api/v1/session/sess_1/shells/@api.http"
-    );
-    assert!(shell_detail.session_id_hint.is_none());
-
-    let renew = resolve_proxy_target(
-        "POST",
-        "/v1/agents/codexw-lab/sessions/sess_1/attachment/renew",
-        "codexw-lab",
-    )
-    .expect("renew route");
-    assert_eq!(renew.local_path, "/api/v1/session/sess_1/attachment/renew");
-
-    let release = resolve_proxy_target(
-        "POST",
-        "/v1/agents/codexw-lab/sessions/sess_1/attachment/release",
-        "codexw-lab",
-    )
-    .expect("release route");
-    assert_eq!(
-        release.local_path,
-        "/api/v1/session/sess_1/attachment/release"
-    );
-
-    let turns = resolve_proxy_target(
-        "POST",
-        "/v1/agents/codexw-lab/sessions/sess_1/turns",
-        "codexw-lab",
-    )
-    .expect("turn route");
-    assert_eq!(turns.local_path, "/api/v1/session/sess_1/turn/start");
-
-    let transcript = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/transcript",
-        "codexw-lab",
-    )
-    .expect("transcript route");
-    assert_eq!(transcript.local_path, "/api/v1/session/sess_1/transcript");
-
-    let events = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/events",
-        "codexw-lab",
-    )
-    .expect("events route");
-    assert_eq!(events.local_path, "/api/v1/session/sess_1/events");
-    assert!(events.is_sse);
-
-    let shell_list = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/shells",
-        "codexw-lab",
-    )
-    .expect("shell list route");
-    assert_eq!(shell_list.local_path, "/api/v1/session/sess_1/shells");
-
-    let shell_start = resolve_proxy_target(
-        "POST",
-        "/v1/agents/codexw-lab/sessions/sess_1/shells",
-        "codexw-lab",
-    )
-    .expect("shell start route");
-    assert_eq!(
-        shell_start.local_path,
-        "/api/v1/session/sess_1/shells/start"
-    );
-
-    let shell_send = resolve_proxy_target(
-        "POST",
-        "/v1/agents/codexw-lab/sessions/sess_1/shells/bg-2/send",
-        "codexw-lab",
-    )
-    .expect("shell send route");
-    assert_eq!(
-        shell_send.local_path,
-        "/api/v1/session/sess_1/shells/bg-2/send"
-    );
-
-    let services = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/services",
-        "codexw-lab",
-    )
-    .expect("services route");
-    assert_eq!(services.local_path, "/api/v1/session/sess_1/services");
-
-    let service_detail = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/services/dev.frontend",
-        "codexw-lab",
-    )
-    .expect("service detail route");
-    assert_eq!(
-        service_detail.local_path,
-        "/api/v1/session/sess_1/services/dev.frontend"
-    );
-
-    let capabilities = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/capabilities",
-        "codexw-lab",
-    )
-    .expect("capabilities route");
-    assert_eq!(
-        capabilities.local_path,
-        "/api/v1/session/sess_1/capabilities"
-    );
-
-    let capability_detail = resolve_proxy_target(
-        "GET",
-        "/v1/agents/codexw-lab/sessions/sess_1/capabilities/%40frontend.dev",
-        "codexw-lab",
-    )
-    .expect("capability detail route");
-    assert_eq!(
-        capability_detail.local_path,
-        "/api/v1/session/sess_1/capabilities/@frontend.dev"
-    );
-
-    let service_run = resolve_proxy_target(
-        "POST",
-        "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/run",
-        "codexw-lab",
-    )
-    .expect("service run route");
-    assert_eq!(
-        service_run.local_path,
-        "/api/v1/session/sess_1/services/dev.api/run"
-    );
+    for (method, path, expected_local_path, expected_sse, expected_session_hint) in cases {
+        let target = resolve_proxy_target(method, path, "codexw-lab")
+            .unwrap_or_else(|| panic!("expected alias route mapping for {method} {path}"));
+        assert_eq!(
+            target.local_path, expected_local_path,
+            "unexpected local target for {method} {path}"
+        );
+        assert_eq!(
+            target.is_sse, expected_sse,
+            "unexpected SSE flag for {method} {path}"
+        );
+        assert_eq!(
+            target.session_id_hint.as_deref(),
+            expected_session_hint,
+            "unexpected session hint for {method} {path}"
+        );
+    }
 }
 
 #[test]
