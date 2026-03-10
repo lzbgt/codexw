@@ -304,6 +304,36 @@ fn current_state_docs_do_not_revert_to_connector_prototype_wording() {
 }
 
 #[test]
+fn current_state_docs_do_not_reintroduce_remaining_connector_wording_drifts() {
+    let root = repo_root();
+    let cases = [
+        (
+            "docs/codexw-broker-adapter-status.md",
+            "prototype expansion",
+        ),
+        (
+            "docs/codexw-native-product-recommendation.md",
+            "connector/prototype proof surface",
+        ),
+        (
+            "docs/codexw-broker-client-fixture.md",
+            "other prototype clients",
+        ),
+        (
+            "docs/codexw-native-gap-assessment.md",
+            "broker-style connector prototype",
+        ),
+    ];
+
+    for (relative, stale_phrase) in cases {
+        let path = root.join(relative);
+        let contents = fs::read_to_string(&path)
+            .unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()));
+        assert_not_contains(&contents, stale_phrase, relative);
+    }
+}
+
+#[test]
 fn support_claim_docs_do_not_reference_stale_broker_status_filename() {
     let docs = [
         ("README.md", read_repo_file("README.md")),

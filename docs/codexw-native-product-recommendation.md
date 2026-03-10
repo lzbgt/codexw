@@ -105,7 +105,7 @@ Why:
 
 - that model is implemented
 - it is visible in the orchestration state and local API
-- it is covered by the connector/prototype proof surface
+- it is covered by the connector-adapter proof surface
 - app-server still does not expose a public client surface that closes the gap
   directly
 

@@ -31,7 +31,7 @@ Related docs:
 - wrapper-owned same-turn background shell workflows
 - orchestration visibility for agent threads, background shells, terminals, and
   capability/service state
-- a loopback local API plus broker-style connector prototype
+- a loopback local API plus broker-style connector adapter
 
 The main remaining gaps are therefore not "missing command handlers." They are:
 

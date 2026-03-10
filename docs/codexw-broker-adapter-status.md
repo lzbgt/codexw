@@ -261,7 +261,7 @@ If continuing on this track, the highest-leverage next tasks are:
    together to validate or challenge the current recommendation
 2. keep the out-of-scope boundary explicit through
    [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md) so prototype
-   expansion does not drift into parity assumptions
+   scope expansion does not drift into parity assumptions
 3. keep optional churn, replay, and adversarial ideas in
    [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
    unless they become active blockers because of a regression or contradiction

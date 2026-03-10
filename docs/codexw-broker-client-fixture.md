@@ -290,7 +290,7 @@ Streaming `events` output prints a JSON array of decoded SSE items:
 ```
 
 This is intentionally easy to pipe into `jq`, shell scripts, browser harnesses,
-or other prototype clients.
+or other client fixtures.
 
 ## Non-Goals
 
@@ -308,7 +308,7 @@ promise.
 
 - High-level architecture: [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
 - Connector mapping: [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)
-- Connector prototype scope: [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- Connector adapter prototype plan: [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
 - Local API route ownership: [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 
 ## Future Direction
