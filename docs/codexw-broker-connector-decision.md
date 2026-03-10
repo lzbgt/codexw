@@ -117,7 +117,7 @@ Best use:
 | Best local testing story | High | High | Medium |
 | Best long-term universal connectivity | Low | High | High |
 | Best fit for `~/work/agent` compatibility | Medium | High | Medium |
-| Lowest security risk in first phase | High | Medium | Low |
+| Lowest security risk in the earliest adapter stage | High | Medium | Low |
 | Lowest risk of architectural lock-in | Medium | High | Low |
 
 ## Recommended Decision

@@ -328,3 +328,42 @@ fn broker_and_native_docs_link_to_automated_support_claim_guard() {
         assert_contains(contents, "wrapper/tests/doc_consistency.rs", "doc text");
     }
 }
+
+#[test]
+fn broker_docs_do_not_regress_to_stale_phase_wording_for_current_adapter_state() {
+    let docs = [
+        (
+            "docs/codexw-broker-connector-decision.md",
+            read_repo_file("docs/codexw-broker-connector-decision.md"),
+        ),
+        (
+            "docs/codexw-broker-connectivity.md",
+            read_repo_file("docs/codexw-broker-connectivity.md"),
+        ),
+        (
+            "docs/codexw-local-api-implementation-plan.md",
+            read_repo_file("docs/codexw-local-api-implementation-plan.md"),
+        ),
+        (
+            "docs/codexw-local-api-route-matrix.md",
+            read_repo_file("docs/codexw-local-api-route-matrix.md"),
+        ),
+    ];
+
+    for (name, contents) in docs {
+        assert_not_contains(&contents, "first phase", name);
+        assert_not_contains(&contents, "first-phase", name);
+        assert_not_contains(&contents, "Phase 0", name);
+        assert_not_contains(&contents, "Phase 1", name);
+        assert_not_contains(&contents, "Phase 2", name);
+        assert_not_contains(&contents, "Phase 3", name);
+        assert_not_contains(&contents, "Phase 4", name);
+        assert_not_contains(&contents, "Phase 5", name);
+        assert_not_contains(&contents, "phase 0", name);
+        assert_not_contains(&contents, "phase 1", name);
+        assert_not_contains(&contents, "phase 2", name);
+        assert_not_contains(&contents, "phase 3", name);
+        assert_not_contains(&contents, "phase 4", name);
+        assert_not_contains(&contents, "phase 5", name);
+    }
+}

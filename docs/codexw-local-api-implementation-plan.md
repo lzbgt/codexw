@@ -130,7 +130,7 @@ planning stage. For the current route surface, use:
 - [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 - [docs/codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 
-### Phase 1: API Skeleton
+### Historical Step 1: API Skeleton
 
 Deliverables:
 
@@ -146,7 +146,7 @@ Acceptance criteria:
 - disabled mode keeps current behavior unchanged
 - enabled mode serves `/healthz` and a stub SSE stream
 
-### Phase 2: Session And Turn Control
+### Historical Step 2: Session And Turn Control
 
 Status: initial slice landed
 
@@ -200,7 +200,7 @@ Current landed behavior:
 - both routes enqueue onto the same runtime request path used by local
   thread-switch handling rather than inventing a second session model
 
-### Phase 3: Event Stream
+### Historical Step 3: Event Stream
 
 Status: initial slice landed
 
@@ -235,7 +235,7 @@ Current landed behavior:
 - `session.updated` now carries the same explicit `session` + `attachment`
   structure returned by the session snapshot routes
 
-### Phase 4: Orchestration And Shell Surfaces
+### Historical Step 4: Orchestration And Shell Surfaces
 
 Deliverables:
 
@@ -258,7 +258,7 @@ Acceptance criteria:
 - a local browser or remote terminal can inspect blocker state, services, and
   shell jobs without relying on `:ps`
 
-### Phase 5: Service Mutation Controls
+### Historical Step 5: Service Mutation Controls
 
 Deliverables:
 

@@ -606,7 +606,7 @@ The most realistic initial target is:
 - allow a connector or bridge to adapt between the systems
 - avoid promising strict wire compatibility until the local API exists and the gap analysis is complete
 
-## Historical Phase 0 Audit Worksheet
+## Historical Audit Worksheet
 
 The first audit should classify each relevant `~/work/agent` surface into one of:
 
@@ -624,7 +624,7 @@ The first audit should classify each relevant `~/work/agent` surface into one of
 | `GET /v1/agents/{agent_id}/proxy/...` | adapter fit | implemented through the current connector prototype against the loopback local HTTP API; still an adapter layer rather than a direct native broker surface |
 | `GET /v1/agents/{agent_id}/proxy_sse/...` | adapter fit | implemented through the current connector prototype against the loopback local SSE API; replay and `Last-Event-ID` behavior are already process-level proven |
 | `GET /v1/events` | adapter fit | the broker event stream concept fits well, but `codexw` first needs its own stable event vocabulary |
-| outbound `wss://.../v1/agent/connect` | adapter fit | likely phase-2+ unless `codexw` adopts direct broker connectivity |
+| outbound `wss://.../v1/agent/connect` | adapter fit | likely a later transport step unless `codexw` adopts direct broker connectivity |
 
 ### Session And Client Surfaces
 
@@ -658,7 +658,7 @@ Those are likely to require either:
 - new `codexw`-specific endpoints
 - or a thin compatibility vocabulary layered on top of the more generic `agent` event model
 
-## Concrete Phase 0 Deliverables
+## Concrete Historical Audit Deliverables
 
 The first investigation pass should produce these artifacts:
 
@@ -709,7 +709,7 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
 
 ## Historical Phased Plan
 
-### Phase 0: Compatibility Audit
+### Historical Step 0: Compatibility Audit
 
 - compare `codexw` state/events against `~/work/agent` protocol and client expectations
 - list exact mismatches instead of assuming compatibility
@@ -718,24 +718,24 @@ It should not expose terminal-only concerns such as wrapped prompt layout or ANS
   - remotely exposable in the initial supported adapter scope
   - exposed later only with architectural changes
 
-### Phase 1: Local API Design
+### Historical Step 1: Local API Design
 
 - define a local HTTP/SSE API for `codexw`
 - decide auth and session identity
 - specify event envelopes
 - decide event ordering and replay rules for reconnecting clients
 
-### Phase 2: Prototype Connector
+### Historical Step 2: Prototype Connector
 
 - adapt the local API to the broker relay model
 - test remote terminal and browser-driven operation
 - evaluate whether the `~/work/agent` C framework can consume the same event/session contract without wrapper-specific hacks
 
-### Phase 3: Decide Native Broker Support
+### Historical Step 3: Decide Native Broker Support
 
 Those labels are retained here as implementation history and design sequencing,
 not as the current project state. The local API and connector prototype
-described in Phases 1 and 2 now exist; the remaining open question is whether
+described in Historical Steps 1 and 2 now exist; the remaining open question is whether
 any further promotion or transport expansion beyond the supported experimental
 adapter is warranted.
 
