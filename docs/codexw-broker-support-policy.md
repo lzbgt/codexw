@@ -23,7 +23,7 @@ This policy applies to the documented broker-facing adapter surface built from:
 
 - the local API as the canonical runtime contract
 - the connector as a thin broker-style adapter
-- the Python broker-style fixture as a reference client
+- the standalone broker-style fixtures as reference clients
 
 This policy covers:
 
@@ -153,7 +153,7 @@ If a batch changes supported adapter behavior, it should update:
 
 - unit or route-level validation coverage where relevant
 - connector smoke coverage where relevant
-- Python broker-client fixture coverage when the behavior affects an external
+- broker-client fixture coverage when the behavior affects an external
   consumer shape
 
 For policy-sensitive changes, process-level proof is preferred over only unit

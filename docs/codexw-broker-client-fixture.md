@@ -1,9 +1,10 @@
 # codexw Broker Client Fixture
 
-This document describes the small broker-style client fixture shipped with this
-repo:
+This document describes the small broker-style client fixtures shipped with
+this repo:
 
 - [scripts/codexw_broker_client.py](../scripts/codexw_broker_client.py)
+- [scripts/codexw_broker_client_node.mjs](../scripts/codexw_broker_client_node.mjs)
 
 The goal is practical consumption of the connector prototype, not a production
 SDK. It is a standard-library-only helper that lets developers drive the
@@ -17,7 +18,7 @@ Can a real remote client consume the current connector surface coherently enough
 to create a session, drive turns, observe events, inspect orchestration, and
 control shells/services?
 
-This script is the reference fixture for that question.
+These fixtures are the reference clients for that question.
 
 ## Scope
 
@@ -78,7 +79,22 @@ fixture against the real connector binary for:
   - lease-owned service mutation
   - focused service-detail verification
   - resumed event consumption with `Last-Event-ID`
-  - through the real standalone Python fixture, not only Rust smoke helpers
+  - through the real standalone broker client fixtures, not only Rust smoke helpers
+- one Node-driven event workflow that proves:
+  - session create
+  - lease-owned `client-event` publish
+  - event stream consumption
+  - `Last-Event-ID` resume
+- one Node-driven attachment lifecycle workflow that proves:
+  - session create
+  - attachment renew
+  - session snapshot verification of the renewed lease
+  - attachment release
+  - session snapshot verification of the released lease
+- one Node-driven lease-conflict workflow that proves:
+  - leased session ownership by one client
+  - conflicting rival service mutation
+  - structured `attachment_conflict` propagation with lease-holder details
 - one adversarial multi-client workflow that mixes:
   - owner-created leased session
   - observer event consumption
@@ -125,14 +141,14 @@ So the fixture is not just a documentation example.
 
 ## Invocation Shape
 
-The fixture uses:
+Each fixture uses:
 
 - `--base-url` for the connector base URL
 - `--agent-id` for the broker-visible agent id
 - optional `--client-id`
 - optional `--lease-seconds`
 
-Those common flags apply to all subcommands. The client projects `client_id`
+Those common flags apply to all subcommands. Both clients project `client_id`
 and `lease_seconds` through the connector’s header-based client policy layer,
 which is the same path expected by remote connector clients.
 

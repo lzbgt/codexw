@@ -131,7 +131,7 @@ Why useful:
 
 Why not a blocker:
 
-- the current Python broker-style fixture already gives the repo one real
+- the current standalone broker-style fixtures already give the repo real
   external consumer shape with process-level proof
 
 ## Relationship To `TODOS.md`

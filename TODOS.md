@@ -30,7 +30,7 @@ Concrete tasks:
 - keep route, error, event, and lease behavior aligned between:
   - local API
   - connector alias layer
-  - Python broker client fixture
+  - standalone broker client fixtures
   - broker-facing docs
 - keep the current support-level wording aligned across:
   - README

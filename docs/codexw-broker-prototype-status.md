@@ -188,8 +188,9 @@ the real connector binary:
 This process-level proof comes from two complementary surfaces:
 
 - Rust connector smoke tests under `wrapper/tests/connector_prototype_smoke/*`
-- the standalone Python broker client fixture in
-  `scripts/codexw_broker_client.py`, also exercised by process-level smoke
+- the standalone broker client fixtures in
+  `scripts/codexw_broker_client.py` and
+  `scripts/codexw_broker_client_node.mjs`, both exercised by process-level smoke
 
 For a promotion-oriented mapping from those workflows back to route, error,
 event, policy, and unsupported-boundary claims, see
@@ -203,7 +204,7 @@ For prototype or lab use, the following are now strong enough to build against:
 - the connector alias surface for session/turn/orchestration/shell/service work
 - lease-aware mutation behavior and conflict reporting
 - SSE resume semantics for remote clients
-- the Python fixture as a reference client
+- the standalone broker fixtures as reference clients
 
 These are still prototype surfaces, but they are no longer speculative.
 

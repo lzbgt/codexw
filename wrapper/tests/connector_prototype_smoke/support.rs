@@ -12,6 +12,8 @@ use std::process::Stdio;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::OnceLock;
+use std::sync::atomic::AtomicU16;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 use std::time::SystemTime;
@@ -157,10 +159,24 @@ fn connector_binary() -> Result<PathBuf> {
 }
 
 pub(crate) fn reserve_port() -> Result<u16> {
-    let listener = TcpListener::bind("127.0.0.1:0").context("bind ephemeral port")?;
-    let port = listener.local_addr().context("ephemeral addr")?.port();
-    drop(listener);
-    Ok(port)
+    static NEXT_PORT: AtomicU16 = AtomicU16::new(41000);
+
+    // Smoke tests reserve ports before the connector binds them. Using the OS
+    // ephemeral allocator here can hand the same port to concurrent tests,
+    // which races grouped runs. Walk a deterministic high port range instead.
+    for _ in 0..10_000 {
+        let port = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
+        if !(41000..61000).contains(&port) {
+            NEXT_PORT.store(41000, Ordering::Relaxed);
+            continue;
+        }
+        if let Ok(listener) = TcpListener::bind(("127.0.0.1", port)) {
+            drop(listener);
+            return Ok(port);
+        }
+    }
+
+    anyhow::bail!("reserve unique connector smoke port")
 }
 
 pub(crate) fn wait_for_healthz(connector: &mut ChildGuard, port: u16) -> Result<()> {
@@ -201,7 +217,7 @@ fn smoke_test_lock() -> MutexGuard<'static, ()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
     LOCK.get_or_init(|| Mutex::new(()))
         .lock()
-        .expect("connector smoke lock poisoned")
+        .unwrap_or_else(|poison| poison.into_inner())
 }
 
 fn connector_stderr_path(port: u16) -> PathBuf {
@@ -277,6 +293,40 @@ pub(crate) fn run_broker_client(args: &[&str]) -> Result<String> {
         );
     }
     String::from_utf8(output.stdout).context("decode broker client fixture stdout")
+}
+
+fn node_broker_client_script() -> Result<PathBuf> {
+    let current_exe = std::env::current_exe().context("resolve current test executable")?;
+    for candidate in current_exe.ancestors() {
+        let script = candidate
+            .join("scripts")
+            .join("codexw_broker_client_node.mjs");
+        if script.exists() {
+            return Ok(script);
+        }
+    }
+    anyhow::bail!(
+        "resolve node broker client fixture script from test executable {}",
+        current_exe.display()
+    )
+}
+
+pub(crate) fn run_node_broker_client(args: &[&str]) -> Result<String> {
+    let script = node_broker_client_script()?;
+    let output = Command::new("node")
+        .arg(script)
+        .args(args)
+        .output()
+        .context("run node broker client fixture")?;
+    if !output.status.success() {
+        anyhow::bail!(
+            "node broker client fixture failed with status {}:\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    String::from_utf8(output.stdout).context("decode node broker client fixture stdout")
 }
 
 pub(crate) fn read_http_request(stream: &mut TcpStream) -> Result<ParsedRequest> {

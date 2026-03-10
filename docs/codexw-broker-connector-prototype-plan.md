@@ -278,7 +278,7 @@ Current automated coverage now includes a real process-level smoke path:
     - create session with an active lease
     - attempt turn/service mutation from another client identity
     - observe forwarded `attachment_conflict` details with lease-holder context
-  - the standalone Python broker client fixture now also proves the same
+  - the standalone broker client fixtures now also prove the same
     combined leased mutation/detail/resume pattern through the broker-style
     alias surface, not only the Rust-only connector smoke harness
   - alias-based SSE forwarding with `Last-Event-ID` passthrough on reconnect

@@ -29,8 +29,8 @@ It does not redefine the broker design. It answers a narrower question:
 Status labels:
 
 - `strong proof`
-  - backed by process-level connector smoke and/or the real Python broker
-    client fixture
+  - backed by process-level connector smoke and/or the real standalone broker
+    client fixtures
 - `partial proof`
   - backed by implementation plus some smoke proof, but not yet at the level
     desirable for promotion

@@ -165,7 +165,7 @@ At minimum, the repo should continue to have process-level proof for:
 - SSE consumption and `Last-Event-ID` resume
 - structured conflict propagation
 - `client_event` publish plus replay/resume
-- the real Python broker-style fixture as an external consumer shape
+- the real standalone broker-style fixtures as external consumer shapes
 
 ### Required Multi-Client Proof
 
@@ -182,7 +182,7 @@ Promotion should require stable process-level proof for:
 
 Useful but not strictly required beyond the already-landed prototype proof set:
 
-- a small compatibility matrix beyond the Python fixture
+- a small compatibility matrix beyond the standalone broker fixtures
 - broader sustained churn or longevity coverage beyond the current named,
   anonymous, handoff, reversal, and observer-readable contention workflows
 

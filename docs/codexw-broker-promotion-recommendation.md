@@ -65,7 +65,7 @@ The current proof set is not only unit-level. It includes:
 - local API route tests
 - connector unit tests
 - connector process-level smoke tests
-- the standalone Python broker-style client fixture exercised as a real
+- the standalone broker-style client fixtures exercised as real
   subprocess client
 
 The proof matrix now marks all major contract areas as `strong proof`, including:
