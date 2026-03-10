@@ -1,7 +1,7 @@
 # codexw Broker Connector Mapping
 
-This document describes the first-pass mapping from the implemented `codexw`
-local API to a broker-facing connector model inspired by `~/work/agent`.
+This document describes the current mapping from the implemented `codexw`
+local API to the broker-facing connector model inspired by `~/work/agent`.
 
 It is not a wire-compatibility promise. It is the adapter mapping record for the
 current connector-oriented architecture.
@@ -34,7 +34,7 @@ The connector should be a narrow translation layer, not a second runtime.
 | broker deployment id | connector/deployment identity | should remain separate from `session_id` and `thread_id` |
 | remote session handle | `session_id` | canonical remote-control handle |
 | underlying conversation | `thread_id` | preserved in payloads and events when attached |
-| client identity | `client_id` / attachment id | optional in phase 1, useful for audit and lock rules |
+| client identity | `client_id` / attachment id | optional in the current adapter surface, useful for audit and lock rules |
 
 ## Route Mapping
 

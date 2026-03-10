@@ -1,7 +1,8 @@
 # codexw Broker Session Identity Note
 
 This document resolves the placeholder “session identity” question from
-`docs/codexw-broker-connectivity.md` into a concrete first-pass model.
+`docs/codexw-broker-connectivity.md` into the concrete adapter model now used
+throughout the repo.
 
 The goal is to avoid collapsing distinct concepts into one id too early.
 
@@ -52,7 +53,7 @@ Role in broker design:
 - lets remote clients create a control context before choosing a thread
 - isolates remote clients from needing to know local thread ids immediately
 
-Recommended first-phase rule:
+Recommended current rule:
 
 - one wrapper session may be unattached or attached to exactly one local thread at a time
 
@@ -77,7 +78,7 @@ Role in broker design:
   - shell mutation
 - useful if multi-client attachment is supported later
 
-Recommended first-phase rule:
+Recommended current rule:
 
 - clients may send a `client_id` or `attachment_id`, but the server-side control plane is still keyed by wrapper session id
 
@@ -174,7 +175,7 @@ That preserves both the remote-control identity and the underlying conversation 
 ## Current Status
 
 This identity model is no longer only a design proposal. The current local API
-already implements the first-pass session split described above:
+already implements the session split described above:
 
 - `POST /api/v1/session/new`
 - `POST /api/v1/session/attach`

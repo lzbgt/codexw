@@ -314,7 +314,7 @@ Current implemented behavior:
 - requires an exact `{agent_id}` segment in:
   - `/v1/agents/{agent_id}/proxy/...`
   - `/v1/agents/{agent_id}/proxy_sse/...`
-- also exposes first-pass broker-style aliases for the common remote-client paths:
+- also exposes broker-style aliases for the common remote-client paths:
   - `/v1/agents/{agent_id}/sessions`
   - `/v1/agents/{agent_id}/sessions/{session_id}`
   - `/v1/agents/{agent_id}/sessions/{session_id}/attach`
