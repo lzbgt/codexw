@@ -413,3 +413,26 @@ fn broker_docs_do_not_regress_to_stale_phase_wording_for_current_adapter_state()
         assert_not_contains(&contents, "phase 5", name);
     }
 }
+
+#[test]
+fn broker_design_docs_do_not_regress_to_stale_remaining_question_wording() {
+    let docs = [
+        (
+            "docs/codexw-broker-compatibility-target.md",
+            read_repo_file("docs/codexw-broker-compatibility-target.md"),
+        ),
+        (
+            "docs/codexw-broker-shared-assumptions.md",
+            read_repo_file("docs/codexw-broker-shared-assumptions.md"),
+        ),
+        (
+            "docs/codexw-broker-out-of-scope.md",
+            read_repo_file("docs/codexw-broker-out-of-scope.md"),
+        ),
+    ];
+
+    for (name, contents) in docs {
+        assert_not_contains(&contents, "remaining design question", name);
+        assert_not_contains(&contents, "remaining broker-design TODO", name);
+    }
+}

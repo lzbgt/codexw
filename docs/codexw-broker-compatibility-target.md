@@ -1,6 +1,6 @@
 # codexw Broker Compatibility Target
 
-This document resolves the remaining design question:
+This document records the broker compatibility target decision:
 
 - what level of compatibility should `codexw` target relative to the user’s
   `~/work/agent` broker/client framework?

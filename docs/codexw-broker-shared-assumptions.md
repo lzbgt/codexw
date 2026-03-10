@@ -1,6 +1,6 @@
 # codexw Broker Shared-Assumptions Matrix
 
-This document resolves the remaining broker-design TODO:
+This document records the broker shared-assumptions assessment:
 
 - evaluate whether the user’s C agent framework in `~/work/agent` can share
   key assumptions with `codexw`

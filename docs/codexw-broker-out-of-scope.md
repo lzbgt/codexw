@@ -1,6 +1,6 @@
 # codexw Broker Out-of-Scope Matrix
 
-This document resolves the remaining design question:
+This document records the broker out-of-scope decision:
 
 - which broker/client surfaces are intentionally out of scope for `codexw`
 
