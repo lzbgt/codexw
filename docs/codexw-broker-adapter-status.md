@@ -6,7 +6,7 @@ design set:
 - [../TODOS.md](../TODOS.md)
 - [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
-- [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)

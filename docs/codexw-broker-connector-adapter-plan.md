@@ -1,6 +1,6 @@
-# codexw Broker Connector Prototype Plan
+# codexw Broker Connector Adapter Plan
 
-This document turns the connector mapping design into a concrete prototype plan.
+This document turns the connector mapping design into a concrete adapter plan.
 
 For the concise implementation/proof snapshot, see
 [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md).
@@ -75,7 +75,7 @@ That fixture-backed smoke coverage now includes:
 
 ## Objective
 
-Prototype a connector that:
+Define an adapter that:
 
 - talks to a local `codexw` loopback API
 - exposes selected routes/events through a broker-facing surface
@@ -84,7 +84,7 @@ Prototype a connector that:
 
 ## Prerequisite
 
-This prototype depends on the local API spike being complete enough to provide:
+This adapter depends on the local API being complete enough to provide:
 
 - session create/attach
 - turn start/interrupt

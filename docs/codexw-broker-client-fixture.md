@@ -308,7 +308,7 @@ promise.
 
 - High-level architecture: [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
 - Connector mapping: [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)
-- Connector adapter prototype plan: [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- Connector adapter plan: [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - Local API route ownership: [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 
 ## Future Direction

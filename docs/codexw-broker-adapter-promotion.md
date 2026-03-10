@@ -260,5 +260,5 @@ That means the next meaningful work is:
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
-- [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)

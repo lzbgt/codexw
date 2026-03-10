@@ -320,7 +320,7 @@ fn current_state_docs_do_not_reintroduce_remaining_connector_wording_drifts() {
             "first standalone prototype",
         ),
         (
-            "docs/codexw-broker-connector-prototype-plan.md",
+            "docs/codexw-broker-connector-adapter-plan.md",
             "initial standalone prototype",
         ),
         (
@@ -390,6 +390,42 @@ fn support_claim_docs_do_not_reference_stale_broker_status_filename() {
 
     for (name, contents) in docs {
         assert_not_contains(&contents, "codexw-broker-prototype-status.md", name);
+    }
+}
+
+#[test]
+fn current_state_docs_do_not_reference_stale_connector_plan_filename() {
+    let docs = [
+        ("README.md", read_repo_file("README.md")),
+        ("TODOS.md", read_repo_file("TODOS.md")),
+        (
+            "docs/codexw-broker-adapter-status.md",
+            read_repo_file("docs/codexw-broker-adapter-status.md"),
+        ),
+        (
+            "docs/codexw-broker-adapter-promotion.md",
+            read_repo_file("docs/codexw-broker-adapter-promotion.md"),
+        ),
+        (
+            "docs/codexw-broker-client-fixture.md",
+            read_repo_file("docs/codexw-broker-client-fixture.md"),
+        ),
+        (
+            "docs/codexw-broker-connectivity.md",
+            read_repo_file("docs/codexw-broker-connectivity.md"),
+        ),
+        (
+            "docs/codexw-broker-proof-matrix.md",
+            read_repo_file("docs/codexw-broker-proof-matrix.md"),
+        ),
+        (
+            "docs/codexw-design.md",
+            read_repo_file("docs/codexw-design.md"),
+        ),
+    ];
+
+    for (name, contents) in docs {
+        assert_not_contains(&contents, "codexw-broker-connector-prototype-plan.md", name);
     }
 }
 

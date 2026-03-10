@@ -22,7 +22,7 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
-- [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
 
 ## Reading This Matrix

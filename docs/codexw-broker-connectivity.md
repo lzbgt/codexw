@@ -147,7 +147,7 @@ documents:
 - [codexw-broker-endpoint-audit.md](codexw-broker-endpoint-audit.md)
 - [codexw-broker-connector-decision.md](codexw-broker-connector-decision.md)
 - [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)
-- [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
+- [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-broker-session-identity.md](codexw-broker-session-identity.md)
 - [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
 - [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
@@ -754,7 +754,7 @@ out into tracked artifacts. The relevant current sources of truth are:
 - connector architecture and mapping:
   [docs/codexw-broker-connector-decision.md](docs/codexw-broker-connector-decision.md),
   [docs/codexw-broker-connector-mapping.md](docs/codexw-broker-connector-mapping.md),
-  [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
+  [docs/codexw-broker-connector-adapter-plan.md](docs/codexw-broker-connector-adapter-plan.md)
 - frozen adapter contract, client policy, and explicit unsupported boundary:
   [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md),
   [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md),
@@ -783,7 +783,7 @@ proof expansion:
 - a real implementation spike for the loopback local API, now framed in
   [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
 - a connector adapter after that, now framed in
-  [docs/codexw-broker-connector-prototype-plan.md](docs/codexw-broker-connector-prototype-plan.md)
+  [docs/codexw-broker-connector-adapter-plan.md](docs/codexw-broker-connector-adapter-plan.md)
 - the connector/client policy contract, now captured in
   [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
 - the frozen broker-facing adapter contract, now captured in

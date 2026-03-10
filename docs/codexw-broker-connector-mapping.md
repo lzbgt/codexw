@@ -191,9 +191,9 @@ The connector should explicitly reject or defer:
 - any route that assumes a generic run/artifact model where `codexw` has a more
   specific orchestration/service abstraction
 
-## Prototype Deliverable
+## Initial Adapter Deliverable
 
-The first connector prototype should ship with a small compatibility table:
+The initial connector adapter should ship with a small compatibility table:
 
 | Broker-facing route | Local `codexw` route | Status |
 | --- | --- | --- |
