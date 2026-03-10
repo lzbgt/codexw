@@ -23,10 +23,10 @@ Its purpose is to map relevant `~/work/agent` broker/client surfaces to current
 
 | Source surface | Classification | `codexw` owner/source | Notes |
 | --- | --- | --- | --- |
-| `GET /v1/agents/{agent_id}/proxy/...` | `adapter fit` | future local API layer | Useful once `codexw` exposes local HTTP endpoints; likely served through a connector first |
-| `GET /v1/agents/{agent_id}/proxy_sse/...` | `adapter fit` | future SSE/event layer | Fits the intended transcript/status/orchestration streams, but no public local stream exists yet |
-| `GET /v1/events` | `adapter fit` | future broker connector/event bridge | Broker-level event stream is plausible, but `codexw` needs its own stable event vocabulary first |
-| outbound `GET /v1/agent/connect` websocket | `adapter fit` | future connector or direct broker mode | Probably phase 2 or 3, not the first implementation |
+| `GET /v1/agents/{agent_id}/proxy/...` | `adapter fit` | local API plus connector | `codexw` now exposes local HTTP endpoints, and the connector already proxies an allowlisted subset of them |
+| `GET /v1/agents/{agent_id}/proxy_sse/...` | `adapter fit` | local SSE/event layer plus connector | Public local SSE exists today, and the connector already bridges allowlisted event streams with replay support |
+| `GET /v1/events` | `adapter fit` | future broker connector/event bridge | Broker-level fan-in event streaming is still a future aggregation layer; current implementation is session-scoped event streaming |
+| outbound `GET /v1/agent/connect` websocket | `adapter fit` | future connector or direct broker mode | Still a later-phase transport option rather than part of the current loopback HTTP/SSE plus connector design |
 
 ## Session And Client Surfaces
 
@@ -42,7 +42,7 @@ Its purpose is to map relevant `~/work/agent` broker/client surfaces to current
 | Source surface | Classification | `codexw` owner/source | Notes |
 | --- | --- | --- | --- |
 | `POST /api/v1/run` | `adapter fit` | request builders + turn lifecycle | `codexw` is thread/turn-centric, not `agentd` run-centric, but a remote turn API is clearly feasible |
-| run-event envelopes | `adapter fit` | item/turn/status/orchestration state | Internal semantic events exist, but a stable public envelope still needs definition |
+| run-event envelopes | `adapter fit` | item/turn/status/orchestration state | Stable public semantic event envelopes now exist for the supported local API and connector surface, but they remain intentionally narrower than a generic broker-wide run stream |
 | artifact signaling | `adapter fit` | transcript/item surfaces + attachment state | Likely useful later, but not required for the first status/control API |
 
 ## `codexw`-Specific Surfaces
@@ -61,8 +61,8 @@ compatibility shape:
 
 ## Recommended First Audit Outputs
 
-When this worksheet is revisited during implementation planning, each row should
-gain:
+When this worksheet is revisited for hardening or promotion decisions, each row should
+continue to gain:
 
 - concrete request/response candidates
 - auth expectations
