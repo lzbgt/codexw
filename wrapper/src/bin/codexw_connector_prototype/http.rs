@@ -8,6 +8,10 @@ use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
 
+use crate::adapter_contract::CODEXW_BROKER_ADAPTER_VERSION;
+use crate::adapter_contract::HEADER_BROKER_ADAPTER_VERSION;
+use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
+
 use super::Cli;
 use super::MAX_REQUEST_BYTES;
 use super::upstream::UpstreamResponse;
@@ -43,6 +47,16 @@ pub(super) fn from_upstream_response(upstream: UpstreamResponse, cli: &Cli) -> H
         "X-Codexw-Deployment-Id".to_string(),
         cli.deployment_id.clone(),
     ));
+    headers.push((
+        HEADER_BROKER_ADAPTER_VERSION.to_string(),
+        CODEXW_BROKER_ADAPTER_VERSION.to_string(),
+    ));
+    if let Some(local_api_version) = upstream.headers.get("x-codexw-local-api-version") {
+        headers.push((
+            HEADER_LOCAL_API_VERSION.to_string(),
+            local_api_version.clone(),
+        ));
+    }
     HttpResponse {
         status: upstream.status,
         reason: Box::leak(upstream.reason.into_boxed_str()),
@@ -139,10 +153,26 @@ pub(super) fn write_response(stream: &mut TcpStream, response: &HttpResponse) ->
 }
 
 pub(super) fn json_ok_response(body: Value) -> HttpResponse {
+    let body = match body {
+        Value::Object(mut object) => {
+            object.insert(
+                "broker_adapter_version".to_string(),
+                Value::String(CODEXW_BROKER_ADAPTER_VERSION.to_string()),
+            );
+            Value::Object(object)
+        }
+        other => other,
+    };
     HttpResponse {
         status: 200,
         reason: "OK",
-        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+        headers: vec![
+            ("Content-Type".to_string(), "application/json".to_string()),
+            (
+                HEADER_BROKER_ADAPTER_VERSION.to_string(),
+                CODEXW_BROKER_ADAPTER_VERSION.to_string(),
+            ),
+        ],
         body: serde_json::to_vec(&body).expect("serialize ok response"),
     }
 }
@@ -161,6 +191,11 @@ pub(super) fn json_error_response(
     if let Some(details) = details {
         error["details"] = details;
     }
+    let body = json!({
+        "ok": false,
+        "broker_adapter_version": CODEXW_BROKER_ADAPTER_VERSION,
+        "error": error,
+    });
     HttpResponse {
         status,
         reason: match status {
@@ -171,8 +206,13 @@ pub(super) fn json_error_response(
             502 => "Bad Gateway",
             _ => "Error",
         },
-        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-        body: serde_json::to_vec(&json!({ "ok": false, "error": error }))
-            .expect("serialize error response"),
+        headers: vec![
+            ("Content-Type".to_string(), "application/json".to_string()),
+            (
+                HEADER_BROKER_ADAPTER_VERSION.to_string(),
+                CODEXW_BROKER_ADAPTER_VERSION.to_string(),
+            ),
+        ],
+        body: serde_json::to_vec(&body).expect("serialize error response"),
     }
 }

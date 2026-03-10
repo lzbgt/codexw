@@ -1,5 +1,7 @@
 use serde_json::Value;
 
+use crate::adapter_contract::CODEXW_BROKER_ADAPTER_VERSION;
+
 use super::super::sse::wrap_event_payload;
 
 #[test]
@@ -13,6 +15,10 @@ fn wrap_event_payload_preserves_json_and_adds_broker_metadata() {
     assert_eq!(json["source"], "codexw");
     assert_eq!(json["broker"]["agent_id"], "codexw-lab");
     assert_eq!(json["broker"]["deployment_id"], "mac-mini-01");
+    assert_eq!(
+        json["broker"]["adapter_version"],
+        CODEXW_BROKER_ADAPTER_VERSION
+    );
     assert_eq!(json["data"]["session_id"], "sess_1");
     assert_eq!(json["data"]["value"], 1);
 }

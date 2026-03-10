@@ -7,6 +7,8 @@ use std::time::Instant;
 use anyhow::Context;
 use anyhow::Result;
 
+use crate::adapter_contract::CODEXW_LOCAL_API_VERSION;
+use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
 use crate::local_api::LocalApiEvent;
 use crate::local_api::SharedEventLog;
 use crate::local_api::SharedSnapshot;
@@ -102,10 +104,12 @@ pub(in crate::local_api) fn handle_event_stream_request(
 }
 
 fn write_event_stream_headers(stream: &mut TcpStream) -> Result<()> {
+    let headers = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Accel-Buffering: no\r\n{}: {}\r\n\r\n",
+        HEADER_LOCAL_API_VERSION, CODEXW_LOCAL_API_VERSION,
+    );
     stream
-        .write_all(
-            b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Accel-Buffering: no\r\n\r\n",
-        )
+        .write_all(headers.as_bytes())
         .context("write local API event stream headers")?;
     stream
         .flush()

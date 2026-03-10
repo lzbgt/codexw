@@ -1,3 +1,5 @@
+#[path = "tests/http.rs"]
+mod http;
 #[path = "tests/routing.rs"]
 mod routing;
 #[path = "tests/sse.rs"]

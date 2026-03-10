@@ -12,6 +12,8 @@ use anyhow::Result;
 use clap::Parser;
 use serde_json::json;
 
+#[path = "../adapter_contract.rs"]
+mod adapter_contract;
 #[path = "codexw_connector_prototype/http.rs"]
 mod http;
 #[path = "codexw_connector_prototype/routing.rs"]

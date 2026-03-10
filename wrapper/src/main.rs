@@ -1,5 +1,6 @@
 #![recursion_limit = "256"]
 
+mod adapter_contract;
 mod app;
 mod app_input_controls;
 mod app_input_editing;

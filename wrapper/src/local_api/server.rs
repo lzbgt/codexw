@@ -64,6 +64,7 @@ pub(crate) struct HttpRequest {
 pub(crate) struct HttpResponse {
     pub(crate) status: u16,
     pub(crate) reason: &'static str,
+    pub(crate) headers: Vec<(String, String)>,
     pub(crate) body: Vec<u8>,
 }
 
@@ -252,12 +253,16 @@ fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, Requ
 }
 
 pub(super) fn write_response(stream: &mut TcpStream, response: &HttpResponse) -> Result<()> {
-    let headers = format!(
-        "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+    let mut headers = format!(
+        "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
         response.status,
         response.reason,
         response.body.len()
     );
+    for (name, value) in &response.headers {
+        headers.push_str(&format!("{name}: {value}\r\n"));
+    }
+    headers.push_str("\r\n");
     stream
         .write_all(headers.as_bytes())
         .context("write local API response headers")?;

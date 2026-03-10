@@ -11,6 +11,10 @@ use serde_json::Value;
 use serde_json::json;
 use url::Url;
 
+use crate::adapter_contract::CODEXW_BROKER_ADAPTER_VERSION;
+use crate::adapter_contract::HEADER_BROKER_ADAPTER_VERSION;
+use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
+
 use super::Cli;
 use super::http::HttpRequest;
 use super::http::from_upstream_response;
@@ -78,10 +82,20 @@ pub(super) fn handle_sse_proxy(
         return Ok(());
     }
 
-    let response_head = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Codexw-Agent-Id: {}\r\nX-Codexw-Deployment-Id: {}\r\n\r\n",
-        cli.agent_id, cli.deployment_id,
+    let mut response_head = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nX-Codexw-Agent-Id: {}\r\nX-Codexw-Deployment-Id: {}\r\n{}: {}\r\n",
+        cli.agent_id,
+        cli.deployment_id,
+        HEADER_BROKER_ADAPTER_VERSION,
+        CODEXW_BROKER_ADAPTER_VERSION,
     );
+    if let Some(local_api_version) = headers.get("x-codexw-local-api-version") {
+        response_head.push_str(&format!(
+            "{}: {}\r\n",
+            HEADER_LOCAL_API_VERSION, local_api_version
+        ));
+    }
+    response_head.push_str("\r\n");
     client_stream
         .write_all(response_head.as_bytes())
         .context("write connector SSE response head")?;
@@ -230,6 +244,7 @@ pub(super) fn wrap_event_payload(
         "broker": {
             "agent_id": agent_id,
             "deployment_id": deployment_id,
+            "adapter_version": CODEXW_BROKER_ADAPTER_VERSION,
         },
         "data": parsed,
     })

@@ -5,6 +5,8 @@ use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
 
+use crate::adapter_contract::CODEXW_LOCAL_API_VERSION;
+use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
 use crate::background_shells::BackgroundShellManager;
 use crate::local_api::LocalApiSnapshot;
 use crate::local_api::server::HttpRequest;
@@ -227,9 +229,23 @@ pub(in crate::local_api) fn now_unix_ms() -> u64 {
 }
 
 pub(in crate::local_api) fn json_ok_response(body: serde_json::Value) -> HttpResponse {
+    let body = match body {
+        Value::Object(mut object) => {
+            object.insert(
+                "local_api_version".to_string(),
+                Value::String(CODEXW_LOCAL_API_VERSION.to_string()),
+            );
+            Value::Object(object)
+        }
+        other => other,
+    };
     HttpResponse {
         status: 200,
         reason: "OK",
+        headers: vec![(
+            HEADER_LOCAL_API_VERSION.to_string(),
+            CODEXW_LOCAL_API_VERSION.to_string(),
+        )],
         body: serde_json::to_vec_pretty(&body).unwrap_or_else(|_| b"{\"ok\":false}".to_vec()),
     }
 }

@@ -1,7 +1,6 @@
 use serde_json::Value;
 
 use super::super::LocalApiCommand;
-use super::super::get_request;
 use super::super::json_body;
 use super::super::new_command_queue;
 use super::super::post_json_request;

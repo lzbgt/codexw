@@ -3,6 +3,8 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::time::Duration;
 
+use crate::adapter_contract::CODEXW_LOCAL_API_VERSION;
+use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
 use crate::background_shells::BackgroundShellManager;
 
 use super::events_since;
@@ -85,6 +87,10 @@ fn event_stream_route_replays_existing_events() {
     let response_text = String::from_utf8_lossy(&response);
     assert!(response_text.contains("HTTP/1.1 200 OK"));
     assert!(response_text.contains("Content-Type: text/event-stream"));
+    assert!(response_text.contains(&format!(
+        "{}: {}",
+        HEADER_LOCAL_API_VERSION, CODEXW_LOCAL_API_VERSION
+    )));
     assert!(response_text.contains("event: session.updated"));
     assert!(response_text.contains("event: turn.updated"));
 
@@ -137,7 +143,15 @@ fn client_event_route_publishes_replayable_semantic_event() {
         None,
     );
     assert_eq!(response.status, 200);
+    assert_eq!(
+        response.headers,
+        vec![(
+            HEADER_LOCAL_API_VERSION.to_string(),
+            CODEXW_LOCAL_API_VERSION.to_string()
+        )]
+    );
     let body = json_body(&response.body);
+    assert_eq!(body["local_api_version"], CODEXW_LOCAL_API_VERSION);
     assert_eq!(body["event"], "selection.changed");
     assert_eq!(body["client_id"], "client_web");
 
@@ -161,4 +175,14 @@ fn client_event_route_publishes_replayable_semantic_event() {
         None,
     );
     assert_eq!(top_level.status, 200);
+    assert_eq!(
+        top_level.headers,
+        vec![(
+            HEADER_LOCAL_API_VERSION.to_string(),
+            CODEXW_LOCAL_API_VERSION.to_string()
+        )]
+    );
+    let body = json_body(&top_level.body);
+    assert_eq!(body["local_api_version"], CODEXW_LOCAL_API_VERSION);
+    assert_eq!(body["event"], "selection.changed");
 }

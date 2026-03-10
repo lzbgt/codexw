@@ -450,6 +450,9 @@ Auto-continue is explicit and cooperative.
 
 The companion skill in `skills/session-autopilot/` provides the model-side policy for this behavior when available, while `codexw` provides the runtime-side turn detection and resubmission. The runtime prompt remains self-sufficient so portability does not depend on the skill being installed.
 
+For the short repo-level backlog of still-open work derived from this design and
+the broker status docs, see [../TODOS.md](../TODOS.md).
+
 ## Inline Editor and Prompt Model
 
 `editor.rs` defines the editor surface and shared state, while `editor_buffer.rs` and `editor_history.rs` implement the editing/history behavior. Together they provide:

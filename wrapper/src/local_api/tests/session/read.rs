@@ -6,6 +6,8 @@ use super::super::new_command_queue;
 use super::super::route_request;
 use super::super::sample_snapshot;
 use super::assert_json_path_eq;
+use crate::adapter_contract::CODEXW_LOCAL_API_VERSION;
+use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
 
 #[test]
 fn healthz_is_public() {
@@ -17,6 +19,13 @@ fn healthz_is_public() {
     );
     assert_eq!(response.status, 200);
     assert_eq!(json_body(&response.body)["ok"], Value::Bool(true));
+    assert_eq!(
+        response.headers,
+        vec![(
+            HEADER_LOCAL_API_VERSION.to_string(),
+            CODEXW_LOCAL_API_VERSION.to_string()
+        )]
+    );
 }
 
 #[test]
@@ -44,7 +53,15 @@ fn session_snapshot_is_returned_with_valid_token() {
         Some("secret"),
     );
     assert_eq!(response.status, 200);
+    assert_eq!(
+        response.headers,
+        vec![(
+            HEADER_LOCAL_API_VERSION.to_string(),
+            CODEXW_LOCAL_API_VERSION.to_string()
+        )]
+    );
     let body = json_body(&response.body);
+    assert_eq!(body["local_api_version"], CODEXW_LOCAL_API_VERSION);
     assert_eq!(body["session_id"], "sess_test");
     assert_eq!(body["session"]["id"], "sess_test");
     assert_eq!(body["session"]["scope"], "process");
@@ -66,7 +83,15 @@ fn session_id_route_reuses_same_snapshot_payload() {
         None,
     );
     assert_eq!(response.status, 200);
+    assert_eq!(
+        response.headers,
+        vec![(
+            HEADER_LOCAL_API_VERSION.to_string(),
+            CODEXW_LOCAL_API_VERSION.to_string()
+        )]
+    );
     let body = json_body(&response.body);
+    assert_eq!(body["local_api_version"], CODEXW_LOCAL_API_VERSION);
     assert_eq!(body["session_id"], "sess_test");
     assert_eq!(body["session"]["active_turn_id"], "turn_456");
     assert_eq!(body["session"]["attachment"]["scope"], "process");
@@ -84,9 +109,15 @@ fn unknown_session_id_returns_not_found() {
     );
     assert_eq!(response.status, 404);
     assert_eq!(
-        json_body(&response.body)["error"]["code"],
-        "session_not_found"
+        response.headers,
+        vec![(
+            HEADER_LOCAL_API_VERSION.to_string(),
+            CODEXW_LOCAL_API_VERSION.to_string()
+        )]
     );
+    let body = json_body(&response.body);
+    assert_eq!(body["local_api_version"], CODEXW_LOCAL_API_VERSION);
+    assert_eq!(body["error"]["code"], "session_not_found");
 }
 
 #[test]
@@ -115,7 +146,19 @@ fn session_lifecycle_and_inspection_routes_have_explicit_contract_coverage() {
             response.status, 200,
             "expected GET contract success for {path}"
         );
+        assert_eq!(
+            response.headers,
+            vec![(
+                HEADER_LOCAL_API_VERSION.to_string(),
+                CODEXW_LOCAL_API_VERSION.to_string()
+            )],
+            "expected local API version header for {path}"
+        );
         let body = json_body(&response.body);
+        assert_eq!(
+            body["local_api_version"], CODEXW_LOCAL_API_VERSION,
+            "expected local API version body field for {path}"
+        );
         if let Some((field, value)) = first_expectation {
             assert_json_path_eq(&body, field, value, path);
         }

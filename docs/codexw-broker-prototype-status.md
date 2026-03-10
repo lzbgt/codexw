@@ -3,6 +3,7 @@
 This document is the concise implementation-status companion to the broader
 design set:
 
+- [../TODOS.md](../TODOS.md)
 - [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-broker-connector-prototype-plan.md](codexw-broker-connector-prototype-plan.md)
