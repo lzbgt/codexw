@@ -162,6 +162,7 @@ The minimum useful visible facts are:
 
 - who owns the work
 - what concrete command/tool summary is running
+- the source call id when one exists
 - whether a wrapper shell job exists yet
 - the matched `bg-*` job id and status when one exists
 - the latest observed output preview when one exists

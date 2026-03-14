@@ -98,13 +98,15 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
                     .latest_output_preview()
                     .map(|line| format!("; out {}", summarize_inline(line)))
                     .unwrap_or_default();
+                let command_detail = format!("; cmd {}", summarize_inline(&job.command));
                 let output_state = format_output_state_detail(observation.output_state, job);
                 format!(
-                    "{}; {}; job {} {}{}",
+                    "{}; {}; job {} {}{}{}",
                     observation.observation_state.prompt_label(),
                     output_state,
                     job.job_id,
                     job.status,
+                    command_detail,
                     last_output
                 )
             }
@@ -129,15 +131,21 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             "; req {}",
             summarize_inline(&crate::state::request_id_label(request_id))
         );
+        let source_detail = async_tool
+            .source_call_id
+            .as_deref()
+            .map(|call_id| format!("; call {}", summarize_inline(call_id)))
+            .unwrap_or_default();
         let worker_detail = format!(
             "; worker {}",
             summarize_inline(&async_tool.worker_thread_name)
         );
         let detail = format!(
-            "{detail} [{}; {}{}{}{}; next check {}]",
+            "{detail} [{}; {}{}{}{}{}; next check {}]",
             observation.owner_kind.prompt_label(),
             observation_detail,
             request_detail,
+            source_detail,
             worker_detail,
             target_detail,
             format_elapsed(Some(Instant::now() - async_tool.next_health_check_in()))
@@ -192,13 +200,15 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
                 .latest_output_preview()
                 .map(|line| format!("; out {}", summarize_inline(line)))
                 .unwrap_or_default();
+            let command_detail = format!("; cmd {}", summarize_inline(&job.command));
             let output_state = format_output_state_detail(observation.output_state, job);
             format!(
-                " [{}; {}; job {} {}{}]",
+                " [{}; {}; job {} {}{}{}]",
                 observation.observation_state.prompt_label(),
                 output_state,
                 job.job_id,
                 job.status,
+                command_detail,
                 last_output
             )
         }

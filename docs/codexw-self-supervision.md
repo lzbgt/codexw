@@ -122,6 +122,10 @@ or relay without inventing their own heuristics:
 - periodic inspection notices should keep the concrete tool summary or shell
   command visible instead of collapsing the task to only a generic tool label
   fields instead of forcing prompt scraping
+- the inline prompt status should also keep active source-call correlation and,
+  when a concrete wrapper shell is visible, the matched shell command so the
+  operator can tell which request and job the spinner belongs to without
+  leaving the prompt line
 - those live inspection notices should also expose the observation state,
   output state, source call id when present, and the orchestrator's next check
   horizon so the operator can see what will be re-evaluated next without

@@ -1074,6 +1074,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        "inline prompt status",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "thread_name",
         "docs/codexw-native-product-status.md",
     );
@@ -1230,6 +1235,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &background_execution_boundary,
         "source call id",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "prompt",
         "docs/codexw-background-execution-boundary.md",
     );
     assert_contains_case_insensitive(
@@ -1632,6 +1642,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision,
         "source call id",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "inline prompt status",
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(

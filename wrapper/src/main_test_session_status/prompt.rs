@@ -150,7 +150,9 @@ fn prompt_status_mentions_correlated_background_job_output_when_observed() {
 
     assert_eq!(observation.output_state.label(), "recent_output_observed");
     assert!(rendered.contains("wrapper bg shell"));
+    assert!(rendered.contains("call call-18"));
     assert!(rendered.contains("job bg-1"));
+    assert!(rendered.contains("cmd echo READY; sleep 2"));
     assert!(rendered.contains("recent output"));
     assert!(rendered.contains("READY"));
     assert!(observation.observed_background_shell_job.is_some());
@@ -207,9 +209,11 @@ fn prompt_status_mentions_correlated_background_job_started_without_output_yet()
         "wrapper_background_shell_started_no_output_yet"
     );
     assert_eq!(observation.output_state.label(), "no_output_observed_yet");
+    assert!(rendered.contains("call call-19"));
     assert!(rendered.contains("job started; awaiting output"));
     assert!(rendered.contains("no output yet"));
     assert!(rendered.contains("job bg-1 running"));
+    assert!(rendered.contains("cmd sleep 20"));
     assert!(observation.observed_background_shell_job.is_some());
 }
 
@@ -279,6 +283,7 @@ fn prompt_status_correlates_wait_ready_to_target_background_job() {
     assert!(rendered.contains("async tool background_shell_wait_ready"));
     assert!(rendered.contains("target dev.api->bg-1"));
     assert!(rendered.contains("job bg-1"));
+    assert!(rendered.contains("cmd echo READY; sleep 20"));
     assert!(rendered.contains("READY"));
     assert!(observation.observed_background_shell_job.is_some());
 }
@@ -346,6 +351,7 @@ fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() 
     assert!(rendered.contains("job streaming output"));
     assert!(rendered.contains("recent output"));
     assert!(rendered.contains("job bg-1 running"));
+    assert!(rendered.contains("cmd echo READY; sleep 20"));
     assert!(rendered.contains("READY"));
 }
 
