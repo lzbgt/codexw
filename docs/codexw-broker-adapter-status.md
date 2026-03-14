@@ -162,6 +162,8 @@ the real connector binary:
   client/lease header-to-body injection eligibility, including the supported
   raw proxy turn-control routes plus top-level raw proxy session attach and
   `client_event`
+- thin raw-proxy pass-through proof for canonical session inspect, transcript,
+  and `Last-Event-ID` SSE replay routes
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation

@@ -1,4 +1,5 @@
 use super::*;
+use std::io::Write;
 
 #[test]
 fn connector_alias_attach_projects_session_and_lease_headers() -> Result<()> {
@@ -497,6 +498,165 @@ fn connector_raw_proxy_session_and_client_event_routes_work_with_header_projecti
     assert!(client_event_response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(client_event_response.contains("\"kind\":\"client.event\""));
     assert!(client_event_response.contains("\"selection\":\"services\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
+#[test]
+fn connector_raw_proxy_read_and_event_replay_routes_work() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..4 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_raw_proxy");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_raw_proxy",
+                                "thread_id": "thread_raw_proxy",
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_raw_proxy/transcript");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "items": [
+                                {
+                                    "role": "user",
+                                    "text": "Summarize the repository status"
+                                },
+                                {
+                                    "role": "assistant",
+                                    "text": "Repository is clean"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_raw_proxy/events");
+                    assert_eq!(request._headers.get("last-event-id"), None);
+                    let event_stream = concat!(
+                        "HTTP/1.1 200 OK\r\n",
+                        "Content-Type: text/event-stream\r\n",
+                        "Connection: close\r\n",
+                        "\r\n",
+                        ": heartbeat\n",
+                        "id: 41\n",
+                        "event: client.event\n",
+                        "data: {\"session_id\":\"sess_raw_proxy\",\"client_id\":\"remote-web\",\"event\":\"selection.changed\",\"data\":{\"selection\":\"services\"}}\n",
+                        "\n"
+                    );
+                    stream
+                        .write_all(event_stream.as_bytes())
+                        .context("write raw proxy event stream")?;
+                }
+                3 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_raw_proxy/events");
+                    assert_eq!(
+                        request._headers.get("last-event-id").map(String::as_str),
+                        Some("41")
+                    );
+                    let resumed_stream = concat!(
+                        "HTTP/1.1 200 OK\r\n",
+                        "Content-Type: text/event-stream\r\n",
+                        "Connection: close\r\n",
+                        "\r\n",
+                        ": heartbeat\n",
+                        "id: 42\n",
+                        "event: client.event\n",
+                        "data: {\"session_id\":\"sess_raw_proxy\",\"client_id\":\"remote-web\",\"event\":\"selection.confirmed\",\"data\":{\"selection\":\"services\"}}\n",
+                        "\n"
+                    );
+                    stream
+                        .write_all(resumed_stream.as_bytes())
+                        .context("write resumed raw proxy event stream")?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let inspect_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_raw_proxy HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(inspect_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(inspect_response.contains("\"session_id\":\"sess_raw_proxy\""));
+
+    let transcript_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_raw_proxy/transcript HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(transcript_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(transcript_response.contains("Summarize the repository status"));
+    assert!(transcript_response.contains("Repository is clean"));
+
+    let events_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy_sse/api/v1/session/sess_raw_proxy/events HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(events_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(events_response.contains("id: 41"));
+    assert!(events_response.contains("selection.changed"));
+
+    let resumed_events_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy_sse/api/v1/session/sess_raw_proxy/events HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Last-Event-ID: 41\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(resumed_events_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(resumed_events_response.contains("id: 42"));
+    assert!(resumed_events_response.contains("selection.confirmed"));
 
     fake_server.join().expect("fake server thread")?;
     Ok(())

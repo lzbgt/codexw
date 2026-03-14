@@ -201,11 +201,13 @@ The initial connector adapter should ship with a small compatibility table:
 | Broker-facing route | Local `codexw` route | Status |
 | --- | --- | --- |
 | `/v1/agents/{agent_id}/proxy/...` session create | `/api/v1/session/new` | works |
+| `/v1/agents/{agent_id}/proxy/...` session inspect | `/api/v1/session/{session_id}` | works as thin pass-through for canonical local session reads |
 | `/v1/agents/{agent_id}/proxy/...` session attach | `/api/v1/session/attach` | works with the same client/lease header projection policy as the session-scoped attach alias when the caller provides `session_id` in the body |
 | `/v1/agents/{agent_id}/proxy/...` top-level client event | `/api/v1/session/client_event` | works with the same client/lease header projection policy as the session-scoped client-event alias when the caller provides `session_id` in the body |
 | `/v1/agents/{agent_id}/proxy/...` turn start | `/api/v1/turn/start` | works with the same client/lease header projection policy as the session-scoped turn alias |
 | `/v1/agents/{agent_id}/proxy/...` turn interrupt | `/api/v1/turn/interrupt` | works with the same client header projection policy as the session-scoped interrupt alias |
-| `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works; non-`GET` methods are rejected as `method_not_allowed` |
+| `/v1/agents/{agent_id}/proxy/...` transcript | `/api/v1/session/{session_id}/transcript` | works as thin pass-through for canonical local transcript reads |
+| `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works; non-`GET` methods are rejected as `method_not_allowed`, and `Last-Event-ID` replay stays a thin pass-through to the local API |
 | `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as method-sensitive alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works as POST-only alias with `session_id` body injection when missing |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attachment/renew` | `/api/v1/session/{session_id}/attachment/renew` | works as POST-only alias surface with client/lease header projection |

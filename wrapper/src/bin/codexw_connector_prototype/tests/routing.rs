@@ -296,6 +296,16 @@ fn resolve_proxy_target_maps_http_and_sse_routes() {
     assert!(!http.is_sse);
     assert!(http.session_id_hint.is_none());
 
+    let inspect = resolve_proxy_target(
+        "GET",
+        "/v1/agents/codexw-lab/proxy/api/v1/session/sess_1",
+        "codexw-lab",
+    )
+    .expect("inspect route");
+    assert_eq!(inspect.local_path, "/api/v1/session/sess_1");
+    assert!(!inspect.is_sse);
+    assert!(inspect.session_id_hint.is_none());
+
     let sse = resolve_proxy_target(
         "GET",
         "/v1/agents/codexw-lab/proxy_sse/api/v1/session/sess_1/events",
