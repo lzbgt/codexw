@@ -37,6 +37,59 @@ fn escape_preserves_draft_while_interrupting_active_turn() {
 }
 
 #[test]
+fn repeated_ctrl_c_exits_when_turn_interrupt_is_already_pending() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    state.turn_running = true;
+    state.active_turn_id = Some("turn-1".to_string());
+    let request_id = state.next_request_id();
+    state
+        .pending
+        .insert(request_id, PendingRequest::InterruptTurn);
+
+    let mut editor = LineEditor::default();
+    editor.insert_str("first\nsecond");
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    let result = handle_ctrl_c(
+        &mut state,
+        &mut editor,
+        &mut output,
+        &mut writer,
+        "/tmp/project",
+    )
+    .expect("ctrl-c");
+
+    assert_eq!(result, Some(false));
+    assert_eq!(editor.buffer(), "first\nsecond");
+    assert!(state.resume_exit_hint_emitted);
+}
+
+#[test]
+fn repeated_escape_exits_when_turn_interrupt_is_already_pending() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    state.turn_running = true;
+    state.active_turn_id = Some("turn-1".to_string());
+    let request_id = state.next_request_id();
+    state
+        .pending
+        .insert(request_id, PendingRequest::InterruptTurn);
+
+    let mut editor = LineEditor::default();
+    editor.insert_str("first\nsecond");
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    let result =
+        handle_escape(&mut state, &mut editor, &mut output, &mut writer, true).expect("escape");
+
+    assert_eq!(result, Some(false));
+    assert_eq!(editor.buffer(), "first\nsecond");
+}
+
+#[test]
 fn idle_ctrl_c_exit_marks_resume_hint_as_emitted_when_thread_exists() {
     let mut state = AppState::new(true, false);
     state.thread_id = Some("thread-1".to_string());
