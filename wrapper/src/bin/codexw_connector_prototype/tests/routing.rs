@@ -1,5 +1,6 @@
 use super::super::routing::is_allowed_local_proxy_target;
 use super::super::routing::resolve_proxy_target;
+use super::super::routing::supports_client_lease_injection;
 
 #[derive(Clone, Copy)]
 struct AliasRouteCase {
@@ -322,6 +323,18 @@ fn allowlist_accepts_supported_http_routes() {
         assert!(
             is_allowed_local_proxy_target(method, path, false),
             "expected allowlist acceptance for {method} {path}"
+        );
+    }
+}
+
+#[test]
+fn supported_post_routes_remain_client_lease_injection_eligible() {
+    for (method, path) in ALLOWED_HTTP_ROUTES {
+        let expected = *method == "POST";
+        assert_eq!(
+            supports_client_lease_injection(method, path),
+            expected,
+            "unexpected client/lease injection eligibility for {method} {path}"
         );
     }
 }

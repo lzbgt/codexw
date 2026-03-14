@@ -5,17 +5,26 @@ use serde_json::json;
 
 use super::super::http::HttpRequest;
 use super::super::routing::ProxyTarget;
+use super::super::routing::supports_client_lease_injection;
 use super::super::upstream::ForwardRequestError;
 use super::super::upstream::prepare_upstream_body;
-use super::super::upstream::supports_client_lease_injection;
 
 #[test]
 fn client_lease_injection_support_is_limited_to_mutating_routes() {
-    assert!(supports_client_lease_injection("/api/v1/session/new"));
     assert!(supports_client_lease_injection(
+        "POST",
+        "/api/v1/session/new"
+    ));
+    assert!(supports_client_lease_injection(
+        "POST",
         "/api/v1/session/sess_1/services/bg-1/run"
     ));
     assert!(!supports_client_lease_injection(
+        "GET",
+        "/api/v1/session/new"
+    ));
+    assert!(!supports_client_lease_injection(
+        "GET",
         "/api/v1/session/sess_1/transcript"
     ));
 }

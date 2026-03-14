@@ -14,6 +14,7 @@ use super::Cli;
 use super::MAX_REQUEST_BYTES;
 use super::http::HttpRequest;
 use super::routing::ProxyTarget;
+use super::routing::supports_client_lease_injection;
 
 #[derive(Debug, Clone)]
 pub(super) struct UpstreamResponse {
@@ -103,8 +104,8 @@ pub(super) fn prepare_upstream_body(
         .map(|value| value.trim())
         .filter(|value| !value.is_empty());
 
-    let requires_object_body =
-        target.session_id_hint.is_some() || supports_client_lease_injection(&target.local_path);
+    let requires_object_body = target.session_id_hint.is_some()
+        || supports_client_lease_injection(&request.method, &target.local_path);
     if request.method != "POST" || !requires_object_body {
         return Ok((
             request.headers.get("content-type").cloned(),
@@ -178,38 +179,6 @@ pub(super) fn prepare_upstream_body(
             .context("serialize injected connector body")
             .map_err(ForwardRequestError::Transport)?,
     ))
-}
-
-pub(super) fn supports_client_lease_injection(local_path: &str) -> bool {
-    let trimmed = local_path.trim_matches('/');
-    let segments: Vec<&str> = if trimmed.is_empty() {
-        Vec::new()
-    } else {
-        trimmed.split('/').collect()
-    };
-    matches!(
-        segments.as_slice(),
-        ["api", "v1", "session", "new"]
-            | ["api", "v1", "session", "attach"]
-            | ["api", "v1", "session", "client_event"]
-            | ["api", "v1", "session", _, "attachment", "renew"]
-            | ["api", "v1", "session", _, "attachment", "release"]
-            | ["api", "v1", "session", _, "client_event"]
-            | ["api", "v1", "session", _, "turn", "start"]
-            | ["api", "v1", "session", _, "turn", "interrupt"]
-            | ["api", "v1", "session", _, "shells", "start"]
-            | ["api", "v1", "session", _, "shells", _, "poll"]
-            | ["api", "v1", "session", _, "shells", _, "send"]
-            | ["api", "v1", "session", _, "shells", _, "terminate"]
-            | ["api", "v1", "session", _, "services", "update"]
-            | ["api", "v1", "session", _, "services", _, "provide"]
-            | ["api", "v1", "session", _, "services", _, "depend"]
-            | ["api", "v1", "session", _, "services", _, "contract"]
-            | ["api", "v1", "session", _, "services", _, "relabel"]
-            | ["api", "v1", "session", _, "services", _, "attach"]
-            | ["api", "v1", "session", _, "services", _, "wait"]
-            | ["api", "v1", "session", _, "services", _, "run"]
-    )
 }
 
 pub(super) fn compose_local_path(base: &Url, local_path: &str) -> String {

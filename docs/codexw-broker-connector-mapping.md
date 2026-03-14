@@ -219,6 +219,10 @@ The initial connector adapter should ship with a small compatibility table:
 
 That table should be kept concrete and testable.
 
+The current connector now also keeps the mutating-route header projection policy
+and the connector allowlist on one shared local-route classifier, so new POST
+alias surfaces do not need to be added to two separate behavioral lists.
+
 The current repo now also includes a minimal consumer-side artifact for this
 mapping:
 
