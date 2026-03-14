@@ -2709,8 +2709,11 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
 
 #[test]
 fn broker_docs_preserve_fixture_diversity_claims() {
+    let readme = read_repo_file("README.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
+    let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
+    let broker_support_policy = read_repo_file("docs/codexw-broker-support-policy.md");
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
 
@@ -2774,6 +2777,36 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         &broker_status,
         "standalone Python and Node fixture workflows",
         "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains(
+        &broker_support_policy,
+        "standalone Python and Node broker fixtures",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains(
+        &broker_support_policy,
+        "documented `status.updated`, `supervision_notice`, or",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains(
+        &broker_promotion,
+        "Python and Node fixtures",
+        "docs/codexw-broker-promotion-recommendation.md",
+    );
+    assert_contains(
+        &broker_promotion,
+        "status.updated",
+        "docs/codexw-broker-promotion-recommendation.md",
+    );
+    assert_contains(
+        &checklist,
+        "enriched `status.updated` replay",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &readme,
+        "Those standalone Python and Node fixtures now also prove enriched",
+        "README.md",
     );
 
     assert_contains(

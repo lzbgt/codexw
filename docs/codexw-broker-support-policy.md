@@ -101,6 +101,9 @@ can depend on them:
     `async_tool_workers`
   - backlog-level `recommended_action`, `recovery_policy`, and
     `recovery_options` on `async_tool_backpressure`
+  - the same enriched supervision/backlog semantics exercised through the
+    standalone Python and Node broker fixtures, not only through lower-level
+    smoke workflows
 - explicit rejection of unsupported broker/client surfaces
 
 The current supported experimental adapter should therefore be read as
@@ -187,6 +190,9 @@ If a batch changes supported adapter behavior, it should update:
 - connector smoke coverage where relevant
 - broker-client fixture coverage when the behavior affects an external
   consumer shape
+- standalone Python and Node fixture replay coverage whenever the shape of
+  documented `status.updated`, `supervision_notice`, or
+  `async_tool_backpressure` semantics changes
 - the short broker integration handoff too when the behavior changes what an
   external client can rely on in `status.updated`
 - the artifact-contract sketch/implementation docs too when the behavior

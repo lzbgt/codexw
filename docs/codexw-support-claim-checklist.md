@@ -132,6 +132,10 @@ Confirm all of the following:
   - standalone broker-style client fixtures in Python and Node
   - `scripts/codexw_broker_client.py`
   - `scripts/codexw_broker_client_node.mjs`
+- if the documented broker supervision contract changes, the standalone Python
+  and Node fixtures should still prove enriched `status.updated` replay for
+  `supervision_notice` and `async_tool_backpressure`, not just generic event
+  streaming
 - the automated doc guard in
   [../wrapper/tests/doc_consistency.rs](../wrapper/tests/doc_consistency.rs)
   still passes for the broker status/policy/proof set

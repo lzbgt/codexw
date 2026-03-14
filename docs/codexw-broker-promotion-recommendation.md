@@ -85,6 +85,12 @@ The proof matrix now marks all major contract areas as `strong proof`, including
 - client policy contract
 - unsupported boundary
 
+That proof is also now exercised through the actual standalone broker client
+artifacts, not only lower-level smoke helpers: the Python and Node fixtures
+both replay enriched `status.updated` payloads with `supervision_notice`,
+`async_tool_backpressure`, backlog `recommended_action` /
+`recovery_policy` / `recovery_options`, and oldest-worker identity.
+
 ### 3. The Remaining Gaps Are Optional Hardening, Not Missing Contract Basics
 
 The remaining gaps still mentioned in the repo are things like:

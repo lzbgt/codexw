@@ -76,6 +76,10 @@ workspace, see
 [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
+Those standalone Python and Node fixtures now also prove enriched
+`status.updated` replay for wrapper-owned async shell supervision, including
+sticky `supervision_notice` facts and `async_tool_backpressure` backlog
+`recommended_action` / `recovery_policy` / `recovery_options` semantics.
 For a concise implementation/proof snapshot of the broker/local-API adapter,
 see [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md).
 For the current broker client/lease policy contract and explicit unsupported
