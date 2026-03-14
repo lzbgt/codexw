@@ -94,6 +94,12 @@ when the actual state is:
 
 When broker-facing wording changes, review:
 
+- [codexw-broker-client-architecture.md](codexw-broker-client-architecture.md)
+- [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
+- [codexw-broker-connector-decision.md](codexw-broker-connector-decision.md)
+- [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md)
+- [codexw-broker-session-identity.md](codexw-broker-session-identity.md)
+- [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
@@ -110,6 +116,10 @@ Confirm all of the following:
 
 - the support level still says `supported experimental adapter` if that remains
   true
+- broker-backed app/WebUI clients still read as part of the intended
+  architecture, not as a hypothetical future
+- broker-visible host shell examination still reads as a first-class supported
+  workflow for the current shell/service/transcript/event surface
 - no doc regresses to "prototype only" wording for the documented supported
   broker surface
 - current-state broker docs do not regress to stale wording like
@@ -133,6 +143,9 @@ Confirm all of the following:
 - host-examination docs still distinguish:
   - already-supported shell/service/transcript/event remote inspection
   - design-only artifact contract work
+- the older broker decision / compatibility / session-identity / client-policy
+  docs still describe the same client surface as the status / support / proof
+  docs instead of lagging behind with narrower historical wording
 
 If the broker contract changes, also confirm:
 
@@ -140,6 +153,9 @@ If the broker contract changes, also confirm:
 - local API docs and connector docs describe the same broker-facing behavior
 - fixture docs still match the currently verified reference clients in Python
   and Node
+- fixture docs still describe shell-first host examination as current reality
+  and artifact browsing as a separate design-only lane until explicit artifact
+  routes exist
 
 ## Native Checklist
 

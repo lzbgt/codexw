@@ -51,6 +51,15 @@ For the workflow-level read on that host-examination question, including the
 remaining artifact-contract gap, see
 [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
 
+What the fixture does **not** currently prove is a dedicated artifact index/detail/content route family,
+because that route family does not exist yet.
+The current fixture surface proves shell-first host examination through
+session, transcript, event, shell, and service routes, while the richer
+artifact browser track remains separately documented in:
+
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+- [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
+
 ## Why It Exists
 
 Before this fixture, the repo already had:
@@ -146,6 +155,9 @@ fixture against the real connector binary for:
   - observer `Last-Event-ID` resume after the handoff
 
 So the fixture is not just a documentation example.
+It is also intentionally not a hidden artifact API placeholder: if a later
+batch adds artifact routes, the fixture doc and the process-level fixture proof
+should be updated explicitly in the same batch.
 
 ## Invocation Shape
 
@@ -159,6 +171,10 @@ Each fixture uses:
 Those common flags apply to all subcommands. Both clients project `client_id`
 and `lease_seconds` through the connector’s header-based client policy layer,
 which is the same path expected by remote connector clients.
+
+That means the fixture is already representative of broker-backed app/WebUI or
+automation clients for the currently supported shell-first host examination
+surface, even though it is not yet a dedicated artifact-browser client.
 
 ## Example Workflows
 

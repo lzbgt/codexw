@@ -29,6 +29,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let broker_artifact_plan = read_repo_file("docs/codexw-broker-artifact-implementation-plan.md");
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
     let broker_client_arch = read_repo_file("docs/codexw-broker-client-architecture.md");
+    let broker_client_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
 
     for file in [
@@ -50,6 +51,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-support-policy.md",
         "docs/codexw-native-hardening-catalog.md",
         "docs/codexw-broker-client-architecture.md",
+        "docs/codexw-broker-client-fixture.md",
         "docs/codexw-broker-host-examination-matrix.md",
         "docs/codexw-broker-artifact-contract-sketch.md",
         "docs/codexw-broker-artifact-implementation-plan.md",
@@ -380,6 +382,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-host-examination-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_client_fixture,
+        "shell-first host examination",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_fixture,
+        "artifact index/detail/content route family",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_client_fixture,
+        "codexw-broker-artifact-implementation-plan.md",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains_case_insensitive(
         &broker_artifact_sketch,
         "artifact index",
         "docs/codexw-broker-artifact-contract-sketch.md",
@@ -447,6 +464,36 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &checklist,
+        "codexw-broker-client-architecture.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-broker-compatibility-target.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-broker-connector-decision.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-broker-connector-mapping.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-broker-session-identity.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-broker-client-policy.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
         "codexw-broker-artifact-contract-sketch.md",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -478,6 +525,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &checklist,
         "codexw-native-hardening-catalog.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "broker-backed app/webui clients",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "fixture docs still describe shell-first host examination",
         "docs/codexw-support-claim-checklist.md",
     );
 }
