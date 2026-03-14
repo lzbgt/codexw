@@ -630,11 +630,21 @@ The biggest known limits are architectural, not accidental.
 - No known user-facing command remains in a generic placeholder state; the remaining limitations are backend-surface or UX-parity issues rather than missing command handlers.
 - Rendering is richer than plain logs, but it is still terminal-scrollback based rather than a full alternate-screen widget tree.
 
-## Future Investigation: Brokered Remote Connectivity
+## Brokered Client Architecture
 
-One high-leverage future direction is to let `codexw` behave less like a purely local terminal wrapper and more like a remotely reachable Codex runtime behind a broker, so other clients such as a mobile app, web UI, or remote terminal can attach through a cloud relay.
+One high-leverage architecture requirement is to let `codexw` behave less like a
+purely local terminal wrapper and more like a remotely reachable Codex runtime
+behind a broker, so other clients such as an app, WebUI, or remote terminal can
+attach through a cloud relay.
 
-This is not a speculative idea in the abstract. The sibling `~/work/agent` project already documents a concrete daemon-first, multi-client architecture with outbound broker connectivity, proxyable HTTP/SSE control paths, and explicit client/session/event contracts.
+This is not a speculative idea in the abstract. The sibling `~/work/agent`
+project already documents a concrete daemon-first, multi-client architecture
+with outbound broker connectivity, proxyable HTTP/SSE control paths, explicit
+client/session/event contracts, and broker-mediated host tooling.
+
+For the top-level requirement behind that direction, including broker-exposed
+host shell and artifact examination, see
+[docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md).
 
 The dedicated design notes now live in [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md), including:
 
@@ -644,7 +654,10 @@ The dedicated design notes now live in [docs/codexw-broker-connectivity.md](docs
 - a concrete local API sketch, route matrix, and event-sourcing plan
 - a phased local API implementation plan and connector adapter plan
 
-This should be treated as a real future-work item and re-evaluated after the current architectural parity gaps are smaller. It is likely higher leverage than continuing endless small refactors once the local wrapper structure is sufficiently healthy.
+The current architecture direction is local API plus connector first, not
+direct broker embedding inside the main wrapper process. That keeps the terminal
+runtime, remote auth/routing concerns, and broker-mediated host shell exposure
+on a cleaner boundary while still satisfying the app/WebUI client requirement.
 
 ## File Map
 

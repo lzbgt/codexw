@@ -17,6 +17,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
+    let broker_client_arch = read_repo_file("docs/codexw-broker-client-architecture.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
 
     for file in [
@@ -32,6 +33,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-proof-matrix.md",
         "docs/codexw-native-support-policy.md",
         "docs/codexw-native-hardening-catalog.md",
+        "docs/codexw-broker-client-architecture.md",
         "docs/codexw-workspace-tool-policy.md",
         "docs/codexw-support-claim-checklist.md",
     ] {
@@ -48,6 +50,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(&readme, "docs/codexw-broker-client-policy.md", "README.md");
     assert_contains(&readme, "docs/codexw-broker-out-of-scope.md", "README.md");
     assert_contains(&readme, "docs/codexw-broker-proof-matrix.md", "README.md");
+    assert_contains(
+        &readme,
+        "docs/codexw-broker-client-architecture.md",
+        "README.md",
+    );
     assert_contains(
         &readme,
         "docs/codexw-broker-hardening-catalog.md",
@@ -77,6 +84,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(&todos, "docs/codexw-broker-client-policy.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-broker-out-of-scope.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-broker-proof-matrix.md", "TODOS.md");
+    assert_contains(
+        &todos,
+        "docs/codexw-broker-client-architecture.md",
+        "TODOS.md",
+    );
     assert_contains(
         &todos,
         "docs/codexw-broker-hardening-catalog.md",
@@ -182,6 +194,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &native_hardening,
         "not currently a blocker",
         "docs/codexw-native-hardening-catalog.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_arch,
+        "app/webui",
+        "docs/codexw-broker-client-architecture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_arch,
+        "host shell",
+        "docs/codexw-broker-client-architecture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_arch,
+        "workspace dynamic tools",
+        "docs/codexw-broker-client-architecture.md",
     );
     assert_contains_case_insensitive(
         &workspace_policy,

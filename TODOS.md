@@ -17,6 +17,7 @@ Primary source docs:
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
 - [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
+- [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md)
 - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
 - [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
@@ -29,7 +30,38 @@ Primary source docs:
 
 ## Highest-Leverage Active Work
 
-### 1. Broker Adapter Support Follow-Through
+### 1. Brokered Client + Host Surface Alignment
+
+Status:
+- the sibling `~/work/agent` workspace already assumes broker-backed app/WebUI
+  clients and broker-mediated host tooling
+- `codexw` now has a verified broker/local-API adapter, but some top-level docs
+  had still described brokered clients as future investigation rather than a
+  required architecture direction
+
+Concrete tasks:
+- keep broker-exposed app/WebUI attachment as an explicit design requirement in:
+  - README
+  - design docs
+  - broker docs
+  - repo backlog
+- keep broker-facing host shell examination explicit as a first-class part of
+  the client surface, not as an accidental side effect of low-level routes
+- keep the current shell-first host-examination posture explicit:
+  - brokered host examination should use shell/service control, transcript, and
+    artifact references
+  - do not reintroduce removed workspace dynamic tools as the preferred remote
+    inspection model
+- make any remaining artifact-surface gaps explicit whenever broker/client docs
+  claim that remote clients can examine host results
+
+Primary source:
+- [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
+- [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md)
+- [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
+- [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
+
+### 2. Broker Adapter Support Follow-Through
 
 Status:
 - the broker-facing adapter contract is now explicitly documented
@@ -49,13 +81,21 @@ Concrete tasks:
   - broker status docs
   - promotion docs
   - proof docs
+- keep README, status docs, and future release notes aligned with the current
+  support-level claim
+- avoid reintroducing stale wording that describes the adapter as “only a
+  prototype” where the current docs now recommend supported experimental status
+- if a newly discovered contradiction appears in the proof matrix, update:
+  - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
+  - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
+  - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
 
 Why this is still active:
 - the broker stack is no longer blocked on missing contract definition
 - the active work is now preserving a coherent supported experimental adapter surface,
   not proving that the contract exists at all
 
-### 2. Native Product Gaps Outside The Broker Track
+### 3. Native Product Gaps Outside The Broker Track
 
 Status:
 - command-level and protocol-level wrapper work is largely complete
@@ -85,20 +125,6 @@ Primary source:
 - [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
 - [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
-
-### 3. Promotion Follow-Through
-
-Status:
-- the docs now recommend promotion to a supported experimental adapter
-- the repo still needs to keep that recommendation coherent everywhere
-
-Concrete tasks:
-- keep README, status docs, and future release notes aligned with the current support-level claim
-- avoid reintroducing stale wording that describes the adapter as “only a prototype” where the current docs now recommend supported experimental status
-- if a newly discovered contradiction appears in the proof matrix, update:
-  - [docs/codexw-broker-proof-matrix.md](docs/codexw-broker-proof-matrix.md)
-  - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
-  - [docs/codexw-broker-promotion-recommendation.md](docs/codexw-broker-promotion-recommendation.md)
 
 ## Secondary Work
 

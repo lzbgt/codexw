@@ -33,6 +33,21 @@ Its goal is simple:
 
 This is no longer just a design exploration.
 
+## Current Architectural Posture
+
+The adapter should now be read against the broader broker-client requirement in
+[codexw-broker-client-architecture.md](codexw-broker-client-architecture.md):
+
+- broker-backed clients such as app/WebUI are part of the intended architecture
+- host shell examination is part of that broker-facing client surface
+- the verified shell/service/orchestration/transcript routes are therefore not
+  incidental plumbing; they are the current remote host-inspection foundation
+
+What is still incomplete is not whether broker-facing clients can touch host
+state at all. The remaining gap is whether the current broker-visible shell,
+transcript, and result surfaces are sufficient for rich client UX without
+direct terminal access, especially for artifact-heavy inspection workflows.
+
 ## Implemented Local API Surface
 
 The current local API includes:

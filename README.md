@@ -23,6 +23,11 @@ For optional native-side hardening work that is useful but not a current
 support blocker, see
 [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md).
 For the remote-access track specifically, see [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md): `codexw` now has an initial disabled-by-default loopback local API with health/session inspection, turn start/interrupt control, structured orchestration/shell/service/capability query routes, and a semantic SSE session event stream intended to become the broker-facing foundation.
+For the source-of-truth architecture requirement behind that track, see
+[docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md):
+`codexw` should support broker-exposed app/WebUI clients and should expose host
+shell examination through the broker-facing surface so those clients can inspect
+the host and resulting artifacts without direct terminal access.
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
 For a concise implementation/proof snapshot of the broker/local-API adapter,

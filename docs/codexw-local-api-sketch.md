@@ -24,6 +24,8 @@ rather than to duplicate the full implemented route inventory.
 - expose machine-readable state instead of terminal layout
 - support local WebUI/mobile/remote-terminal attachment through one canonical
   control API
+- support broker-exposed app/WebUI clients that need to inspect host shell
+  activity and resulting artifacts without direct terminal access
 - remain simple enough to implement before any broker transport work
 
 ## Transport Assumption
@@ -72,6 +74,9 @@ Derived runtime state summarizing:
 ### Background Shell
 
 A wrapper-owned long-lived shell job.
+
+This is part of the intended broker-visible host examination surface, not just a
+local operator convenience.
 
 ### Service Capability
 

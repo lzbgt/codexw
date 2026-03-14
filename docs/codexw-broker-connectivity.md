@@ -2,16 +2,23 @@
 
 ## Objective
 
-Define how `codexw` could evolve from a local terminal wrapper into a remotely reachable Codex runtime that can be driven through a broker by multiple client types such as:
+Define how `codexw` should evolve from a local terminal wrapper into a remotely reachable Codex runtime that can be driven through a broker by multiple client types such as:
 
 - a mobile app
 - a browser UI
 - a remote terminal
 - other automation clients
 
-This document started as an investigation and design-planning artifact.
-It now serves as the high-level broker/local-API overview and index into the
-more specific design, implementation, proof, and support-policy documents.
+That broker-facing client surface should also expose host shell examination and
+host-result/artifact inspection strongly enough that those clients do not need
+direct terminal access for normal engineering workflows.
+
+This document started as an investigation and design-planning artifact. It now
+serves as the high-level broker/local-API overview and index into the more
+specific design, implementation, proof, and support-policy documents.
+
+For the architecture requirement that now drives this design set, see
+[codexw-broker-client-architecture.md](codexw-broker-client-architecture.md).
 
 ## Why This Matters
 
@@ -24,6 +31,11 @@ more specific design, implementation, proof, and support-policy documents.
 - clear turn/session lifecycle boundaries
 
 That means the remaining work is not inventing all remote concepts from scratch. The higher-value problem is deciding which existing local concepts should become stable remote APIs.
+
+It also means the host shell side of `codexw` is already architecturally
+relevant to the broker track. Remote clients are not just steering prompts; they
+also need to inspect the host and the resulting outputs through broker-visible
+shell/service/transcript surfaces.
 
 ## Reference Baseline From `~/work/agent`
 
@@ -130,7 +142,9 @@ The current highest-leverage path is:
 
 1. define a local `codexw` HTTP/SSE API first
 2. model it against the `~/work/agent` broker/client contract
-3. keep direct broker connectivity as a second-phase decision
+3. use that API plus a connector to expose app/WebUI clients and broker-visible
+   host shell flows
+4. keep direct broker connectivity as a second-phase decision
 
 That keeps the first implementation aligned with the existing wrapper architecture and still preserves a path to broker compatibility.
 
@@ -152,6 +166,7 @@ documents:
 - [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
 - [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
+- [codexw-broker-client-architecture.md](codexw-broker-client-architecture.md)
 - [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
