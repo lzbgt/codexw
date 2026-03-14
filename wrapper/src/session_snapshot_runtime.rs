@@ -228,6 +228,21 @@ pub(crate) fn render_status_runtime(cli: &Cli, state: &AppState) -> Vec<String> 
                 "monitoring"
             }
         ));
+        for option in crate::supervision_recovery::async_backpressure_recovery_options(
+            state,
+            None,
+            &status_cwd,
+        ) {
+            let command = option
+                .terminal_command
+                .or(option.cli_command)
+                .unwrap_or_else(|| option.label.to_string());
+            lines.push(format!(
+                "async guard opt {} {}",
+                option.kind,
+                summarize_text(&command)
+            ));
+        }
     }
     if let Some(notice) = state
         .active_supervision_notice

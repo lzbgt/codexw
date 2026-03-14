@@ -164,6 +164,7 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
         ));
     }
     let (request_id, abandoned) = state.oldest_abandoned_async_tool_entry()?;
+    let prompt_cwd = prompt_render_cwd();
     let detail = if state.async_tool_backpressure_active() {
         format!(
             "async backlog saturated {}: {}",
@@ -226,10 +227,25 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             observation.output_state.prompt_label()
         ),
     };
+    let recovery_options =
+        crate::supervision_recovery::async_backpressure_recovery_options(state, None, &prompt_cwd)
+            .into_iter()
+            .map(|option| match option.kind {
+                "observe_status" => ":status",
+                "interrupt_turn" => ":interrupt",
+                "exit_and_resume" => "resume",
+                _ => option.kind,
+            })
+            .collect::<Vec<_>>();
+    let recovery_detail = if recovery_options.is_empty() {
+        String::new()
+    } else {
+        format!("; opts {}", recovery_options.join("/"))
+    };
     Some((
         abandoned.timed_out_at,
         format!(
-            "{detail}{request_detail}{worker_detail}{source_detail}{target_detail}{observation_detail}"
+            "{detail}{request_detail}{worker_detail}{source_detail}{target_detail}{observation_detail}{recovery_detail}"
         ),
     ))
 }

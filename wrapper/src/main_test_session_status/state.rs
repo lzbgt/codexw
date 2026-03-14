@@ -669,6 +669,8 @@ fn status_snapshot_includes_abandoned_async_backpressure() {
     assert!(rendered.contains("async worker jb bg-1 running"));
     assert!(rendered.contains("async worker ot READY"));
     assert!(rendered.contains("async guard     monitoring"));
+    assert!(rendered.contains("async guard opt observe_status :status"));
+    assert!(rendered.contains("async guard opt interrupt_turn :interrupt"));
 }
 
 #[test]

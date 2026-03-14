@@ -103,6 +103,9 @@ The implemented native-side product already has:
   facts instead of only a timed-out summary string through
   `oldest_request_id`, `oldest_thread_name`, `oldest_observation_state`,
   `oldest_output_state`, and `oldest_observed_background_shell_job`
+- backlog-only prompt/status guidance for abandoned async work, so once active
+  supervision has timed out the operator still sees compact next steps such as
+  `:status`, `:interrupt`, and `resume`
 - deterministic oldest-worker selection for those backlog surfaces, so
   `oldest_*` fields refer to the oldest original async request rather than
   unstable timeout-drain order

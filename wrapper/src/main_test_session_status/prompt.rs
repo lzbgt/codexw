@@ -384,6 +384,7 @@ fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() 
     assert!(rendered.contains("job bg-1 running"));
     assert!(rendered.contains("cmd echo READY; sleep 20"));
     assert!(rendered.contains("READY"));
+    assert!(rendered.contains("opts :status/:interrupt"));
 }
 
 #[test]
@@ -411,6 +412,7 @@ fn prompt_status_mentions_saturated_async_backlog() {
     assert!(rendered.contains("async backlog saturated"));
     assert!(rendered.contains("req 1"));
     assert!(rendered.contains("worker codexw-async-tool-worker-1"));
+    assert!(rendered.contains("opts :status/:interrupt"));
 }
 
 #[test]

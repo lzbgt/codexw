@@ -133,6 +133,9 @@ or relay without inventing their own heuristics:
   options such as `:status`, `:interrupt`, and `resume` when a supervision
   class is active, instead of only an abstract hint like “observe or
   interrupt”
+- when active work has already timed out into the abandoned backlog, prompt
+  and `:status` surfaces should still keep compact next-step guidance visible
+  for that backlog state instead of dropping back to a pure stale-summary view
 - those live inspection notices should also expose the observation state,
   output state, source call id when present, and the orchestrator's next check
   horizon so the operator can see what will be re-evaluated next without

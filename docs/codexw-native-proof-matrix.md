@@ -178,7 +178,8 @@ The statuses are:
     `operator_interrupt_or_exit_resume`, plus explicit recovery options such as
     `observe_status`, `interrupt_turn`, and `exit_and_resume`, with those same
     options now enumerated in `:status`, raised stderr notice output, and
-    compact prompt-line status output, plus a
+    compact prompt-line status output, including backlog-only prompt/status
+    guidance after timeout into the abandoned async lane, plus a
     runtime-enforced local failure path when an async shell-tool request
     exceeds its bounded runtime limit, plus dedicated wrapper worker threads,
     abandoned async backlog visibility through `async_tool_backpressure`, and

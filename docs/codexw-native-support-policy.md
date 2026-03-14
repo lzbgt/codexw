@@ -68,6 +68,9 @@ drift casually:
 - compact prompt-line supervision options for those same next steps, so the
   active spinner itself can point at `:status`, `:interrupt`, or `resume`
   without waiting for a separate status command
+- compact backlog-only prompt/status guidance for abandoned async work, so the
+  operator still sees those same next steps after the active worker has timed
+  out into `async_tool_backpressure`
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
   supported behavior does not include waiting forever for a wedged tool worker
 - dedicated wrapper worker threads for background-shell dynamic tools
