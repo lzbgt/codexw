@@ -68,6 +68,58 @@ fn current_state_docs_do_not_reintroduce_remaining_connector_wording_drifts() {
             "docs/codexw-native-gap-assessment.md",
             "broker-style connector prototype",
         ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "move this work from prototype to supported adapter",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "## Prototype Scope",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "same prototype if cheap",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "Recommended prototype:",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "The prototype is successful if:",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "## Prototype Test Matrix",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "The prototype should produce:",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "## Decision After Prototype",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "After the prototype,",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "prototype results",
+        ),
+        (
+            "docs/codexw-broker-connector-adapter-plan.md",
+            "proving the prototype",
+        ),
+        (
+            "docs/codexw-broker-connectivity.md",
+            "promote the stack beyond prototype framing",
+        ),
+        (
+            "docs/codexw-broker-out-of-scope.md",
+            "reasonable to prototype now",
+        ),
     ];
 
     for (relative, stale_phrase) in cases {

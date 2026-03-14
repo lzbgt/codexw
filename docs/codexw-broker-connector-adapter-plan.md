@@ -4,7 +4,8 @@ This document turns the connector mapping design into a concrete adapter plan.
 
 For the concise implementation/proof snapshot, see
 [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md).
-For the criteria that would move this work from prototype to supported adapter,
+For the criteria that would move this work from adapter validation to supported
+adapter,
 see [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md).
 
 The goal is not full production broker support. The goal is to validate that a
@@ -92,7 +93,7 @@ This adapter depends on the local API being complete enough to provide:
 - orchestration status/workers/dependencies
 - shell/service/capability inspection
 
-## Prototype Scope
+## Adapter Validation Scope
 
 ### In Scope
 
@@ -128,7 +129,7 @@ The first useful connector should support:
 - orchestration workers
 - orchestration dependencies
 
-Nice-to-have in the same prototype if cheap:
+Nice-to-have in the same validation slice if cheap:
 
 - shell list/poll/send/terminate
 - services list
@@ -152,7 +153,7 @@ Nice-to-have:
 
 ## Candidate Runtime Shape
 
-Recommended prototype:
+Recommended adapter-validation shape:
 
 - standalone connector process
 - configured with:
@@ -185,7 +186,7 @@ The connector should not be responsible for:
 
 ## Success Criteria
 
-The prototype is successful if:
+The adapter validation is successful if:
 
 1. a remote browser or terminal can create and attach to a `codexw` session
 2. a remote client can start a turn and observe resulting events
@@ -204,7 +205,7 @@ The connector plan should be reconsidered if any of these happen:
 - event translation becomes lossy enough that remote clients need daemon-native
   broker semantics instead
 
-## Prototype Test Matrix
+## Adapter Validation Test Matrix
 
 Minimum scenarios:
 
@@ -294,7 +295,7 @@ Current automated coverage now includes a real process-level smoke path:
 
 ## Deliverables
 
-The prototype should produce:
+This validation should produce:
 
 - a small route mapping table with actual working paths
 - one event passthrough example log
@@ -356,18 +357,18 @@ Current explicit limitations:
 - no remote lease policy beyond header-to-local-API projection and what the local API already enforces
 - no persistence or reconnect bookkeeping outside SSE `Last-Event-ID` passthrough
 
-## Decision After Prototype
+## Decision After Adapter Validation
 
-After the prototype, the project should decide one of:
+After this validation, the project should decide one of:
 
 1. connector path is viable, continue
 2. connector path is too lossy, revise the local API
 3. connector path is too awkward, reconsider direct broker integration
 
-That decision should be based on the prototype results, not on assumptions made
+That decision should be based on the validation results, not on assumptions made
 before the local API exists.
 
 The concrete promotion criteria for that decision now live in
 [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md), so
-this plan stays focused on building and proving the prototype rather than
+this plan stays focused on validating and proving the adapter rather than
 repeating the adapter contract here.

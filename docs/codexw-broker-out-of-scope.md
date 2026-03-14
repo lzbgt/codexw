@@ -17,7 +17,7 @@ This document uses three scope labels.
 ### In Scope
 
 - part of the intended remote-control story for `codexw`
-- reasonable to prototype now
+- reasonable to support within the current adapter scope
 
 ### Deferred
 

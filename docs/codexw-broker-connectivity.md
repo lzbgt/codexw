@@ -162,7 +162,7 @@ For the concise implementation/proof snapshot, see
 [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md).
 
 For the current recommendation on whether that proof is already sufficient to
-promote the stack beyond prototype framing, see
+promote the stack to a supported experimental adapter, see
 [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).
 For the operational meaning of that recommended support level, see
 [codexw-broker-support-policy.md](codexw-broker-support-policy.md).
