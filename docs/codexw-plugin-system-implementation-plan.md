@@ -20,6 +20,10 @@ Deliver the smallest useful plugin slice that lets `codexw`:
 - prefer plugin update over full core replacement when appropriate
 - roll plugins back cleanly when they fail
 
+This plan is about local/runtime capability delivery, not a broker artifact
+API. Plugin payload management should not be described as if it proves
+broker-visible artifact index/detail/content support.
+
 ## First Deliverables
 
 The first implementation slice should include:
@@ -95,6 +99,7 @@ The first slice should defer:
 
 - cross-host plugin distribution
 - broker-coordinated plugin install/update
+- any broker-visible artifact index/detail/content route family
 - arbitrary third-party marketplace semantics
 - unrestricted in-process code loading
 - plugin hot-patching of the core binary

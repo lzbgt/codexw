@@ -13,6 +13,10 @@ This document records a fundamental requirement for `codexw` growth:
 This keeps self-evolution manageable. `codexw` should not need a full binary
 replacement every time it discovers a useful extension.
 
+This plugin lane is also separate from the broker artifact track. Plugin
+installation and lifecycle are local/runtime capability management, not proof
+that a broker-visible artifact index/detail/content API exists.
+
 ## Problem Statement
 
 During normal project work, a running `codexw` instance may identify that it
@@ -158,3 +162,7 @@ The first plugin system should not promise:
 
 The plugin lane must remain useful even for a standalone local `codexw`
 instance with no broker involved.
+
+That boundary should stay explicit in docs and status claims: the current
+supported experimental adapter still stops at the shell-first host-examination
+surface, while plugin delivery is a separate local/runtime lane.

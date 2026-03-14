@@ -34,6 +34,11 @@ Self-supervision should be:
 Broker participation may matter later, but the first supervision lane must work
 for a standalone local instance.
 
+That boundary should stay explicit too: self-supervision, self-evolution, and
+plugin recovery hooks build on the existing shell-first host-examination
+surface and local runtime semantics. They do not imply that a broker-visible
+artifact index/detail/content API is already part of the supported adapter.
+
 The ownership boundary for the supervised background-execution lanes is tracked
 separately in
 [codexw-background-execution-boundary.md](codexw-background-execution-boundary.md).

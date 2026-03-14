@@ -19,6 +19,10 @@ Deliver the smallest supervision slice that ensures:
 - stalled states are visible and classified
 - recovery can escalate from warning to interrupt to self-heal
 
+This plan is still local-runtime-first and shell-first in scope. It should not
+be described as if supervision or recovery hooks prove a broker-visible
+artifact index/detail/content surface.
+
 ## First Deliverables
 
 The first implementation slice should include:

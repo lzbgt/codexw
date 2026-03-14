@@ -16,6 +16,12 @@ assumptions, or same-host process discovery.
 
 This is a design note, not an implementation claim.
 
+It also stays inside the current supported experimental adapter boundary. The
+already-supported broker-facing surface is the shell-first host-examination
+lane; cross-project dependency metadata can build on that surface without
+implying that broker-visible artifact index/detail/content routes already
+exist.
+
 It sits between:
 
 - [codexw-cross-deployment-collaboration.md](codexw-cross-deployment-collaboration.md)
@@ -175,6 +181,8 @@ The first design should not claim:
 - cross-host shared workspaces
 - automatic source tree synchronization
 - transparent artifact replication across deployments
+- broker-visible artifact index/detail/content routes as part of the current
+  supported adapter
 - globally optimal scheduling of dependent projects
 - direct `codexw` to `codexw` transport that bypasses the broker
 
@@ -204,7 +212,8 @@ The first cross-project dependency collaboration slice is well-defined when:
 4. deployment-local runtime truth remains local while the broker carries the
    linking metadata
 5. docs and client handoff notes say explicitly that broker mediation is
-   required for cross-host collaboration
+   required for cross-host collaboration, while the supported experimental
+   adapter still stops at the shell-first host-examination surface
 
 ## Relationship To Artifact Track
 

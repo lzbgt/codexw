@@ -1705,6 +1705,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision,
+        "shell-first host-examination",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "artifact index/detail/content api",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
         "background-shell dynamic tools must not execute in a way that freezes the input loop indefinitely",
         "docs/codexw-self-supervision.md",
     );
@@ -1931,6 +1941,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision_plan,
         "background-shell dynamic tools",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "shell-first",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "artifact index/detail/content surface",
         "docs/codexw-self-supervision-implementation-plan.md",
     );
     assert_contains_case_insensitive(
@@ -2214,6 +2234,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-plugin-system.md",
     );
     assert_contains_case_insensitive(
+        &plugin_system,
+        "broker artifact track",
+        "docs/codexw-plugin-system.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system,
+        "supported experimental adapter",
+        "docs/codexw-plugin-system.md",
+    );
+    assert_contains_case_insensitive(
         &plugin_system_plan,
         "trusted-source checks",
         "docs/codexw-plugin-system-implementation-plan.md",
@@ -2221,6 +2251,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &plugin_system_plan,
         "plugin install/update over full core replacement",
+        "docs/codexw-plugin-system-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system_plan,
+        "local/runtime capability delivery",
+        "docs/codexw-plugin-system-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system_plan,
+        "artifact index/detail/content",
         "docs/codexw-plugin-system-implementation-plan.md",
     );
     assert_contains_case_insensitive(
@@ -2451,6 +2491,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &cross_project_dependency,
         "already-supported shell/service/transcript/event host-examination surface",
+        "docs/codexw-cross-project-dependency-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_dependency,
+        "supported experimental adapter boundary",
+        "docs/codexw-cross-project-dependency-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_dependency,
+        "artifact index/detail/content routes",
         "docs/codexw-cross-project-dependency-collaboration.md",
     );
     assert_contains_case_insensitive(
