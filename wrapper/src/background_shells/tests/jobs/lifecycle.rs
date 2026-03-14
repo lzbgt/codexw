@@ -51,6 +51,55 @@ fn background_shell_job_accepts_stdin_and_emits_output() {
 }
 
 #[test]
+fn background_shell_job_nonzero_exit_is_reported_as_failed() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(&json!({"command": "printf 'boom\\n'; exit 2"}), "/tmp")
+        .expect("start failing background shell");
+
+    let mut rendered = String::new();
+    for _ in 0..20 {
+        rendered = manager
+            .poll_from_tool(&json!({"jobId": "bg-1"}))
+            .expect("poll failed background shell");
+        if rendered.contains("Status: failed") && rendered.contains("Exit code: 2") {
+            break;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+
+    assert!(rendered.contains("Status: failed"));
+    assert!(rendered.contains("Exit code: 2"));
+    assert!(rendered.contains("Terminal state: failed with exit code 2."));
+    assert!(!rendered.contains("Status: terminated"));
+}
+
+#[test]
+fn background_shell_poll_rejects_exhausted_cursor_on_terminal_job() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(&json!({"command": "printf 'alpha\\n'; exit 2"}), "/tmp")
+        .expect("start failing background shell");
+
+    let mut rendered = String::new();
+    for _ in 0..20 {
+        rendered = manager
+            .poll_from_tool(&json!({"jobId": "bg-1"}))
+            .expect("poll terminal background shell");
+        if rendered.contains("alpha") && rendered.contains("Next afterLine: 1") {
+            break;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+
+    let err = manager
+        .poll_from_tool(&json!({"jobId": "bg-1", "afterLine": 1}))
+        .expect_err("exhausted terminal poll should fail");
+    assert!(err.contains("terminal state (failed with exit code 2)"));
+    assert!(err.contains("Stop polling this job"));
+}
+
+#[test]
 fn background_shell_list_reports_running_jobs() {
     let manager = BackgroundShellManager::default();
     manager

@@ -91,7 +91,8 @@ fn summarize_line(line: &str) -> String {
 pub(crate) fn status_label(status: &BackgroundShellJobStatus) -> &str {
     match status {
         BackgroundShellJobStatus::Running => "running",
-        BackgroundShellJobStatus::Completed(_) => "completed",
+        BackgroundShellJobStatus::Completed(code) if *code == 0 => "completed",
+        BackgroundShellJobStatus::Completed(_) => "failed",
         BackgroundShellJobStatus::Failed(_) => "failed",
         BackgroundShellJobStatus::Terminated(_) => "terminated",
     }

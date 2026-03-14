@@ -36,6 +36,14 @@ impl BackgroundShellManager {
             .take(limit)
             .cloned()
             .collect::<Vec<_>>();
+        if let Some(summary) = terminal_status_summary(&state.status) {
+            if after_line > 0 && matching.is_empty() && after_line >= state.total_lines {
+                return Err(format!(
+                    "background shell job `{}` is already in terminal state ({summary}); no new output remains after line {after_line}. Stop polling this job and inspect the existing output or start a new background shell job instead.",
+                    state.id
+                ));
+            }
+        }
 
         let mut lines = vec![
             format!("Job: {}", state.id),
@@ -116,6 +124,11 @@ impl BackgroundShellManager {
         if let BackgroundShellJobStatus::Failed(message) = &state.status {
             lines.push(format!("Error: {message}"));
         }
+        if let Some(summary) = terminal_status_summary(&state.status) {
+            lines.push(format!(
+                "Terminal state: {summary}. This job will not produce more output."
+            ));
+        }
         if matching.is_empty() {
             lines.push("Output: (no new lines)".to_string());
         } else {
@@ -152,5 +165,20 @@ impl BackgroundShellManager {
             "Sent {bytes_written} byte{} to background shell job {resolved_job_id}.",
             if bytes_written == 1 { "" } else { "s" }
         ))
+    }
+}
+
+fn terminal_status_summary(status: &BackgroundShellJobStatus) -> Option<String> {
+    match status {
+        BackgroundShellJobStatus::Running => None,
+        BackgroundShellJobStatus::Completed(code) if *code == 0 => {
+            Some("completed successfully".to_string())
+        }
+        BackgroundShellJobStatus::Completed(code) => Some(format!("failed with exit code {code}")),
+        BackgroundShellJobStatus::Failed(message) => Some(format!("failed: {message}")),
+        BackgroundShellJobStatus::Terminated(Some(code)) => {
+            Some(format!("terminated with exit code {code}"))
+        }
+        BackgroundShellJobStatus::Terminated(None) => Some("terminated".to_string()),
     }
 }

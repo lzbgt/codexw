@@ -131,7 +131,7 @@ impl BackgroundShellManager {
                     if status.success() {
                         BackgroundShellJobStatus::Completed(exit_code.unwrap_or(0))
                     } else {
-                        BackgroundShellJobStatus::Terminated(exit_code)
+                        BackgroundShellJobStatus::Completed(exit_code.unwrap_or(1))
                     }
                 }
                 Err(err) => BackgroundShellJobStatus::Failed(err.to_string()),

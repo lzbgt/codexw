@@ -89,7 +89,7 @@ pub(super) fn interactive_job_tool_specs() -> Vec<Value> {
         }),
         json!({
             "name": "background_shell_poll",
-            "description": "Inspect a background shell job by jobId, alias, or @capability and fetch new output lines since an optional afterLine cursor.",
+            "description": "Inspect a background shell job by jobId, alias, or @capability and fetch new output lines since an optional afterLine cursor. Use one final poll to collect terminal output, but do not keep polling jobs that are already completed, failed, or terminated; cursor-based exhausted terminal polls fail explicitly so callers can stop retrying.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
