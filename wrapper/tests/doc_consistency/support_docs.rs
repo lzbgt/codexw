@@ -24,6 +24,9 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
+    let local_api_sketch = read_repo_file("docs/codexw-local-api-sketch.md");
+    let local_api_plan = read_repo_file("docs/codexw-local-api-implementation-plan.md");
+    let local_api_route_matrix = read_repo_file("docs/codexw-local-api-route-matrix.md");
     let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
     let broker_artifact_sketch = read_repo_file("docs/codexw-broker-artifact-contract-sketch.md");
     let broker_artifact_plan = read_repo_file("docs/codexw-broker-artifact-implementation-plan.md");
@@ -452,6 +455,36 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_contract,
         "codexw-broker-integration-handoff.md",
         "docs/codexw-broker-adapter-contract.md",
+    );
+    assert_contains(
+        &local_api_sketch,
+        "docs/codexw-broker-integration-handoff.md",
+        "docs/codexw-local-api-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_sketch,
+        "shell-first",
+        "docs/codexw-local-api-sketch.md",
+    );
+    assert_contains(
+        &local_api_plan,
+        "docs/codexw-broker-integration-handoff.md",
+        "docs/codexw-local-api-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_plan,
+        "shell-first",
+        "docs/codexw-local-api-implementation-plan.md",
+    );
+    assert_contains(
+        &local_api_route_matrix,
+        "codexw-broker-integration-handoff.md",
+        "docs/codexw-local-api-route-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_route_matrix,
+        "artifact list/detail/content api",
+        "docs/codexw-local-api-route-matrix.md",
     );
     assert_contains_case_insensitive(
         &broker_artifact_sketch,

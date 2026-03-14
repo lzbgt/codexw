@@ -648,6 +648,9 @@ host shell and artifact examination, see
 For the workflow-level read on what remote clients can already inspect versus
 what still lacks a dedicated artifact contract, see
 [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md).
+For the short implementer-facing summary of what the sibling `~/work/agent`
+workspace should assume today, see
+[docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).
 For the concrete sketch of a future broker-visible artifact index/detail/fetch
 surface, see
 [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md).

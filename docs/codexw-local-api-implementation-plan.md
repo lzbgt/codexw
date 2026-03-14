@@ -25,6 +25,10 @@ The current implementation already puts `codexw` in a position to support:
 - local automation
 - the current broker connector adapter
 
+For the short implementer-facing summary aimed at the sibling `~/work/agent`
+workspace, see
+[docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).
+
 without scraping terminal scrollback.
 
 ## Current Implementation Status
@@ -111,6 +115,10 @@ projection, not whether the local API can carry client/lease intent at all.
   and [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 - scene/entity APIs
 - deployment routing
+
+The current local-API posture for remote host examination therefore remains
+shell-first, with any richer artifact list/detail/content API tracked
+separately rather than implied by the implemented route baseline.
 
 ## Proposed Runtime Shape
 

@@ -9,6 +9,7 @@ For current implementation scope and route ownership, use:
 - [docs/codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 - [docs/codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [docs/codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
+- [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md)
 
 This sketch remains intentionally narrower than a full protocol spec. Its job
 is to preserve the design intent and resource model behind the local API,
@@ -40,6 +41,10 @@ This is consistent with the current broker design recommendation:
 
 - local API first
 - connector second
+
+For the short implementer-facing summary of what the sibling `~/work/agent`
+workspace should assume about that connector-backed client surface, see
+[docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).
 
 ## Resource Model
 
@@ -350,6 +355,10 @@ of scope for the first local-API/connector phase:
   and [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 - binary audio streaming
 - general scene/entity APIs
+
+That means local-API consumers should still treat remote host examination as
+shell-first, with any stable artifact list/detail/content API remaining a
+separate track rather than an implied part of the current route surface.
 
 ## Initial-Slice Success Criteria
 

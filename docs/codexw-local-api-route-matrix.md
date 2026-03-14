@@ -14,6 +14,10 @@ This is intentionally narrower than a full protocol spec. The wire shapes live
 in [codexw-local-api-sketch.md](codexw-local-api-sketch.md). This document is
 about implementation ownership and delivery order.
 
+For the short implementer-facing summary of what the sibling `~/work/agent`
+workspace should build against today, see
+[codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
+
 ## Initial Goal
 
 This section records the original minimum route goal for the first local-API
@@ -194,6 +198,10 @@ into shared local-API helpers.
 This route matrix is about the currently implemented local API plus its thin
 planning boundary. The artifact surface is not implemented yet, but it is no
 longer an unnamed future bucket.
+
+Until that track is implemented, local-API consumers should still read the
+current remote host-examination model as shell-first rather than as an implied
+artifact list/detail/content API.
 
 If the artifact track moves into implementation, the first candidate route
 family should be:
