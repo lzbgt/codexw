@@ -252,16 +252,7 @@ fn handle_supervision_tick(
     }
     match state.refresh_async_tool_supervision_notice() {
         Some(SupervisionNoticeTransition::Raised(notice)) => {
-            output.line_stderr(format!(
-                "[self-supervision] {} {} request={} worker={} [{}|{}] {}",
-                notice.classification.label(),
-                notice.tool,
-                notice.request_id,
-                notice.worker_thread_name,
-                notice.recovery_policy_kind().label(),
-                notice.recommended_action(),
-                notice.summary
-            ))?;
+            output.line_stderr(format_supervision_notice_line(&notice))?;
         }
         Some(SupervisionNoticeTransition::Cleared) => {
             output.line_stderr("[self-supervision] async tool supervision cleared")?;
@@ -269,6 +260,56 @@ fn handle_supervision_tick(
         None => {}
     }
     Ok(())
+}
+
+fn format_supervision_notice_line(notice: &crate::state::SupervisionNotice) -> String {
+    let call = notice
+        .source_call_id
+        .as_deref()
+        .map(|value| format!(" call={value}"))
+        .unwrap_or_default();
+    let target = match (
+        notice.target_background_shell_reference.as_deref(),
+        notice.target_background_shell_job_id.as_deref(),
+    ) {
+        (Some(reference), Some(job_id)) if reference != job_id => {
+            format!(
+                " target={} resolved={job_id}",
+                crate::state::summarize_text(reference)
+            )
+        }
+        (Some(reference), _) => format!(" target={}", crate::state::summarize_text(reference)),
+        (None, Some(job_id)) => format!(" target={job_id}"),
+        (None, None) => String::new(),
+    };
+    let observation = match notice.observed_background_shell_job.as_ref() {
+        Some(job) => format!(
+            " {}|{} job={} {}",
+            notice.observation_state.label(),
+            notice.output_state.label(),
+            job.job_id,
+            job.status
+        ),
+        None => format!(
+            " {}|{}",
+            notice.observation_state.label(),
+            notice.output_state.label()
+        ),
+    };
+    format!(
+        "[self-supervision] {} {} request={} worker={} owner={}{}{}{} [{}|{}] {}",
+        notice.classification.label(),
+        notice.tool,
+        notice.request_id,
+        notice.worker_thread_name,
+        notice.owner_kind.label(),
+        call,
+        target,
+        observation,
+        notice.recovery_policy_kind().label(),
+        notice.recommended_action(),
+        notice.summary
+    )
 }
 
 fn format_async_tool_health_check_line(check: &AsyncToolHealthCheck) -> String {
@@ -466,6 +507,45 @@ mod tests {
         state.finish_async_tool_request(&RequestId::Integer(7));
         handle_supervision_tick(&mut state, &mut output, &mut writer).expect("clear notice");
         assert!(state.active_supervision_notice.is_none());
+    }
+
+    #[test]
+    fn format_supervision_notice_line_reports_owner_target_and_observation_details() {
+        let line = format_supervision_notice_line(&crate::state::SupervisionNotice {
+            classification: crate::state::AsyncToolSupervisionClass::ToolSlow,
+            request_id: "7".to_string(),
+            worker_thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: Some("call-7".to_string()),
+            target_background_shell_reference: Some("dev.api".to_string()),
+            target_background_shell_job_id: Some("bg-7".to_string()),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            observation_state:
+                crate::state::AsyncToolObservationState::WrapperBackgroundShellStreamingOutput,
+            output_state: crate::state::AsyncToolOutputState::RecentOutputObserved,
+            observed_background_shell_job: Some(
+                crate::state::AsyncToolObservedBackgroundShellJob {
+                    job_id: "bg-7".to_string(),
+                    status: "running".to_string(),
+                    command: "sleep 5".to_string(),
+                    total_lines: 1,
+                    last_output_age: Some(std::time::Duration::from_secs(2)),
+                    recent_lines: vec!["READY".to_string()],
+                },
+            ),
+        });
+
+        assert!(line.contains("[self-supervision] tool_slow background_shell_start"));
+        assert!(line.contains("request=7"));
+        assert!(line.contains("worker=codexw-bgtool-background_shell_start-7"));
+        assert!(line.contains("owner=wrapper_background_shell"));
+        assert!(line.contains("call=call-7"));
+        assert!(line.contains("target=dev.api"));
+        assert!(line.contains("resolved=bg-7"));
+        assert!(line.contains("wrapper_background_shell_streaming_output|recent_output_observed"));
+        assert!(line.contains("job=bg-7 running"));
+        assert!(line.contains("[warn_only|observe_or_interrupt]"));
     }
 
     #[test]

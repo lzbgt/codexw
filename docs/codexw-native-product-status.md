@@ -117,6 +117,10 @@ The implemented native-side product already has:
   `request_id` and `thread_name` on `async_tool_supervision` and
   `supervision_notice`, so operators and clients can tell exactly which worker
   is currently driving the alert without scanning `async_tool_workers`
+- retained owner/correlation/inspection context on `supervision_notice`, so
+  the sticky alert object itself now carries `owner`, `source_call_id`,
+  `target_background_shell_reference`, `target_background_shell_job_id`,
+  `observation_state`, `output_state`, and `observed_background_shell_job`
 - explicit output-freshness visibility for correlated wrapper shell work,
   including `output_state` and `last_output_age_seconds`
 - live self-supervision inspection notices that echo those facts directly in

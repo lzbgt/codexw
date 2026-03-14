@@ -73,6 +73,10 @@ drift casually:
   `wrapper_background_shell`
 - explicit top-level active-worker identity on `async_tool_supervision` and
   `supervision_notice` through `request_id` and `thread_name`
+- explicit owner/correlation/inspection visibility on `supervision_notice`
+  itself through fields such as `owner`, `source_call_id`,
+  `target_background_shell_reference`, `observation_state`, and
+  `observed_background_shell_job`
 - orchestrator-owned periodic async-worker inspection notices that keep the
   concrete tool summary or shell command visible and say when no
   completion/output has been observed yet

@@ -486,8 +486,22 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     ],
                                     "request_id": "7",
                                     "thread_name": "codexw-bgtool-background_shell_start-7",
+                                    "owner": "wrapper_background_shell",
+                                    "source_call_id": "call_123",
+                                    "target_background_shell_reference": "dev.api",
+                                    "target_background_shell_job_id": "bg-7",
                                     "tool": "background_shell_start",
-                                    "summary": "arguments= command=sleep 5 tool=background_shell_start"
+                                    "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                    "observation_state": "wrapper_background_shell_streaming_output",
+                                    "output_state": "recent_output_observed",
+                                    "observed_background_shell_job": {
+                                        "job_id": "bg-7",
+                                        "status": "running",
+                                        "command": "python stage2.py --quick",
+                                        "total_lines": 3,
+                                        "last_output_age_seconds": 2,
+                                        "recent_lines": ["stage1 ok", "stage2 running"]
+                                    }
                                 },
                                 "async_tool_supervision": {
                                     "classification": "tool_slow",
@@ -776,8 +790,22 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             ],
                             "request_id": "7",
                             "thread_name": "codexw-bgtool-background_shell_start-7",
+                            "owner": "wrapper_background_shell",
+                            "source_call_id": "call_123",
+                            "target_background_shell_reference": "dev.api",
+                            "target_background_shell_job_id": "bg-7",
                             "tool": "background_shell_start",
-                            "summary": "arguments= command=sleep 5 tool=background_shell_start"
+                            "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                            "observation_state": "wrapper_background_shell_streaming_output",
+                            "output_state": "recent_output_observed",
+                            "observed_background_shell_job": {
+                                "job_id": "bg-7",
+                                "status": "running",
+                                "command": "python stage2.py --quick",
+                                "total_lines": 3,
+                                "last_output_age_seconds": 2,
+                                "recent_lines": ["stage1 ok", "stage2 running"]
+                            }
                         }
                     }))?;
                     write_http_response(
@@ -947,8 +975,22 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             ],
                             "request_id": "7",
                             "thread_name": "codexw-bgtool-background_shell_start-7",
+                            "owner": "wrapper_background_shell",
+                            "source_call_id": "call_123",
+                            "target_background_shell_reference": "dev.api",
+                            "target_background_shell_job_id": "bg-7",
                             "tool": "background_shell_start",
-                            "summary": "arguments= command=sleep 5 tool=background_shell_start"
+                            "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                            "observation_state": "wrapper_background_shell_terminal_without_tool_response",
+                            "output_state": "stale_output_observed",
+                            "observed_background_shell_job": {
+                                "job_id": "bg-7",
+                                "status": "failed",
+                                "command": "python stage2.py --quick",
+                                "total_lines": 5,
+                                "last_output_age_seconds": 75,
+                                "recent_lines": ["stage1 ok", "hang suspected", "still no tool response"]
+                            }
                         }
                     }))?;
                     write_http_response(

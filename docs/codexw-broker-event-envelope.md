@@ -321,7 +321,9 @@ resolved target facts such as `target_background_shell_reference` and
 wrapper-owned `background_shell_start`
 request has already produced a shell job, including abandoned worker rows when
 that shell is still observable after timeout, plus output freshness through
-`output_state` and `last_output_age_seconds`.
+`output_state` and `last_output_age_seconds`. Those same owner/correlation /
+inspection facts now also travel on the sticky `supervision_notice` object, so
+alert-only consumers do not have to recover them by joining a second slice.
 
 ## Exclusions
 

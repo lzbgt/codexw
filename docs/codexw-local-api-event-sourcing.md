@@ -219,6 +219,11 @@ At:
   so clients can correlate `async_tool_supervision` and `supervision_notice`
   to the exact running worker without scanning the full `async_tool_workers`
   array
+- sticky-alert context changes through `owner`, `source_call_id`,
+  `target_background_shell_reference`, `target_background_shell_job_id`,
+  `observation_state`, `output_state`, and `observed_background_shell_job`,
+  so consumers of `supervision_notice` can diagnose the current stuck lane
+  without separately joining `async_tool_supervision`
 - correlated wrapper-shell inspection changes, including source `callId` and
   resolved target facts such as `target_background_shell_reference` and
   `target_background_shell_job_id`, plus matched `bg-*` shell job facts such
@@ -237,7 +242,7 @@ Likely emission owners:
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
   current supervision-classification, `request_id` / `thread_name`,
   `async_tool_backpressure`, `async_tool_workers`,
-  `target_background_shell_reference` /
+  `owner`, `source_call_id`, `target_background_shell_reference` /
   `target_background_shell_job_id`, `oldest_request_id` /
   `oldest_thread_name` / `oldest_source_call_id` /
   `oldest_target_background_shell_reference` /

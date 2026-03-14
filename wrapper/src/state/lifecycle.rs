@@ -447,12 +447,20 @@ impl AppState {
     pub(crate) fn current_async_tool_supervision_notice(&self) -> Option<super::SupervisionNotice> {
         let (request_id, activity) = self.oldest_async_tool_entry()?;
         let classification = activity.supervision_class()?;
+        let observation = self.async_tool_observation(activity);
         Some(super::SupervisionNotice {
             classification,
             request_id: request_id_label(request_id),
             worker_thread_name: activity.worker_thread_name.clone(),
+            owner_kind: observation.owner_kind,
+            source_call_id: activity.source_call_id.clone(),
+            target_background_shell_reference: activity.target_background_shell_reference.clone(),
+            target_background_shell_job_id: activity.target_background_shell_job_id.clone(),
             tool: activity.tool.clone(),
             summary: activity.summary.clone(),
+            observation_state: observation.observation_state,
+            output_state: observation.output_state,
+            observed_background_shell_job: observation.observed_background_shell_job,
         })
     }
 

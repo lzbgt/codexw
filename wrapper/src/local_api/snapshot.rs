@@ -118,8 +118,15 @@ pub(crate) struct LocalApiSupervisionNotice {
     pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
     pub(crate) request_id: String,
     pub(crate) thread_name: String,
+    pub(crate) owner: String,
+    pub(crate) source_call_id: Option<String>,
+    pub(crate) target_background_shell_reference: Option<String>,
+    pub(crate) target_background_shell_job_id: Option<String>,
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) observation_state: String,
+    pub(crate) output_state: String,
+    pub(crate) observed_background_shell_job: Option<LocalApiObservedBackgroundShellJob>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -488,8 +495,18 @@ fn supervision_notice_snapshot(
         recovery_options: recovery_options_snapshot(session_id, cwd, state, notice.classification),
         request_id: notice.request_id.clone(),
         thread_name: notice.worker_thread_name.clone(),
+        owner: notice.owner_kind.label().to_string(),
+        source_call_id: notice.source_call_id.clone(),
+        target_background_shell_reference: notice.target_background_shell_reference.clone(),
+        target_background_shell_job_id: notice.target_background_shell_job_id.clone(),
         tool: notice.tool.clone(),
         summary: notice.summary.clone(),
+        observation_state: notice.observation_state.label().to_string(),
+        output_state: notice.output_state.label().to_string(),
+        observed_background_shell_job: notice
+            .observed_background_shell_job
+            .clone()
+            .map(local_api_observed_background_shell_job),
     })
 }
 

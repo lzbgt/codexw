@@ -45,6 +45,22 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         "tool_slow"
     );
     assert_eq!(
+        events[0].data["session"]["supervision_notice"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
+        events[0].data["session"]["supervision_notice"]["source_call_id"],
+        "call_1"
+    );
+    assert_eq!(
+        events[0].data["session"]["supervision_notice"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[0].data["session"]["supervision_notice"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
         events[0].data["session"]["supervision_notice"]["recovery_policy"]["kind"],
         "warn_only"
     );
@@ -211,6 +227,34 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     assert_eq!(
         events[2].data["supervision_notice"]["thread_name"],
         "codexw-bgtool-background_shell_start-7"
+    );
+    assert_eq!(
+        events[2].data["supervision_notice"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
+        events[2].data["supervision_notice"]["source_call_id"],
+        "call_1"
+    );
+    assert_eq!(
+        events[2].data["supervision_notice"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[2].data["supervision_notice"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
+        events[2].data["supervision_notice"]["observation_state"],
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        events[2].data["supervision_notice"]["output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
+        events[2].data["supervision_notice"]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(
         events[2].data["supervision_notice"]["recovery_policy"]["automation_ready"],
@@ -462,8 +506,24 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         ],
         request_id: "7".to_string(),
         thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
+        owner: "wrapper_background_shell".to_string(),
+        source_call_id: Some("call_1".to_string()),
+        target_background_shell_reference: Some("dev.api".to_string()),
+        target_background_shell_job_id: Some("bg-1".to_string()),
         tool: "background_shell_start".to_string(),
         summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        observation_state: "wrapper_background_shell_terminal_without_tool_response".to_string(),
+        output_state: "stale_output_observed".to_string(),
+        observed_background_shell_job: Some(
+            crate::local_api::snapshot::LocalApiObservedBackgroundShellJob {
+                job_id: "bg-1".to_string(),
+                status: "failed".to_string(),
+                command: "npm run dev".to_string(),
+                total_lines: 3,
+                last_output_age_seconds: Some(75),
+                recent_lines: vec!["boom".to_string()],
+            },
+        ),
     });
     let log = new_event_log();
 
@@ -483,6 +543,14 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     assert_eq!(
         events[0].data["session"]["supervision_notice"]["recommended_action"],
         "interrupt_or_exit_resume"
+    );
+    assert_eq!(
+        events[0].data["session"]["supervision_notice"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
+        events[0].data["session"]["supervision_notice"]["source_call_id"],
+        "call_1"
     );
     assert_eq!(
         events[0].data["session"]["supervision_notice"]["recovery_policy"]["kind"],
@@ -607,6 +675,34 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     assert_eq!(
         events[1].data["supervision_notice"]["thread_name"],
         "codexw-bgtool-background_shell_start-7"
+    );
+    assert_eq!(
+        events[1].data["supervision_notice"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
+        events[1].data["supervision_notice"]["source_call_id"],
+        "call_1"
+    );
+    assert_eq!(
+        events[1].data["supervision_notice"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[1].data["supervision_notice"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
+        events[1].data["supervision_notice"]["observation_state"],
+        "wrapper_background_shell_terminal_without_tool_response"
+    );
+    assert_eq!(
+        events[1].data["supervision_notice"]["output_state"],
+        "stale_output_observed"
+    );
+    assert_eq!(
+        events[1].data["supervision_notice"]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(
         events[1].data["supervision_notice"]["recovery_policy"]["automation_ready"],

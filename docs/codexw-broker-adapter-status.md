@@ -192,6 +192,10 @@ the real connector binary:
   stalls
 - broker-visible active supervision identity through `request_id` and
   `thread_name` on both `async_tool_supervision` and `supervision_notice`
+- broker-visible owner/correlation/inspection context on `supervision_notice`,
+  not just on `async_tool_supervision`, including fields such as
+  `source_call_id`, `observation_state`, `output_state`, and
+  `observed_background_shell_job`
 - broker-visible recovery-policy decisions such as `warn_only` and
   `operator_interrupt_or_exit_resume`, currently with `automation_ready=false`
 - broker-visible recovery options such as `observe_status`, `interrupt_turn`,

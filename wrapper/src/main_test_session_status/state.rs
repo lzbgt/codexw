@@ -1026,6 +1026,41 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             .map(|notice| notice.recovery_policy_kind().label()),
         Some("warn_only")
     );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.request_id.as_str()),
+        Some("10")
+    );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.worker_thread_name.as_str()),
+        Some("codexw-bgtool-background_shell_start-10")
+    );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.owner_kind.label()),
+        Some("wrapper_background_shell")
+    );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.observation_state.label()),
+        Some("no_job_or_output_observed_yet")
+    );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.output_state.label()),
+        Some("no_output_observed_yet")
+    );
 
     state.active_async_tool_requests.insert(
         crate::rpc::RequestId::Integer(10),
@@ -1062,6 +1097,20 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             .as_ref()
             .map(|notice| notice.recovery_policy_kind().label()),
         Some("operator_interrupt_or_exit_resume")
+    );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.request_id.as_str()),
+        Some("10")
+    );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.worker_thread_name.as_str()),
+        Some("codexw-bgtool-background_shell_start-10")
     );
 
     state.active_async_tool_requests.clear();

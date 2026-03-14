@@ -88,6 +88,9 @@ rely on broker-visible supervision facts rather than only a generic tool name:
   `interrupt_or_exit_resume`
 - active-worker identity through `request_id` and `thread_name`
 - explicit owner-lane facts such as `wrapper_background_shell`
+- sticky-alert correlation and inspection facts on `supervision_notice` itself,
+  including `source_call_id`, `target_background_shell_reference`,
+  `observation_state`, `output_state`, and `observed_background_shell_job`
 - explicit silent-started versus streaming output states such as
   `wrapper_background_shell_started_no_output_yet`,
   `wrapper_background_shell_streaming_output`, and matching output freshness

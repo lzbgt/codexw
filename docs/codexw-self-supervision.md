@@ -209,6 +209,12 @@ first-class safety issue:
   explicit through `request_id` and `thread_name`, so clients do not have to
   infer which running row in `async_tool_workers` is currently driving
   `async_tool_supervision` or the sticky `supervision_notice`
+- that same sticky `supervision_notice` should also keep owner/correlation and
+  current inspection context explicit through fields such as `owner`,
+  `source_call_id`, `target_background_shell_reference`,
+  `target_background_shell_job_id`, `observation_state`, `output_state`, and
+  `observed_background_shell_job`, so alert consumers do not have to fetch a
+  second slice just to learn what stalled
 - a timed-out detached worker may still return later, but its late response
   must be ignored for protocol correctness
 - the runtime should keep counting that abandoned async worker until the late

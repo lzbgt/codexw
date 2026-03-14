@@ -240,6 +240,31 @@ fn session_snapshot_is_returned_with_valid_token() {
         "codexw-bgtool-background_shell_start-7"
     );
     assert_eq!(
+        body["supervision_notice"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(body["supervision_notice"]["source_call_id"], "call_1");
+    assert_eq!(
+        body["supervision_notice"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        body["supervision_notice"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
+        body["supervision_notice"]["observation_state"],
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["supervision_notice"]["output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
+        body["supervision_notice"]["observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
+    assert_eq!(
         body["session"]["async_tool_supervision"]["tool"],
         "background_shell_start"
     );
@@ -361,6 +386,34 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(
         body["session"]["supervision_notice"]["thread_name"],
         "codexw-bgtool-background_shell_start-7"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["source_call_id"],
+        "call_1"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["observation_state"],
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(body["active_turn_id"], "turn_456");
 }

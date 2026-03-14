@@ -423,6 +423,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_status,
+        "observation_state",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
         "target_background_shell_reference",
         "docs/codexw-broker-adapter-status.md",
     );
@@ -649,6 +654,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_event_envelope,
         "thread_name",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "source_call_id",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "observation_state",
         "docs/codexw-broker-event-envelope.md",
     );
     assert_contains_case_insensitive(
@@ -1060,6 +1075,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_status,
         "thread_name",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "observation_state",
         "docs/codexw-native-product-status.md",
     );
     assert_contains_case_insensitive(
@@ -1667,6 +1687,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision,
         "thread_name",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "source_call_id",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "observation_state",
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
