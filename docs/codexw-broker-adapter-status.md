@@ -8,6 +8,7 @@ design set:
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
+- [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
@@ -50,6 +51,9 @@ direct terminal access, especially for artifact-heavy inspection workflows.
 
 For that workflow-level read, see
 [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
+For the short implementer-facing summary for the sibling `~/work/agent`
+workspace, see
+[codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
 ## Implemented Local API Surface
 

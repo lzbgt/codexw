@@ -23,6 +23,9 @@ question: can a broker-facing client inspect the host through session,
 transcript, event, shell, and service surfaces without direct terminal access?
 
 These fixtures are the reference clients for that question.
+For the short external-consumer summary aimed at the sibling `~/work/agent`
+workspace, see
+[codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
 ## Scope
 

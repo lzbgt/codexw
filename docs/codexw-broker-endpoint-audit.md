@@ -10,6 +10,10 @@ Its purpose is to map relevant `~/work/agent` broker/client surfaces to current
 - `adapter fit`
 - `out of scope`
 
+For the shorter implementer-facing summary of what the sibling `~/work/agent`
+workspace should assume today, see
+[codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
+
 ## Classification Meanings
 
 - `direct fit`

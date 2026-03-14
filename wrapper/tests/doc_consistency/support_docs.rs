@@ -193,8 +193,18 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-adapter-status.md",
     );
     assert_contains(
+        &broker_status,
+        "codexw-broker-integration-handoff.md",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains(
         &broker_proof,
         "supported experimental adapter",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains(
+        &broker_proof,
+        "codexw-broker-integration-handoff.md",
         "docs/codexw-broker-proof-matrix.md",
     );
     assert_contains(
@@ -210,6 +220,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &broker_endpoint_audit,
         "codexw-broker-artifact-implementation-plan.md",
+        "docs/codexw-broker-endpoint-audit.md",
+    );
+    assert_contains(
+        &broker_endpoint_audit,
+        "codexw-broker-integration-handoff.md",
         "docs/codexw-broker-endpoint-audit.md",
     );
     assert_contains(
@@ -425,8 +440,18 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &broker_client_fixture,
+        "codexw-broker-integration-handoff.md",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_client_fixture,
         "codexw-broker-artifact-implementation-plan.md",
         "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_contract,
+        "codexw-broker-integration-handoff.md",
+        "docs/codexw-broker-adapter-contract.md",
     );
     assert_contains_case_insensitive(
         &broker_artifact_sketch,

@@ -12,6 +12,7 @@ This document is the contract-oriented companion to:
 - [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
+- [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
@@ -43,6 +44,9 @@ rather than being left as an unnamed caveat.
 
 Those boundaries remain explicit in
 [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md).
+For the short external-consumer read that the sibling `~/work/agent` workspace
+should build against, see
+[codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
 ## Authority Model
 

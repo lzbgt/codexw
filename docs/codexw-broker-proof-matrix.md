@@ -21,6 +21,7 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
+- [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
@@ -40,6 +41,10 @@ Status labels:
 - `doc/policy only`
   - specified clearly, but still primarily a contract statement rather than a
     defended proof surface
+
+For the short implementer-facing summary of what the sibling `~/work/agent`
+workspace can rely on today, see
+[codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
 ## Promotion Criteria Matrix
 
