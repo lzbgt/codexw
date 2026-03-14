@@ -215,6 +215,10 @@ first-class safety issue:
   `target_background_shell_job_id`, `observation_state`, `output_state`, and
   `observed_background_shell_job`, so alert consumers do not have to fetch a
   second slice just to learn what stalled
+- the human-readable `:status` supervision block should surface that same
+  sticky alert identity and inspection context, including request/thread,
+  owner, source/target correlation, and matched `bg-*` shell job facts, so
+  operators do not have to pivot to local-API payloads or stderr-only notices
 - a timed-out detached worker may still return later, but its late response
   must be ignored for protocol correctness
 - the runtime should keep counting that abandoned async worker until the late

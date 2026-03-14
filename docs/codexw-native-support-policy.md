@@ -77,6 +77,9 @@ drift casually:
   itself through fields such as `owner`, `source_call_id`,
   `target_background_shell_reference`, `observation_state`, and
   `observed_background_shell_job`
+- a human-readable `:status` supervision block that surfaces that same sticky
+  alert identity and inspection context instead of leaving it only in
+  structured local-API payloads or live stderr notices
 - orchestrator-owned periodic async-worker inspection notices that keep the
   concrete tool summary or shell command visible and say when no
   completion/output has been observed yet

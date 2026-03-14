@@ -121,6 +121,9 @@ The implemented native-side product already has:
   the sticky alert object itself now carries `owner`, `source_call_id`,
   `target_background_shell_reference`, `target_background_shell_job_id`,
   `observation_state`, `output_state`, and `observed_background_shell_job`
+- a richer `:status` supervision block that now echoes that same sticky alert
+  identity and inspection context, including `request_id`, `thread_name`,
+  owner/source/target correlation, and matched `bg-*` shell job facts
 - explicit output-freshness visibility for correlated wrapper shell work,
   including `output_state` and `last_output_age_seconds`
 - live self-supervision inspection notices that echo those facts directly in

@@ -1079,6 +1079,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        ":status",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "observation_state",
         "docs/codexw-native-product-status.md",
     );
@@ -1205,6 +1210,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "interrupt_or_exit_resume",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        ":status",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -1687,6 +1697,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision,
         "thread_name",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        ":status",
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
