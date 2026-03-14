@@ -1356,6 +1356,8 @@ This should be treated as a real future-work item and re-evaluated after the cur
   Turn start and steer request builders.
 - `wrapper/src/requests/turn_control.rs`
   Turn interrupt request builder.
+- `wrapper/src/http_request_reader.rs`
+  Shared timeout-tolerant HTTP request parsing helper used by both the local API server and the broker connector adapter.
 - `wrapper/src/requests/command_requests.rs`
   Local command exec and terminate request builders.
 - `wrapper/src/rpc.rs`

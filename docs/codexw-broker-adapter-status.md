@@ -136,6 +136,9 @@ the real connector binary:
 - structured connector-local validation failures for malformed injected request
   bodies and malformed client/lease headers
 - preserved local field-level validation failures through the connector
+- timeout-tolerant HTTP request parsing for fragmented request headers/bodies in
+  both the local API server and the connector adapter, with shared parser logic
+  so the same reliability fix is not maintained in two divergent copies
 - focused service-detail and capability-detail reads after mutation workflows
 - client-event publish and replay/resume
 - explicit route-by-route local-API session lifecycle assertions
@@ -215,6 +218,12 @@ The same is now true for the current validation/error surface: malformed
 connector-side injected request bodies and malformed client/lease headers return
 structured `validation_error` responses, and structured local field-validation
 errors are preserved instead of being collapsed into generic transport failures.
+
+The same is also now true for the request-ingest path itself: transient
+socket-level read fragmentation no longer causes the local API server or
+connector adapter to reject otherwise valid requests as generic bad requests
+after one timeout window. Both now share the same bounded timeout-tolerant HTTP
+request reader.
 
 ## What Remains Explicitly Limited
 
