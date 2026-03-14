@@ -129,7 +129,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
             }
             Ok(AppEvent::Tick) => {}
             Ok(AppEvent::AsyncToolResponseReady(tool_response)) => {
-                handle_async_tool_response(tool_response, &mut output, &mut writer)?;
+                handle_async_tool_response(tool_response, &mut state, &mut output, &mut writer)?;
             }
             Ok(AppEvent::StdinClosed) => {
                 output.line_stderr("[session] stdin closed; exiting")?;
@@ -169,9 +169,11 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
 
 fn handle_async_tool_response(
     tool_response: AsyncToolResponse,
+    state: &mut AppState,
     output: &mut Output,
     writer: &mut std::process::ChildStdin,
 ) -> Result<()> {
+    let _ = state.finish_async_tool_request(&tool_response.id);
     let success = tool_response
         .result
         .get("success")
@@ -216,4 +218,54 @@ fn handle_input_key(
     }
     handle_editing_key(&key, resolved_cwd, state, editor, output, accepts_input)?;
     Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rpc::RequestId;
+    use serde_json::json;
+    use std::process::Command;
+    use std::process::Stdio;
+
+    fn spawn_sink_stdin() -> std::process::ChildStdin {
+        Command::new("sh")
+            .arg("-c")
+            .arg("cat >/dev/null")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn sink")
+            .stdin
+            .take()
+            .expect("stdin")
+    }
+
+    #[test]
+    fn async_tool_response_clears_active_request_tracking() {
+        let mut state = AppState::new(true, false);
+        state.record_async_tool_request(
+            RequestId::Integer(42),
+            "background_shell_start".to_string(),
+            "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        );
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+
+        handle_async_tool_response(
+            AsyncToolResponse {
+                id: RequestId::Integer(42),
+                tool: "background_shell_start".to_string(),
+                summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+                result: json!({"success": true}),
+            },
+            &mut state,
+            &mut output,
+            &mut writer,
+        )
+        .expect("handle async tool response");
+
+        assert!(state.active_async_tool_requests.is_empty());
+    }
 }

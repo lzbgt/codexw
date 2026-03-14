@@ -56,6 +56,20 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             format_elapsed(state.activity_started_at)
         ));
     }
+    if let Some(async_tool) = state.oldest_async_tool_activity() {
+        lines.push(format!(
+            "async tools     {}",
+            state.active_async_tool_requests.len()
+        ));
+        lines.push(format!(
+            "async tool      {}",
+            summarize_text(&async_tool.summary)
+        ));
+        lines.push(format!(
+            "async time      {}",
+            format_elapsed(Some(async_tool.started_at))
+        ));
+    }
     lines.extend(render_rate_limit_lines(state.rate_limits.as_ref()));
     if let Some(token_usage) = render_token_usage_summary(state.last_token_usage.as_ref()) {
         lines.push(format!("tokens          {token_usage}"));

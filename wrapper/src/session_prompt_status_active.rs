@@ -46,6 +46,14 @@ pub(crate) fn render_exec_status(state: &AppState) -> String {
 }
 
 pub(crate) fn render_turn_status(state: &AppState) -> String {
+    if let Some((started_at, detail)) = render_async_tool_status(state) {
+        return format!(
+            "{} {} | {}",
+            spinner_frame(Some(started_at)),
+            detail,
+            format_elapsed(Some(started_at))
+        );
+    }
     if let Some(detail) = active_status_detail(state) {
         format!(
             "{} {} | {}",
@@ -61,6 +69,20 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
             format_elapsed(state.activity_started_at)
         )
     }
+}
+
+fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
+    let async_tool = state.oldest_async_tool_activity()?;
+    let detail = if state.active_async_tool_requests.len() > 1 {
+        format!(
+            "async tools {}: {}",
+            state.active_async_tool_requests.len(),
+            async_tool.summary
+        )
+    } else {
+        format!("async tool {}: {}", async_tool.tool, async_tool.summary)
+    };
+    Some((async_tool.started_at, detail))
 }
 
 pub(crate) fn render_realtime_status(state: &AppState) -> String {

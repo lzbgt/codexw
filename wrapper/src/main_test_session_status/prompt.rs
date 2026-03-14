@@ -46,6 +46,20 @@ fn prompt_status_mentions_realtime_when_active() {
 }
 
 #[test]
+fn prompt_status_mentions_async_tool_activity_when_present() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.turn_running = true;
+    state.record_async_tool_request(
+        crate::rpc::RequestId::Integer(7),
+        "background_shell_start".to_string(),
+        "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+    );
+    let rendered = render_prompt_status(&state);
+    assert!(rendered.contains("async tool background_shell_start"));
+    assert!(rendered.contains("background_shell_start"));
+}
+
+#[test]
 fn prompt_status_mentions_startup_resume_picker() {
     let mut state = crate::state::AppState::new(true, false);
     state.startup_resume_picker = true;

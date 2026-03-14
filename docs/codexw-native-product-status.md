@@ -60,6 +60,10 @@ The implemented native-side product already has:
 - a wrapped inline prompt/editor with transient status
 - text-oriented realtime state and semantic event reporting
 - wrapper-owned background shells with orchestration visibility
+- off-thread async shell-tool execution so wrapper-owned shell calls do not
+  freeze the prompt/input loop
+- prompt/status visibility for in-flight async shell-tool work until the tool
+  response completes
 - orchestration views over agents, shells, services, capabilities, and
   terminals
 - a new self-supervision design lane for stalled tool/runtime recovery

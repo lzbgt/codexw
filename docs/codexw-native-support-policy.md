@@ -52,6 +52,8 @@ drift casually:
 - transient status rendering as the primary live-status surface
 - text-first realtime visibility
 - wrapper-owned background shell behavior and orchestration views
+- async shell-tool execution that remains visible in prompt/status surfaces
+  while the request is in flight, rather than freezing the input loop
 - the direction that stalled tool/runtime paths should be recoverable through
   self-supervision rather than left as indefinite hangs
 - the direction that optional capabilities should prefer plugin delivery when

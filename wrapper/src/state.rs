@@ -11,6 +11,7 @@ pub(crate) use crate::state_helpers::get_string;
 pub(crate) use crate::state_helpers::summarize_text;
 pub(crate) use crate::state_helpers::thread_id;
 pub(crate) use types::AppState;
+pub(crate) use types::AsyncToolActivity;
 pub(crate) use types::ConversationMessage;
 pub(crate) use types::OrchestrationState;
 pub(crate) use types::PendingSelection;

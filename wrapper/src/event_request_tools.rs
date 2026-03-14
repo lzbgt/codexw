@@ -73,6 +73,11 @@ pub(crate) fn handle_tool_request(
                 let params = request.params.clone();
                 let summary = summarize_tool_request(&params);
                 let tool_name = tool.to_string();
+                state.record_async_tool_request(
+                    request_id.clone(),
+                    tool_name.clone(),
+                    summary.clone(),
+                );
                 let resolved_cwd = resolved_cwd.to_string();
                 let tx = tx.clone();
                 let background_shells = state.orchestration.background_shells.clone();
@@ -174,6 +179,7 @@ mod tests {
                 .expect("handle tool request");
 
         assert!(handled);
+        assert_eq!(state.active_async_tool_requests.len(), 1);
         let event = rx
             .recv_timeout(Duration::from_secs(2))
             .expect("async tool response");
@@ -205,6 +211,7 @@ mod tests {
                 .expect("handle tool request");
 
         assert!(handled);
+        assert!(state.active_async_tool_requests.is_empty());
         assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
     }
 }

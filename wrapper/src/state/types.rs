@@ -55,10 +55,18 @@ pub(crate) struct ConversationMessage {
     pub(crate) text: String,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct AsyncToolActivity {
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+    pub(crate) started_at: Instant,
+}
+
 pub(crate) struct AppState {
     pub(crate) thread_id: Option<String>,
     pub(crate) active_turn_id: Option<String>,
     pub(crate) active_exec_process_id: Option<String>,
+    pub(crate) active_async_tool_requests: HashMap<RequestId, AsyncToolActivity>,
     pub(crate) realtime_active: bool,
     pub(crate) realtime_session_id: Option<String>,
     pub(crate) realtime_last_error: Option<String>,

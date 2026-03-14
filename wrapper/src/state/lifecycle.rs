@@ -21,6 +21,7 @@ impl AppState {
             thread_id: None,
             active_turn_id: None,
             active_exec_process_id: None,
+            active_async_tool_requests: HashMap::new(),
             realtime_active: false,
             realtime_session_id: None,
             realtime_last_error: None,
@@ -88,6 +89,7 @@ impl AppState {
         self.orchestration.reset_thread_context();
         self.active_turn_id = None;
         self.active_exec_process_id = None;
+        self.active_async_tool_requests.clear();
         self.current_rollout_path = None;
         self.realtime_active = false;
         self.realtime_session_id = None;
@@ -130,6 +132,35 @@ impl AppState {
         let local = std::mem::take(&mut self.pending_local_images);
         let remote = std::mem::take(&mut self.pending_remote_images);
         (local, remote)
+    }
+
+    pub(crate) fn record_async_tool_request(
+        &mut self,
+        id: RequestId,
+        tool: String,
+        summary: String,
+    ) {
+        self.active_async_tool_requests.insert(
+            id,
+            super::AsyncToolActivity {
+                tool,
+                summary,
+                started_at: std::time::Instant::now(),
+            },
+        );
+    }
+
+    pub(crate) fn finish_async_tool_request(
+        &mut self,
+        id: &RequestId,
+    ) -> Option<super::AsyncToolActivity> {
+        self.active_async_tool_requests.remove(id)
+    }
+
+    pub(crate) fn oldest_async_tool_activity(&self) -> Option<&super::AsyncToolActivity> {
+        self.active_async_tool_requests
+            .values()
+            .min_by_key(|activity| activity.started_at)
     }
 }
 
