@@ -1,7 +1,10 @@
 use std::collections::HashMap;
+use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 use std::net::TcpStream;
+use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -15,6 +18,8 @@ use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
 use super::Cli;
 use super::MAX_REQUEST_BYTES;
 use super::upstream::UpstreamResponse;
+
+const REQUEST_READ_DEADLINE: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone)]
 pub(super) struct HttpRequest {
@@ -68,20 +73,31 @@ pub(super) fn from_upstream_response(upstream: UpstreamResponse, cli: &Cli) -> H
 pub(super) fn read_request(stream: &mut TcpStream) -> Result<HttpRequest> {
     let mut buffer = [0_u8; 1024];
     let mut request_bytes = Vec::new();
+    let header_deadline = Instant::now() + REQUEST_READ_DEADLINE;
     let header_end = loop {
-        let read = stream.read(&mut buffer).context("read connector request")?;
-        if read == 0 {
-            anyhow::bail!("request closed");
-        }
-        request_bytes.extend_from_slice(&buffer[..read]);
-        if let Some(index) = request_bytes
-            .windows(4)
-            .position(|window| window == b"\r\n\r\n")
-        {
-            break index + 4;
-        }
-        if request_bytes.len() >= MAX_REQUEST_BYTES {
-            anyhow::bail!("request too large");
+        match stream.read(&mut buffer) {
+            Ok(0) => anyhow::bail!("request closed"),
+            Ok(read) => {
+                request_bytes.extend_from_slice(&buffer[..read]);
+                if let Some(index) = request_bytes
+                    .windows(4)
+                    .position(|window| window == b"\r\n\r\n")
+                {
+                    break index + 4;
+                }
+                if request_bytes.len() >= MAX_REQUEST_BYTES {
+                    anyhow::bail!("request too large");
+                }
+            }
+            Err(err)
+                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
+            {
+                if Instant::now() >= header_deadline {
+                    return Err(err).context("read connector request headers");
+                }
+                continue;
+            }
+            Err(err) => return Err(err).context("read connector request"),
         }
     };
     let request_text = String::from_utf8_lossy(&request_bytes[..header_end]);
@@ -113,12 +129,29 @@ pub(super) fn read_request(stream: &mut TcpStream) -> Result<HttpRequest> {
         .and_then(|value| value.parse::<usize>().ok())
         .unwrap_or(0);
     let mut body = request_bytes[header_end..].to_vec();
+    let body_deadline = Instant::now() + REQUEST_READ_DEADLINE;
     while body.len() < content_length {
-        let read = stream.read(&mut buffer).context("read request body")?;
-        if read == 0 {
-            break;
+        match stream.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(read) => {
+                body.extend_from_slice(&buffer[..read]);
+                if header_end + body.len() >= MAX_REQUEST_BYTES {
+                    anyhow::bail!("request too large");
+                }
+            }
+            Err(err)
+                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
+            {
+                if Instant::now() >= body_deadline {
+                    return Err(err).context("read connector request body");
+                }
+                continue;
+            }
+            Err(err) => return Err(err).context("read request body"),
         }
-        body.extend_from_slice(&buffer[..read]);
+    }
+    if body.len() < content_length {
+        anyhow::bail!("request body truncated");
     }
     body.truncate(content_length);
 
