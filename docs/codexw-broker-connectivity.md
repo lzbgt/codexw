@@ -658,7 +658,7 @@ The first audit should classify each relevant `~/work/agent` surface into one of
 | --- | --- | --- |
 | `POST /api/v1/run` | adapter fit | `codexw` can expose turn-start semantics, but its runtime is thread/turn-based rather than an `agentd` run engine |
 | run-event envelopes | adapter fit | item/turn/status/orchestration events already exist internally, but need a public envelope contract |
-| artifact signaling | adapter fit | `codexw` has transcript and attachment semantics but not a standalone artifact API yet |
+| artifact signaling | adapter fit | `codexw` has transcript and attachment semantics but not a standalone artifact API yet; the gap is now split into [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md) and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md) |
 
 ### `codexw`-Specific High-Value Surfaces That `agent` Does Not Define Directly
 

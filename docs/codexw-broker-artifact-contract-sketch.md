@@ -17,6 +17,7 @@ Companion docs:
 
 - [codexw-broker-client-architecture.md](codexw-broker-client-architecture.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
+- [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
@@ -206,6 +207,9 @@ When a broker/client request mentions artifacts, ask:
 ## Status
 
 This document is a design sketch only.
+
+For the implementation-facing delivery order behind this sketch, see
+[codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md).
 
 Current fact:
 

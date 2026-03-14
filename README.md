@@ -33,6 +33,8 @@ versus what still lacks a dedicated artifact contract, see
 [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md).
 For the design sketch of that remaining broker-visible artifact gap, see
 [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md).
+For the implementation-facing delivery order for that artifact track, see
+[docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md).
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
 For a concise implementation/proof snapshot of the broker/local-API adapter,

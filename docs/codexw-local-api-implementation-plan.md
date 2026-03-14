@@ -105,7 +105,10 @@ projection, not whether the local API can carry client/lease intent at all.
 - websocket transport
 - browser cookie auth
 - audio/media streaming
-- artifact upload/download system
+- a broker-visible artifact catalog/detail/content surface in the current local
+  API status baseline; that work now has its own design/implementation track in
+  [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
+  and [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 - scene/entity APIs
 - deployment routing
 

@@ -344,7 +344,10 @@ of scope for the first local-API/connector phase:
 - websocket transport
 - broker auth
 - cross-device deployment routing
-- artifact upload/download protocols
+- a dedicated broker-visible artifact catalog/detail/content surface; that now
+  lives on the separate artifact-contract track in
+  [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
+  and [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 - binary audio streaming
 - general scene/entity APIs
 

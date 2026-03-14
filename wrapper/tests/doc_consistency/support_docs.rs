@@ -18,6 +18,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
     let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
     let broker_artifact_sketch = read_repo_file("docs/codexw-broker-artifact-contract-sketch.md");
+    let broker_artifact_plan = read_repo_file("docs/codexw-broker-artifact-implementation-plan.md");
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
     let broker_client_arch = read_repo_file("docs/codexw-broker-client-architecture.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
@@ -38,6 +39,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-client-architecture.md",
         "docs/codexw-broker-host-examination-matrix.md",
         "docs/codexw-broker-artifact-contract-sketch.md",
+        "docs/codexw-broker-artifact-implementation-plan.md",
         "docs/codexw-workspace-tool-policy.md",
         "docs/codexw-support-claim-checklist.md",
     ] {
@@ -67,6 +69,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &readme,
         "docs/codexw-broker-artifact-contract-sketch.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-broker-artifact-implementation-plan.md",
         "README.md",
     );
     assert_contains(
@@ -111,6 +118,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &todos,
         "docs/codexw-broker-artifact-contract-sketch.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-broker-artifact-implementation-plan.md",
         "TODOS.md",
     );
     assert_contains(
@@ -263,6 +275,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_artifact_sketch,
         "shell-first",
         "docs/codexw-broker-artifact-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_artifact_plan,
+        "artifact index route",
+        "docs/codexw-broker-artifact-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_artifact_plan,
+        "artifact detail route",
+        "docs/codexw-broker-artifact-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_artifact_plan,
+        "do not implement the content route",
+        "docs/codexw-broker-artifact-implementation-plan.md",
     );
     assert_contains_case_insensitive(
         &workspace_policy,
