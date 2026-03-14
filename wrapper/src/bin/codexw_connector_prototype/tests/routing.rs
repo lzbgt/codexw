@@ -29,6 +29,8 @@ const ALLOWED_HTTP_ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/v1/session/new"),
     ("POST", "/api/v1/session/attach"),
     ("POST", "/api/v1/session/client_event"),
+    ("POST", "/api/v1/turn/start"),
+    ("POST", "/api/v1/turn/interrupt"),
     ("POST", "/api/v1/session/sess_1/attachment/renew"),
     ("POST", "/api/v1/session/sess_1/attachment/release"),
     ("POST", "/api/v1/session/sess_1/client_event"),
@@ -372,7 +374,7 @@ fn allowlist_rejects_unknown_or_overbroad_proxy_routes() {
         false,
     ));
     assert!(!is_allowed_local_proxy_target(
-        "POST",
+        "GET",
         "/api/v1/turn/start",
         false,
     ));

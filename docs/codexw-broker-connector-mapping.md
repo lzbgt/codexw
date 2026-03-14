@@ -200,7 +200,8 @@ The initial connector adapter should ship with a small compatibility table:
 | Broker-facing route | Local `codexw` route | Status |
 | --- | --- | --- |
 | `/v1/agents/{agent_id}/proxy/...` session create | `/api/v1/session/new` | works |
-| `/v1/agents/{agent_id}/proxy/...` turn start | `/api/v1/turn/start` | works |
+| `/v1/agents/{agent_id}/proxy/...` turn start | `/api/v1/turn/start` | works with the same client/lease header projection policy as the session-scoped turn alias |
+| `/v1/agents/{agent_id}/proxy/...` turn interrupt | `/api/v1/turn/interrupt` | works with the same client header projection policy as the session-scoped interrupt alias |
 | `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works; non-`GET` methods are rejected as `method_not_allowed` |
 | `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as method-sensitive alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works as POST-only alias with `session_id` body injection when missing |
@@ -221,7 +222,8 @@ That table should be kept concrete and testable.
 
 The current connector now also keeps the mutating-route header projection policy
 and the connector allowlist on one shared local-route classifier, so new POST
-alias surfaces do not need to be added to two separate behavioral lists.
+alias surfaces and the supported raw proxy turn-control routes do not need to
+be added to two separate behavioral lists.
 Read-only broker aliases are also method-sensitive at resolution time now, so
 wrong-method requests fail as unknown connector routes instead of falling into
 the generic raw-proxy allowlist rejection path.

@@ -159,7 +159,8 @@ the real connector binary:
 - percent-decoded `job_ref`/capability path handling across both detail reads
   and mutating shell/service alias routes
 - shared route-shape classification for connector allowlist checks and
-  client/lease header-to-body injection eligibility
+  client/lease header-to-body injection eligibility, including the supported
+  raw proxy turn-control routes
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation

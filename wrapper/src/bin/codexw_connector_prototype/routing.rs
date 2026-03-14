@@ -363,6 +363,8 @@ fn is_supported_post_local_route(segments: &[&str]) -> bool {
         ["api", "v1", "session", "new"]
             | ["api", "v1", "session", "attach"]
             | ["api", "v1", "session", "client_event"]
+            | ["api", "v1", "turn", "start"]
+            | ["api", "v1", "turn", "interrupt"]
             | ["api", "v1", "session", _, "attachment", "renew"]
             | ["api", "v1", "session", _, "attachment", "release"]
             | ["api", "v1", "session", _, "client_event"]
