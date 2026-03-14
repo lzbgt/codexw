@@ -1,7 +1,7 @@
 use super::super::super::super::*;
 
 #[test]
-fn dynamic_tool_specs_include_workspace_tools() {
+fn dynamic_tool_specs_exclude_workspace_tools() {
     let specs = dynamic_tool_specs();
     let names = specs
         .as_array()
@@ -16,11 +16,6 @@ fn dynamic_tool_specs_include_workspace_tools() {
             "orchestration_list_workers",
             "orchestration_suggest_actions",
             "orchestration_list_dependencies",
-            "workspace_list_dir",
-            "workspace_stat_path",
-            "workspace_read_file",
-            "workspace_find_files",
-            "workspace_search_text",
             "background_shell_start",
             "background_shell_poll",
             "background_shell_send",

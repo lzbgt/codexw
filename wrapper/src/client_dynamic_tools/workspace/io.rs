@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
 
@@ -29,7 +27,7 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
         return Err(format!("`{}` is not a directory", target.display()));
     }
     let limit = extract_limit(object.get("limit"));
-    let (entries, total_entries) = collect_sorted_dir_entries(&target, limit)
+    let (entries, has_more_entries) = collect_sorted_dir_entries(&target, limit)
         .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?;
 
     let relative = rel_display(&root, &target);
@@ -49,11 +47,8 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
         };
         rendered.push(format!("{kind}  {:<8} {}", size, rel_display(&root, &path)));
     }
-    if rendered.len() == limit + 1 && total_entries > limit {
-        rendered.push(format!(
-            "... {} more entries omitted",
-            total_entries - limit
-        ));
+    if has_more_entries {
+        rendered.push("... more entries omitted".to_string());
     }
     Ok(rendered.join("\n"))
 }
@@ -61,20 +56,23 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
 fn collect_sorted_dir_entries(
     target: &PathBuf,
     limit: usize,
-) -> Result<(Vec<PathBuf>, usize), std::io::Error> {
-    let mut kept = BTreeMap::<OsString, PathBuf>::new();
-    let mut total_entries = 0;
+) -> Result<(Vec<PathBuf>, bool), std::io::Error> {
+    let mut kept = Vec::with_capacity(limit);
+    let mut has_more_entries = false;
     for entry in fs::read_dir(target)? {
         let entry = entry?;
-        total_entries += 1;
-        kept.insert(entry.file_name(), entry.path());
-        if kept.len() > limit
-            && let Some(largest) = kept.last_key_value().map(|(name, _)| name.clone())
-        {
-            kept.remove(&largest);
+        if kept.len() >= limit {
+            has_more_entries = true;
+            break;
         }
+        kept.push(entry.path());
     }
-    Ok((kept.into_values().collect(), total_entries))
+    kept.sort_by(|left, right| {
+        left.file_name()
+            .cmp(&right.file_name())
+            .then_with(|| left.cmp(right))
+    });
+    Ok((kept, has_more_entries))
 }
 
 pub(crate) fn workspace_stat_path(arguments: &Value, resolved_cwd: &str) -> Result<String, String> {

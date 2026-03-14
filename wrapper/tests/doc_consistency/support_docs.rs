@@ -65,7 +65,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-hardening-catalog.md",
         "README.md",
     );
-    assert_contains(&readme, "bounded read-only fast path", "README.md");
+    assert_contains(&readme, "no longer advertised by default", "README.md");
     assert_contains(
         &readme,
         "docs/codexw-support-claim-checklist.md",
@@ -190,7 +190,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &workspace_policy,
-        "bounded read-only",
+        "no longer advertise",
         "docs/codexw-workspace-tool-policy.md",
     );
 

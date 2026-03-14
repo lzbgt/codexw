@@ -22,22 +22,26 @@ Related docs:
 
 ## Core Decision
 
-`codexw` should keep a small read-only workspace tool surface, but it should
-not treat dynamic tools as the default answer for all filesystem access.
+`codexw` should not advertise read-only workspace tools on new threads by
+default, and it should not treat dynamic tools as the default answer for
+filesystem access.
 
 The intended split is:
 
-- dynamic workspace tools for narrow, high-frequency, low-side-effect
-  inspection
-- shell or Python for open-ended, repo-specific, or multi-step workflows
+- shell or Python for open-ended, repo-specific, or multi-step inspection
+- wrapper-owned background-shell tools for async control with real product
+  value
+- any retained workspace helpers treated as optional fallback code, not as a
+  primary model-facing surface
 
-This means the product is not "tool-first everywhere" and it is not
-"shell-first everywhere." It is a mixed model with an explicit boundary.
+This means the product is now intentionally shell-first for workspace
+inspection, while staying tool-first only for the wrapper-owned orchestration
+and background-shell surfaces.
 
 ## Why Dynamic Workspace Tools Exist
 
-Read-only workspace tools still provide real product value even though shell
-and Python can often do similar work.
+The repo still contains read-only workspace helper code, but the model no
+longer needs that surface advertised by default.
 
 ### Safety and Policy
 
@@ -106,36 +110,20 @@ Shell or Python remains the right path for:
 Trying to encode all of that into more dynamic tools would duplicate shell
 execution badly and create an unbounded maintenance surface.
 
-## Current Recommendation By Tool
+## Current Recommendation
 
-### Strong Keep
+The current recommendation is simpler than the earlier mixed model:
 
-These tools justify their maintenance cost and should remain part of the model
-surface:
-
-- `workspace_read_file`
-- `workspace_find_files`
-- `workspace_search_text`
-
-They cover common inspection needs with clear structure and low ambiguity.
-
-### Convenience Keep, Not Strategic
-
-These tools are useful, but they are not as essential:
-
-- `workspace_list_dir`
-- `workspace_stat_path`
-
-They are worth keeping while they remain cheap and reliable, but they should
-not be treated as architectural pillars.
-
-If tool-surface simplification becomes necessary, these are the first
-deprecation candidates.
+- do not advertise the workspace dynamic tools on new threads
+- let the model use host shell and Python for repo inspection
+- only keep the workspace helper implementation around as transitional or
+  fallback code until the repo decides whether to delete it entirely
 
 ## Standard For Adding New Workspace Tools
 
 Add a new read-only workspace tool only if it clearly beats shell execution on
-at least two of these dimensions:
+at least two of these dimensions and the repo is willing to advertise it by
+default:
 
 - stronger safety boundary
 - substantially better determinism for the model
@@ -149,7 +137,8 @@ That standard is intentionally strict. The maintenance burden is real.
 
 ## Standard For Removing Workspace Tools
 
-Remove or deprecate a workspace tool if one or more of these becomes true:
+Remove, de-advertise, or deprecate a workspace tool if one or more of these
+becomes true:
 
 - it is rarely used compared with shell alternatives
 - its behavior is too trivial to justify dedicated maintenance
@@ -161,22 +150,29 @@ of the maintenance risk. Even a simple read-only convenience tool can become a
 real reliability problem if it eagerly processes large trees instead of
 respecting bounded output.
 
-That bug does not mean the tool must be removed. It does mean the repo should
-be selective about adding more tools of the same class.
+That is why `workspace_list_dir` should be treated as a quick directory peek,
+not as an exact large-directory enumeration primitive. If the model needs an
+exact full listing, exact omitted counts, or project-specific filtering over a
+huge directory, shell tools are the better fit.
+
+That bug was enough to justify de-advertising the workspace tool surface. It
+also means the repo should be highly selective about adding more tools of the
+same class.
 
 ## Product Posture
 
 The intended product posture is:
 
-- shell is the general-purpose execution substrate
-- dynamic workspace tools are the narrow structured fast path
+- shell is the general-purpose execution substrate for workspace inspection
+- workspace dynamic tools are no longer advertised by default
 - wrapper-owned background shell tools exist because async shell control has
   product value and app-server does not expose equivalent public control of
   model-owned command sessions
 
 That keeps the tool surface coherent:
 
-- read-only workspace tools for bounded inspection
+- any retained workspace helpers as fallback code rather than the primary
+  model-facing path
 - background-shell tools for wrapper-owned async control
 - shell for everything open-ended
 
@@ -186,6 +182,7 @@ Use this policy when making any of these decisions:
 
 - whether a new filesystem helper should be a dynamic tool or a shell workflow
 - whether an existing workspace tool should remain supported
+- whether a retained workspace helper should stay hidden or be deleted
 - whether a bug in a convenience tool should be fixed or should trigger
   deprecation instead
 - whether the model should be nudged toward shell-first behavior for a given

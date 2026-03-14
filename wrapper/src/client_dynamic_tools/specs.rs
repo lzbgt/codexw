@@ -4,13 +4,10 @@ use serde_json::Value;
 mod background_shells;
 #[path = "specs/orchestration.rs"]
 mod orchestration;
-#[path = "specs/workspace.rs"]
-mod workspace;
 
 pub(crate) fn dynamic_tool_specs() -> Value {
     let mut specs = Vec::new();
     specs.extend(orchestration::orchestration_tool_specs());
-    specs.extend(workspace::workspace_tool_specs());
     specs.extend(background_shells::background_shell_tool_specs());
     Value::Array(specs)
 }

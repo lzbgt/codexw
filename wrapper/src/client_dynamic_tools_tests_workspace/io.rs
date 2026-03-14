@@ -51,9 +51,34 @@ fn workspace_list_dir_limits_output_without_losing_sorted_order() {
         .expect("text output");
     let lines = text.lines().collect::<Vec<_>>();
     assert_eq!(lines[0], "Directory: .");
+    assert_eq!(lines.len(), 4);
+    assert_eq!(lines[3], "... more entries omitted");
+}
+
+#[test]
+fn workspace_list_dir_sorts_returned_subset_for_small_directories() {
+    let workspace = tempfile::tempdir().expect("tempdir");
+    for name in ["z-last.txt", "a-first.txt"] {
+        std::fs::write(workspace.path().join(name), name).expect("write");
+    }
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "workspace_list_dir",
+            "arguments": {"path": ".", "limit": 5}
+        }),
+        workspace.path().to_str().expect("utf8 path"),
+        &BackgroundShellManager::default(),
+    );
+
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("text output");
+    let lines = text.lines().collect::<Vec<_>>();
+    assert_eq!(lines[0], "Directory: .");
     assert!(lines[1].contains("a-first.txt"));
-    assert!(lines[2].contains("b-second.txt"));
-    assert_eq!(lines[3], "... 2 more entries omitted");
+    assert!(lines[2].contains("z-last.txt"));
 }
 
 #[test]
