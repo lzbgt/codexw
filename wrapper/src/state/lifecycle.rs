@@ -56,6 +56,7 @@ impl AppState {
             models: Vec::new(),
             collaboration_modes: Vec::new(),
             active_collaboration_mode: None,
+            active_supervision_notice: None,
             last_listed_thread_ids: Vec::new(),
             last_file_search_paths: Vec::new(),
             last_status_line: None,
@@ -81,6 +82,7 @@ impl AppState {
         self.last_agent_message = None;
         self.last_turn_diff = None;
         self.last_status_line = None;
+        self.active_supervision_notice = None;
     }
 
     pub(crate) fn reset_thread_context(&mut self) {
@@ -106,6 +108,7 @@ impl AppState {
         self.last_token_usage = None;
         self.active_collaboration_mode = None;
         self.pending_selection = None;
+        self.active_supervision_notice = None;
     }
 
     pub(crate) fn replace_conversation_history(&mut self, history: Vec<ConversationMessage>) {
@@ -168,6 +171,30 @@ impl AppState {
     ) -> Option<super::AsyncToolSupervisionClass> {
         self.oldest_async_tool_activity()
             .and_then(|activity| activity.supervision_class())
+    }
+
+    pub(crate) fn current_async_tool_supervision_notice(&self) -> Option<super::SupervisionNotice> {
+        let activity = self.oldest_async_tool_activity()?;
+        let classification = activity.supervision_class()?;
+        Some(super::SupervisionNotice {
+            classification,
+            tool: activity.tool.clone(),
+            summary: activity.summary.clone(),
+        })
+    }
+
+    pub(crate) fn refresh_async_tool_supervision_notice(
+        &mut self,
+    ) -> Option<super::SupervisionNoticeTransition> {
+        let next_notice = self.current_async_tool_supervision_notice();
+        if self.active_supervision_notice == next_notice {
+            return None;
+        }
+        self.active_supervision_notice = next_notice.clone();
+        match next_notice {
+            Some(notice) => Some(super::SupervisionNoticeTransition::Raised(notice)),
+            None => Some(super::SupervisionNoticeTransition::Cleared),
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 use super::super::super::*;
+use std::time::Duration;
 
 #[test]
 fn ps_command_can_poll_and_terminate_specific_background_shell_jobs() {
@@ -25,11 +26,21 @@ fn ps_command_can_poll_and_terminate_specific_background_shell_jobs() {
         handle_ps_command(&mut Output::plain_text(), &mut state, "terminate 2").expect("terminate");
     assert!(terminate.contains("Terminated background shell job bg-2"));
 
-    let rendered = state
-        .background_shells
-        .render_for_ps_filtered(None)
-        .expect("render shells")
-        .join("\n");
+    let rendered = (0..20)
+        .find_map(|_| {
+            let rendered = state
+                .background_shells
+                .render_for_ps_filtered(None)
+                .expect("render shells")
+                .join("\n");
+            if rendered.contains("terminated") {
+                Some(rendered)
+            } else {
+                std::thread::sleep(Duration::from_millis(25));
+                None
+            }
+        })
+        .expect("rendered terminated shell state");
     assert!(rendered.contains("bg-1"));
     assert!(rendered.contains("bg-2"));
     assert!(rendered.contains("terminated"));

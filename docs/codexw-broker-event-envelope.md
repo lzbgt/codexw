@@ -24,6 +24,12 @@ Candidate envelope:
   "source": "codexw",
   "data": {
     "working": true,
+    "supervision_notice": {
+      "classification": "tool_slow",
+      "recommended_action": "observe_or_interrupt",
+      "tool": "background_shell_start",
+      "summary": "arguments= command=sleep 5 tool=background_shell_start"
+    },
     "async_tool_supervision": {
       "classification": "tool_slow",
       "recommended_action": "observe_or_interrupt",
@@ -153,6 +159,12 @@ Optional means “present only when semantically relevant,” not “randomly om
   "ts_unix_ms": 1760000001500,
   "data": {
     "turn_running": true,
+    "supervision_notice": {
+      "classification": "tool_wedged",
+      "recommended_action": "interrupt_or_exit_resume",
+      "tool": "background_shell_start",
+      "summary": "arguments= command=sleep 5 tool=background_shell_start"
+    },
     "async_tool_supervision": {
       "classification": "tool_wedged",
       "recommended_action": "interrupt_or_exit_resume",
@@ -168,7 +180,8 @@ Optional means “present only when semantically relevant,” not “randomly om
 `status.updated` now also carries the first emitted self-supervision audit-trail
 slice: async-tool supervision classifications such as `tool_slow` and
 `tool_wedged`, plus a narrow recommended-action field such as
-`observe_or_interrupt` or `interrupt_or_exit_resume`.
+`observe_or_interrupt` or `interrupt_or_exit_resume`, and a sticky
+`supervision_notice` object for the active alert lifecycle.
 
 ## Exclusions
 

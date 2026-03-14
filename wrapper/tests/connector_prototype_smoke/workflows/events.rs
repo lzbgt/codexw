@@ -459,6 +459,12 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "client_id": "remote-web",
                                     "lease_seconds": 45
                                 },
+                                "supervision_notice": {
+                                    "classification": "tool_slow",
+                                    "recommended_action": "observe_or_interrupt",
+                                    "tool": "background_shell_start",
+                                    "summary": "arguments= command=sleep 5 tool=background_shell_start"
+                                },
                                 "async_tool_supervision": {
                                     "classification": "tool_slow",
                                     "recommended_action": "observe_or_interrupt",
@@ -481,7 +487,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             ": heartbeat\n",
                             "id: 30\n",
                             "event: status.updated\n",
-                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_slow\",\"recommended_action\":\"observe_or_interrupt\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":21,\"active_request_count\":1}}\n\n"
+                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_slow\",\"recommended_action\":\"observe_or_interrupt\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":21,\"active_request_count\":1},\"supervision_notice\":{\"classification\":\"tool_slow\",\"recommended_action\":\"observe_or_interrupt\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\"}}\n\n"
                         )
                         .as_bytes(),
                     )?;
@@ -498,7 +504,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             ": heartbeat\n",
                             "id: 31\n",
                             "event: status.updated\n",
-                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_wedged\",\"recommended_action\":\"interrupt_or_exit_resume\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":75,\"active_request_count\":1}}\n\n"
+                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_wedged\",\"recommended_action\":\"interrupt_or_exit_resume\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":75,\"active_request_count\":1},\"supervision_notice\":{\"classification\":\"tool_wedged\",\"recommended_action\":\"interrupt_or_exit_resume\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\"}}\n\n"
                         )
                         .as_bytes(),
                     )?;
@@ -524,6 +530,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     )?;
     assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(create_response.contains("\"async_tool_supervision\""));
+    assert!(create_response.contains("\"supervision_notice\""));
 
     let initial_events = client.session_request("GET", "sess_1", "/events", None, &[])?;
     assert!(initial_events.starts_with("HTTP/1.1 200 OK\r\n"));
@@ -534,6 +541,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(initial_events.contains("\"classification\":\"tool_slow\""));
     assert!(initial_events.contains("\"recommended_action\":\"observe_or_interrupt\""));
+    assert!(initial_events.contains("\"supervision_notice\""));
     assert!(initial_events.contains("\"tool\":\"background_shell_start\""));
 
     let resumed_events =
@@ -546,6 +554,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(resumed_events.contains("\"classification\":\"tool_wedged\""));
     assert!(resumed_events.contains("\"recommended_action\":\"interrupt_or_exit_resume\""));
+    assert!(resumed_events.contains("\"supervision_notice\""));
     assert!(resumed_events.contains("\"elapsed_seconds\":75"));
 
     fake_server.join().expect("fake server thread")?;

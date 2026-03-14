@@ -114,6 +114,8 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
     let rendered = render_status_runtime(&cli, &state).join("\n");
     assert!(rendered.contains("async class     tool_wedged"));
     assert!(rendered.contains("async action    interrupt_or_exit_resume"));
+    assert!(rendered.contains("supervision     tool_wedged background_shell_start"));
+    assert!(rendered.contains("supervision act interrupt_or_exit_resume"));
 }
 
 #[test]
@@ -229,4 +231,59 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             .map(|class| class.recommended_action()),
         Some("interrupt_or_exit_resume")
     );
+}
+
+#[test]
+fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(10),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "slow".to_string(),
+            started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
+        },
+    );
+
+    let raised = state.refresh_async_tool_supervision_notice();
+    assert!(matches!(
+        raised,
+        Some(crate::state::SupervisionNoticeTransition::Raised(_))
+    ));
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.classification.label()),
+        Some("tool_slow")
+    );
+
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(10),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "wedged".to_string(),
+            started_at: std::time::Instant::now() - std::time::Duration::from_secs(75),
+        },
+    );
+    let escalated = state.refresh_async_tool_supervision_notice();
+    assert!(matches!(
+        escalated,
+        Some(crate::state::SupervisionNoticeTransition::Raised(_))
+    ));
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.classification.label()),
+        Some("tool_wedged")
+    );
+
+    state.active_async_tool_requests.clear();
+    let cleared = state.refresh_async_tool_supervision_notice();
+    assert_eq!(
+        cleared,
+        Some(crate::state::SupervisionNoticeTransition::Cleared)
+    );
+    assert!(state.active_supervision_notice.is_none());
 }

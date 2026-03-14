@@ -193,13 +193,15 @@ At:
   `tool_wedged`
 - async-tool supervision recommendation changes such as
   `observe_or_interrupt` to `interrupt_or_exit_resume`
+- supervision-notice lifecycle changes such as notice raise, escalation, or
+  clear through the semantic `supervision_notice` field
 
 Likely emission owners:
 
 - runtime status update helpers
 - response/notification handlers that mutate status-relevant fields
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
-  current supervision-classification slice
+  current supervision-classification and `supervision_notice` slice
 
 ### Emit `orchestration.updated`
 

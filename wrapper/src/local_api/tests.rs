@@ -36,6 +36,7 @@ use super::snapshot::LocalApiDependencyEdge;
 use super::snapshot::LocalApiLiveAgentTask;
 use super::snapshot::LocalApiOrchestrationStatus;
 use super::snapshot::LocalApiSnapshot;
+use super::snapshot::LocalApiSupervisionNotice;
 use super::snapshot::LocalApiTranscriptEntry;
 use super::snapshot::LocalApiWorkersSnapshot;
 
@@ -60,6 +61,12 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             elapsed_seconds: 21,
             active_request_count: 1,
+        }),
+        supervision_notice: Some(LocalApiSupervisionNotice {
+            classification: "tool_slow".to_string(),
+            recommended_action: "observe_or_interrupt".to_string(),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
         }),
         orchestration_status: LocalApiOrchestrationStatus {
             main_agent_state: "blocked".to_string(),

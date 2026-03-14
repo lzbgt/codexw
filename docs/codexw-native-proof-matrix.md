@@ -172,7 +172,8 @@ The statuses are:
   - long-running async shell-tool work is not only non-blocking, but also
     classified in operator-visible prompt/runtime surfaces with labels such as
     `tool_slow` and `tool_wedged`, plus narrow recommended actions such as
-    `observe_or_interrupt` and `interrupt_or_exit_resume`
+    `observe_or_interrupt` and `interrupt_or_exit_resume`, plus a sticky
+    `supervision_notice` alert state while the issue remains active
 - Evidence:
   - [codexw-self-supervision.md](codexw-self-supervision.md)
   - [codexw-native-product-status.md](codexw-native-product-status.md)

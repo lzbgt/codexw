@@ -179,6 +179,8 @@ the real connector binary:
   `tool_slow` / `tool_wedged`
 - broker-visible recommended-action hints such as `observe_or_interrupt` and
   `interrupt_or_exit_resume` in `status.updated`
+- broker-visible `supervision_notice` alert state for active supervised tool
+  stalls
 - structured lease-conflict propagation
 - structured connector-local validation failures for malformed injected request
   bodies and malformed client/lease headers

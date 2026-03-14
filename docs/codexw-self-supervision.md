@@ -79,6 +79,12 @@ The first recommended actions should stay narrow and operator-safe:
 - `tool_slow` -> `observe_or_interrupt`
 - `tool_wedged` -> `interrupt_or_exit_resume`
 
+The first emitted recovery signal should also be sticky enough to notice:
+
+- raise a structured `supervision_notice` when a class threshold is crossed
+- keep that notice active while the stalled condition remains true
+- clear the notice explicitly when the tool issue is gone
+
 ## Relationship To Runtime Responsiveness
 
 The first concrete runtime rule should be:

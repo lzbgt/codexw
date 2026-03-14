@@ -57,6 +57,7 @@ drift casually:
 - operator-visible async-tool supervision classifications such as `tool_slow`
   and `tool_wedged` for long-running shell-tool work, with narrow recommended
   actions such as `observe_or_interrupt` and `interrupt_or_exit_resume`
+- a sticky supervision-notice alert state for active async shell-tool stalls
 - the direction that stalled tool/runtime paths should be recoverable through
   self-supervision rather than left as indefinite hangs
 - the direction that optional capabilities should prefer plugin delivery when

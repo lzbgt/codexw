@@ -38,6 +38,7 @@ use crate::runtime_process::effective_cwd;
 use crate::runtime_process::shutdown_child;
 use crate::runtime_process::spawn_server;
 use crate::state::AppState;
+use crate::state::SupervisionNoticeTransition;
 
 pub(crate) fn run(cli: Cli) -> Result<()> {
     let initial_prompt = join_prompt(&cli.prompt);
@@ -127,7 +128,9 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                     break;
                 }
             }
-            Ok(AppEvent::Tick) => {}
+            Ok(AppEvent::Tick) => {
+                handle_supervision_tick(&mut state, &mut output)?;
+            }
             Ok(AppEvent::AsyncToolResponseReady(tool_response)) => {
                 handle_async_tool_response(tool_response, &mut state, &mut output, &mut writer)?;
             }
@@ -174,6 +177,7 @@ fn handle_async_tool_response(
     writer: &mut std::process::ChildStdin,
 ) -> Result<()> {
     let _ = state.finish_async_tool_request(&tool_response.id);
+    let _ = state.refresh_async_tool_supervision_notice();
     let success = tool_response
         .result
         .get("success")
@@ -191,6 +195,25 @@ fn handle_async_tool_response(
             result: tool_response.result,
         },
     )?;
+    Ok(())
+}
+
+fn handle_supervision_tick(state: &mut AppState, output: &mut Output) -> Result<()> {
+    match state.refresh_async_tool_supervision_notice() {
+        Some(SupervisionNoticeTransition::Raised(notice)) => {
+            output.line_stderr(format!(
+                "[self-supervision] {} {} [{}] {}",
+                notice.classification.label(),
+                notice.tool,
+                notice.recommended_action(),
+                notice.summary
+            ))?;
+        }
+        Some(SupervisionNoticeTransition::Cleared) => {
+            output.line_stderr("[self-supervision] async tool supervision cleared")?;
+        }
+        None => {}
+    }
     Ok(())
 }
 
@@ -267,5 +290,51 @@ mod tests {
         .expect("handle async tool response");
 
         assert!(state.active_async_tool_requests.is_empty());
+        assert!(state.active_supervision_notice.is_none());
+    }
+
+    #[test]
+    fn supervision_tick_tracks_raise_escalation_and_clear() {
+        let mut state = AppState::new(true, false);
+        state.record_async_tool_request(
+            RequestId::Integer(7),
+            "background_shell_start".to_string(),
+            "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        );
+        if let Some(activity) = state
+            .active_async_tool_requests
+            .get_mut(&RequestId::Integer(7))
+        {
+            activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(20);
+        }
+        let mut output = Output::default();
+
+        handle_supervision_tick(&mut state, &mut output).expect("raise slow notice");
+        assert_eq!(
+            state
+                .active_supervision_notice
+                .as_ref()
+                .map(|notice| notice.classification.label()),
+            Some("tool_slow")
+        );
+
+        if let Some(activity) = state
+            .active_async_tool_requests
+            .get_mut(&RequestId::Integer(7))
+        {
+            activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(75);
+        }
+        handle_supervision_tick(&mut state, &mut output).expect("raise wedged notice");
+        assert_eq!(
+            state
+                .active_supervision_notice
+                .as_ref()
+                .map(|notice| notice.classification.label()),
+            Some("tool_wedged")
+        );
+
+        state.finish_async_tool_request(&RequestId::Integer(7));
+        handle_supervision_tick(&mut state, &mut output).expect("clear notice");
+        assert!(state.active_supervision_notice.is_none());
     }
 }

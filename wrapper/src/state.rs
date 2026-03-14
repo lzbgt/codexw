@@ -18,3 +18,5 @@ pub(crate) use types::OrchestrationState;
 pub(crate) use types::PendingSelection;
 pub(crate) use types::ProcessOutputBuffer;
 pub(crate) use types::SessionOverrides;
+pub(crate) use types::SupervisionNotice;
+pub(crate) use types::SupervisionNoticeTransition;

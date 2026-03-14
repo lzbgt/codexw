@@ -171,6 +171,7 @@ fn session_event_payload(snapshot: &LocalApiSnapshot) -> Value {
         "thread_id": snapshot.thread_id,
         "objective": snapshot.objective,
         "active_personality": snapshot.active_personality,
+        "supervision_notice": snapshot.supervision_notice,
     })
 }
 
@@ -190,5 +191,6 @@ fn status_event_payload(snapshot: &LocalApiSnapshot) -> Value {
         "thread_id": snapshot.thread_id,
         "turn_running": snapshot.turn_running,
         "async_tool_supervision": snapshot.async_tool_supervision,
+        "supervision_notice": snapshot.supervision_notice,
     })
 }

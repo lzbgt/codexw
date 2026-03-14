@@ -77,6 +77,18 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             format_elapsed(Some(async_tool.started_at))
         ));
     }
+    if let Some(notice) = state
+        .active_supervision_notice
+        .clone()
+        .or_else(|| state.current_async_tool_supervision_notice())
+    {
+        lines.push(format!(
+            "supervision     {} {}",
+            notice.classification.label(),
+            notice.tool
+        ));
+        lines.push(format!("supervision act {}", notice.recommended_action()));
+    }
     lines.extend(render_rate_limit_lines(state.rate_limits.as_ref()));
     if let Some(token_usage) = render_token_usage_summary(state.last_token_usage.as_ref()) {
         lines.push(format!("tokens          {token_usage}"));

@@ -79,9 +79,14 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_supervision"]["recommended_action"],
         "observe_or_interrupt"
     );
+    assert_eq!(body["supervision_notice"]["classification"], "tool_slow");
     assert_eq!(
         body["session"]["async_tool_supervision"]["tool"],
         "background_shell_start"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["recommended_action"],
+        "observe_or_interrupt"
     );
     assert_eq!(body["orchestration"]["main_agent_state"], "blocked");
 }
@@ -115,6 +120,10 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(
         body["session"]["async_tool_supervision"]["recommended_action"],
         "observe_or_interrupt"
+    );
+    assert_eq!(
+        body["session"]["supervision_notice"]["classification"],
+        "tool_slow"
     );
     assert_eq!(body["active_turn_id"], "turn_456");
 }

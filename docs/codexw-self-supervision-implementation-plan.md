@@ -65,6 +65,10 @@ clients do not need to invent recovery guidance from the class label alone:
 - `tool_slow` -> `observe_or_interrupt`
 - `tool_wedged` -> `interrupt_or_exit_resume`
 
+It should also raise a sticky `supervision_notice` record when the class
+crosses into a supervised state, so the runtime and external clients can react
+to an alert lifecycle instead of polling only the raw classification field.
+
 ### 4. Recovery policy hooks
 
 When a stalled state is classified, the runtime should decide whether to:
@@ -84,6 +88,10 @@ The first audit-trail slice should expose supervision classifications through
 the local API snapshot and `status.updated` SSE events, so WebUI or broker
 clients can observe `tool_slow` and `tool_wedged` plus their recommended next
 operator action without scraping prompt text.
+
+That same slice should carry `supervision_notice` in the snapshot and
+`status.updated` payload so alert raise/escalate/clear state is semantic rather
+than inferred from prompt wording.
 
 ## Explicitly Deferred
 

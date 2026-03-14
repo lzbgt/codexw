@@ -85,6 +85,25 @@ impl AsyncToolSupervisionClass {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct SupervisionNotice {
+    pub(crate) classification: AsyncToolSupervisionClass,
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+}
+
+impl SupervisionNotice {
+    pub(crate) fn recommended_action(&self) -> &'static str {
+        self.classification.recommended_action()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum SupervisionNoticeTransition {
+    Raised(SupervisionNotice),
+    Cleared,
+}
+
 pub(crate) const ASYNC_TOOL_SLOW_THRESHOLD: Duration = Duration::from_secs(15);
 pub(crate) const ASYNC_TOOL_WEDGED_THRESHOLD: Duration = Duration::from_secs(60);
 
@@ -151,6 +170,7 @@ pub(crate) struct AppState {
     pub(crate) models: Vec<ModelCatalogEntry>,
     pub(crate) collaboration_modes: Vec<CollaborationModePreset>,
     pub(crate) active_collaboration_mode: Option<CollaborationModePreset>,
+    pub(crate) active_supervision_notice: Option<SupervisionNotice>,
     pub(crate) last_listed_thread_ids: Vec<String>,
     pub(crate) last_file_search_paths: Vec<String>,
     pub(crate) last_status_line: Option<String>,
