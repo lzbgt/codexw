@@ -58,9 +58,8 @@ filesystem shell commands every time it wants a quick answer.
 
 ### Structured Model Interface
 
-The workspace tool layer in
-[wrapper/src/client_dynamic_tools/specs/workspace.rs](../wrapper/src/client_dynamic_tools/specs/workspace.rs)
-gives the model stable parameter shapes such as:
+The older workspace tool layer was able to give the model stable parameter
+shapes such as:
 
 - `path`
 - `query`
