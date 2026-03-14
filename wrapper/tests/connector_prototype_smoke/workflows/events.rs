@@ -536,6 +536,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "abandoned_request_count": 1,
                                     "saturation_threshold": 2,
                                     "saturated": false,
+                                    "oldest_request_id": "8",
+                                    "oldest_thread_name": "codexw-bgtool-background_shell_start-8",
                                     "oldest_tool": "background_shell_start",
                                     "oldest_summary": "arguments= command=sleep 5 tool=background_shell_start",
                                     "oldest_source_call_id": "call_456",
@@ -668,6 +670,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "abandoned_request_count": 1,
                             "saturation_threshold": 2,
                             "saturated": false,
+                            "oldest_request_id": "8",
+                            "oldest_thread_name": "codexw-bgtool-background_shell_start-8",
                             "oldest_tool": "background_shell_start",
                             "oldest_summary": "arguments= command=sleep 5 tool=background_shell_start",
                             "oldest_source_call_id": "call_456",
@@ -833,6 +837,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "abandoned_request_count": 2,
                             "saturation_threshold": 2,
                             "saturated": true,
+                            "oldest_request_id": "8",
+                            "oldest_thread_name": "codexw-bgtool-background_shell_start-8",
                             "oldest_tool": "background_shell_start",
                             "oldest_summary": "arguments= command=sleep 5 tool=background_shell_start",
                             "oldest_source_call_id": "call_456",
@@ -968,6 +974,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
         create_response
             .contains("\"oldest_observation_state\":\"wrapper_background_shell_streaming_output\"")
     );
+    assert!(create_response.contains("\"oldest_request_id\":\"8\""));
+    assert!(
+        create_response
+            .contains("\"oldest_thread_name\":\"codexw-bgtool-background_shell_start-8\"")
+    );
     assert!(create_response.contains("\"oldest_output_state\":\"recent_output_observed\""));
     assert!(create_response.contains("\"oldest_observed_background_shell_job\""));
     assert!(create_response.contains("\"async_tool_workers\""));
@@ -1008,6 +1019,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
         "{initial_events}"
     );
     assert!(initial_events.contains("\"oldest_source_call_id\":\"call_456\""));
+    assert!(initial_events.contains("\"oldest_request_id\":\"8\""));
+    assert!(
+        initial_events
+            .contains("\"oldest_thread_name\":\"codexw-bgtool-background_shell_start-8\"")
+    );
     assert!(initial_events.contains("\"oldest_target_background_shell_reference\":\"dev.api\""));
     assert!(initial_events.contains("\"oldest_target_background_shell_job_id\":\"bg-7\""));
     assert!(
@@ -1047,6 +1063,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"next_check_in_seconds\":30"));
     assert!(resumed_events.contains("\"async_tool_backpressure\""));
     assert!(resumed_events.contains("\"oldest_source_call_id\":\"call_456\""));
+    assert!(resumed_events.contains("\"oldest_request_id\":\"8\""));
+    assert!(
+        resumed_events
+            .contains("\"oldest_thread_name\":\"codexw-bgtool-background_shell_start-8\"")
+    );
     assert!(resumed_events.contains("\"oldest_target_background_shell_reference\":\"dev.api\""));
     assert!(resumed_events.contains("\"oldest_target_background_shell_job_id\":\"bg-7\""));
     assert!(resumed_events.contains(

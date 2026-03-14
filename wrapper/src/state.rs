@@ -10,6 +10,7 @@ pub(crate) use crate::state_helpers::emit_status_line;
 pub(crate) use crate::state_helpers::get_string;
 pub(crate) use crate::state_helpers::summarize_text;
 pub(crate) use crate::state_helpers::thread_id;
+pub(crate) use lifecycle::request_id_label;
 pub(crate) use types::AbandonedAsyncToolRequest;
 pub(crate) use types::AppState;
 pub(crate) use types::AsyncToolActivity;

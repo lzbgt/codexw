@@ -129,6 +129,11 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_backpressure"]["abandoned_request_count"],
         1
     );
+    assert_eq!(body["async_tool_backpressure"]["oldest_request_id"], "8");
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_thread_name"],
+        "codexw-bgtool-background_shell_start-8"
+    );
     assert_eq!(
         body["async_tool_backpressure"]["saturation_threshold"],
         crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
@@ -235,6 +240,10 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["session"]["async_tool_backpressure"]["oldest_observation_state"],
         "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["session"]["async_tool_backpressure"]["oldest_request_id"],
+        "8"
     );
     assert_eq!(
         body["session"]["async_tool_workers"][0]["supervision_classification"],

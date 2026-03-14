@@ -78,12 +78,14 @@ pub(crate) fn handle_tool_request(
             if is_background_shell_tool(tool) {
                 if state.async_tool_backpressure_active() {
                     let backlog = state.abandoned_async_tool_request_count();
-                    let oldest = state.oldest_abandoned_async_tool_request();
+                    let oldest = state.oldest_abandoned_async_tool_entry();
                     let oldest_summary = oldest
-                        .map(|request| request.summary.as_str())
+                        .map(|(_, request)| request.summary.as_str())
                         .unwrap_or("background-shell async backlog saturated");
                     let oldest_context = oldest
-                        .map(|request| summarize_abandoned_backpressure_context(state, request))
+                        .map(|(_, request)| {
+                            summarize_abandoned_backpressure_context(state, request)
+                        })
                         .unwrap_or_default();
                     output.line_stderr(format!(
                         "[self-supervision] refusing async tool while abandoned backlog is saturated ({backlog}): {}{}",
@@ -244,15 +246,20 @@ fn background_shell_backpressure_failure(
 
 fn background_shell_backpressure_details(
     state: &AppState,
-    request: Option<&crate::state::AbandonedAsyncToolRequest>,
+    request: Option<(
+        &crate::rpc::RequestId,
+        &crate::state::AbandonedAsyncToolRequest,
+    )>,
 ) -> serde_json::Value {
     match request {
-        Some(request) => {
+        Some((request_id, request)) => {
             let observation = state.abandoned_async_tool_observation(request);
             serde_json::json!({
                 "abandoned_request_count": state.abandoned_async_tool_request_count(),
                 "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
                 "saturated": state.async_tool_backpressure_active(),
+                "oldest_request_id": crate::state::request_id_label(request_id),
+                "oldest_thread_name": request.worker_thread_name.as_str(),
                 "oldest_tool": request.tool.as_str(),
                 "oldest_summary": request.summary.as_str(),
                 "oldest_source_call_id": request.source_call_id.as_deref(),
@@ -273,6 +280,8 @@ fn background_shell_backpressure_details(
             "abandoned_request_count": state.abandoned_async_tool_request_count(),
             "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             "saturated": state.async_tool_backpressure_active(),
+            "oldest_request_id": serde_json::Value::Null,
+            "oldest_thread_name": serde_json::Value::Null,
             "oldest_tool": serde_json::Value::Null,
             "oldest_summary": serde_json::Value::Null,
             "oldest_source_call_id": serde_json::Value::Null,
@@ -703,14 +712,14 @@ mod tests {
         }
         let _expired = state.expire_timed_out_async_tool_requests();
         let oldest = state
-            .oldest_abandoned_async_tool_request()
+            .oldest_abandoned_async_tool_entry()
             .expect("oldest abandoned request");
 
-        let context = summarize_abandoned_backpressure_context(&state, oldest);
+        let context = summarize_abandoned_backpressure_context(&state, oldest.1);
         let failure = background_shell_backpressure_failure(
             "background_shell_start",
             1,
-            &oldest.summary,
+            &oldest.1.summary,
             &context,
             background_shell_backpressure_details(&state, Some(oldest)),
         );
@@ -727,6 +736,11 @@ mod tests {
         assert!(failure_text.contains("oldest backlog summary"));
         assert!(failure_text.contains("job=bg-1 running"));
         assert_eq!(failure["failure_kind"], "async_tool_backpressure");
+        assert_eq!(failure["backpressure"]["oldest_request_id"], "9");
+        assert_eq!(
+            failure["backpressure"]["oldest_thread_name"],
+            "codexw-async-tool-worker-9"
+        );
         assert_eq!(failure["backpressure"]["oldest_source_call_id"], "call-9");
         assert_eq!(
             failure["backpressure"]["oldest_target_background_shell_reference"],

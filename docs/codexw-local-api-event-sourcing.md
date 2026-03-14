@@ -195,7 +195,8 @@ At:
   `observe_or_interrupt` to `interrupt_or_exit_resume`
 - abandoned async backlog changes through `async_tool_backpressure`, including
   count, saturation, oldest timed-out worker summary, and retained source /
-  target facts such as `oldest_source_call_id`,
+  target facts such as `oldest_request_id`, `oldest_thread_name`,
+  `oldest_source_call_id`,
   `oldest_target_background_shell_reference`, and
   `oldest_target_background_shell_job_id`, plus oldest-worker observation /
   output / matched-job facts such as `oldest_observation_state`,
@@ -232,7 +233,8 @@ Likely emission owners:
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
   current supervision-classification, `async_tool_backpressure`,
   `async_tool_workers`, `target_background_shell_reference` /
-  `target_background_shell_job_id`, `oldest_source_call_id` /
+  `target_background_shell_job_id`, `oldest_request_id` /
+  `oldest_thread_name` / `oldest_source_call_id` /
   `oldest_target_background_shell_reference` /
   `oldest_target_background_shell_job_id`,
   `oldest_observation_state` / `oldest_output_state` /

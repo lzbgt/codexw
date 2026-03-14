@@ -306,7 +306,8 @@ explicit `recovery_options` such as `observe_status`, `interrupt_turn`, and
 `exit_and_resume`, plus `async_tool_backpressure` so remote clients can see the
 abandoned async worker backlog and whether new background-shell async requests
 should currently be refused, including retained timeout-correlation facts such
-as `oldest_source_call_id`, `oldest_target_background_shell_reference`, and
+as `oldest_request_id`, `oldest_thread_name`, `oldest_source_call_id`,
+`oldest_target_background_shell_reference`, and
 `oldest_target_background_shell_job_id`, plus oldest abandoned-worker
 inspection facts such as `oldest_observation_state`,
 `oldest_output_state`, and `oldest_observed_background_shell_job`, plus

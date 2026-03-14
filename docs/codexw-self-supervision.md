@@ -186,7 +186,8 @@ first-class safety issue:
   oldest abandoned worker still carries current `observation_state`,
   `output_state`, and `observed_background_shell_job` instead of degrading to
   only an old summary string; the backlog slice should carry that same state
-  through `oldest_observation_state`, `oldest_output_state`, and
+  through `oldest_request_id`, `oldest_thread_name`,
+  `oldest_observation_state`, `oldest_output_state`, and
   `oldest_observed_background_shell_job`
 - saturation refusal should reuse that same oldest-worker shell context, so a
   locally refused async request tells the operator which abandoned tool/shell

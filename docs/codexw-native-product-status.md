@@ -92,8 +92,8 @@ The implemented native-side product already has:
 - retained oldest-worker observation/output visibility on
   `async_tool_backpressure`, so backlog status exposes the same live shell
   facts instead of only a timed-out summary string through
-  `oldest_observation_state`, `oldest_output_state`, and
-  `oldest_observed_background_shell_job`
+  `oldest_request_id`, `oldest_thread_name`, `oldest_observation_state`,
+  `oldest_output_state`, and `oldest_observed_background_shell_job`
 - deterministic oldest-worker selection for those backlog surfaces, so
   `oldest_*` fields refer to the oldest original async request rather than
   unstable timeout-drain order

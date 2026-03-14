@@ -162,12 +162,17 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             ));
         }
     }
-    if let Some(abandoned) = state.oldest_abandoned_async_tool_request() {
+    if let Some((request_id, abandoned)) = state.oldest_abandoned_async_tool_entry() {
         let observation = state.abandoned_async_tool_observation(abandoned);
         lines.push(format!(
             "async aban      {}",
             state.abandoned_async_tool_request_count()
         ));
+        lines.push(format!(
+            "async stale rq  {}",
+            crate::state::request_id_label(request_id)
+        ));
+        lines.push(format!("async stale wk  {}", abandoned.worker_thread_name));
         lines.push(format!(
             "async stale     {}",
             summarize_text(&abandoned.summary)

@@ -108,6 +108,8 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
             abandoned_request_count: 1,
             saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             saturated: false,
+            oldest_request_id: "8".to_string(),
+            oldest_thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
             oldest_tool: "background_shell_start".to_string(),
             oldest_summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             oldest_source_call_id: Some("call_2".to_string()),

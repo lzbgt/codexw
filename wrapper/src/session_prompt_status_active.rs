@@ -137,7 +137,7 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             append_async_backlog_suffix(state, detail),
         ));
     }
-    let abandoned = state.oldest_abandoned_async_tool_request()?;
+    let (request_id, abandoned) = state.oldest_abandoned_async_tool_entry()?;
     let detail = if state.async_tool_backpressure_active() {
         format!(
             "async backlog saturated {}: {}",
@@ -151,6 +151,14 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             abandoned.summary
         )
     };
+    let request_detail = format!(
+        "; req {}",
+        summarize_inline(&crate::state::request_id_label(request_id))
+    );
+    let worker_detail = format!(
+        "; worker {}",
+        summarize_inline(&abandoned.worker_thread_name)
+    );
     let source_detail = abandoned
         .source_call_id
         .as_deref()
@@ -192,7 +200,9 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
     };
     Some((
         abandoned.timed_out_at,
-        format!("{detail}{source_detail}{target_detail}{observation_detail}"),
+        format!(
+            "{detail}{request_detail}{worker_detail}{source_detail}{target_detail}{observation_detail}"
+        ),
     ))
 }
 

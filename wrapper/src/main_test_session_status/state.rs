@@ -569,6 +569,8 @@ fn status_snapshot_includes_abandoned_async_backpressure() {
     });
     let rendered = render_status_runtime(&cli, &state).join("\n");
     assert!(rendered.contains("async aban      1"));
+    assert!(rendered.contains("async stale rq  21"));
+    assert!(rendered.contains("async stale wk  codexw-async-tool-worker-21"));
     assert!(
         rendered.contains("async stale     arguments= command=sleep 5 tool=background_shell_start")
     );

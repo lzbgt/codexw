@@ -98,6 +98,14 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         1
     );
     assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_request_id"],
+        "8"
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_thread_name"],
+        "codexw-bgtool-background_shell_start-8"
+    );
+    assert_eq!(
         events[2].data["async_tool_backpressure"]["oldest_hard_timeout_seconds"],
         15
     );
@@ -329,6 +337,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             abandoned_request_count: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             saturated: true,
+            oldest_request_id: "8".to_string(),
+            oldest_thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
             oldest_tool: "background_shell_start".to_string(),
             oldest_summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             oldest_source_call_id: Some("call_2".to_string()),
@@ -550,6 +560,14 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         "bg-1"
     );
     assert_eq!(events[1].data["async_tool_backpressure"]["saturated"], true);
+    assert_eq!(
+        events[1].data["async_tool_backpressure"]["oldest_request_id"],
+        "8"
+    );
+    assert_eq!(
+        events[1].data["async_tool_backpressure"]["oldest_thread_name"],
+        "codexw-bgtool-background_shell_start-8"
+    );
     assert_eq!(
         events[1].data["async_tool_backpressure"]["oldest_observation_state"],
         "wrapper_background_shell_terminal_without_tool_response"

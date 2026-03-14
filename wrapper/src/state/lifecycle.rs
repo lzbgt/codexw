@@ -245,15 +245,26 @@ impl AppState {
         self.abandoned_async_tool_requests.len()
     }
 
-    pub(crate) fn oldest_abandoned_async_tool_request(&self) -> Option<&AbandonedAsyncToolRequest> {
+    pub(crate) fn oldest_abandoned_async_tool_entry(
+        &self,
+    ) -> Option<(&RequestId, &AbandonedAsyncToolRequest)> {
         self.abandoned_async_tool_requests
-            .values()
-            .min_by(|left, right| {
+            .iter()
+            .min_by(|(left_id, left), (right_id, right)| {
                 left.started_at
                     .cmp(&right.started_at)
                     .then_with(|| left.timed_out_at.cmp(&right.timed_out_at))
                     .then_with(|| left.worker_thread_name.cmp(&right.worker_thread_name))
+                    .then_with(|| request_id_label(left_id).cmp(&request_id_label(right_id)))
             })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn oldest_abandoned_async_tool_request(
+        &self,
+    ) -> Option<&AbandonedAsyncToolRequest> {
+        self.oldest_abandoned_async_tool_entry()
+            .map(|(_, request)| request)
     }
 
     pub(crate) fn async_tool_worker_statuses(&self) -> Vec<AsyncToolWorkerStatus> {
@@ -549,7 +560,7 @@ impl Default for AppState {
     }
 }
 
-fn request_id_label(id: &RequestId) -> String {
+pub(crate) fn request_id_label(id: &RequestId) -> String {
     match id {
         RequestId::Integer(value) => value.to_string(),
         RequestId::String(value) => value.clone(),

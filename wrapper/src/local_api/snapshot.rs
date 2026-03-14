@@ -72,6 +72,8 @@ pub(crate) struct LocalApiAsyncToolBackpressure {
     pub(crate) abandoned_request_count: usize,
     pub(crate) saturation_threshold: usize,
     pub(crate) saturated: bool,
+    pub(crate) oldest_request_id: String,
+    pub(crate) oldest_thread_name: String,
     pub(crate) oldest_tool: String,
     pub(crate) oldest_summary: String,
     pub(crate) oldest_source_call_id: Option<String>,
@@ -401,12 +403,14 @@ fn async_tool_supervision_snapshot(
 }
 
 fn async_tool_backpressure_snapshot(state: &AppState) -> Option<LocalApiAsyncToolBackpressure> {
-    let abandoned = state.oldest_abandoned_async_tool_request()?;
+    let (request_id, abandoned) = state.oldest_abandoned_async_tool_entry()?;
     let observation = state.abandoned_async_tool_observation(abandoned);
     Some(LocalApiAsyncToolBackpressure {
         abandoned_request_count: state.abandoned_async_tool_request_count(),
         saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
         saturated: state.async_tool_backpressure_active(),
+        oldest_request_id: crate::state::request_id_label(request_id),
+        oldest_thread_name: abandoned.worker_thread_name.clone(),
         oldest_tool: abandoned.tool.clone(),
         oldest_summary: abandoned.summary.clone(),
         oldest_source_call_id: abandoned.source_call_id.clone(),

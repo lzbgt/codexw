@@ -334,6 +334,8 @@ fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() 
     let rendered = render_prompt_status(&state);
 
     assert!(rendered.contains("async backlog 1"));
+    assert!(rendered.contains("req 11"));
+    assert!(rendered.contains("worker codexw-async-tool-worker-11"));
     assert!(rendered.contains("background_shell_wait_ready"));
     assert!(rendered.contains("call call-11"));
     assert!(rendered.contains("target dev.api->bg-1"));
@@ -366,6 +368,8 @@ fn prompt_status_mentions_saturated_async_backlog() {
     let rendered = render_prompt_status(&state);
 
     assert!(rendered.contains("async backlog saturated"));
+    assert!(rendered.contains("req 1"));
+    assert!(rendered.contains("worker codexw-async-tool-worker-1"));
 }
 
 #[test]
