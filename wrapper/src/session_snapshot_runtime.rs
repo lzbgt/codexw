@@ -61,6 +61,9 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             "async tools     {}",
             state.active_async_tool_requests.len()
         ));
+        if let Some(classification) = state.oldest_async_tool_supervision_class() {
+            lines.push(format!("async class     {}", classification.label()));
+        }
         lines.push(format!(
             "async tool      {}",
             summarize_text(&async_tool.summary)

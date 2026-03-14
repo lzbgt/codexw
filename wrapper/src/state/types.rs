@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::PathBuf;
+use std::time::Duration;
 use std::time::Instant;
 
 use crate::background_shells::BackgroundShellManager;
@@ -55,11 +56,46 @@ pub(crate) struct ConversationMessage {
     pub(crate) text: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AsyncToolSupervisionClass {
+    ToolSlow,
+    ToolWedged,
+}
+
+impl AsyncToolSupervisionClass {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Self::ToolSlow => "tool_slow",
+            Self::ToolWedged => "tool_wedged",
+        }
+    }
+}
+
+pub(crate) const ASYNC_TOOL_SLOW_THRESHOLD: Duration = Duration::from_secs(15);
+pub(crate) const ASYNC_TOOL_WEDGED_THRESHOLD: Duration = Duration::from_secs(60);
+
 #[derive(Debug, Clone)]
 pub(crate) struct AsyncToolActivity {
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) started_at: Instant,
+}
+
+impl AsyncToolActivity {
+    pub(crate) fn elapsed(&self) -> Duration {
+        Instant::now().saturating_duration_since(self.started_at)
+    }
+
+    pub(crate) fn supervision_class(&self) -> Option<AsyncToolSupervisionClass> {
+        let elapsed = self.elapsed();
+        if elapsed >= ASYNC_TOOL_WEDGED_THRESHOLD {
+            Some(AsyncToolSupervisionClass::ToolWedged)
+        } else if elapsed >= ASYNC_TOOL_SLOW_THRESHOLD {
+            Some(AsyncToolSupervisionClass::ToolSlow)
+        } else {
+            None
+        }
+    }
 }
 
 pub(crate) struct AppState {

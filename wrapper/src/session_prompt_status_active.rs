@@ -82,6 +82,11 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
     } else {
         format!("async tool {}: {}", async_tool.tool, async_tool.summary)
     };
+    let detail = if let Some(classification) = state.oldest_async_tool_supervision_class() {
+        format!("{} {detail}", classification.label())
+    } else {
+        detail
+    };
     Some((async_tool.started_at, detail))
 }
 

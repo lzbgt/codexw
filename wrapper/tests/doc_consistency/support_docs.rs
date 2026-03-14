@@ -548,6 +548,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-product-status.md",
     );
     assert_contains_case_insensitive(
+        &native_status,
+        "tool_slow",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "tool_wedged",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "terminal-first",
         "docs/codexw-native-proof-matrix.md",
@@ -581,6 +591,26 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &native_policy,
         "async shell-tool",
         "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "tool_slow",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "tool_wedged",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "tool_slow",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "tool_wedged",
+        "docs/codexw-native-proof-matrix.md",
     );
     assert_contains_case_insensitive(
         &native_hardening,
@@ -644,6 +674,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
+        &self_supervision,
+        "tool_slow",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "tool_wedged",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
         &self_supervision_plan,
         "background-shell dynamic tools",
         "docs/codexw-self-supervision-implementation-plan.md",
@@ -651,6 +691,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision_plan,
         "plugin-first",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "tool_slow",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "tool_wedged",
         "docs/codexw-self-supervision-implementation-plan.md",
     );
     assert_contains_case_insensitive(

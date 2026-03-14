@@ -165,6 +165,25 @@ The statuses are:
   - this does not replace human review, but it does turn the highest-signal
     support-claim invariants into a regression-proof surface
 
+### 10. Async shell-tool supervision classifications are now operator-visible
+
+- Status: `strong`
+- Claim:
+  - long-running async shell-tool work is not only non-blocking, but also
+    classified in operator-visible prompt/runtime surfaces with labels such as
+    `tool_slow` and `tool_wedged`
+- Evidence:
+  - [codexw-self-supervision.md](codexw-self-supervision.md)
+  - [codexw-native-product-status.md](codexw-native-product-status.md)
+  - [codexw-native-support-policy.md](codexw-native-support-policy.md)
+  - `wrapper/src/state/types.rs`
+  - `wrapper/src/session_prompt_status_active.rs`
+  - `wrapper/src/session_snapshot_runtime.rs`
+  - regression coverage in `wrapper/src/main_test_session_status/`
+- Notes:
+  - this is the first concrete emitted classification slice, not yet the full
+    recovery-policy system described by the self-supervision plan
+
 ## What Would Upgrade Or Change This Matrix
 
 The matrix should change if any of these happen:

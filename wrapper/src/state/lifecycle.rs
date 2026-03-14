@@ -162,6 +162,13 @@ impl AppState {
             .values()
             .min_by_key(|activity| activity.started_at)
     }
+
+    pub(crate) fn oldest_async_tool_supervision_class(
+        &self,
+    ) -> Option<super::AsyncToolSupervisionClass> {
+        self.oldest_async_tool_activity()
+            .and_then(|activity| activity.supervision_class())
+    }
 }
 
 impl Default for AppState {

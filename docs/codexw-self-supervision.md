@@ -71,6 +71,9 @@ Useful first classes:
 These classifications should be visible in operator-facing status rather than
 hidden inside internal timers.
 
+The first emitted native runtime slice should at least expose `tool_slow` and
+`tool_wedged` for long-running async shell-tool work.
+
 ## Relationship To Runtime Responsiveness
 
 The first concrete runtime rule should be:

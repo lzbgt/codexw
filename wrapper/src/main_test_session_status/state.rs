@@ -78,6 +78,44 @@ fn status_snapshot_includes_async_tool_fields() {
 }
 
 #[test]
+fn status_snapshot_includes_async_tool_supervision_classification() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    state.turn_running = true;
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(13),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
+        },
+    );
+    let cli = crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: false,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        local_api: false,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
+        prompt: Vec::new(),
+    });
+    let rendered = render_status_runtime(&cli, &state).join("\n");
+    assert!(rendered.contains("async class     tool_wedged"));
+}
+
+#[test]
 fn resetting_thread_context_clears_stream_buffers() {
     let mut state = crate::state::AppState::new(true, false);
     state
@@ -144,4 +182,38 @@ fn finishing_async_tool_request_removes_it_from_status_tracking() {
     assert!(removed.is_some());
     assert!(state.active_async_tool_requests.is_empty());
     assert!(state.oldest_async_tool_activity().is_none());
+}
+
+#[test]
+fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(10),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "slow".to_string(),
+            started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
+        },
+    );
+    assert_eq!(
+        state
+            .oldest_async_tool_supervision_class()
+            .map(|class| class.label()),
+        Some("tool_slow")
+    );
+
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(10),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "wedged".to_string(),
+            started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
+        },
+    );
+    assert_eq!(
+        state
+            .oldest_async_tool_supervision_class()
+            .map(|class| class.label()),
+        Some("tool_wedged")
+    );
 }

@@ -60,6 +60,23 @@ fn prompt_status_mentions_async_tool_activity_when_present() {
 }
 
 #[test]
+fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.turn_running = true;
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(8),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            started_at: Instant::now() - Duration::from_secs(20),
+        },
+    );
+    let rendered = render_prompt_status(&state);
+    assert!(rendered.contains("tool_slow"));
+    assert!(rendered.contains("async tool background_shell_start"));
+}
+
+#[test]
 fn prompt_status_mentions_startup_resume_picker() {
     let mut state = crate::state::AppState::new(true, false);
     state.startup_resume_picker = true;

@@ -82,15 +82,19 @@ fn background_shell_poll_rejects_exhausted_cursor_on_terminal_job() {
         .expect("start failing background shell");
 
     let mut rendered = String::new();
-    for _ in 0..20 {
+    for _ in 0..40 {
         rendered = manager
             .poll_from_tool(&json!({"jobId": "bg-1"}))
             .expect("poll terminal background shell");
-        if rendered.contains("alpha") && rendered.contains("Next afterLine: 1") {
+        if rendered.contains("Status: failed")
+            && rendered.contains("alpha")
+            && rendered.contains("Next afterLine: 1")
+        {
             break;
         }
         thread::sleep(Duration::from_millis(25));
     }
+    assert!(rendered.contains("Status: failed"));
 
     let err = manager
         .poll_from_tool(&json!({"jobId": "bg-1", "afterLine": 1}))

@@ -56,6 +56,9 @@ Emit machine- and operator-readable classifications such as:
 - `shell_start_stalled`
 - `self_handoff_ack_timeout`
 
+The first concrete emitted slice should classify long-running async shell-tool
+work at least as `tool_slow` and `tool_wedged` in prompt/runtime status.
+
 ### 4. Recovery policy hooks
 
 When a stalled state is classified, the runtime should decide whether to:
