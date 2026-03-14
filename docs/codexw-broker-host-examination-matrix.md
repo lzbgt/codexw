@@ -41,6 +41,7 @@ Status labels:
 | --- | --- | --- | --- |
 | Inspect session identity and attachment state | strong | Session create/list/inspect/attach plus attachment renew/release through local API, connector aliases, and fixture/smoke coverage | No major gap on the currently claimed route surface. |
 | Observe live progress and replay recent history | strong | Transcript snapshot, semantic SSE session events, and `Last-Event-ID` replay/resume | Event taxonomy is semantic and replayable, but not yet frozen as a richer app-facing product schema beyond the current adapter contract. |
+| Diagnose slow or wedged wrapper-owned async shell work remotely | strong | `status.updated`, session snapshot supervision state, explicit classifications such as `tool_slow` / `tool_wedged`, correlated `observed_background_shell_job`, `async_tool_backpressure`, and `async_tool_workers` | The current surface can show ownership, correlated `bg-*` shell facts, and abandoned worker backlog, but it is still not proof of true in-worker forward progress; remote clients are observing the wrapper supervision lane rather than controlling a separate app-server background-task API. |
 | Inspect orchestration blockers, workers, and dependency state | strong | Orchestration status/workers/dependencies routes plus broker-style aliases and fixture coverage | The current surface is already useful for app/WebUI state views; schema freezing remains a support-level decision. |
 | Start and control host shell work remotely | strong | Shell list/start/detail/poll/send/terminate through the local API, connector aliases, and process-level smoke | This is the current primary broker-visible host execution surface. |
 | Inspect reusable host services and capabilities | strong | Service list/detail/attach/wait/run plus capability list/detail, with mutation coverage for provide/depend/contract/relabel | Useful for remote service-centric inspection and interaction flows today. |
@@ -70,6 +71,8 @@ normalization.
 Today, host results are exposed through:
 
 - transcript snapshots
+- supervision/status snapshots for active async shell-tool ownership and
+  correlated shell-job facts
 - shell snapshots and control responses
 - semantic event payloads
 - service attachment metadata and recipe outputs
@@ -108,7 +111,8 @@ When evaluating broker-facing changes, use this sequence:
 
 1. Can the workflow already be expressed through session, event, shell, or
    service routes?
-2. If yes, keep the current shell/transcript/event-first posture explicit.
+2. If yes, keep the current shell/transcript/event-first posture explicit,
+   including the supervision/status slice for wrapper-owned async shell work.
 3. If the remaining need is stable artifact browsing or download semantics,
    track it as an artifact-contract gap instead of inventing another ad hoc
    shell or transcript route.

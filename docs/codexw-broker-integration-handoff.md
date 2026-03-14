@@ -47,6 +47,8 @@ experimental adapter surface for:
 - turn start / interrupt
 - transcript fetch
 - SSE event consumption and `Last-Event-ID` replay/resume
+- semantic `status.updated` supervision slices for async tool stalls and
+  recovery hints
 - orchestration status / workers / dependencies
 - shell list / start / detail / poll / send / terminate
 - service list / detail / attach / wait / run
@@ -68,6 +70,7 @@ The current broker-visible host-examination model is:
 
 - inspect session and transcript state
 - inspect live event streams and resume them
+- inspect semantic supervision state for active async shell-tool work
 - inspect orchestration state
 - start and control host shell work remotely
 - inspect and operate reusable services and capabilities
@@ -76,6 +79,20 @@ The current broker-visible host-examination model is:
 
 This is intentionally **shell-first**. It is not based on the removed workspace
 dynamic tools, and it does not yet include a dedicated artifact browser.
+
+For active wrapper-owned background-shell work, external clients can now also
+rely on broker-visible supervision facts rather than only a generic tool name:
+
+- classifications such as `tool_slow` and `tool_wedged`
+- narrow actions such as `observe_or_interrupt` and
+  `interrupt_or_exit_resume`
+- explicit owner-lane facts such as `wrapper_background_shell`
+- source request correlation through `source_call_id`
+- matched `observed_background_shell_job` detail with `job_id`, `status`,
+  `command`, and recent output preview when the wrapper shell lane has already
+  started a `bg-*` job
+- abandoned-backlog visibility through `async_tool_backpressure`
+- dedicated worker inspection through `async_tool_workers`
 
 Workflow-level reference:
 
@@ -173,6 +190,10 @@ When building against the current `codexw` broker adapter, confirm:
 - the client understands owner / observer / rival behavior for lease-owned
   mutations
 - SSE consumers persist and reuse `Last-Event-ID` when reconnecting
+- status consumers understand the current supervision slice:
+  `tool_slow` / `tool_wedged`, owner lane, `source_call_id`, correlated
+  `observed_background_shell_job`, `async_tool_backpressure`, and
+  `async_tool_workers`
 - host examination flows are designed around shell/service/transcript/event
   surfaces
 - UI copy does not imply a first-class artifact browser unless artifact routes

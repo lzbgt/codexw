@@ -40,6 +40,8 @@ Supported operations include:
 - turn start / interrupt
 - transcript fetch
 - event stream consumption with optional `Last-Event-ID`
+- semantic `status.updated` supervision consumption through the same event
+  stream, including owner-lane and correlated shell-job facts
 - orchestration status / workers / dependencies
 - shell list / start / detail / poll / send / terminate
 - service list / detail / attach / wait / run
@@ -94,6 +96,13 @@ fixture against the real connector binary for:
 - lease-conflict propagation through broker-style alias routes
 - focused service-detail and capability-detail inspection
 - event stream consumption and `Last-Event-ID` resume
+- broker-visible async supervision replay with:
+  - `tool_slow` / `tool_wedged`
+  - owner-lane facts such as `wrapper_background_shell`
+  - `source_call_id`
+  - correlated `observed_background_shell_job`
+  - `async_tool_backpressure`
+  - `async_tool_workers`
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation
@@ -178,6 +187,19 @@ which is the same path expected by remote connector clients.
 That means the fixture is already representative of broker-backed app/WebUI or
 automation clients for the currently supported shell-first host examination
 surface, even though it is not yet a dedicated artifact-browser client.
+
+For active wrapper-owned background-shell work, the fixture contract should be
+read as a semantic supervision client, not a prompt scraper. The expected
+broker-visible shape is:
+
+- `status.updated` carries async-tool supervision state
+- the owner lane is explicit, currently `wrapper_background_shell`
+- the source request is explicit through `source_call_id`
+- if the wrapper lane has already started a shell job, the payload carries a
+  correlated `observed_background_shell_job` object with the `bg-*` identity,
+  status, command, and recent output lines
+- worker/backlog inspection comes from `async_tool_workers` and
+  `async_tool_backpressure`, not from inferring hidden background-task APIs
 
 ## Example Workflows
 

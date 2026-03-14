@@ -602,6 +602,41 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-support-policy.md",
     );
     assert_contains_case_insensitive(
+        &broker_policy,
+        "tool_slow",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "tool_wedged",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "wrapper_background_shell",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "source_call_id",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "observed_background_shell_job",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "async_tool_backpressure",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "async_tool_workers",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
         &broker_out_of_scope,
         "out of scope",
         "docs/codexw-broker-out-of-scope.md",
@@ -1410,6 +1445,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-host-examination-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "tool_slow",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "observed_background_shell_job",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "async_tool_workers",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &broker_handoff,
         "sibling `~/work/agent` workspace",
         "docs/codexw-broker-integration-handoff.md",
@@ -1422,6 +1472,36 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_handoff,
         "artifact list/detail/content api",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "tool_slow",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "wrapper_background_shell",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "source_call_id",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "observed_background_shell_job",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "async_tool_backpressure",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "async_tool_workers",
         "docs/codexw-broker-integration-handoff.md",
     );
     assert_contains(

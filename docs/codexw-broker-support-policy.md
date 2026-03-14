@@ -83,6 +83,15 @@ can depend on them:
   - `retryable`
   - `details`
 - SSE replay behavior through `Last-Event-ID`
+- semantic `status.updated` supervision fields for the currently documented
+  async-tool lane, including:
+  - classifications such as `tool_slow` / `tool_wedged`
+  - recommended-action and recovery-policy fields
+  - explicit owner-lane state such as `wrapper_background_shell`
+  - correlation fields such as `source_call_id` and
+    `observed_background_shell_job`
+  - backlog and worker inspection slices such as `async_tool_backpressure` and
+    `async_tool_workers`
 - explicit rejection of unsupported broker/client surfaces
 
 The current supported experimental adapter should therefore be read as
@@ -98,7 +107,8 @@ the changes are documented and verified:
 
 - additional supported routes
 - additional event families
-- richer response payload fields
+- richer response payload fields outside the currently documented broker
+  supervision contract
 - stronger adversarial and multi-client proof
 - internal code organization and implementation structure
 
@@ -110,6 +120,8 @@ The following should not change silently:
 - lease conflict semantics
 - connector-side validation behavior
 - error-code meaning for documented failure classes
+- the meaning of the documented broker-visible supervision fields for async
+  tool status, owner lane, correlation, backlog, and worker inspection
 - whether a route family is supported or unsupported
 
 If one of those changes, the adapter contract and support docs must be updated
@@ -166,6 +178,8 @@ If a batch changes supported adapter behavior, it should update:
 - connector smoke coverage where relevant
 - broker-client fixture coverage when the behavior affects an external
   consumer shape
+- the short broker integration handoff too when the behavior changes what an
+  external client can rely on in `status.updated`
 - the artifact-contract sketch/implementation docs too when the behavior
   changes the planned or supported artifact surface
 - the project/dependency contract sketch/implementation docs too when the
