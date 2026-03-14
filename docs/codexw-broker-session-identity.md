@@ -205,7 +205,9 @@ process-scoped `session_id` plus `thread_id` contract. The remaining open
 questions are therefore about future multi-client or multi-daemon policy, not
 whether the wrapper/local-thread identity split exists at all.
 Likewise, the remaining artifact gap is not an identity-model gap; it is a
-separate route and provenance-surface gap tracked in the artifact-contract docs.
+separate route and provenance-surface gap tracked in the artifact-contract
+docs, and it is not part of the current supported experimental adapter until
+that separate track is implemented and proven.
 And the emerging cross-deployment collaboration requirement is not an argument
 to collapse identities into one global id; it is an argument for a collaboration
 object that links source and target deployment/session identities explicitly.

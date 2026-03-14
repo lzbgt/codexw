@@ -58,7 +58,9 @@ These are plausible future extensions, but not required now:
 - stronger adapter hardening beyond the current connector
 - more formal SDKs or reusable client libraries
 - browser/mobile UI layers in this repo
-- a dedicated broker-visible artifact catalog/detail/content contract
+- a dedicated broker-visible artifact catalog/detail/content contract that is
+  outside the current supported experimental adapter until its separate track is
+  implemented and proven
 - a dedicated broker-visible project-assignment or dependency-edge contract
 - richer client presence or collaboration state above the current lease model
 - additional long-lived multi-client coordination semantics

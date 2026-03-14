@@ -9,6 +9,11 @@ presentation artifacts.
 It should now be read as a historical design record plus a current semantic
 reference, not as an unimplemented future proposal.
 
+It should also be read as the event contract for the current supported experimental adapter's
+shell-first host-examination surface. It does not imply that `codexw` already
+exposes a separate artifact index/detail/content event family before the
+dedicated artifact-contract track is implemented and proven.
+
 ## Core Envelope
 
 Candidate envelope:

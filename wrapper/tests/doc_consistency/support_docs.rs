@@ -800,6 +800,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "project-assignment or dependency-edge contract",
         "docs/codexw-broker-out-of-scope.md",
     );
+    assert_contains_case_insensitive(
+        &broker_out_of_scope,
+        "supported experimental adapter",
+        "docs/codexw-broker-out-of-scope.md",
+    );
     assert_contains(
         &broker_endpoint_audit,
         "codexw-broker-artifact-implementation-plan.md",
@@ -978,6 +983,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_session_identity,
         "artifact entries",
+        "docs/codexw-broker-session-identity.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_session_identity,
+        "supported experimental adapter",
         "docs/codexw-broker-session-identity.md",
     );
     assert_contains_case_insensitive(
@@ -2270,6 +2280,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_handoff,
+        "supported experimental adapter",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
         "artifact list/detail/content api",
         "docs/codexw-broker-integration-handoff.md",
     );
@@ -2485,6 +2500,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_client_fixture,
+        "supported experimental adapter",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_fixture,
         "artifact index/detail/content route family",
         "docs/codexw-broker-client-fixture.md",
     );
@@ -2497,6 +2517,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_client_fixture,
         "codexw-broker-artifact-implementation-plan.md",
         "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "supported experimental adapter",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "artifact index/detail/content event family",
+        "docs/codexw-broker-event-envelope.md",
     );
     assert_contains(
         &broker_contract,

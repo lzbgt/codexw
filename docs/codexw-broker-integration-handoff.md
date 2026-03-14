@@ -39,8 +39,7 @@ surfaces, not as temporary experiments.
 
 ## What External Clients Can Rely On Today
 
-External broker-facing clients can already rely on the documented supported
-experimental adapter surface for:
+External broker-facing clients can already rely on the documented supported experimental adapter surface for:
 
 - session create / attach / list / inspect
 - attachment renew / release
@@ -128,9 +127,9 @@ Those missing pieces are not vague future work. They are explicit boundaries.
 In particular, external clients should not assume a stable artifact
 list/detail/content API exists yet.
 
-That missing artifact route family is outside the current supported
-experimental adapter claim, even though the shell-first host-examination
-surface itself is already supported for documented experimental use.
+That missing artifact route family is outside the current supported experimental
+adapter claim, even though the shell-first host-examination surface itself is
+already supported for documented experimental use.
 
 Boundary references:
 

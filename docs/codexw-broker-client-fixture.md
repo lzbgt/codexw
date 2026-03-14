@@ -60,7 +60,8 @@ What the fixture does **not** currently prove is a dedicated artifact index/deta
 because that route family does not exist yet.
 The current fixture surface proves shell-first host examination through
 session, transcript, event, shell, and service routes, while the richer
-artifact browser track remains separately documented in:
+artifact browser track remains outside the current supported experimental adapter
+and separately documented in:
 
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
