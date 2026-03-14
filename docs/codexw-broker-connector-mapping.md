@@ -222,6 +222,9 @@ That table should be kept concrete and testable.
 The current connector now also keeps the mutating-route header projection policy
 and the connector allowlist on one shared local-route classifier, so new POST
 alias surfaces do not need to be added to two separate behavioral lists.
+Read-only broker aliases are also method-sensitive at resolution time now, so
+wrong-method requests fail as unknown connector routes instead of falling into
+the generic raw-proxy allowlist rejection path.
 
 The current repo now also includes a minimal consumer-side artifact for this
 mapping:

@@ -87,7 +87,7 @@ pub(super) fn resolve_proxy_target(
         if let Some((session_id, rest)) = segments.split_first() {
             let session_id = (*session_id).to_string();
             return match rest {
-                [] => Some(ProxyTarget {
+                [] if method == "GET" => Some(ProxyTarget {
                     local_path: format!("/api/v1/session/{session_id}"),
                     is_sse: false,
                     session_id_hint: None,
@@ -122,7 +122,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["transcript"] => Some(ProxyTarget {
+                ["transcript"] if method == "GET" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "transcript"),
                     is_sse: false,
                     session_id_hint: None,
@@ -171,7 +171,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services"] => Some(ProxyTarget {
+                ["services"] if method == "GET" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "services"),
                     is_sse: false,
                     session_id_hint: None,
@@ -181,7 +181,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["capabilities"] => Some(ProxyTarget {
+                ["capabilities"] if method == "GET" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "capabilities"),
                     is_sse: false,
                     session_id_hint: None,
@@ -266,17 +266,17 @@ pub(super) fn resolve_proxy_target(
                     is_sse: true,
                     session_id_hint: None,
                 }),
-                ["orchestration", "status"] => Some(ProxyTarget {
+                ["orchestration", "status"] if method == "GET" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "orchestration/status"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["orchestration", "workers"] => Some(ProxyTarget {
+                ["orchestration", "workers"] if method == "GET" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "orchestration/workers"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["orchestration", "dependencies"] => Some(ProxyTarget {
+                ["orchestration", "dependencies"] if method == "GET" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "orchestration/dependencies"),
                     is_sse: false,
                     session_id_hint: None,

@@ -135,6 +135,8 @@ the real connector binary:
   raw proxy / raw proxy SSE routes
 - explicit `method_not_allowed` rejection for non-`GET` broker-style and raw
   proxy SSE event routes
+- method-sensitive alias resolution for read-only broker routes such as session
+  inspect, transcript, orchestration, services, and capabilities
 - explicit rejection of malformed percent-encoded broker alias path segments
 - broker-style SSE consumption
 - broker-style SSE resume through `Last-Event-ID`

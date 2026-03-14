@@ -458,3 +458,30 @@ fn resolve_proxy_target_rejects_invalid_percent_encoded_alias_segments() {
         );
     }
 }
+
+#[test]
+fn resolve_proxy_target_rejects_wrong_methods_for_read_only_alias_routes() {
+    for (method, path) in [
+        ("POST", "/v1/agents/codexw-lab/sessions/sess_1"),
+        ("POST", "/v1/agents/codexw-lab/sessions/sess_1/transcript"),
+        ("POST", "/v1/agents/codexw-lab/sessions/sess_1/services"),
+        ("POST", "/v1/agents/codexw-lab/sessions/sess_1/capabilities"),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/orchestration/status",
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/orchestration/workers",
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/orchestration/dependencies",
+        ),
+    ] {
+        assert!(
+            resolve_proxy_target(method, path, "codexw-lab").is_none(),
+            "expected read-only alias route to reject wrong method for {method} {path}"
+        );
+    }
+}
