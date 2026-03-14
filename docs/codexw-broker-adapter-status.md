@@ -36,6 +36,11 @@ Its goal is simple:
 
 This is no longer just a design exploration.
 
+The current remotely observable supervision surface for wrapper-owned async
+shell tools includes not only `source_call_id` and
+`observed_background_shell_job`, but also resolved reuse-target facts such as
+`target_background_shell_reference` and `target_background_shell_job_id`.
+
 ## Current Architectural Posture
 
 The adapter should now be read against the broader broker-client requirement in

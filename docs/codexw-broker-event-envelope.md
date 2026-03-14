@@ -79,6 +79,8 @@ Candidate envelope:
       ],
       "owner": "wrapper_background_shell",
       "source_call_id": "call_123",
+      "target_background_shell_reference": "dev.api",
+      "target_background_shell_job_id": "bg-1",
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "observation_state": "wrapper_background_shell_streaming_output",
@@ -271,6 +273,8 @@ Optional means “present only when semantically relevant,” not “randomly om
       ],
       "owner": "wrapper_background_shell",
       "source_call_id": "call_123",
+      "target_background_shell_reference": "dev.api",
+      "target_background_shell_job_id": "bg-1",
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "observation_state": "wrapper_background_shell_terminal_without_tool_response",
@@ -305,7 +309,9 @@ should currently be refused, plus `async_tool_workers` so a remote agent
 backend can inspect dedicated worker thread names and lifecycle states such as
 `running` and `abandoned_after_timeout` without scraping prompt text, plus
 explicit owner-lane state such as `wrapper_background_shell`, source `callId`,
-correlated `bg-*` job facts when a wrapper-owned `background_shell_start`
+resolved target facts such as `target_background_shell_reference` and
+`target_background_shell_job_id`, and correlated `bg-*` job facts when a
+wrapper-owned `background_shell_start`
 request has already produced a shell job, plus output freshness through
 `output_state` and `last_output_age_seconds`.
 

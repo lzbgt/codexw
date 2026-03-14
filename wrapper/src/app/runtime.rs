@@ -283,6 +283,20 @@ fn format_async_tool_health_check_line(check: &AsyncToolHealthCheck) -> String {
         .as_deref()
         .map(|value| format!(" call={value}"))
         .unwrap_or_default();
+    let target = match (
+        check.target_background_shell_reference.as_deref(),
+        check.target_background_shell_job_id.as_deref(),
+    ) {
+        (Some(reference), Some(job_id)) if reference != job_id => {
+            format!(
+                " target={} resolved={job_id}",
+                crate::state::summarize_text(reference)
+            )
+        }
+        (Some(reference), _) => format!(" target={}", crate::state::summarize_text(reference)),
+        (None, Some(job_id)) => format!(" target={job_id}"),
+        (None, None) => String::new(),
+    };
     let observation = match check.observed_background_shell_job.as_ref() {
         Some(job) => {
             let output_age = job
@@ -294,12 +308,13 @@ fn format_async_tool_health_check_line(check: &AsyncToolHealthCheck) -> String {
                 .map(|line| format!(" output={}", crate::state::summarize_text(line)))
                 .unwrap_or_default();
             format!(
-                "{}|{} {} via {}{} job={} {} lines={} command={}{}{}",
+                "{}|{} {} via {}{}{} job={} {} lines={} command={}{}{}",
                 check.observation_state.label(),
                 check.output_state.label(),
                 check.owner_kind.label(),
                 check.worker_thread_name,
                 call,
+                target,
                 job.job_id,
                 job.status,
                 job.total_lines,
@@ -309,12 +324,13 @@ fn format_async_tool_health_check_line(check: &AsyncToolHealthCheck) -> String {
             )
         }
         None => format!(
-            "{}|{} {} via {}{}",
+            "{}|{} {} via {}{}{}",
             check.observation_state.label(),
             check.output_state.label(),
             check.owner_kind.label(),
             check.worker_thread_name,
-            call
+            call,
+            target
         ),
     };
     format!(
@@ -458,6 +474,8 @@ mod tests {
             summary: "arguments= command=sleep 20 tool=background_shell_start".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: Some("call-999".to_string()),
+            target_background_shell_reference: Some("dev.api".to_string()),
+            target_background_shell_job_id: Some("bg-9".to_string()),
             worker_thread_name: "codexw-bgtool-background_shell_start-9".to_string(),
             elapsed: std::time::Duration::from_secs(18),
             next_health_check_in: std::time::Duration::from_secs(5),
@@ -483,6 +501,8 @@ mod tests {
             line.contains("wrapper_background_shell_started_no_output_yet|no_output_observed_yet")
         );
         assert!(line.contains("call=call-999"));
+        assert!(line.contains("target=dev.api"));
+        assert!(line.contains("resolved=bg-9"));
         assert!(line.contains("job=bg-9 running"));
         assert!(line.contains("lines=0"));
         assert!(line.contains("command=sleep 20"));
@@ -498,6 +518,8 @@ mod tests {
                 .to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: Some("call-1000".to_string()),
+            target_background_shell_reference: Some("dev.api".to_string()),
+            target_background_shell_job_id: Some("bg-10".to_string()),
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             elapsed: std::time::Duration::from_secs(24),
             next_health_check_in: std::time::Duration::from_secs(9),
@@ -521,6 +543,8 @@ mod tests {
         assert!(line.contains("output_age=2s"));
         assert!(line.contains("output=READY"));
         assert!(line.contains("next=9s"));
+        assert!(line.contains("target=dev.api"));
+        assert!(line.contains("resolved=bg-10"));
         assert!(line.contains("job=bg-10 running"));
     }
 

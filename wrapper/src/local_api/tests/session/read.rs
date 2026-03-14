@@ -85,6 +85,14 @@ fn session_snapshot_is_returned_with_valid_token() {
     );
     assert_eq!(body["async_tool_supervision"]["source_call_id"], "call_1");
     assert_eq!(
+        body["async_tool_supervision"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        body["async_tool_supervision"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
         body["async_tool_supervision"]["recovery_policy"]["kind"],
         "warn_only"
     );
@@ -148,6 +156,14 @@ fn session_snapshot_is_returned_with_valid_token() {
         "wrapper_background_shell"
     );
     assert_eq!(body["async_tool_workers"][0]["source_call_id"], "call_1");
+    assert_eq!(
+        body["async_tool_workers"][0]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        body["async_tool_workers"][0]["target_background_shell_job_id"],
+        "bg-1"
+    );
     assert_eq!(
         body["async_tool_workers"][0]["observed_background_shell_job"]["job_id"],
         "bg-1"

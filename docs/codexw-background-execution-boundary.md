@@ -108,6 +108,10 @@ has a direct target-correlation path:
    `background_shell_send`, `background_shell_attach`, and
    `background_shell_invoke_recipe`, not only for `background_shell_start`
 
+That resolved-target lane should remain explicit in machine-readable
+supervision/event surfaces through fields such as
+`target_background_shell_reference` and `target_background_shell_job_id`.
+
 That gives the orchestrator concrete evidence such as:
 
 - owner kind: `wrapper_background_shell`

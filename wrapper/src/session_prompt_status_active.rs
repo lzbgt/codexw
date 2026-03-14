@@ -114,10 +114,22 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
                 observation.output_state.prompt_label()
             ),
         };
+        let target_detail = match (
+            async_tool.target_background_shell_reference.as_deref(),
+            async_tool.target_background_shell_job_id.as_deref(),
+        ) {
+            (Some(reference), Some(job_id)) if reference != job_id => {
+                format!("; target {}->{}", summarize_inline(reference), job_id)
+            }
+            (Some(reference), _) => format!("; target {}", summarize_inline(reference)),
+            (None, Some(job_id)) => format!("; target {job_id}"),
+            (None, None) => String::new(),
+        };
         let detail = format!(
-            "{detail} [{}; {}; next check {}]",
+            "{detail} [{}; {}{}; next check {}]",
             observation.owner_kind.prompt_label(),
             observation_detail,
+            target_detail,
             format_elapsed(Some(Instant::now() - async_tool.next_health_check_in()))
         );
         return Some((

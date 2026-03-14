@@ -93,6 +93,9 @@ rely on broker-visible supervision facts rather than only a generic tool name:
   values such as `no_output_observed_yet`, `recent_output_observed`, and
   `stale_output_observed`
 - source request correlation through `source_call_id`
+- resolved reuse-target correlation through
+  `target_background_shell_reference` and
+  `target_background_shell_job_id`
 - matched `observed_background_shell_job` detail with `job_id`, `status`,
   `command`, `total_lines`, `last_output_age_seconds`, and recent output
   preview when the wrapper shell lane has already started a `bg-*` job

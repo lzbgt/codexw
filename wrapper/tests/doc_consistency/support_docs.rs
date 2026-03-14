@@ -413,6 +413,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_status,
+        "target_background_shell_reference",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
         "observed_background_shell_job",
         "docs/codexw-broker-adapter-status.md",
     );
@@ -503,6 +508,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_proof,
+        "target_background_shell_reference",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
         "observed_background_shell_job",
         "docs/codexw-broker-proof-matrix.md",
     );
@@ -573,6 +583,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_event_envelope,
+        "target_background_shell_reference",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
         "observed_background_shell_job",
         "docs/codexw-broker-event-envelope.md",
     );
@@ -629,6 +644,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_policy,
         "source_call_id",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "target_background_shell_reference",
         "docs/codexw-broker-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -954,6 +974,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        "target_background_shell_reference",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "next-check",
         "docs/codexw-native-product-status.md",
     );
@@ -1039,6 +1064,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &background_execution_boundary,
+        "target_background_shell_reference",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
         "wrapper_background_shell_started_no_output_yet",
         "docs/codexw-background-execution-boundary.md",
     );
@@ -1061,6 +1091,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision,
         "@capability",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "target_background_shell_reference",
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
@@ -1141,6 +1176,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "@capability",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "target_background_shell_reference",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -1551,6 +1591,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &local_api_event_sourcing,
+        "target_background_shell_reference",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
         "last_output_age_seconds",
         "docs/codexw-local-api-event-sourcing.md",
     );
@@ -1667,6 +1712,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_handoff,
         "source_call_id",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "target_background_shell_reference",
         "docs/codexw-broker-integration-handoff.md",
     );
     assert_contains_case_insensitive(

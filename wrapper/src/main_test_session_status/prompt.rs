@@ -273,6 +273,7 @@ fn prompt_status_correlates_wait_ready_to_target_background_job() {
     );
     assert_eq!(observation.output_state.label(), "recent_output_observed");
     assert!(rendered.contains("async tool background_shell_wait_ready"));
+    assert!(rendered.contains("target dev.api->bg-1"));
     assert!(rendered.contains("job bg-1"));
     assert!(rendered.contains("READY"));
     assert!(observation.observed_background_shell_job.is_some());

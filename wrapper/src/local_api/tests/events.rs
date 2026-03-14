@@ -66,6 +66,14 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         "wrapper_background_shell"
     );
     assert_eq!(
+        events[2].data["async_tool_supervision"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[2].data["async_tool_supervision"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
         events[2].data["async_tool_supervision"]["observation_state"],
         "wrapper_background_shell_streaming_output"
     );
@@ -109,6 +117,14 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     assert_eq!(
         events[2].data["async_tool_workers"][0]["owner"],
         "wrapper_background_shell"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][0]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][0]["target_background_shell_job_id"],
+        "bg-1"
     );
     assert_eq!(
         events[2].data["async_tool_workers"][0]["observed_background_shell_job"]["job_id"],
@@ -239,6 +255,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             ],
             owner: "wrapper_background_shell".to_string(),
             source_call_id: Some("call_1".to_string()),
+            target_background_shell_reference: Some("dev.api".to_string()),
+            target_background_shell_job_id: Some("bg-1".to_string()),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             observation_state: "wrapper_background_shell_terminal_without_tool_response"
@@ -276,6 +294,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
             owner: "wrapper_background_shell".to_string(),
             source_call_id: Some("call_1".to_string()),
+            target_background_shell_reference: Some("dev.api".to_string()),
+            target_background_shell_job_id: Some("bg-1".to_string()),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             observation_state: Some(
@@ -304,6 +324,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
             owner: "wrapper_background_shell".to_string(),
             source_call_id: None,
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             observation_state: None,
@@ -385,6 +407,14 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         "wrapper_background_shell"
     );
     assert_eq!(
+        events[1].data["async_tool_supervision"]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[1].data["async_tool_supervision"]["target_background_shell_job_id"],
+        "bg-1"
+    );
+    assert_eq!(
         events[1].data["async_tool_supervision"]["observation_state"],
         "wrapper_background_shell_terminal_without_tool_response"
     );
@@ -418,6 +448,14 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     );
     assert_eq!(
         events[1].data["async_tool_workers"][0]["observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][0]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][0]["target_background_shell_job_id"],
         "bg-1"
     );
     assert_eq!(

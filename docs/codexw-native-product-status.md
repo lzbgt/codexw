@@ -105,6 +105,9 @@ The implemented native-side product already has:
   existing shell by `jobId|alias|@capability`, so wait/poll/send/attach/invoke
   supervision can inspect the same concrete `bg-*` job instead of remaining in
   generic unresolved-worker state
+- machine-readable target-correlation fields such as
+  `target_background_shell_reference` and `target_background_shell_job_id`
+  through status/local-API/broker-visible supervision surfaces
 - single-pass resume-history hydration, so loading a large resumed thread does
   not walk the full turn history multiple times just to seed state and render
   the latest conversation preview

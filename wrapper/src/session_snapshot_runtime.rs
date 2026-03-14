@@ -80,6 +80,12 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         if let Some(source_call_id) = async_tool.source_call_id.as_deref() {
             lines.push(format!("async call      {source_call_id}"));
         }
+        if let Some(target_reference) = async_tool.target_background_shell_reference.as_deref() {
+            lines.push(format!("async target    {target_reference}"));
+        }
+        if let Some(target_job_id) = async_tool.target_background_shell_job_id.as_deref() {
+            lines.push(format!("async target jb {target_job_id}"));
+        }
         lines.push(format!(
             "async obs       {}",
             observation.observation_state.label()
@@ -123,6 +129,12 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         lines.push(format!("async worker ow {}", worker.owner_kind.label()));
         if let Some(source_call_id) = worker.source_call_id.as_deref() {
             lines.push(format!("async worker cl {source_call_id}"));
+        }
+        if let Some(target_reference) = worker.target_background_shell_reference.as_deref() {
+            lines.push(format!("async worker tr {target_reference}"));
+        }
+        if let Some(target_job_id) = worker.target_background_shell_job_id.as_deref() {
+            lines.push(format!("async worker tj {target_job_id}"));
         }
         if let Some(observation_state) = worker.observation_state {
             lines.push(format!("async worker ob {}", observation_state.label()));

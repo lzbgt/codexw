@@ -207,8 +207,9 @@ At:
   unresolved work belongs to the wrapper-owned `background_shell_*` lane rather
   than inventing a generic background-task model
 - correlated wrapper-shell inspection changes, including source `callId` and
-  matched `bg-*` shell job facts such as job id, status, command, line count,
-  and recent output preview
+  resolved target facts such as `target_background_shell_reference` and
+  `target_background_shell_job_id`, plus matched `bg-*` shell job facts such
+  as job id, status, command, line count, and recent output preview
 - recovery-policy changes such as `warn_only` to
   `operator_interrupt_or_exit_resume`
 - recovery-option changes such as `observe_status` yielding to
@@ -222,8 +223,9 @@ Likely emission owners:
 - response/notification handlers that mutate status-relevant fields
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
   current supervision-classification, `async_tool_backpressure`,
-  `async_tool_workers`, `output_state` / `last_output_age_seconds`, and
-  `supervision_notice` slice
+  `async_tool_workers`, `target_background_shell_reference` /
+  `target_background_shell_job_id`, `output_state` / `last_output_age_seconds`,
+  and `supervision_notice` slice
 
 ### Emit `orchestration.updated`
 

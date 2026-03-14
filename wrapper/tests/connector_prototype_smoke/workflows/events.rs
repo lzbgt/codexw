@@ -514,6 +514,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     ],
                                     "owner": "wrapper_background_shell",
                                     "source_call_id": "call_123",
+                                    "target_background_shell_reference": "dev.api",
+                                    "target_background_shell_job_id": "bg-7",
                                     "tool": "background_shell_start",
                                     "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                     "observation_state": "wrapper_background_shell_streaming_output",
@@ -547,6 +549,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "thread_name": "codexw-bgtool-background_shell_start-7",
                                         "owner": "wrapper_background_shell",
                                         "source_call_id": "call_123",
+                                        "target_background_shell_reference": "dev.api",
+                                        "target_background_shell_job_id": "bg-7",
                                         "tool": "background_shell_start",
                                         "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                         "observation_state": "wrapper_background_shell_streaming_output",
@@ -570,6 +574,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "thread_name": "codexw-bgtool-background_shell_start-8",
                                         "owner": "wrapper_background_shell",
                                         "source_call_id": "call_456",
+                                        "target_background_shell_reference": Value::Null,
+                                        "target_background_shell_job_id": Value::Null,
                                         "tool": "background_shell_start",
                                         "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                         "observation_state": Value::Null,
@@ -617,10 +623,12 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "local_api_method": "POST",
                                     "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
                                         }
-                                    ],
-                                    "owner": "wrapper_background_shell",
-                                    "source_call_id": "call_123",
-                                    "tool": "background_shell_start",
+                        ],
+                        "owner": "wrapper_background_shell",
+                        "source_call_id": "call_123",
+                        "target_background_shell_reference": "dev.api",
+                        "target_background_shell_job_id": "bg-7",
+                        "tool": "background_shell_start",
                                     "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                     "observation_state": "wrapper_background_shell_streaming_output",
                                     "output_state": "recent_output_observed",
@@ -653,6 +661,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "thread_name": "codexw-bgtool-background_shell_start-7",
                                 "owner": "wrapper_background_shell",
                                 "source_call_id": "call_123",
+                                "target_background_shell_reference": "dev.api",
+                                "target_background_shell_job_id": "bg-7",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                 "observation_state": "wrapper_background_shell_streaming_output",
@@ -676,6 +686,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "thread_name": "codexw-bgtool-background_shell_start-8",
                                 "owner": "wrapper_background_shell",
                                 "source_call_id": "call_456",
+                                "target_background_shell_reference": Value::Null,
+                                "target_background_shell_job_id": Value::Null,
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                 "observation_state": Value::Null,
@@ -759,6 +771,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             ],
                             "owner": "wrapper_background_shell",
                             "source_call_id": "call_123",
+                            "target_background_shell_reference": "dev.api",
+                            "target_background_shell_job_id": "bg-7",
                             "tool": "background_shell_start",
                             "summary": "arguments= command=sleep 5 tool=background_shell_start",
                             "observation_state": "wrapper_background_shell_terminal_without_tool_response",
@@ -792,6 +806,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "thread_name": "codexw-bgtool-background_shell_start-7",
                                 "owner": "wrapper_background_shell",
                                 "source_call_id": "call_123",
+                                "target_background_shell_reference": "dev.api",
+                                "target_background_shell_job_id": "bg-7",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                 "observation_state": "wrapper_background_shell_terminal_without_tool_response",
@@ -815,6 +831,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "thread_name": "codexw-bgtool-background_shell_start-8",
                                 "owner": "wrapper_background_shell",
                                 "source_call_id": "call_456",
+                                "target_background_shell_reference": Value::Null,
+                                "target_background_shell_job_id": Value::Null,
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                 "observation_state": Value::Null,
@@ -890,6 +908,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(create_response.contains("\"supervision_notice\""));
     assert!(create_response.contains("\"owner\":\"wrapper_background_shell\""));
     assert!(create_response.contains("\"source_call_id\":\"call_123\""));
+    assert!(create_response.contains("\"target_background_shell_reference\":\"dev.api\""));
+    assert!(create_response.contains("\"target_background_shell_job_id\":\"bg-7\""));
     assert!(create_response.contains("\"output_state\":\"recent_output_observed\""));
     assert!(create_response.contains("\"observed_background_shell_job\""));
     assert!(create_response.contains("\"last_output_age_seconds\":2"));
@@ -907,6 +927,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("observe_or_interrupt"));
     assert!(initial_events.contains("\"owner\":\"wrapper_background_shell\""));
     assert!(initial_events.contains("\"source_call_id\":\"call_123\""));
+    assert!(initial_events.contains("\"target_background_shell_reference\":\"dev.api\""));
+    assert!(initial_events.contains("\"target_background_shell_job_id\":\"bg-7\""));
     assert!(initial_events.contains("wrapper_background_shell_streaming_output"));
     assert!(initial_events.contains("\"output_state\":\"recent_output_observed\""));
     assert!(initial_events.contains("\"observed_background_shell_job\""));
@@ -936,6 +958,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("interrupt_or_exit_resume"));
     assert!(resumed_events.contains("\"owner\":\"wrapper_background_shell\""));
     assert!(resumed_events.contains("\"source_call_id\":\"call_123\""));
+    assert!(resumed_events.contains("\"target_background_shell_reference\":\"dev.api\""));
+    assert!(resumed_events.contains("\"target_background_shell_job_id\":\"bg-7\""));
     assert!(resumed_events.contains("wrapper_background_shell_terminal_without_tool_response"));
     assert!(resumed_events.contains("\"output_state\":\"stale_output_observed\""));
     assert!(resumed_events.contains("\"observed_background_shell_job\""));
@@ -998,6 +1022,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
                                     ],
                                     "owner": "wrapper_background_shell",
                                     "source_call_id": "call_999",
+                                    "target_background_shell_reference": "dev.api",
+                                    "target_background_shell_job_id": "bg-9",
                                     "tool": "background_shell_start",
                                     "summary": "arguments= command=sleep 20 tool=background_shell_start",
                                     "observation_state": "wrapper_background_shell_started_no_output_yet",
@@ -1021,6 +1047,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
                                         "thread_name": "codexw-bgtool-background_shell_start-9",
                                         "owner": "wrapper_background_shell",
                                         "source_call_id": "call_999",
+                                        "target_background_shell_reference": "dev.api",
+                                        "target_background_shell_job_id": "bg-9",
                                         "tool": "background_shell_start",
                                         "summary": "arguments= command=sleep 20 tool=background_shell_start",
                                         "observation_state": "wrapper_background_shell_started_no_output_yet",
@@ -1071,6 +1099,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
                             ],
                             "owner": "wrapper_background_shell",
                             "source_call_id": "call_999",
+                            "target_background_shell_reference": "dev.api",
+                            "target_background_shell_job_id": "bg-9",
                             "tool": "background_shell_start",
                             "summary": "arguments= command=sleep 20 tool=background_shell_start",
                             "observation_state": "wrapper_background_shell_started_no_output_yet",
@@ -1094,6 +1124,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
                                 "thread_name": "codexw-bgtool-background_shell_start-9",
                                 "owner": "wrapper_background_shell",
                                 "source_call_id": "call_999",
+                                "target_background_shell_reference": "dev.api",
+                                "target_background_shell_job_id": "bg-9",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 20 tool=background_shell_start",
                                 "observation_state": "wrapper_background_shell_started_no_output_yet",
@@ -1149,6 +1181,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
                             ],
                             "owner": "wrapper_background_shell",
                             "source_call_id": "call_999",
+                            "target_background_shell_reference": "dev.api",
+                            "target_background_shell_job_id": "bg-9",
                             "tool": "background_shell_start",
                             "summary": "arguments= command=sleep 20 tool=background_shell_start",
                             "observation_state": "wrapper_background_shell_streaming_output",
@@ -1196,6 +1230,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
     )?;
     assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(create_response.contains("wrapper_background_shell_started_no_output_yet"));
+    assert!(create_response.contains("\"target_background_shell_reference\":\"dev.api\""));
+    assert!(create_response.contains("\"target_background_shell_job_id\":\"bg-9\""));
     assert!(create_response.contains("\"output_state\":\"no_output_observed_yet\""));
     assert!(create_response.contains("\"job_id\":\"bg-9\""));
     assert!(create_response.contains("\"total_lines\":0"));
@@ -1204,6 +1240,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
     assert!(initial_events.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(initial_events.contains("event: status.updated\n"));
     assert!(initial_events.contains("wrapper_background_shell_started_no_output_yet"));
+    assert!(initial_events.contains("\"target_background_shell_reference\":\"dev.api\""));
+    assert!(initial_events.contains("\"target_background_shell_job_id\":\"bg-9\""));
     assert!(initial_events.contains("\"output_state\":\"no_output_observed_yet\""));
     assert!(initial_events.contains("\"last_output_age_seconds\":null"));
     assert!(initial_events.contains("\"total_lines\":0"));
@@ -1213,6 +1251,8 @@ fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state(
     assert!(resumed_events.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(resumed_events.contains("event: status.updated\n"));
     assert!(resumed_events.contains("wrapper_background_shell_streaming_output"));
+    assert!(resumed_events.contains("\"target_background_shell_reference\":\"dev.api\""));
+    assert!(resumed_events.contains("\"target_background_shell_job_id\":\"bg-9\""));
     assert!(resumed_events.contains("\"output_state\":\"recent_output_observed\""));
     assert!(resumed_events.contains("\"last_output_age_seconds\":1"));
     assert!(resumed_events.contains("\"total_lines\":1"));

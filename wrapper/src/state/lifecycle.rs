@@ -266,6 +266,10 @@ impl AppState {
                     summary: activity.summary.clone(),
                     owner_kind: activity.owner_kind,
                     source_call_id: activity.source_call_id.clone(),
+                    target_background_shell_reference: activity
+                        .target_background_shell_reference
+                        .clone(),
+                    target_background_shell_job_id: activity.target_background_shell_job_id.clone(),
                     worker_thread_name: activity.worker_thread_name.clone(),
                     runtime_elapsed: activity.elapsed(),
                     state_elapsed: activity.elapsed(),
@@ -287,6 +291,8 @@ impl AppState {
                         summary: request.summary.clone(),
                         owner_kind: super::AsyncToolOwnerKind::WrapperBackgroundShell,
                         source_call_id: None,
+                        target_background_shell_reference: None,
+                        target_background_shell_job_id: None,
                         worker_thread_name: request.worker_thread_name.clone(),
                         runtime_elapsed: request.elapsed_before_timeout,
                         state_elapsed: request.timed_out_elapsed(),
@@ -331,6 +337,10 @@ impl AppState {
                     summary: activity.summary.clone(),
                     owner_kind: activity.owner_kind,
                     source_call_id: activity.source_call_id.clone(),
+                    target_background_shell_reference: activity
+                        .target_background_shell_reference
+                        .clone(),
+                    target_background_shell_job_id: activity.target_background_shell_job_id.clone(),
                     worker_thread_name: activity.worker_thread_name.clone(),
                     elapsed,
                     next_health_check_in: next_interval,

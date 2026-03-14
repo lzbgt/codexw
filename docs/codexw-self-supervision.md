@@ -172,6 +172,9 @@ first-class safety issue:
   should also resolve the requested `jobId|alias|@capability` target to the
   concrete `bg-*` job so the runtime can report real job/output facts instead
   of only a generic spinner
+- that resolved target should stay explicit in machine-readable surfaces
+  through fields such as `target_background_shell_reference` and
+  `target_background_shell_job_id`
 - when a correlated `bg-*` job exists, the same lane should expose output
   freshness through `output_state` and a concrete age fact such as
   `last_output_age_seconds`, so operators and broker clients can distinguish

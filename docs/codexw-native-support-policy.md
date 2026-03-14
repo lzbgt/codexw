@@ -91,6 +91,9 @@ drift casually:
   `background_shell_send`, `background_shell_attach`, and
   `background_shell_invoke_recipe` can surface the matched `bg-*` job instead
   of remaining in generic unresolved-worker state
+- that reuse-target correlation is part of the machine-readable support
+  surface through `target_background_shell_reference` and
+  `target_background_shell_job_id`
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - single-pass resume-history hydration for resumed-thread state seeding and

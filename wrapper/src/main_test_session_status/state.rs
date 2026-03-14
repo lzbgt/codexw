@@ -401,9 +401,13 @@ fn status_snapshot_correlates_wait_ready_to_target_background_job() {
     assert!(rendered.contains(
         "async tool      arguments= jobId=dev.api timeoutMs=60000 tool=background_shell_wait_ready"
     ));
+    assert!(rendered.contains("async target    dev.api"));
+    assert!(rendered.contains("async target jb bg-1"));
     assert!(rendered.contains("async job       bg-1 "));
     assert!(rendered.contains("async cmd       echo READY; sleep 20"));
     assert!(rendered.contains("async out       recent_output_observed"));
+    assert!(rendered.contains("async worker tr dev.api"));
+    assert!(rendered.contains("async worker tj bg-1"));
     assert!(rendered.contains("async worker jb bg-1 "));
     assert!(rendered.contains("async worker os recent_output_observed"));
     assert!(observation.observed_background_shell_job.is_some());
