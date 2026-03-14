@@ -651,6 +651,10 @@ what still lacks a dedicated artifact contract, see
 For the short implementer-facing summary of what the sibling `~/work/agent`
 workspace should assume today, see
 [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).
+For the next native requirement beyond broker-backed single-deployment client
+control, namely cross-deployment `codexw` collaboration and explicit work
+handoff, see
+[docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md).
 For the concrete sketch of a future broker-visible artifact index/detail/fetch
 surface, see
 [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md).

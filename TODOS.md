@@ -18,6 +18,7 @@ Primary source docs:
 - [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
+- [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
 - [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md)
 - [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
@@ -56,6 +57,11 @@ Concrete tasks:
     artifact references
   - do not reintroduce removed workspace dynamic tools as the preferred remote
     inspection model
+- keep the new cross-deployment collaboration requirement explicit:
+  - cross-deployment `codexw` collaboration should be broker-mediated
+  - work handoff should be session-scoped and replayable
+  - work handoff should preserve provenance rather than relying on transcript
+    prose alone
 - make any remaining artifact-surface gaps explicit whenever broker/client docs
   claim that remote clients can examine host results
 - keep the current workflow-level host-examination read aligned across:
@@ -70,6 +76,7 @@ Concrete tasks:
 
 Primary source:
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
+- [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
 - [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md)
 - [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)

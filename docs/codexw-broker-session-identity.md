@@ -13,6 +13,8 @@ It also needs to support the current broker-facing architecture direction:
 - host shell/service control should stay correlated to that same session handle
 - any future artifact index/detail/content surface should derive from that
   session-scoped runtime truth rather than inventing an unrelated identity layer
+- any future cross-deployment collaboration or work handoff should link
+  session-scoped handles across deployments rather than erasing them
 
 ## Identity Layers
 
@@ -204,6 +206,9 @@ questions are therefore about future multi-client or multi-daemon policy, not
 whether the wrapper/local-thread identity split exists at all.
 Likewise, the remaining artifact gap is not an identity-model gap; it is a
 separate route and provenance-surface gap tracked in the artifact-contract docs.
+And the emerging cross-deployment collaboration requirement is not an argument
+to collapse identities into one global id; it is an argument for a collaboration
+object that links source and target deployment/session identities explicitly.
 
 ## Open Questions
 

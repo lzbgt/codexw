@@ -21,6 +21,10 @@ see [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-ma
 For the short implementer-facing handoff to the sibling `~/work/agent`
 workspace, see
 [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
+For the next native architecture track beyond single-deployment client
+attachment, namely cross-deployment `codexw` collaboration and explicit work
+handoff, see
+[codexw-cross-deployment-collaboration.md](codexw-cross-deployment-collaboration.md).
 
 ## External Baseline
 
@@ -47,6 +51,10 @@ Those documents establish a fact-based baseline: brokered app/WebUI clients and
 broker-mediated host tooling are already part of the broader system
 architecture, so `codexw` should not keep treating them as a vague future UX
 idea.
+
+They also imply a follow-on native requirement once multiple broker-routed
+deployments exist: deployment-to-deployment collaboration should become a
+first-class routed surface rather than a manual operator convention.
 
 ## Required Product Posture
 

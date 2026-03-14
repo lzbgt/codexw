@@ -28,6 +28,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let local_api_plan = read_repo_file("docs/codexw-local-api-implementation-plan.md");
     let local_api_route_matrix = read_repo_file("docs/codexw-local-api-route-matrix.md");
     let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
+    let cross_deployment = read_repo_file("docs/codexw-cross-deployment-collaboration.md");
     let broker_artifact_sketch = read_repo_file("docs/codexw-broker-artifact-contract-sketch.md");
     let broker_artifact_plan = read_repo_file("docs/codexw-broker-artifact-implementation-plan.md");
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
@@ -55,6 +56,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-support-policy.md",
         "docs/codexw-native-hardening-catalog.md",
         "docs/codexw-broker-client-architecture.md",
+        "docs/codexw-cross-deployment-collaboration.md",
         "docs/codexw-broker-client-fixture.md",
         "docs/codexw-broker-host-examination-matrix.md",
         "docs/codexw-broker-integration-handoff.md",
@@ -79,6 +81,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &readme,
         "docs/codexw-broker-client-architecture.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-cross-deployment-collaboration.md",
         "README.md",
     );
     assert_contains(
@@ -133,6 +140,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &todos,
         "docs/codexw-broker-client-architecture.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-cross-deployment-collaboration.md",
         "TODOS.md",
     );
     assert_contains(
@@ -397,6 +409,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-client-architecture.md",
     );
     assert_contains_case_insensitive(
+        &broker_client_arch,
+        "cross-deployment",
+        "docs/codexw-broker-client-architecture.md",
+    );
+    assert_contains_case_insensitive(
         &broker_host_matrix,
         "artifact catalog",
         "docs/codexw-broker-host-examination-matrix.md",
@@ -430,6 +447,31 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_handoff,
         "codexw-broker-artifact-implementation-plan.md",
         "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains(
+        &broker_handoff,
+        "codexw-cross-deployment-collaboration.md",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment,
+        "work handoff",
+        "docs/codexw-cross-deployment-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment,
+        "session-scoped",
+        "docs/codexw-cross-deployment-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment,
+        "broker-mediated",
+        "docs/codexw-cross-deployment-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment,
+        "artifact-contract gap",
+        "docs/codexw-cross-deployment-collaboration.md",
     );
     assert_contains_case_insensitive(
         &broker_client_fixture,

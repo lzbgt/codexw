@@ -123,6 +123,21 @@ Artifact-track references:
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
+## Cross-Deployment Collaboration Boundary
+
+The current supported surface is still centered on one `codexw` deployment at a
+time. However, the architecture now also recognizes a next native requirement:
+cross-deployment `codexw` collaboration and explicit work handoff.
+
+External workspaces should treat that as a separate design track from both:
+
+- the already-supported single-deployment session/event/shell/service surface
+- the still-separate artifact-contract track
+
+Reference:
+
+- [codexw-cross-deployment-collaboration.md](codexw-cross-deployment-collaboration.md)
+
 ## Recommended Consumption Order For `~/work/agent`
 
 For the sibling workspace, the lowest-risk implementation order is:
@@ -135,6 +150,9 @@ For the sibling workspace, the lowest-risk implementation order is:
    references only where needed
 4. if stable artifact browsing becomes necessary, treat it as an explicit
    artifact-contract requirement and sync with `codexw` on that separate track
+5. if one deployment needs to hand work to another deployment, treat that as an
+   explicit cross-deployment collaboration/handoff requirement rather than as a
+   hidden operator convention
 
 This keeps the external client aligned with what `codexw` actually proves
 today.
