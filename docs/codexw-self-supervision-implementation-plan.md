@@ -86,6 +86,15 @@ The first delivered policy hook should stay narrow and non-autonomous:
 - `automation_ready=false` for both, so the emitted policy is explicit without
   pretending the runtime already performs those recovery steps by itself
 
+The same slice should emit explicit recovery options:
+
+- `observe_status` via `GET /api/v1/session/{session_id}`
+- `interrupt_turn` via `POST /api/v1/session/{session_id}/turn/interrupt`
+- `exit_and_resume` via the concrete `codexw --cwd ... resume ...` command when
+  a thread id is available
+- a runtime-enforced async-tool deadline that fails an overdue request locally
+  instead of waiting forever for the worker thread to return
+
 ### 5. Audit trail
 
 Keep supervision actions visible through status text or event logs so recovery
@@ -103,6 +112,14 @@ than inferred from prompt wording.
 It should also carry the recovery-policy decision object, so clients can
 distinguish a warning-only state from an operator-interrupt/exit-resume state
 without reverse-engineering the recommended-action string.
+
+It should also carry explicit `recovery_options`, so clients can present or log
+the actual next-step affordances without inventing their own route mapping.
+
+The current self-heal floor should be explicit: if an async shell-tool worker
+does not return before its bounded runtime limit, `codexw` should emit a failed
+tool response itself and let the turn continue, even if the detached worker
+thread later returns and must be ignored.
 
 ## Explicitly Deferred
 

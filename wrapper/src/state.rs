@@ -14,9 +14,12 @@ pub(crate) use types::AppState;
 pub(crate) use types::AsyncToolActivity;
 pub(crate) use types::AsyncToolSupervisionClass;
 pub(crate) use types::ConversationMessage;
+#[cfg(test)]
+pub(crate) use types::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT;
 pub(crate) use types::OrchestrationState;
 pub(crate) use types::PendingSelection;
 pub(crate) use types::ProcessOutputBuffer;
 pub(crate) use types::SessionOverrides;
 pub(crate) use types::SupervisionNotice;
 pub(crate) use types::SupervisionNoticeTransition;
+pub(crate) use types::TimedOutAsyncToolRequest;

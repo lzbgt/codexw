@@ -31,6 +31,24 @@ Candidate envelope:
         "kind": "warn_only",
         "automation_ready": false
       },
+      "recovery_options": [
+        {
+          "kind": "observe_status",
+          "label": "Observe current session status",
+          "automation_ready": false,
+          "cli_command": null,
+          "local_api_method": "GET",
+          "local_api_path": "/api/v1/session/sess_01HX..."
+        },
+        {
+          "kind": "interrupt_turn",
+          "label": "Interrupt the active turn",
+          "automation_ready": false,
+          "cli_command": null,
+          "local_api_method": "POST",
+          "local_api_path": "/api/v1/session/sess_01HX.../turn/interrupt"
+        }
+      ],
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start"
     },
@@ -41,6 +59,24 @@ Candidate envelope:
         "kind": "warn_only",
         "automation_ready": false
       },
+      "recovery_options": [
+        {
+          "kind": "observe_status",
+          "label": "Observe current session status",
+          "automation_ready": false,
+          "cli_command": null,
+          "local_api_method": "GET",
+          "local_api_path": "/api/v1/session/sess_01HX..."
+        },
+        {
+          "kind": "interrupt_turn",
+          "label": "Interrupt the active turn",
+          "automation_ready": false,
+          "cli_command": null,
+          "local_api_method": "POST",
+          "local_api_path": "/api/v1/session/sess_01HX.../turn/interrupt"
+        }
+      ],
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "elapsed_seconds": 21,
@@ -174,6 +210,24 @@ Optional means “present only when semantically relevant,” not “randomly om
         "kind": "operator_interrupt_or_exit_resume",
         "automation_ready": false
       },
+      "recovery_options": [
+        {
+          "kind": "interrupt_turn",
+          "label": "Interrupt the active turn",
+          "automation_ready": false,
+          "cli_command": null,
+          "local_api_method": "POST",
+          "local_api_path": "/api/v1/session/sess_01HX.../turn/interrupt"
+        },
+        {
+          "kind": "exit_and_resume",
+          "label": "Exit and resume the thread in a newer client",
+          "automation_ready": false,
+          "cli_command": "codexw --cwd /repo resume thread_abc123",
+          "local_api_method": null,
+          "local_api_path": null
+        }
+      ],
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start"
     },
@@ -184,6 +238,24 @@ Optional means “present only when semantically relevant,” not “randomly om
         "kind": "operator_interrupt_or_exit_resume",
         "automation_ready": false
       },
+      "recovery_options": [
+        {
+          "kind": "interrupt_turn",
+          "label": "Interrupt the active turn",
+          "automation_ready": false,
+          "cli_command": null,
+          "local_api_method": "POST",
+          "local_api_path": "/api/v1/session/sess_01HX.../turn/interrupt"
+        },
+        {
+          "kind": "exit_and_resume",
+          "label": "Exit and resume the thread in a newer client",
+          "automation_ready": false,
+          "cli_command": "codexw --cwd /repo resume thread_abc123",
+          "local_api_method": null,
+          "local_api_path": null
+        }
+      ],
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "elapsed_seconds": 75,
@@ -199,7 +271,9 @@ slice: async-tool supervision classifications such as `tool_slow` and
 `observe_or_interrupt` or `interrupt_or_exit_resume`, and a sticky
 `supervision_notice` object for the active alert lifecycle, plus a
 machine-readable recovery-policy object such as `warn_only` or
-`operator_interrupt_or_exit_resume` with `automation_ready=false`.
+`operator_interrupt_or_exit_resume` with `automation_ready=false`, plus
+explicit `recovery_options` such as `observe_status`, `interrupt_turn`, and
+`exit_and_resume`.
 
 ## Exclusions
 

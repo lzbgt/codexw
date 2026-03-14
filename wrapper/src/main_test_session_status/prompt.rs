@@ -69,6 +69,7 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             started_at: Instant::now() - Duration::from_secs(20),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
     );
     let rendered = render_prompt_status(&state);

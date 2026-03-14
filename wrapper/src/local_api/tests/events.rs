@@ -48,6 +48,10 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         events[0].data["session"]["supervision_notice"]["recovery_policy"]["kind"],
         "warn_only"
     );
+    assert_eq!(
+        events[0].data["session"]["supervision_notice"]["recovery_options"][0]["kind"],
+        "observe_status"
+    );
     assert_eq!(events[2].event, "status.updated");
     assert_eq!(
         events[2].data["async_tool_supervision"]["classification"],
@@ -64,6 +68,10 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     assert_eq!(
         events[2].data["supervision_notice"]["recovery_policy"]["automation_ready"],
         false
+    );
+    assert_eq!(
+        events[2].data["async_tool_supervision"]["recovery_options"][1]["kind"],
+        "interrupt_turn"
     );
     assert_eq!(events[3].event, "orchestration.updated");
     assert_eq!(events[4].event, "workers.updated");
@@ -144,6 +152,24 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
                 kind: "operator_interrupt_or_exit_resume".to_string(),
                 automation_ready: false,
             },
+            recovery_options: vec![
+                crate::local_api::snapshot::LocalApiRecoveryOption {
+                    kind: "interrupt_turn".to_string(),
+                    label: "Interrupt the active turn".to_string(),
+                    automation_ready: false,
+                    cli_command: None,
+                    local_api_method: Some("POST".to_string()),
+                    local_api_path: Some("/api/v1/session/sess_test/turn/interrupt".to_string()),
+                },
+                crate::local_api::snapshot::LocalApiRecoveryOption {
+                    kind: "exit_and_resume".to_string(),
+                    label: "Exit and resume the thread in a newer client".to_string(),
+                    automation_ready: false,
+                    cli_command: Some("codexw --cwd /tmp/repo resume thread_123".to_string()),
+                    local_api_method: None,
+                    local_api_path: None,
+                },
+            ],
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             elapsed_seconds: 75,
@@ -156,6 +182,24 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             kind: "operator_interrupt_or_exit_resume".to_string(),
             automation_ready: false,
         },
+        recovery_options: vec![
+            crate::local_api::snapshot::LocalApiRecoveryOption {
+                kind: "interrupt_turn".to_string(),
+                label: "Interrupt the active turn".to_string(),
+                automation_ready: false,
+                cli_command: None,
+                local_api_method: Some("POST".to_string()),
+                local_api_path: Some("/api/v1/session/sess_test/turn/interrupt".to_string()),
+            },
+            crate::local_api::snapshot::LocalApiRecoveryOption {
+                kind: "exit_and_resume".to_string(),
+                label: "Exit and resume the thread in a newer client".to_string(),
+                automation_ready: false,
+                cli_command: Some("codexw --cwd /tmp/repo resume thread_123".to_string()),
+                local_api_method: None,
+                local_api_path: None,
+            },
+        ],
         tool: "background_shell_start".to_string(),
         summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
     });
@@ -182,6 +226,10 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         events[0].data["session"]["supervision_notice"]["recovery_policy"]["kind"],
         "operator_interrupt_or_exit_resume"
     );
+    assert_eq!(
+        events[0].data["session"]["supervision_notice"]["recovery_options"][1]["kind"],
+        "exit_and_resume"
+    );
     assert_eq!(events[1].event, "status.updated");
     assert_eq!(
         events[1].data["async_tool_supervision"]["classification"],
@@ -198,6 +246,10 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     assert_eq!(
         events[1].data["supervision_notice"]["recovery_policy"]["automation_ready"],
         false
+    );
+    assert_eq!(
+        events[1].data["async_tool_supervision"]["recovery_options"][0]["local_api_path"],
+        "/api/v1/session/sess_test/turn/interrupt"
     );
 }
 

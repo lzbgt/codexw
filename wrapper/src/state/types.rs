@@ -140,17 +140,24 @@ pub(crate) enum SupervisionNoticeTransition {
 
 pub(crate) const ASYNC_TOOL_SLOW_THRESHOLD: Duration = Duration::from_secs(15);
 pub(crate) const ASYNC_TOOL_WEDGED_THRESHOLD: Duration = Duration::from_secs(60);
+#[cfg(test)]
+pub(crate) const DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
 
 #[derive(Debug, Clone)]
 pub(crate) struct AsyncToolActivity {
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) started_at: Instant,
+    pub(crate) hard_timeout: Duration,
 }
 
 impl AsyncToolActivity {
     pub(crate) fn elapsed(&self) -> Duration {
         Instant::now().saturating_duration_since(self.started_at)
+    }
+
+    pub(crate) fn timed_out(&self) -> bool {
+        self.elapsed() >= self.hard_timeout
     }
 
     pub(crate) fn supervision_class(&self) -> Option<AsyncToolSupervisionClass> {
@@ -163,6 +170,15 @@ impl AsyncToolActivity {
             None
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TimedOutAsyncToolRequest {
+    pub(crate) id: RequestId,
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+    pub(crate) elapsed: Duration,
+    pub(crate) hard_timeout: Duration,
 }
 
 pub(crate) struct AppState {

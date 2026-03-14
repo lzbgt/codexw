@@ -60,6 +60,10 @@ drift casually:
 - a sticky supervision-notice alert state for active async shell-tool stalls
 - machine-readable recovery-policy decisions for those alerts, currently
   `warn_only` versus `operator_interrupt_or_exit_resume`
+- explicit recovery options such as `observe_status`, `interrupt_turn`, and
+  `exit_and_resume`
+- a runtime-enforced local failure path for overdue async shell-tool calls, so
+  supported behavior does not include waiting forever for a wedged tool worker
 - the direction that stalled tool/runtime paths should be recoverable through
   self-supervision rather than left as indefinite hangs
 - the direction that optional capabilities should prefer plugin delivery when

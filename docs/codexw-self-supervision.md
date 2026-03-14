@@ -86,11 +86,23 @@ The first recovery-policy decisions should also be machine-readable:
 - `automation_ready` should remain `false` for both until autonomous
   interruption or replacement is actually implemented
 
+The first recovery options should also be explicit enough for clients to render
+or relay without inventing their own heuristics:
+
+- `tool_slow` should expose `observe_status`, and when a turn is active also
+  `interrupt_turn`
+- `tool_wedged` should expose `interrupt_turn` and, when a thread is attached,
+  `exit_and_resume`
+- options should carry concrete local-API method/path or CLI resume command
+  fields instead of forcing prompt scraping
+
 The first emitted recovery signal should also be sticky enough to notice:
 
 - raise a structured `supervision_notice` when a class threshold is crossed
 - keep that notice active while the stalled condition remains true
 - clear the notice explicitly when the tool issue is gone
+- enforce a hard runtime limit for async shell-tool calls and fail the overdue
+  request locally rather than leaving the active turn hung forever
 
 ## Relationship To Runtime Responsiveness
 

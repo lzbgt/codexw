@@ -175,7 +175,10 @@ The statuses are:
     `observe_or_interrupt` and `interrupt_or_exit_resume`, plus a sticky
     `supervision_notice` alert state while the issue remains active, plus
     machine-readable recovery-policy decisions such as `warn_only` and
-    `operator_interrupt_or_exit_resume`
+    `operator_interrupt_or_exit_resume`, plus explicit recovery options such as
+    `observe_status`, `interrupt_turn`, and `exit_and_resume`, plus a
+    runtime-enforced local failure path when an async shell-tool request
+    exceeds its bounded runtime limit
 - Evidence:
   - [codexw-self-supervision.md](codexw-self-supervision.md)
   - [codexw-native-product-status.md](codexw-native-product-status.md)

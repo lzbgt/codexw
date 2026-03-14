@@ -1,7 +1,6 @@
 mod resume;
 mod runtime;
 
-#[cfg(test)]
 pub(crate) use resume::build_resume_command;
 pub(crate) use resume::build_resume_hint_line;
 pub(crate) use resume::current_program_name;

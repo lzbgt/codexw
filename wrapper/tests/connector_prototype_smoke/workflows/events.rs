@@ -466,6 +466,24 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "kind": "warn_only",
                                         "automation_ready": false
                                     },
+                                    "recovery_options": [
+                                        {
+                                            "kind": "observe_status",
+                                            "label": "Observe current session status",
+                                            "automation_ready": false,
+                                            "cli_command": null,
+                                            "local_api_method": "GET",
+                                            "local_api_path": "/api/v1/session/sess_1"
+                                        },
+                                        {
+                                            "kind": "interrupt_turn",
+                                            "label": "Interrupt the active turn",
+                                            "automation_ready": false,
+                                            "cli_command": null,
+                                            "local_api_method": "POST",
+                                            "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                        }
+                                    ],
                                     "tool": "background_shell_start",
                                     "summary": "arguments= command=sleep 5 tool=background_shell_start"
                                 },
@@ -476,6 +494,24 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "kind": "warn_only",
                                         "automation_ready": false
                                     },
+                                    "recovery_options": [
+                                        {
+                                            "kind": "observe_status",
+                                            "label": "Observe current session status",
+                                            "automation_ready": false,
+                                            "cli_command": null,
+                                            "local_api_method": "GET",
+                                            "local_api_path": "/api/v1/session/sess_1"
+                                        },
+                                        {
+                                            "kind": "interrupt_turn",
+                                            "label": "Interrupt the active turn",
+                                            "automation_ready": false,
+                                            "cli_command": null,
+                                            "local_api_method": "POST",
+                                            "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                        }
+                                    ],
                                     "tool": "background_shell_start"
                                 }
                             }
@@ -486,35 +522,151 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                 1 => {
                     assert_eq!(request.method, "GET");
                     assert_eq!(request.path, "/api/v1/session/sess_1/events");
+                    let payload = serde_json::to_string(&json!({
+                        "session_id": "sess_1",
+                        "thread_id": "thread_1",
+                        "turn_running": true,
+                        "async_tool_supervision": {
+                            "classification": "tool_slow",
+                            "recommended_action": "observe_or_interrupt",
+                            "recovery_policy": {
+                                "kind": "warn_only",
+                                "automation_ready": false
+                            },
+                            "recovery_options": [
+                                {
+                                    "kind": "observe_status",
+                                    "label": "Observe current session status",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "GET",
+                                    "local_api_path": "/api/v1/session/sess_1"
+                                },
+                                {
+                                    "kind": "interrupt_turn",
+                                    "label": "Interrupt the active turn",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "POST",
+                                    "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                }
+                            ],
+                            "tool": "background_shell_start",
+                            "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                            "elapsed_seconds": 21,
+                            "active_request_count": 1
+                        },
+                        "supervision_notice": {
+                            "classification": "tool_slow",
+                            "recommended_action": "observe_or_interrupt",
+                            "recovery_policy": {
+                                "kind": "warn_only",
+                                "automation_ready": false
+                            },
+                            "recovery_options": [
+                                {
+                                    "kind": "observe_status",
+                                    "label": "Observe current session status",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "GET",
+                                    "local_api_path": "/api/v1/session/sess_1"
+                                },
+                                {
+                                    "kind": "interrupt_turn",
+                                    "label": "Interrupt the active turn",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "POST",
+                                    "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                }
+                            ],
+                            "tool": "background_shell_start",
+                            "summary": "arguments= command=sleep 5 tool=background_shell_start"
+                        }
+                    }))?;
                     write_http_response(
                         &mut stream,
                         200,
                         "OK",
                         &[("Content-Type", "text/event-stream")],
-                        concat!(
-                            ": heartbeat\n",
-                            "id: 30\n",
-                            "event: status.updated\n",
-                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_slow\",\"recommended_action\":\"observe_or_interrupt\",\"recovery_policy\":{\"kind\":\"warn_only\",\"automation_ready\":false},\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":21,\"active_request_count\":1},\"supervision_notice\":{\"classification\":\"tool_slow\",\"recommended_action\":\"observe_or_interrupt\",\"recovery_policy\":{\"kind\":\"warn_only\",\"automation_ready\":false},\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\"}}\n\n"
-                        )
-                        .as_bytes(),
+                        format!(": heartbeat\nid: 30\nevent: status.updated\ndata: {payload}\n\n")
+                            .as_bytes(),
                     )?;
                 }
                 2 => {
                     assert_eq!(request.method, "GET");
                     assert_eq!(request.path, "/api/v1/session/sess_1/events");
+                    let payload = serde_json::to_string(&json!({
+                        "session_id": "sess_1",
+                        "thread_id": "thread_1",
+                        "turn_running": true,
+                        "async_tool_supervision": {
+                            "classification": "tool_wedged",
+                            "recommended_action": "interrupt_or_exit_resume",
+                            "recovery_policy": {
+                                "kind": "operator_interrupt_or_exit_resume",
+                                "automation_ready": false
+                            },
+                            "recovery_options": [
+                                {
+                                    "kind": "interrupt_turn",
+                                    "label": "Interrupt the active turn",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "POST",
+                                    "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                },
+                                {
+                                    "kind": "exit_and_resume",
+                                    "label": "Exit and resume the thread in a newer client",
+                                    "automation_ready": false,
+                                    "cli_command": "codexw --cwd /tmp/repo resume thread_1",
+                                    "local_api_method": Value::Null,
+                                    "local_api_path": Value::Null
+                                }
+                            ],
+                            "tool": "background_shell_start",
+                            "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                            "elapsed_seconds": 75,
+                            "active_request_count": 1
+                        },
+                        "supervision_notice": {
+                            "classification": "tool_wedged",
+                            "recommended_action": "interrupt_or_exit_resume",
+                            "recovery_policy": {
+                                "kind": "operator_interrupt_or_exit_resume",
+                                "automation_ready": false
+                            },
+                            "recovery_options": [
+                                {
+                                    "kind": "interrupt_turn",
+                                    "label": "Interrupt the active turn",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "POST",
+                                    "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                },
+                                {
+                                    "kind": "exit_and_resume",
+                                    "label": "Exit and resume the thread in a newer client",
+                                    "automation_ready": false,
+                                    "cli_command": "codexw --cwd /tmp/repo resume thread_1",
+                                    "local_api_method": Value::Null,
+                                    "local_api_path": Value::Null
+                                }
+                            ],
+                            "tool": "background_shell_start",
+                            "summary": "arguments= command=sleep 5 tool=background_shell_start"
+                        }
+                    }))?;
                     write_http_response(
                         &mut stream,
                         200,
                         "OK",
                         &[("Content-Type", "text/event-stream")],
-                        concat!(
-                            ": heartbeat\n",
-                            "id: 31\n",
-                            "event: status.updated\n",
-                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_wedged\",\"recommended_action\":\"interrupt_or_exit_resume\",\"recovery_policy\":{\"kind\":\"operator_interrupt_or_exit_resume\",\"automation_ready\":false},\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":75,\"active_request_count\":1},\"supervision_notice\":{\"classification\":\"tool_wedged\",\"recommended_action\":\"interrupt_or_exit_resume\",\"recovery_policy\":{\"kind\":\"operator_interrupt_or_exit_resume\",\"automation_ready\":false},\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\"}}\n\n"
-                        )
-                        .as_bytes(),
+                        format!(": heartbeat\nid: 31\nevent: status.updated\ndata: {payload}\n\n")
+                            .as_bytes(),
                     )?;
                 }
                 _ => unreachable!(),
@@ -547,11 +699,13 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("\"source\":\"codexw\""));
     assert!(initial_events.contains("\"agent_id\":\"codexw-lab\""));
     assert!(initial_events.contains("\"deployment_id\":\"mac-mini-01\""));
-    assert!(initial_events.contains("\"classification\":\"tool_slow\""));
-    assert!(initial_events.contains("\"recommended_action\":\"observe_or_interrupt\""));
-    assert!(initial_events.contains("\"kind\":\"warn_only\""));
-    assert!(initial_events.contains("\"supervision_notice\""));
-    assert!(initial_events.contains("\"tool\":\"background_shell_start\""));
+    assert!(initial_events.contains("tool_slow"));
+    assert!(initial_events.contains("observe_or_interrupt"));
+    assert!(initial_events.contains("warn_only"));
+    assert!(initial_events.contains("observe_status"));
+    assert!(initial_events.contains("/api/v1/session/sess_1/turn/interrupt"));
+    assert!(initial_events.contains("supervision_notice"));
+    assert!(initial_events.contains("background_shell_start"));
 
     let resumed_events =
         client.session_request("GET", "sess_1", "/events", None, &[("Last-Event-ID", "30")])?;
@@ -561,11 +715,13 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"source\":\"codexw\""));
     assert!(resumed_events.contains("\"agent_id\":\"codexw-lab\""));
     assert!(resumed_events.contains("\"deployment_id\":\"mac-mini-01\""));
-    assert!(resumed_events.contains("\"classification\":\"tool_wedged\""));
-    assert!(resumed_events.contains("\"recommended_action\":\"interrupt_or_exit_resume\""));
-    assert!(resumed_events.contains("\"kind\":\"operator_interrupt_or_exit_resume\""));
-    assert!(resumed_events.contains("\"supervision_notice\""));
-    assert!(resumed_events.contains("\"elapsed_seconds\":75"));
+    assert!(resumed_events.contains("tool_wedged"));
+    assert!(resumed_events.contains("interrupt_or_exit_resume"));
+    assert!(resumed_events.contains("operator_interrupt_or_exit_resume"));
+    assert!(resumed_events.contains("exit_and_resume"));
+    assert!(resumed_events.contains("codexw --cwd /tmp/repo resume thread_1"));
+    assert!(resumed_events.contains("supervision_notice"));
+    assert!(resumed_events.contains("elapsed_seconds"));
 
     fake_server.join().expect("fake server thread")?;
     Ok(())

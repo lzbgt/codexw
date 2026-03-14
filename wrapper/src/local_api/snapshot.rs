@@ -6,6 +6,8 @@ use std::time::UNIX_EPOCH;
 
 use serde::Serialize;
 
+use crate::app::build_resume_command;
+use crate::app::current_program_name;
 use crate::background_shells::BackgroundShellCapabilityIssueClass;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellJobSnapshot;
@@ -48,6 +50,7 @@ pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) classification: String,
     pub(crate) recommended_action: String,
     pub(crate) recovery_policy: LocalApiRecoveryPolicy,
+    pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) elapsed_seconds: u64,
@@ -59,6 +62,7 @@ pub(crate) struct LocalApiSupervisionNotice {
     pub(crate) classification: String,
     pub(crate) recommended_action: String,
     pub(crate) recovery_policy: LocalApiRecoveryPolicy,
+    pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
     pub(crate) tool: String,
     pub(crate) summary: String,
 }
@@ -67,6 +71,16 @@ pub(crate) struct LocalApiSupervisionNotice {
 pub(crate) struct LocalApiRecoveryPolicy {
     pub(crate) kind: String,
     pub(crate) automation_ready: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct LocalApiRecoveryOption {
+    pub(crate) kind: String,
+    pub(crate) label: String,
+    pub(crate) automation_ready: bool,
+    pub(crate) cli_command: Option<String>,
+    pub(crate) local_api_method: Option<String>,
+    pub(crate) local_api_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
@@ -252,8 +266,10 @@ pub(crate) fn sync_shared_snapshot(
         guard.started_turn_count = state.started_turn_count;
         guard.completed_turn_count = state.completed_turn_count;
         guard.active_personality = state.active_personality.clone();
-        guard.async_tool_supervision = async_tool_supervision_snapshot(state);
-        guard.supervision_notice = supervision_notice_snapshot(state);
+        guard.async_tool_supervision =
+            async_tool_supervision_snapshot(&guard.session_id, &guard.cwd, state);
+        guard.supervision_notice =
+            supervision_notice_snapshot(&guard.session_id, &guard.cwd, state);
         guard.orchestration_status = orchestration_status_snapshot(state);
         guard.orchestration_dependencies = orchestration_dependencies_snapshot(state);
         guard.workers = workers_snapshot(state);
@@ -285,7 +301,11 @@ pub(crate) fn sync_shared_snapshot(
     }
 }
 
-fn async_tool_supervision_snapshot(state: &AppState) -> Option<LocalApiAsyncToolSupervision> {
+fn async_tool_supervision_snapshot(
+    session_id: &str,
+    cwd: &str,
+    state: &AppState,
+) -> Option<LocalApiAsyncToolSupervision> {
     let activity = state.oldest_async_tool_activity()?;
     let classification = activity.supervision_class()?;
     Some(LocalApiAsyncToolSupervision {
@@ -295,6 +315,7 @@ fn async_tool_supervision_snapshot(state: &AppState) -> Option<LocalApiAsyncTool
             kind: classification.recovery_policy_kind().label().to_string(),
             automation_ready: classification.automation_ready(),
         },
+        recovery_options: recovery_options_snapshot(session_id, cwd, state, classification),
         tool: activity.tool.clone(),
         summary: activity.summary.clone(),
         elapsed_seconds: activity.elapsed().as_secs(),
@@ -302,7 +323,11 @@ fn async_tool_supervision_snapshot(state: &AppState) -> Option<LocalApiAsyncTool
     })
 }
 
-fn supervision_notice_snapshot(state: &AppState) -> Option<LocalApiSupervisionNotice> {
+fn supervision_notice_snapshot(
+    session_id: &str,
+    cwd: &str,
+    state: &AppState,
+) -> Option<LocalApiSupervisionNotice> {
     let notice = state
         .active_supervision_notice
         .clone()
@@ -314,9 +339,68 @@ fn supervision_notice_snapshot(state: &AppState) -> Option<LocalApiSupervisionNo
             kind: notice.recovery_policy_kind().label().to_string(),
             automation_ready: notice.automation_ready(),
         },
+        recovery_options: recovery_options_snapshot(session_id, cwd, state, notice.classification),
         tool: notice.tool.clone(),
         summary: notice.summary.clone(),
     })
+}
+
+fn recovery_options_snapshot(
+    session_id: &str,
+    cwd: &str,
+    state: &AppState,
+    classification: crate::state::AsyncToolSupervisionClass,
+) -> Vec<LocalApiRecoveryOption> {
+    let mut options = Vec::new();
+    match classification {
+        crate::state::AsyncToolSupervisionClass::ToolSlow => {
+            options.push(LocalApiRecoveryOption {
+                kind: "observe_status".to_string(),
+                label: "Observe current session status".to_string(),
+                automation_ready: false,
+                cli_command: None,
+                local_api_method: Some("GET".to_string()),
+                local_api_path: Some(format!("/api/v1/session/{session_id}")),
+            });
+            if state.turn_running || state.active_turn_id.is_some() {
+                options.push(LocalApiRecoveryOption {
+                    kind: "interrupt_turn".to_string(),
+                    label: "Interrupt the active turn".to_string(),
+                    automation_ready: false,
+                    cli_command: None,
+                    local_api_method: Some("POST".to_string()),
+                    local_api_path: Some(format!("/api/v1/session/{session_id}/turn/interrupt")),
+                });
+            }
+        }
+        crate::state::AsyncToolSupervisionClass::ToolWedged => {
+            if state.turn_running || state.active_turn_id.is_some() {
+                options.push(LocalApiRecoveryOption {
+                    kind: "interrupt_turn".to_string(),
+                    label: "Interrupt the active turn".to_string(),
+                    automation_ready: false,
+                    cli_command: None,
+                    local_api_method: Some("POST".to_string()),
+                    local_api_path: Some(format!("/api/v1/session/{session_id}/turn/interrupt")),
+                });
+            }
+            if let Some(thread_id) = state.thread_id.as_deref() {
+                options.push(LocalApiRecoveryOption {
+                    kind: "exit_and_resume".to_string(),
+                    label: "Exit and resume the thread in a newer client".to_string(),
+                    automation_ready: false,
+                    cli_command: Some(build_resume_command(
+                        &current_program_name(),
+                        cwd,
+                        thread_id,
+                    )),
+                    local_api_method: None,
+                    local_api_path: None,
+                });
+            }
+        }
+    }
+    options
 }
 
 fn orchestration_status_snapshot(state: &AppState) -> LocalApiOrchestrationStatus {

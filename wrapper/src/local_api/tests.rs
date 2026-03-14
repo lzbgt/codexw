@@ -35,6 +35,7 @@ use super::snapshot::LocalApiCapabilityProvider;
 use super::snapshot::LocalApiDependencyEdge;
 use super::snapshot::LocalApiLiveAgentTask;
 use super::snapshot::LocalApiOrchestrationStatus;
+use super::snapshot::LocalApiRecoveryOption;
 use super::snapshot::LocalApiRecoveryPolicy;
 use super::snapshot::LocalApiSnapshot;
 use super::snapshot::LocalApiSupervisionNotice;
@@ -62,6 +63,24 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
                 kind: "warn_only".to_string(),
                 automation_ready: false,
             },
+            recovery_options: vec![
+                LocalApiRecoveryOption {
+                    kind: "observe_status".to_string(),
+                    label: "Observe current session status".to_string(),
+                    automation_ready: false,
+                    cli_command: None,
+                    local_api_method: Some("GET".to_string()),
+                    local_api_path: Some("/api/v1/session/sess_test".to_string()),
+                },
+                LocalApiRecoveryOption {
+                    kind: "interrupt_turn".to_string(),
+                    label: "Interrupt the active turn".to_string(),
+                    automation_ready: false,
+                    cli_command: None,
+                    local_api_method: Some("POST".to_string()),
+                    local_api_path: Some("/api/v1/session/sess_test/turn/interrupt".to_string()),
+                },
+            ],
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             elapsed_seconds: 21,
@@ -74,6 +93,24 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
                 kind: "warn_only".to_string(),
                 automation_ready: false,
             },
+            recovery_options: vec![
+                LocalApiRecoveryOption {
+                    kind: "observe_status".to_string(),
+                    label: "Observe current session status".to_string(),
+                    automation_ready: false,
+                    cli_command: None,
+                    local_api_method: Some("GET".to_string()),
+                    local_api_path: Some("/api/v1/session/sess_test".to_string()),
+                },
+                LocalApiRecoveryOption {
+                    kind: "interrupt_turn".to_string(),
+                    label: "Interrupt the active turn".to_string(),
+                    automation_ready: false,
+                    cli_command: None,
+                    local_api_method: Some("POST".to_string()),
+                    local_api_path: Some("/api/v1/session/sess_test/turn/interrupt".to_string()),
+                },
+            ],
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
         }),

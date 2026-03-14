@@ -88,6 +88,7 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
     );
     let cli = crate::runtime_process::normalize_cli(Cli {
@@ -197,6 +198,7 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             tool: "background_shell_start".to_string(),
             summary: "slow".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
     );
     assert_eq!(
@@ -224,6 +226,7 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             tool: "background_shell_start".to_string(),
             summary: "wedged".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
     );
     assert_eq!(
@@ -255,6 +258,7 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             tool: "background_shell_start".to_string(),
             summary: "slow".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
     );
 
@@ -284,6 +288,7 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             tool: "background_shell_start".to_string(),
             summary: "wedged".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(75),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
     );
     let escalated = state.refresh_async_tool_supervision_notice();

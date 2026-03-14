@@ -1,11 +1,15 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use crate::rpc::RequestId;
 
 use super::AppState;
 use super::ConversationMessage;
+#[cfg(test)]
+use super::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT;
 use super::OrchestrationState;
 use super::SessionOverrides;
+use super::TimedOutAsyncToolRequest;
 
 impl OrchestrationState {
     pub(crate) fn reset_thread_context(&mut self) {
@@ -137,11 +141,27 @@ impl AppState {
         (local, remote)
     }
 
+    #[cfg(test)]
     pub(crate) fn record_async_tool_request(
         &mut self,
         id: RequestId,
         tool: String,
         summary: String,
+    ) {
+        self.record_async_tool_request_with_timeout(
+            id,
+            tool,
+            summary,
+            DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+        );
+    }
+
+    pub(crate) fn record_async_tool_request_with_timeout(
+        &mut self,
+        id: RequestId,
+        tool: String,
+        summary: String,
+        hard_timeout: Duration,
     ) {
         self.active_async_tool_requests.insert(
             id,
@@ -149,6 +169,7 @@ impl AppState {
                 tool,
                 summary,
                 started_at: std::time::Instant::now(),
+                hard_timeout,
             },
         );
     }
@@ -171,6 +192,28 @@ impl AppState {
     ) -> Option<super::AsyncToolSupervisionClass> {
         self.oldest_async_tool_activity()
             .and_then(|activity| activity.supervision_class())
+    }
+
+    pub(crate) fn expire_timed_out_async_tool_requests(&mut self) -> Vec<TimedOutAsyncToolRequest> {
+        let timed_out_ids = self
+            .active_async_tool_requests
+            .iter()
+            .filter_map(|(id, activity)| activity.timed_out().then_some(id.clone()))
+            .collect::<Vec<_>>();
+        let mut expired = Vec::with_capacity(timed_out_ids.len());
+        for id in timed_out_ids {
+            if let Some(activity) = self.active_async_tool_requests.remove(&id) {
+                let elapsed = activity.elapsed();
+                expired.push(TimedOutAsyncToolRequest {
+                    id,
+                    tool: activity.tool,
+                    summary: activity.summary,
+                    elapsed,
+                    hard_timeout: activity.hard_timeout,
+                });
+            }
+        }
+        expired
     }
 
     pub(crate) fn current_async_tool_supervision_notice(&self) -> Option<super::SupervisionNotice> {

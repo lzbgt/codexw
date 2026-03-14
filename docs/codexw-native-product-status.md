@@ -72,6 +72,10 @@ The implemented native-side product already has:
   runtime has an explicit alert lifecycle rather than only a computed class
 - machine-readable recovery-policy decisions for those alerts, currently
   `warn_only` versus `operator_interrupt_or_exit_resume`
+- explicit recovery options such as `observe_status`, `interrupt_turn`, and
+  `exit_and_resume`
+- a runtime-enforced local failure path for overdue async shell-tool calls, so
+  a stuck dynamic tool no longer keeps the turn open forever
 - orchestration views over agents, shells, services, capabilities, and
   terminals
 - a new self-supervision design lane for stalled tool/runtime recovery

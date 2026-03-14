@@ -183,6 +183,9 @@ the real connector binary:
   stalls
 - broker-visible recovery-policy decisions such as `warn_only` and
   `operator_interrupt_or_exit_resume`, currently with `automation_ready=false`
+- broker-visible recovery options such as `observe_status`, `interrupt_turn`,
+  and `exit_and_resume`, including concrete local-API path or CLI command
+  fields where available
 - structured lease-conflict propagation
 - structured connector-local validation failures for malformed injected request
   bodies and malformed client/lease headers

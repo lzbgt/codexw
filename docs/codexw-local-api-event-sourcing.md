@@ -195,6 +195,8 @@ At:
   `observe_or_interrupt` to `interrupt_or_exit_resume`
 - recovery-policy changes such as `warn_only` to
   `operator_interrupt_or_exit_resume`
+- recovery-option changes such as `observe_status` yielding to
+  `interrupt_turn` plus `exit_and_resume`
 - supervision-notice lifecycle changes such as notice raise, escalation, or
   clear through the semantic `supervision_notice` field
 

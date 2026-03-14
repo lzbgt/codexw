@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::process::ChildStdin;
 use std::sync::mpsc;
 use std::thread;
+use std::time::Duration;
 
 use crate::client_dynamic_tools::execute_background_shell_tool_call_with_manager;
 use crate::client_dynamic_tools::execute_dynamic_tool_call_with_state;
@@ -18,6 +19,11 @@ use crate::state::AppState;
 use crate::transcript_approval_summary::summarize_tool_request;
 use crate::transcript_plan_render::build_mcp_elicitation_response;
 use crate::transcript_plan_render::build_tool_user_input_response;
+
+const DEFAULT_BACKGROUND_SHELL_TOOL_TIMEOUT_MS: u64 = 30_000;
+const BACKGROUND_SHELL_START_TIMEOUT_MS: u64 = 15_000;
+const BACKGROUND_SHELL_REQUEST_TIMEOUT_GRACE_MS: u64 = 5_000;
+const MAX_BACKGROUND_SHELL_TOOL_TIMEOUT_MS: u64 = 300_000;
 
 pub(crate) fn handle_tool_request(
     request: &RpcRequest,
@@ -73,10 +79,11 @@ pub(crate) fn handle_tool_request(
                 let params = request.params.clone();
                 let summary = summarize_tool_request(&params);
                 let tool_name = tool.to_string();
-                state.record_async_tool_request(
+                state.record_async_tool_request_with_timeout(
                     request_id.clone(),
                     tool_name.clone(),
                     summary.clone(),
+                    async_background_shell_timeout(tool, &params),
                 );
                 let resolved_cwd = resolved_cwd.to_string();
                 let tx = tx.clone();
@@ -123,6 +130,30 @@ pub(crate) fn handle_tool_request(
         }
         _ => Ok(false),
     }
+}
+
+fn async_background_shell_timeout(tool: &str, params: &serde_json::Value) -> Duration {
+    let arguments = params.get("arguments").unwrap_or(&serde_json::Value::Null);
+    match tool {
+        "background_shell_start" => Duration::from_millis(BACKGROUND_SHELL_START_TIMEOUT_MS),
+        "background_shell_wait_ready" => {
+            duration_from_optional_timeout(arguments.get("timeoutMs"), 60_000)
+        }
+        "background_shell_invoke_recipe" => {
+            duration_from_optional_timeout(arguments.get("waitForReadyMs"), 60_000)
+        }
+        _ => Duration::from_millis(DEFAULT_BACKGROUND_SHELL_TOOL_TIMEOUT_MS),
+    }
+}
+
+fn duration_from_optional_timeout(value: Option<&serde_json::Value>, default_ms: u64) -> Duration {
+    let requested_ms = value
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(default_ms);
+    let bounded_ms = requested_ms
+        .saturating_add(BACKGROUND_SHELL_REQUEST_TIMEOUT_GRACE_MS)
+        .min(MAX_BACKGROUND_SHELL_TOOL_TIMEOUT_MS);
+    Duration::from_millis(bounded_ms)
 }
 
 #[cfg(test)]
@@ -213,5 +244,29 @@ mod tests {
         assert!(handled);
         assert!(state.active_async_tool_requests.is_empty());
         assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
+    }
+
+    #[test]
+    fn background_shell_start_uses_shorter_hard_timeout_than_default() {
+        let mut state = AppState::new(true, false);
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+        let (tx, _rx) = mpsc::channel();
+        let request = test_request(
+            "item/tool/call",
+            "background_shell_start",
+            json!({"command": "printf 'alpha\\n'"}),
+        );
+
+        let handled =
+            handle_tool_request(&request, "/tmp", &mut state, &mut output, &mut writer, &tx)
+                .expect("handle tool request");
+
+        assert!(handled);
+        let activity = state
+            .active_async_tool_requests
+            .get(&RequestId::Integer(7))
+            .expect("tracked async tool activity");
+        assert_eq!(activity.hard_timeout, Duration::from_millis(15_000));
     }
 }

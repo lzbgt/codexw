@@ -2,6 +2,7 @@ use std::sync::mpsc;
 
 use anyhow::Context;
 use anyhow::Result;
+use serde_json::json;
 
 use crate::Cli;
 use crate::app::resume::emit_resume_exit_hint;
@@ -129,7 +130,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                 }
             }
             Ok(AppEvent::Tick) => {
-                handle_supervision_tick(&mut state, &mut output)?;
+                handle_supervision_tick(&mut state, &mut output, &mut writer)?;
             }
             Ok(AppEvent::AsyncToolResponseReady(tool_response)) => {
                 handle_async_tool_response(tool_response, &mut state, &mut output, &mut writer)?;
@@ -176,7 +177,13 @@ fn handle_async_tool_response(
     output: &mut Output,
     writer: &mut std::process::ChildStdin,
 ) -> Result<()> {
-    let _ = state.finish_async_tool_request(&tool_response.id);
+    let Some(_) = state.finish_async_tool_request(&tool_response.id) else {
+        output.line_stderr(format!(
+            "[tool] dropped late async tool response: {}",
+            tool_response.summary
+        ))?;
+        return Ok(());
+    };
     let _ = state.refresh_async_tool_supervision_notice();
     let success = tool_response
         .result
@@ -198,7 +205,37 @@ fn handle_async_tool_response(
     Ok(())
 }
 
-fn handle_supervision_tick(state: &mut AppState, output: &mut Output) -> Result<()> {
+fn handle_supervision_tick(
+    state: &mut AppState,
+    output: &mut Output,
+    writer: &mut std::process::ChildStdin,
+) -> Result<()> {
+    for expired in state.expire_timed_out_async_tool_requests() {
+        output.line_stderr(format!(
+            "[self-supervision] forcing async tool failure after {}s (limit {}s): {}",
+            expired.elapsed.as_secs(),
+            expired.hard_timeout.as_secs(),
+            expired.summary
+        ))?;
+        send_json(
+            writer,
+            &OutgoingResponse {
+                id: expired.id,
+                result: json!({
+                    "contentItems": [{
+                        "type": "inputText",
+                        "text": format!(
+                            "dynamic tool `{}` exceeded its {}s runtime limit and was failed locally to avoid hanging the active turn; summary: {}",
+                            expired.tool,
+                            expired.hard_timeout.as_secs(),
+                            expired.summary
+                        )
+                    }],
+                    "success": false
+                }),
+            },
+        )?;
+    }
     match state.refresh_async_tool_supervision_notice() {
         Some(SupervisionNoticeTransition::Raised(notice)) => {
             output.line_stderr(format!(
@@ -309,8 +346,9 @@ mod tests {
             activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(20);
         }
         let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
 
-        handle_supervision_tick(&mut state, &mut output).expect("raise slow notice");
+        handle_supervision_tick(&mut state, &mut output, &mut writer).expect("raise slow notice");
         assert_eq!(
             state
                 .active_supervision_notice
@@ -325,7 +363,7 @@ mod tests {
         {
             activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(75);
         }
-        handle_supervision_tick(&mut state, &mut output).expect("raise wedged notice");
+        handle_supervision_tick(&mut state, &mut output, &mut writer).expect("raise wedged notice");
         assert_eq!(
             state
                 .active_supervision_notice
@@ -335,7 +373,55 @@ mod tests {
         );
 
         state.finish_async_tool_request(&RequestId::Integer(7));
-        handle_supervision_tick(&mut state, &mut output).expect("clear notice");
+        handle_supervision_tick(&mut state, &mut output, &mut writer).expect("clear notice");
+        assert!(state.active_supervision_notice.is_none());
+    }
+
+    #[test]
+    fn supervision_tick_force_fails_timed_out_async_tool_requests() {
+        let mut state = AppState::new(true, false);
+        state.record_async_tool_request_with_timeout(
+            RequestId::Integer(9),
+            "background_shell_start".to_string(),
+            "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            std::time::Duration::from_secs(1),
+        );
+        if let Some(activity) = state
+            .active_async_tool_requests
+            .get_mut(&RequestId::Integer(9))
+        {
+            activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(75);
+        }
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+
+        handle_supervision_tick(&mut state, &mut output, &mut writer)
+            .expect("expire timed out async tool");
+
+        assert!(state.active_async_tool_requests.is_empty());
+        assert!(state.active_supervision_notice.is_none());
+    }
+
+    #[test]
+    fn late_async_tool_response_is_dropped_after_timeout_cleanup() {
+        let mut state = AppState::new(true, false);
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+
+        handle_async_tool_response(
+            AsyncToolResponse {
+                id: RequestId::Integer(404),
+                tool: "background_shell_start".to_string(),
+                summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+                result: json!({"success": true}),
+            },
+            &mut state,
+            &mut output,
+            &mut writer,
+        )
+        .expect("drop late async tool response");
+
+        assert!(state.active_async_tool_requests.is_empty());
         assert!(state.active_supervision_notice.is_none());
     }
 }
