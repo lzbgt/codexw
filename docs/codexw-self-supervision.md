@@ -129,6 +129,10 @@ or relay without inventing their own heuristics:
   when a concrete wrapper shell is visible, the matched shell command so the
   operator can tell which request and job the spinner belongs to without
   leaving the prompt line
+- that same inline prompt status should surface compact concrete recovery
+  options such as `:status`, `:interrupt`, and `resume` when a supervision
+  class is active, instead of only an abstract hint like “observe or
+  interrupt”
 - those live inspection notices should also expose the observation state,
   output state, source call id when present, and the orchestrator's next check
   horizon so the operator can see what will be re-evaluated next without

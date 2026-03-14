@@ -67,6 +67,9 @@ The implemented native-side product already has:
 - inline prompt status correlation for active async shell-tool work, including
   visible `callId` and matched shell command when a concrete wrapper shell job
   is observable
+- compact inline prompt recovery options for supervised async shell-tool work,
+  currently surfacing next steps such as `:status`, `:interrupt`, and
+  `resume`
 - first self-supervision classifications for async shell-tool stalls, currently
   `tool_slow` and `tool_wedged`, surfaced in prompt/status output with narrow
   recommended actions such as `observe_or_interrupt` and

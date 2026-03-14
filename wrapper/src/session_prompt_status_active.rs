@@ -74,6 +74,7 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
 fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
     if let Some((request_id, async_tool)) = state.oldest_async_tool_entry() {
         let observation = state.async_tool_observation(async_tool);
+        let prompt_cwd = prompt_render_cwd();
         let detail = if state.active_async_tool_requests.len() > 1 {
             format!(
                 "async tools {}: {}",
@@ -92,6 +93,12 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
         } else {
             detail
         };
+        let recovery_options = state
+            .oldest_async_tool_supervision_class()
+            .map(|classification| prompt_recovery_options(state, &prompt_cwd, classification))
+            .filter(|options| !options.is_empty())
+            .map(|options| format!("; opts {}", options.join("/")))
+            .unwrap_or_default();
         let observation_detail = match observation.observed_background_shell_job.as_ref() {
             Some(job) => {
                 let last_output = job
@@ -141,14 +148,15 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             summarize_inline(&async_tool.worker_thread_name)
         );
         let detail = format!(
-            "{detail} [{}; {}{}{}{}{}; next check {}]",
+            "{detail} [{}; {}{}{}{}{}; next check {}{}]",
             observation.owner_kind.prompt_label(),
             observation_detail,
             request_detail,
             source_detail,
             worker_detail,
             target_detail,
-            format_elapsed(Some(Instant::now() - async_tool.next_health_check_in()))
+            format_elapsed(Some(Instant::now() - async_tool.next_health_check_in())),
+            recovery_options
         );
         return Some((
             async_tool.started_at,
@@ -260,6 +268,28 @@ fn append_async_backlog_suffix(state: &AppState, detail: String) -> String {
     } else {
         format!("{detail} [backlog {backlog}]")
     }
+}
+
+fn prompt_recovery_options(
+    state: &AppState,
+    cwd: &str,
+    classification: crate::state::AsyncToolSupervisionClass,
+) -> Vec<&'static str> {
+    crate::supervision_recovery::supervision_recovery_options(state, None, cwd, classification)
+        .into_iter()
+        .map(|option| match option.kind {
+            "observe_status" => ":status",
+            "interrupt_turn" => ":interrupt",
+            "exit_and_resume" => "resume",
+            _ => option.kind,
+        })
+        .collect()
+}
+
+fn prompt_render_cwd() -> String {
+    std::env::current_dir()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|_| ".".to_string())
 }
 
 pub(crate) fn render_realtime_status(state: &AppState) -> String {

@@ -65,6 +65,9 @@ drift casually:
 - explicit terminal-facing supervision output for those same options, so the
   operator can see concrete `:status`, `:interrupt`, or resume-next-step
   guidance without opening the local API payloads
+- compact prompt-line supervision options for those same next steps, so the
+  active spinner itself can point at `:status`, `:interrupt`, or `resume`
+  without waiting for a separate status command
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
   supported behavior does not include waiting forever for a wedged tool worker
 - dedicated wrapper worker threads for background-shell dynamic tools

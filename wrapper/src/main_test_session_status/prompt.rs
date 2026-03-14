@@ -91,6 +91,37 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
     assert!(rendered.contains("req 8"));
     assert!(rendered.contains("worker codexw-bgtool-background_shell_start-8"));
     assert!(rendered.contains("observe or interrupt"));
+    assert!(rendered.contains("opts :status/:interrupt"));
+}
+
+#[test]
+fn prompt_status_mentions_compact_recovery_options_when_wedged() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.thread_id = Some("thread-8".to_string());
+    state.turn_running = true;
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(28),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: None,
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
+            worker_thread_name: "codexw-bgtool-background_shell_start-28".to_string(),
+            started_at: Instant::now() - Duration::from_secs(75),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
+        },
+    );
+
+    let rendered = render_prompt_status(&state);
+
+    assert!(rendered.contains("tool_wedged"));
+    assert!(rendered.contains("interrupt or exit"));
+    assert!(rendered.contains("opts :interrupt/resume"));
 }
 
 #[test]
