@@ -172,19 +172,16 @@ fn consume_sse_text(
     client_stream: &mut TcpStream,
     cli: &Cli,
 ) -> Result<()> {
-    for segment in text.split_inclusive('\n') {
-        pending_line_fragment.push_str(segment);
-        if segment.ends_with('\n') {
-            flush_pending_line_fragment(
-                pending_line_fragment,
-                pending_id,
-                pending_event,
-                pending_data,
-                pending_comments,
-                client_stream,
-                cli,
-            )?;
-        }
+    for line in complete_sse_lines(text, pending_line_fragment) {
+        consume_sse_line(
+            &line,
+            pending_id,
+            pending_event,
+            pending_data,
+            pending_comments,
+            client_stream,
+            cli,
+        )?;
     }
     Ok(())
 }
@@ -310,4 +307,20 @@ pub(super) fn wrap_event_payload(
         "data": parsed,
     })
     .to_string()
+}
+
+pub(super) fn complete_sse_lines(text: &str, pending_line_fragment: &mut String) -> Vec<String> {
+    let mut completed = Vec::new();
+    for segment in text.split_inclusive('\n') {
+        pending_line_fragment.push_str(segment);
+        if segment.ends_with('\n') {
+            completed.push(
+                std::mem::take(pending_line_fragment)
+                    .trim_end_matches('\n')
+                    .trim_end_matches('\r')
+                    .to_string(),
+            );
+        }
+    }
+    completed
 }

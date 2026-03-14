@@ -113,7 +113,8 @@ pub(crate) fn handle_tool_request(
                 let background_shells = state.orchestration.background_shells.clone();
                 // Background-shell dynamic tools run on dedicated worker threads so a blocking
                 // wrapper-side shell call cannot stall the main runtime loop forever.
-                thread::spawn(move || {
+                let worker_name = background_shell_worker_thread_name(tool, &request_id);
+                let spawn_result = thread::Builder::new().name(worker_name).spawn(move || {
                     let result = execute_background_shell_tool_call_with_manager(
                         &params,
                         &resolved_cwd,
@@ -126,6 +127,27 @@ pub(crate) fn handle_tool_request(
                         result,
                     }));
                 });
+                if let Err(err) = spawn_result {
+                    state.finish_async_tool_request(&request.id);
+                    output.line_stderr(format!(
+                        "[self-supervision] failed to start dedicated async tool worker: {err}"
+                    ))?;
+                    send_json(
+                        writer,
+                        &OutgoingResponse {
+                            id: request.id.clone(),
+                            result: serde_json::json!({
+                                "contentItems": [{
+                                    "type": "inputText",
+                                    "text": format!(
+                                        "dynamic tool `{tool}` could not start its dedicated wrapper worker thread; the request was failed locally instead of running on the main loop"
+                                    )
+                                }],
+                                "success": false
+                            }),
+                        },
+                    )?;
+                }
                 return Ok(true);
             }
             let result = execute_dynamic_tool_call_with_state(&request.params, resolved_cwd, state);
@@ -169,6 +191,17 @@ fn async_background_shell_timeout(tool: &str, params: &serde_json::Value) -> Dur
         }
         _ => Duration::from_millis(DEFAULT_BACKGROUND_SHELL_TOOL_TIMEOUT_MS),
     }
+}
+
+fn background_shell_worker_thread_name(tool: &str, request_id: &crate::rpc::RequestId) -> String {
+    let request_suffix = match request_id {
+        crate::rpc::RequestId::Integer(value) => value.to_string(),
+        crate::rpc::RequestId::String(value) => value
+            .chars()
+            .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' })
+            .collect(),
+    };
+    format!("codexw-bgtool-{tool}-{request_suffix}")
 }
 
 fn background_shell_backpressure_failure(

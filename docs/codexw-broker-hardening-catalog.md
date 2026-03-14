@@ -78,6 +78,8 @@ Why not a blocker:
 
 - SSE plus `Last-Event-ID` replay is already process-level proven across core
   session, service, lease, and client-event workflows
+- the connector now also has direct unit coverage for the header/body seam
+  case where the first upstream `data:` line is fragmented before wrapping
 
 ### 3. Additional Unsupported-Boundary Defense
 
