@@ -47,6 +47,7 @@ pub(crate) struct LocalApiSnapshot {
 pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) classification: String,
     pub(crate) recommended_action: String,
+    pub(crate) recovery_policy: LocalApiRecoveryPolicy,
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) elapsed_seconds: u64,
@@ -57,8 +58,15 @@ pub(crate) struct LocalApiAsyncToolSupervision {
 pub(crate) struct LocalApiSupervisionNotice {
     pub(crate) classification: String,
     pub(crate) recommended_action: String,
+    pub(crate) recovery_policy: LocalApiRecoveryPolicy,
     pub(crate) tool: String,
     pub(crate) summary: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct LocalApiRecoveryPolicy {
+    pub(crate) kind: String,
+    pub(crate) automation_ready: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
@@ -283,6 +291,10 @@ fn async_tool_supervision_snapshot(state: &AppState) -> Option<LocalApiAsyncTool
     Some(LocalApiAsyncToolSupervision {
         classification: classification.label().to_string(),
         recommended_action: classification.recommended_action().to_string(),
+        recovery_policy: LocalApiRecoveryPolicy {
+            kind: classification.recovery_policy_kind().label().to_string(),
+            automation_ready: classification.automation_ready(),
+        },
         tool: activity.tool.clone(),
         summary: activity.summary.clone(),
         elapsed_seconds: activity.elapsed().as_secs(),
@@ -298,6 +310,10 @@ fn supervision_notice_snapshot(state: &AppState) -> Option<LocalApiSupervisionNo
     Some(LocalApiSupervisionNotice {
         classification: notice.classification.label().to_string(),
         recommended_action: notice.recommended_action().to_string(),
+        recovery_policy: LocalApiRecoveryPolicy {
+            kind: notice.recovery_policy_kind().label().to_string(),
+            automation_ready: notice.automation_ready(),
+        },
         tool: notice.tool.clone(),
         summary: notice.summary.clone(),
     })

@@ -181,6 +181,8 @@ the real connector binary:
   `interrupt_or_exit_resume` in `status.updated`
 - broker-visible `supervision_notice` alert state for active supervised tool
   stalls
+- broker-visible recovery-policy decisions such as `warn_only` and
+  `operator_interrupt_or_exit_resume`, currently with `automation_ready=false`
 - structured lease-conflict propagation
 - structured connector-local validation failures for malformed injected request
   bodies and malformed client/lease headers

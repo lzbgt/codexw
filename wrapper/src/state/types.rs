@@ -62,6 +62,21 @@ pub(crate) enum AsyncToolSupervisionClass {
     ToolWedged,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SupervisionRecoveryPolicyKind {
+    WarnOnly,
+    OperatorInterruptOrExitResume,
+}
+
+impl SupervisionRecoveryPolicyKind {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Self::WarnOnly => "warn_only",
+            Self::OperatorInterruptOrExitResume => "operator_interrupt_or_exit_resume",
+        }
+    }
+}
+
 impl AsyncToolSupervisionClass {
     pub(crate) fn label(self) -> &'static str {
         match self {
@@ -83,6 +98,17 @@ impl AsyncToolSupervisionClass {
             Self::ToolWedged => "interrupt or exit",
         }
     }
+
+    pub(crate) fn recovery_policy_kind(self) -> SupervisionRecoveryPolicyKind {
+        match self {
+            Self::ToolSlow => SupervisionRecoveryPolicyKind::WarnOnly,
+            Self::ToolWedged => SupervisionRecoveryPolicyKind::OperatorInterruptOrExitResume,
+        }
+    }
+
+    pub(crate) fn automation_ready(self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,6 +121,14 @@ pub(crate) struct SupervisionNotice {
 impl SupervisionNotice {
     pub(crate) fn recommended_action(&self) -> &'static str {
         self.classification.recommended_action()
+    }
+
+    pub(crate) fn recovery_policy_kind(&self) -> SupervisionRecoveryPolicyKind {
+        self.classification.recovery_policy_kind()
+    }
+
+    pub(crate) fn automation_ready(&self) -> bool {
+        self.classification.automation_ready()
     }
 }
 

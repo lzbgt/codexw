@@ -115,6 +115,7 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
     assert!(rendered.contains("async class     tool_wedged"));
     assert!(rendered.contains("async action    interrupt_or_exit_resume"));
     assert!(rendered.contains("supervision     tool_wedged background_shell_start"));
+    assert!(rendered.contains("supervision pol operator_interrupt_or_exit_resume"));
     assert!(rendered.contains("supervision act interrupt_or_exit_resume"));
 }
 
@@ -210,6 +211,12 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             .map(|class| class.recommended_action()),
         Some("observe_or_interrupt")
     );
+    assert_eq!(
+        state
+            .oldest_async_tool_supervision_class()
+            .map(|class| class.recovery_policy_kind().label()),
+        Some("warn_only")
+    );
 
     state.active_async_tool_requests.insert(
         crate::rpc::RequestId::Integer(10),
@@ -230,6 +237,12 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             .oldest_async_tool_supervision_class()
             .map(|class| class.recommended_action()),
         Some("interrupt_or_exit_resume")
+    );
+    assert_eq!(
+        state
+            .oldest_async_tool_supervision_class()
+            .map(|class| class.recovery_policy_kind().label()),
+        Some("operator_interrupt_or_exit_resume")
     );
 }
 
@@ -257,6 +270,13 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             .map(|notice| notice.classification.label()),
         Some("tool_slow")
     );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.recovery_policy_kind().label()),
+        Some("warn_only")
+    );
 
     state.active_async_tool_requests.insert(
         crate::rpc::RequestId::Integer(10),
@@ -277,6 +297,13 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             .as_ref()
             .map(|notice| notice.classification.label()),
         Some("tool_wedged")
+    );
+    assert_eq!(
+        state
+            .active_supervision_notice
+            .as_ref()
+            .map(|notice| notice.recovery_policy_kind().label()),
+        Some("operator_interrupt_or_exit_resume")
     );
 
     state.active_async_tool_requests.clear();

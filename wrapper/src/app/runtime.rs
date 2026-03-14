@@ -202,9 +202,10 @@ fn handle_supervision_tick(state: &mut AppState, output: &mut Output) -> Result<
     match state.refresh_async_tool_supervision_notice() {
         Some(SupervisionNoticeTransition::Raised(notice)) => {
             output.line_stderr(format!(
-                "[self-supervision] {} {} [{}] {}",
+                "[self-supervision] {} {} [{}|{}] {}",
                 notice.classification.label(),
                 notice.tool,
+                notice.recovery_policy_kind().label(),
                 notice.recommended_action(),
                 notice.summary
             ))?;

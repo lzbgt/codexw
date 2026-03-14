@@ -27,12 +27,20 @@ Candidate envelope:
     "supervision_notice": {
       "classification": "tool_slow",
       "recommended_action": "observe_or_interrupt",
+      "recovery_policy": {
+        "kind": "warn_only",
+        "automation_ready": false
+      },
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start"
     },
     "async_tool_supervision": {
       "classification": "tool_slow",
       "recommended_action": "observe_or_interrupt",
+      "recovery_policy": {
+        "kind": "warn_only",
+        "automation_ready": false
+      },
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "elapsed_seconds": 21,
@@ -162,12 +170,20 @@ Optional means “present only when semantically relevant,” not “randomly om
     "supervision_notice": {
       "classification": "tool_wedged",
       "recommended_action": "interrupt_or_exit_resume",
+      "recovery_policy": {
+        "kind": "operator_interrupt_or_exit_resume",
+        "automation_ready": false
+      },
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start"
     },
     "async_tool_supervision": {
       "classification": "tool_wedged",
       "recommended_action": "interrupt_or_exit_resume",
+      "recovery_policy": {
+        "kind": "operator_interrupt_or_exit_resume",
+        "automation_ready": false
+      },
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "elapsed_seconds": 75,
@@ -181,7 +197,9 @@ Optional means “present only when semantically relevant,” not “randomly om
 slice: async-tool supervision classifications such as `tool_slow` and
 `tool_wedged`, plus a narrow recommended-action field such as
 `observe_or_interrupt` or `interrupt_or_exit_resume`, and a sticky
-`supervision_notice` object for the active alert lifecycle.
+`supervision_notice` object for the active alert lifecycle, plus a
+machine-readable recovery-policy object such as `warn_only` or
+`operator_interrupt_or_exit_resume` with `automation_ready=false`.
 
 ## Exclusions
 

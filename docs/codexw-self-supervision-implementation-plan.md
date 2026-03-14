@@ -79,6 +79,13 @@ When a stalled state is classified, the runtime should decide whether to:
 - invoke self-evolution for a core fix
 - prefer plugin update for an optional capability gap
 
+The first delivered policy hook should stay narrow and non-autonomous:
+
+- `tool_slow` -> `warn_only`
+- `tool_wedged` -> `operator_interrupt_or_exit_resume`
+- `automation_ready=false` for both, so the emitted policy is explicit without
+  pretending the runtime already performs those recovery steps by itself
+
 ### 5. Audit trail
 
 Keep supervision actions visible through status text or event logs so recovery
@@ -92,6 +99,10 @@ operator action without scraping prompt text.
 That same slice should carry `supervision_notice` in the snapshot and
 `status.updated` payload so alert raise/escalate/clear state is semantic rather
 than inferred from prompt wording.
+
+It should also carry the recovery-policy decision object, so clients can
+distinguish a warning-only state from an operator-interrupt/exit-resume state
+without reverse-engineering the recommended-action string.
 
 ## Explicitly Deferred
 

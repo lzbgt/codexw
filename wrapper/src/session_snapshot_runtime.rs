@@ -87,6 +87,10 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             notice.classification.label(),
             notice.tool
         ));
+        lines.push(format!(
+            "supervision pol {}",
+            notice.recovery_policy_kind().label()
+        ));
         lines.push(format!("supervision act {}", notice.recommended_action()));
     }
     lines.extend(render_rate_limit_lines(state.rate_limits.as_ref()));

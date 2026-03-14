@@ -70,6 +70,8 @@ The implemented native-side product already has:
   `interrupt_or_exit_resume`
 - sticky supervision notices for active async shell-tool alerts, so the
   runtime has an explicit alert lifecycle rather than only a computed class
+- machine-readable recovery-policy decisions for those alerts, currently
+  `warn_only` versus `operator_interrupt_or_exit_resume`
 - orchestration views over agents, shells, services, capabilities, and
   terminals
 - a new self-supervision design lane for stalled tool/runtime recovery

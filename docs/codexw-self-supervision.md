@@ -79,6 +79,13 @@ The first recommended actions should stay narrow and operator-safe:
 - `tool_slow` -> `observe_or_interrupt`
 - `tool_wedged` -> `interrupt_or_exit_resume`
 
+The first recovery-policy decisions should also be machine-readable:
+
+- `tool_slow` -> `warn_only`
+- `tool_wedged` -> `operator_interrupt_or_exit_resume`
+- `automation_ready` should remain `false` for both until autonomous
+  interruption or replacement is actually implemented
+
 The first emitted recovery signal should also be sticky enough to notice:
 
 - raise a structured `supervision_notice` when a class threshold is crossed

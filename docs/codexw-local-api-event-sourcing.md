@@ -193,6 +193,8 @@ At:
   `tool_wedged`
 - async-tool supervision recommendation changes such as
   `observe_or_interrupt` to `interrupt_or_exit_resume`
+- recovery-policy changes such as `warn_only` to
+  `operator_interrupt_or_exit_resume`
 - supervision-notice lifecycle changes such as notice raise, escalation, or
   clear through the semantic `supervision_notice` field
 
