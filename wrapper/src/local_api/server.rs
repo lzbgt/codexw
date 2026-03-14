@@ -14,6 +14,7 @@ use anyhow::Result;
 
 use crate::Cli;
 use crate::background_shells::BackgroundShellManager;
+use crate::http_request_reader::DEFAULT_REQUEST_READ_DEADLINE;
 use crate::http_request_reader::ReadHttpRequestError;
 use crate::http_request_reader::read_http_request;
 
@@ -23,7 +24,6 @@ use super::SharedSnapshot;
 
 const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const READ_TIMEOUT: Duration = Duration::from_millis(250);
-const REQUEST_READ_DEADLINE: Duration = Duration::from_secs(2);
 const MAX_REQUEST_BYTES: usize = 65536;
 
 type RequestReadError = ReadHttpRequestError;
@@ -178,7 +178,7 @@ fn handle_connection(
 }
 
 fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, RequestReadError> {
-    let request = read_http_request(stream, MAX_REQUEST_BYTES, REQUEST_READ_DEADLINE)?;
+    let request = read_http_request(stream, MAX_REQUEST_BYTES, DEFAULT_REQUEST_READ_DEADLINE)?;
     Ok(HttpRequest {
         method: request.method,
         path: request.path,
@@ -205,76 +205,4 @@ pub(super) fn write_response(stream: &mut TcpStream, response: &HttpResponse) ->
         .write_all(&response.body)
         .context("write local API response body")?;
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::read_request;
-    use std::io::Write;
-    use std::net::TcpListener;
-    use std::net::TcpStream;
-    use std::thread;
-    use std::time::Duration;
-
-    #[test]
-    fn read_request_tolerates_header_fragmentation_across_socket_timeout() {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
-        let addr = listener.local_addr().expect("listener addr");
-
-        let server = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().expect("accept request");
-            stream
-                .set_read_timeout(Some(Duration::from_millis(250)))
-                .expect("set read timeout");
-            let request = read_request(&mut stream).expect("read fragmented request");
-            (request.method, request.path, request.headers)
-        });
-
-        let mut client = TcpStream::connect(addr).expect("connect client");
-        client
-            .write_all(b"GET /api/v1/session/sess_test/events HTTP/1.1\r\nHost: localhost\r\n")
-            .expect("write first fragment");
-        thread::sleep(Duration::from_millis(350));
-        client
-            .write_all(b"Connection: close\r\n\r\n")
-            .expect("write second fragment");
-
-        let (method, path, headers) = server.join().expect("join server");
-        assert_eq!(method, "GET");
-        assert_eq!(path, "/api/v1/session/sess_test/events");
-        assert_eq!(headers.get("host").map(String::as_str), Some("localhost"));
-    }
-
-    #[test]
-    fn read_request_tolerates_body_fragmentation_across_socket_timeout() {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
-        let addr = listener.local_addr().expect("listener addr");
-
-        let server = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().expect("accept request");
-            stream
-                .set_read_timeout(Some(Duration::from_millis(250)))
-                .expect("set read timeout");
-            let request = read_request(&mut stream).expect("read fragmented body");
-            (
-                request.method,
-                request.path,
-                String::from_utf8(request.body).expect("decode body"),
-            )
-        });
-
-        let mut client = TcpStream::connect(addr).expect("connect client");
-        client
-            .write_all(
-                b"POST /api/v1/session/client_event HTTP/1.1\r\nHost: localhost\r\nContent-Length: 17\r\n\r\n{\"event\":\"alpha\"",
-            )
-            .expect("write first body fragment");
-        thread::sleep(Duration::from_millis(350));
-        client.write_all(b"}").expect("write second body fragment");
-
-        let (method, path, body) = server.join().expect("join server");
-        assert_eq!(method, "POST");
-        assert_eq!(path, "/api/v1/session/client_event");
-        assert_eq!(body, "{\"event\":\"alpha\"}");
-    }
 }

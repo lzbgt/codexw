@@ -7,6 +7,8 @@ use std::time::Instant;
 
 use thiserror::Error;
 
+pub(crate) const DEFAULT_REQUEST_READ_DEADLINE: Duration = Duration::from_secs(5);
+
 #[derive(Debug, Clone)]
 pub(crate) struct ParsedHttpRequest {
     pub(crate) method: String,
@@ -124,4 +126,78 @@ pub(crate) fn read_http_request(
         headers,
         body,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_http_request;
+    use std::io::Write;
+    use std::net::TcpListener;
+    use std::net::TcpStream;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn read_http_request_tolerates_header_fragmentation_across_socket_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("listener addr");
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            stream
+                .set_read_timeout(Some(Duration::from_millis(250)))
+                .expect("set read timeout");
+            let request = read_http_request(&mut stream, 65_536, Duration::from_secs(2))
+                .expect("read fragmented request");
+            (request.method, request.path, request.headers)
+        });
+
+        let mut client = TcpStream::connect(addr).expect("connect client");
+        client
+            .write_all(b"GET /api/v1/session/sess_test/events HTTP/1.1\r\nHost: localhost\r\n")
+            .expect("write first fragment");
+        thread::sleep(Duration::from_millis(350));
+        client
+            .write_all(b"Connection: close\r\n\r\n")
+            .expect("write second fragment");
+
+        let (method, path, headers) = server.join().expect("join server");
+        assert_eq!(method, "GET");
+        assert_eq!(path, "/api/v1/session/sess_test/events");
+        assert_eq!(headers.get("host").map(String::as_str), Some("localhost"));
+    }
+
+    #[test]
+    fn read_http_request_tolerates_body_fragmentation_across_socket_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("listener addr");
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            stream
+                .set_read_timeout(Some(Duration::from_millis(250)))
+                .expect("set read timeout");
+            let request = read_http_request(&mut stream, 65_536, Duration::from_secs(2))
+                .expect("read fragmented body");
+            (
+                request.method,
+                request.path,
+                String::from_utf8(request.body).expect("decode body"),
+            )
+        });
+
+        let mut client = TcpStream::connect(addr).expect("connect client");
+        client
+            .write_all(
+                b"POST /api/v1/session/client_event HTTP/1.1\r\nHost: localhost\r\nContent-Length: 17\r\n\r\n{\"event\":\"alpha\"",
+            )
+            .expect("write first body fragment");
+        thread::sleep(Duration::from_millis(350));
+        client.write_all(b"}").expect("write second body fragment");
+
+        let (method, path, body) = server.join().expect("join server");
+        assert_eq!(method, "POST");
+        assert_eq!(path, "/api/v1/session/client_event");
+        assert_eq!(body, "{\"event\":\"alpha\"}");
+    }
 }

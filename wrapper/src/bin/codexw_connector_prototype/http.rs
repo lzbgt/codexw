@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::net::TcpStream;
-use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -11,14 +10,13 @@ use serde_json::json;
 use crate::adapter_contract::CODEXW_BROKER_ADAPTER_VERSION;
 use crate::adapter_contract::HEADER_BROKER_ADAPTER_VERSION;
 use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
+use crate::http_request_reader::DEFAULT_REQUEST_READ_DEADLINE;
 use crate::http_request_reader::ReadHttpRequestError;
 use crate::http_request_reader::read_http_request;
 
 use super::Cli;
 use super::MAX_REQUEST_BYTES;
 use super::upstream::UpstreamResponse;
-
-const REQUEST_READ_DEADLINE: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone)]
 pub(super) struct HttpRequest {
@@ -70,7 +68,8 @@ pub(super) fn from_upstream_response(upstream: UpstreamResponse, cli: &Cli) -> H
 }
 
 pub(super) fn read_request(stream: &mut TcpStream) -> Result<HttpRequest> {
-    let request = match read_http_request(stream, MAX_REQUEST_BYTES, REQUEST_READ_DEADLINE) {
+    let request = match read_http_request(stream, MAX_REQUEST_BYTES, DEFAULT_REQUEST_READ_DEADLINE)
+    {
         Ok(request) => request,
         Err(ReadHttpRequestError::BadRequest) => anyhow::bail!("invalid HTTP request"),
         Err(ReadHttpRequestError::Io(err)) => return Err(err).context("read connector request"),

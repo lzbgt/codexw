@@ -1,11 +1,5 @@
-use std::collections::HashMap;
-use std::io::Write;
-use std::net::TcpListener;
-use std::net::TcpStream;
-use std::thread;
-use std::time::Duration;
-
 use serde_json::Value;
+use std::collections::HashMap;
 
 use crate::adapter_contract::CODEXW_BROKER_ADAPTER_VERSION;
 use crate::adapter_contract::CODEXW_LOCAL_API_VERSION;
@@ -16,7 +10,6 @@ use super::super::Cli;
 use super::super::http::from_upstream_response;
 use super::super::http::json_error_response;
 use super::super::http::json_ok_response;
-use super::super::http::read_request;
 use super::super::upstream::UpstreamResponse;
 
 fn sample_cli() -> Cli {
@@ -125,33 +118,4 @@ fn from_upstream_response_adds_adapter_header_and_forwards_local_api_header() {
     );
     let body: Value = serde_json::from_slice(&response.body).expect("json body");
     assert_eq!(body["ok"], true);
-}
-
-#[test]
-fn read_request_tolerates_header_fragmentation_across_socket_timeout() {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
-    let addr = listener.local_addr().expect("listener addr");
-
-    let server = thread::spawn(move || {
-        let (mut stream, _) = listener.accept().expect("accept request");
-        stream
-            .set_read_timeout(Some(Duration::from_millis(500)))
-            .expect("set read timeout");
-        let request = read_request(&mut stream).expect("read fragmented request");
-        (request.method, request.path, request.headers)
-    });
-
-    let mut client = TcpStream::connect(addr).expect("connect client");
-    client
-        .write_all(b"GET /v1/agents/codexw-lab/sessions/sess_1 HTTP/1.1\r\nHost: localhost\r\n")
-        .expect("write first fragment");
-    thread::sleep(Duration::from_millis(650));
-    client
-        .write_all(b"Connection: close\r\n\r\n")
-        .expect("write second fragment");
-
-    let (method, path, headers) = server.join().expect("join server");
-    assert_eq!(method, "GET");
-    assert_eq!(path, "/v1/agents/codexw-lab/sessions/sess_1");
-    assert_eq!(headers.get("host").map(String::as_str), Some("localhost"));
 }
