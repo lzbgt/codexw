@@ -21,11 +21,13 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let broker_shared_assumptions = read_repo_file("docs/codexw-broker-shared-assumptions.md");
     let broker_session_identity = read_repo_file("docs/codexw-broker-session-identity.md");
     let broker_event_envelope = read_repo_file("docs/codexw-broker-event-envelope.md");
+    let native_gap_assessment = read_repo_file("docs/codexw-native-gap-assessment.md");
     let native_boundaries = read_repo_file("docs/codexw-native-support-boundaries.md");
     let native_status = read_repo_file("docs/codexw-native-product-status.md");
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
+    let native_recommendation = read_repo_file("docs/codexw-native-product-recommendation.md");
     let self_evolution = read_repo_file("docs/codexw-self-evolution.md");
     let self_evolution_plan = read_repo_file("docs/codexw-self-evolution-implementation-plan.md");
     let self_supervision = read_repo_file("docs/codexw-self-supervision.md");
@@ -74,7 +76,9 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-shared-assumptions.md",
         "docs/codexw-broker-session-identity.md",
         "docs/codexw-broker-event-envelope.md",
+        "docs/codexw-native-gap-assessment.md",
         "docs/codexw-native-support-boundaries.md",
+        "docs/codexw-native-product-recommendation.md",
         "docs/codexw-native-product-status.md",
         "docs/codexw-native-proof-matrix.md",
         "docs/codexw-native-support-policy.md",
@@ -1017,6 +1021,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
 
     assert_contains_case_insensitive(
+        &native_gap_assessment,
+        "supported experimental adapter",
+        "docs/codexw-native-gap-assessment.md",
+    );
+    assert_contains_case_insensitive(
+        &native_gap_assessment,
+        "shell-first host-examination surface",
+        "docs/codexw-native-gap-assessment.md",
+    );
+    assert_contains_case_insensitive(
+        &native_gap_assessment,
+        "broker artifact",
+        "docs/codexw-native-gap-assessment.md",
+    );
+    assert_contains_case_insensitive(
         &native_boundaries,
         "alternate-screen",
         "docs/codexw-native-support-boundaries.md",
@@ -1025,6 +1044,36 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &native_boundaries,
         "audio",
         "docs/codexw-native-support-boundaries.md",
+    );
+    assert_contains_case_insensitive(
+        &native_boundaries,
+        "experimental adapter still stops",
+        "docs/codexw-native-support-boundaries.md",
+    );
+    assert_contains_case_insensitive(
+        &native_boundaries,
+        "shell-first host-examination surface",
+        "docs/codexw-native-support-boundaries.md",
+    );
+    assert_contains_case_insensitive(
+        &native_boundaries,
+        "artifact index/detail/content api",
+        "docs/codexw-native-support-boundaries.md",
+    );
+    assert_contains_case_insensitive(
+        &native_recommendation,
+        "experimental adapter still stops",
+        "docs/codexw-native-product-recommendation.md",
+    );
+    assert_contains_case_insensitive(
+        &native_recommendation,
+        "shell-first host-examination surface",
+        "docs/codexw-native-product-recommendation.md",
+    );
+    assert_contains_case_insensitive(
+        &native_recommendation,
+        "broker-visible artifact",
+        "docs/codexw-native-product-recommendation.md",
     );
     assert_contains_case_insensitive(
         &native_status,
@@ -3222,6 +3271,8 @@ fn broker_and_native_support_docs_keep_current_support_level_wording() {
     let broker_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
     let broker_recommendation = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
     let broker_policy = read_repo_file("docs/codexw-broker-support-policy.md");
+    let native_gap_assessment = read_repo_file("docs/codexw-native-gap-assessment.md");
+    let native_boundaries = read_repo_file("docs/codexw-native-support-boundaries.md");
     let native_status = read_repo_file("docs/codexw-native-product-status.md");
     let native_recommendation = read_repo_file("docs/codexw-native-product-recommendation.md");
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
@@ -3245,6 +3296,14 @@ fn broker_and_native_support_docs_keep_current_support_level_wording() {
     );
 
     for (name, contents) in [
+        (
+            "docs/codexw-native-gap-assessment.md",
+            &native_gap_assessment,
+        ),
+        (
+            "docs/codexw-native-support-boundaries.md",
+            &native_boundaries,
+        ),
         ("docs/codexw-native-product-status.md", &native_status),
         (
             "docs/codexw-native-product-recommendation.md",

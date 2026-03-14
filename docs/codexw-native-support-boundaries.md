@@ -16,6 +16,11 @@ It complements:
 The purpose of this doc is to stop architectural differences from being treated
 as ambiguous “unfinished work.”
 
+It also keeps the broader support boundary explicit: the current supported
+experimental adapter still stops at the shell-first host-examination surface.
+These native-side support boundaries should not be interpreted as proof that a
+broker-visible artifact index/detail/content API is already supported.
+
 ## Supported Product Shape
 
 The currently supported non-broker product shape is:
@@ -28,6 +33,9 @@ The currently supported non-broker product shape is:
 
 Those are not fallback behaviors. They are the supported shape of the current
 product.
+
+That supported shape lives inside the shell-first host-examination surface,
+not alongside a separate supported artifact inventory/fetch surface.
 
 ## Supported Behaviors
 

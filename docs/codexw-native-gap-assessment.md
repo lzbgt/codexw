@@ -9,6 +9,11 @@ longer mostly about broker reachability. It is about the gap between the
 current `codexw` terminal/runtime model and the native upstream Codex product
 experience.
 
+That gap assessment still assumes the current supported experimental adapter
+stops at the shell-first host-examination surface. The remaining native-side
+gaps described here should not be confused with a missing broker artifact
+index/detail/content API, which remains a separate track.
+
 Related docs:
 
 - [codexw-design.md](codexw-design.md)
@@ -38,6 +43,10 @@ The main remaining gaps are therefore not "missing command handlers." They are:
 1. alternate-screen / widget-tree parity
 2. richer realtime UX, especially audio-oriented flows
 3. deeper async execution parity with native Codex process/session behavior
+
+Those are native/runtime gaps inside the current shell-first supported
+surface, not an argument that the adapter should silently expand into a
+broker-visible artifact browser contract.
 
 ## Gap 1: Alternate-Screen / Widget-Tree Parity
 

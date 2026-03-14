@@ -8,6 +8,11 @@ It is intentionally narrower than
 That assessment explains the remaining gaps and tradeoffs. This document says
 what `codexw` should actually optimize for right now.
 
+It also sits inside the broader current support boundary: the supported
+experimental adapter still stops at the shell-first host-examination surface.
+This recommendation should not be read as proof that a broker-visible artifact
+index/detail/content API already exists.
+
 Related docs:
 
 - [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
@@ -26,6 +31,10 @@ Related docs:
 - scrollback-first UI model
 - text-first realtime model
 - wrapper-owned async shell/orchestration model
+
+Within the broader repo story, those choices are the native/runtime side of
+the same shell-first host-examination posture rather than a separate artifact
+browser contract.
 
 It should not currently optimize for:
 
