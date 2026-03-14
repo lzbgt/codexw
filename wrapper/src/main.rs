@@ -51,6 +51,7 @@ mod events;
 mod history_render;
 mod history_state;
 mod history_text;
+mod http_request_reader;
 mod input;
 mod local_api;
 mod main_cli;

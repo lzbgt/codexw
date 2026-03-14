@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::io::ErrorKind;
-use std::io::Read;
 use std::io::Write;
 use std::net::Shutdown;
 use std::net::TcpListener;
@@ -10,14 +8,14 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
-use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
-use thiserror::Error;
 
 use crate::Cli;
 use crate::background_shells::BackgroundShellManager;
+use crate::http_request_reader::ReadHttpRequestError;
+use crate::http_request_reader::read_http_request;
 
 use super::SharedCommandQueue;
 use super::SharedEventLog;
@@ -27,6 +25,8 @@ const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const READ_TIMEOUT: Duration = Duration::from_millis(250);
 const REQUEST_READ_DEADLINE: Duration = Duration::from_secs(2);
 const MAX_REQUEST_BYTES: usize = 65536;
+
+type RequestReadError = ReadHttpRequestError;
 
 #[cfg_attr(not(test), allow(unused_imports))]
 pub(crate) use super::routes::route_request;
@@ -69,14 +69,6 @@ pub(crate) struct HttpResponse {
     pub(crate) reason: &'static str,
     pub(crate) headers: Vec<(String, String)>,
     pub(crate) body: Vec<u8>,
-}
-
-#[derive(Debug, Error)]
-enum RequestReadError {
-    #[error("bad request")]
-    BadRequest,
-    #[error("io error: {0}")]
-    Io(#[from] std::io::Error),
 }
 
 pub(crate) fn start_local_api(
@@ -186,94 +178,12 @@ fn handle_connection(
 }
 
 fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, RequestReadError> {
-    let mut buffer = [0_u8; 1024];
-    let mut request_bytes = Vec::new();
-    let header_deadline = Instant::now() + REQUEST_READ_DEADLINE;
-    let header_end = loop {
-        match stream.read(&mut buffer) {
-            Ok(0) => return Err(RequestReadError::BadRequest),
-            Ok(read) => {
-                request_bytes.extend_from_slice(&buffer[..read]);
-                if let Some(index) = request_bytes
-                    .windows(4)
-                    .position(|window| window == b"\r\n\r\n")
-                {
-                    break index + 4;
-                }
-                if request_bytes.len() >= MAX_REQUEST_BYTES {
-                    return Err(RequestReadError::BadRequest);
-                }
-            }
-            Err(err)
-                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
-            {
-                if Instant::now() >= header_deadline {
-                    return Err(RequestReadError::Io(err));
-                }
-                continue;
-            }
-            Err(err) => return Err(RequestReadError::Io(err)),
-        }
-    };
-    let request_text = String::from_utf8_lossy(&request_bytes[..header_end]);
-    let mut lines = request_text.split("\r\n");
-    let request_line = lines.next().ok_or(RequestReadError::BadRequest)?;
-    let mut request_parts = request_line.split_whitespace();
-    let method = request_parts.next().ok_or(RequestReadError::BadRequest)?;
-    let raw_path = request_parts.next().ok_or(RequestReadError::BadRequest)?;
-    if request_parts.next().is_none() {
-        return Err(RequestReadError::BadRequest);
-    }
-
-    let mut headers = HashMap::new();
-    for line in lines {
-        if line.is_empty() {
-            break;
-        }
-        let Some((name, value)) = line.split_once(':') else {
-            return Err(RequestReadError::BadRequest);
-        };
-        headers.insert(name.trim().to_ascii_lowercase(), value.trim().to_string());
-    }
-
-    let content_length = headers
-        .get("content-length")
-        .map(|value| value.parse::<usize>())
-        .transpose()
-        .map_err(|_| RequestReadError::BadRequest)?
-        .unwrap_or(0);
-    let mut body = request_bytes[header_end..].to_vec();
-    let body_deadline = Instant::now() + REQUEST_READ_DEADLINE;
-    while body.len() < content_length {
-        match stream.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(read) => {
-                body.extend_from_slice(&buffer[..read]);
-                if header_end + body.len() >= MAX_REQUEST_BYTES {
-                    return Err(RequestReadError::BadRequest);
-                }
-            }
-            Err(err)
-                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
-            {
-                if Instant::now() >= body_deadline {
-                    return Err(RequestReadError::Io(err));
-                }
-                continue;
-            }
-            Err(err) => return Err(RequestReadError::Io(err)),
-        }
-    }
-    if body.len() < content_length {
-        return Err(RequestReadError::BadRequest);
-    }
-    body.truncate(content_length);
-
+    let request = read_http_request(stream, MAX_REQUEST_BYTES, REQUEST_READ_DEADLINE)?;
     Ok(HttpRequest {
-        method: method.to_string(),
-        path: raw_path.split('?').next().unwrap_or(raw_path).to_string(),
-        headers,
-        body,
+        method: request.method,
+        path: request.path,
+        headers: request.headers,
+        body: request.body,
     })
 }
 

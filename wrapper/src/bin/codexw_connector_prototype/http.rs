@@ -1,10 +1,7 @@
 use std::collections::HashMap;
-use std::io::ErrorKind;
-use std::io::Read;
 use std::io::Write;
 use std::net::TcpStream;
 use std::time::Duration;
-use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -14,6 +11,8 @@ use serde_json::json;
 use crate::adapter_contract::CODEXW_BROKER_ADAPTER_VERSION;
 use crate::adapter_contract::HEADER_BROKER_ADAPTER_VERSION;
 use crate::adapter_contract::HEADER_LOCAL_API_VERSION;
+use crate::http_request_reader::ReadHttpRequestError;
+use crate::http_request_reader::read_http_request;
 
 use super::Cli;
 use super::MAX_REQUEST_BYTES;
@@ -71,95 +70,16 @@ pub(super) fn from_upstream_response(upstream: UpstreamResponse, cli: &Cli) -> H
 }
 
 pub(super) fn read_request(stream: &mut TcpStream) -> Result<HttpRequest> {
-    let mut buffer = [0_u8; 1024];
-    let mut request_bytes = Vec::new();
-    let header_deadline = Instant::now() + REQUEST_READ_DEADLINE;
-    let header_end = loop {
-        match stream.read(&mut buffer) {
-            Ok(0) => anyhow::bail!("request closed"),
-            Ok(read) => {
-                request_bytes.extend_from_slice(&buffer[..read]);
-                if let Some(index) = request_bytes
-                    .windows(4)
-                    .position(|window| window == b"\r\n\r\n")
-                {
-                    break index + 4;
-                }
-                if request_bytes.len() >= MAX_REQUEST_BYTES {
-                    anyhow::bail!("request too large");
-                }
-            }
-            Err(err)
-                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
-            {
-                if Instant::now() >= header_deadline {
-                    return Err(err).context("read connector request headers");
-                }
-                continue;
-            }
-            Err(err) => return Err(err).context("read connector request"),
-        }
+    let request = match read_http_request(stream, MAX_REQUEST_BYTES, REQUEST_READ_DEADLINE) {
+        Ok(request) => request,
+        Err(ReadHttpRequestError::BadRequest) => anyhow::bail!("invalid HTTP request"),
+        Err(ReadHttpRequestError::Io(err)) => return Err(err).context("read connector request"),
     };
-    let request_text = String::from_utf8_lossy(&request_bytes[..header_end]);
-    let mut lines = request_text.split("\r\n");
-    let request_line = lines.next().context("missing request line")?;
-    let mut parts = request_line.split_whitespace();
-    let method = parts.next().context("missing method")?.to_string();
-    let path = parts
-        .next()
-        .context("missing path")?
-        .split('?')
-        .next()
-        .unwrap_or("/")
-        .to_string();
-    let _version = parts.next().context("missing version")?;
-
-    let mut headers = HashMap::new();
-    for line in lines {
-        if line.is_empty() {
-            break;
-        }
-        if let Some((name, value)) = line.split_once(':') {
-            headers.insert(name.trim().to_ascii_lowercase(), value.trim().to_string());
-        }
-    }
-
-    let content_length = headers
-        .get("content-length")
-        .and_then(|value| value.parse::<usize>().ok())
-        .unwrap_or(0);
-    let mut body = request_bytes[header_end..].to_vec();
-    let body_deadline = Instant::now() + REQUEST_READ_DEADLINE;
-    while body.len() < content_length {
-        match stream.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(read) => {
-                body.extend_from_slice(&buffer[..read]);
-                if header_end + body.len() >= MAX_REQUEST_BYTES {
-                    anyhow::bail!("request too large");
-                }
-            }
-            Err(err)
-                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
-            {
-                if Instant::now() >= body_deadline {
-                    return Err(err).context("read connector request body");
-                }
-                continue;
-            }
-            Err(err) => return Err(err).context("read request body"),
-        }
-    }
-    if body.len() < content_length {
-        anyhow::bail!("request body truncated");
-    }
-    body.truncate(content_length);
-
     Ok(HttpRequest {
-        method,
-        path,
-        headers,
-        body,
+        method: request.method,
+        path: request.path,
+        headers: request.headers,
+        body: request.body,
     })
 }
 

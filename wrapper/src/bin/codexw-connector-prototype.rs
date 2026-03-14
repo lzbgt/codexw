@@ -16,6 +16,8 @@ use serde_json::json;
 mod adapter_contract;
 #[path = "codexw_connector_prototype/http.rs"]
 mod http;
+#[path = "../http_request_reader.rs"]
+mod http_request_reader;
 #[path = "codexw_connector_prototype/routing.rs"]
 mod routing;
 #[path = "codexw_connector_prototype/sse.rs"]
