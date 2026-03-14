@@ -45,3 +45,34 @@ fn dynamic_tool_specs_exclude_workspace_tools() {
         ]
     );
 }
+
+#[test]
+fn workspace_tools_remain_executable_for_older_sessions_even_though_not_advertised() {
+    let specs = dynamic_tool_specs();
+    let names = specs
+        .as_array()
+        .expect("array")
+        .iter()
+        .filter_map(|tool| tool.get("name").and_then(serde_json::Value::as_str))
+        .collect::<Vec<_>>();
+    assert!(!names.contains(&"workspace_read_file"));
+
+    let workspace = tempfile::tempdir().expect("tempdir");
+    std::fs::write(workspace.path().join("hello.txt"), "alpha\nbeta\n").expect("write");
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "workspace_read_file",
+            "arguments": {"path": "hello.txt", "startLine": 2}
+        }),
+        workspace.path().to_str().expect("utf8 path"),
+        &crate::background_shells::BackgroundShellManager::default(),
+    );
+
+    assert_eq!(result["success"], true);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("text output");
+    assert!(text.contains("File: hello.txt"));
+    assert!(text.contains("   2 | beta"));
+}

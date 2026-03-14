@@ -47,6 +47,9 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
         "orchestration_list_dependencies" => {
             orchestration::render_orchestration_dependencies_for_tool(arguments, state)
         }
+        // Retained for already-running older sessions that were given the
+        // previous workspace tool bundle before new threads stopped
+        // advertising it.
         "workspace_list_dir" => workspace_list_dir(arguments, resolved_cwd),
         "workspace_stat_path" => workspace_stat_path(arguments, resolved_cwd),
         "workspace_read_file" => workspace_read_file(arguments, resolved_cwd),
