@@ -99,6 +99,7 @@ pub(crate) fn handle_tool_request(
                                 backlog,
                                 oldest_summary,
                                 &oldest_context,
+                                background_shell_backpressure_details(state, oldest),
                             ),
                         },
                     )?;
@@ -226,6 +227,7 @@ fn background_shell_backpressure_failure(
     backlog: usize,
     oldest_summary: &str,
     oldest_context: &str,
+    backpressure: serde_json::Value,
 ) -> serde_json::Value {
     serde_json::json!({
         "contentItems": [{
@@ -234,7 +236,68 @@ fn background_shell_backpressure_failure(
                 "dynamic tool `{tool}` was refused locally because {backlog} timed-out background-shell worker(s) are still unresolved; newest work is blocked until the abandoned backlog drains or the operator interrupts/exits and resumes the thread; oldest backlog summary: {oldest_summary}{oldest_context}"
             )
         }],
+        "failure_kind": "async_tool_backpressure",
+        "backpressure": backpressure,
         "success": false
+    })
+}
+
+fn background_shell_backpressure_details(
+    state: &AppState,
+    request: Option<&crate::state::AbandonedAsyncToolRequest>,
+) -> serde_json::Value {
+    match request {
+        Some(request) => {
+            let observation = state.abandoned_async_tool_observation(request);
+            serde_json::json!({
+                "abandoned_request_count": state.abandoned_async_tool_request_count(),
+                "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
+                "saturated": state.async_tool_backpressure_active(),
+                "oldest_tool": request.tool.as_str(),
+                "oldest_summary": request.summary.as_str(),
+                "oldest_source_call_id": request.source_call_id.as_deref(),
+                "oldest_target_background_shell_reference": request.target_background_shell_reference.as_deref(),
+                "oldest_target_background_shell_job_id": request.target_background_shell_job_id.as_deref(),
+                "oldest_observation_state": observation.observation_state.label(),
+                "oldest_output_state": observation.output_state.label(),
+                "oldest_observed_background_shell_job": observation
+                    .observed_background_shell_job
+                    .as_ref()
+                    .map(backpressure_observed_background_shell_job),
+                "oldest_elapsed_before_timeout_seconds": request.elapsed_before_timeout.as_secs(),
+                "oldest_hard_timeout_seconds": request.hard_timeout.as_secs(),
+                "oldest_elapsed_seconds": request.timed_out_elapsed().as_secs()
+            })
+        }
+        None => serde_json::json!({
+            "abandoned_request_count": state.abandoned_async_tool_request_count(),
+            "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
+            "saturated": state.async_tool_backpressure_active(),
+            "oldest_tool": serde_json::Value::Null,
+            "oldest_summary": serde_json::Value::Null,
+            "oldest_source_call_id": serde_json::Value::Null,
+            "oldest_target_background_shell_reference": serde_json::Value::Null,
+            "oldest_target_background_shell_job_id": serde_json::Value::Null,
+            "oldest_observation_state": serde_json::Value::Null,
+            "oldest_output_state": serde_json::Value::Null,
+            "oldest_observed_background_shell_job": serde_json::Value::Null,
+            "oldest_elapsed_before_timeout_seconds": serde_json::Value::Null,
+            "oldest_hard_timeout_seconds": serde_json::Value::Null,
+            "oldest_elapsed_seconds": serde_json::Value::Null
+        }),
+    }
+}
+
+fn backpressure_observed_background_shell_job(
+    job: &crate::state::AsyncToolObservedBackgroundShellJob,
+) -> serde_json::Value {
+    serde_json::json!({
+        "job_id": job.job_id.as_str(),
+        "status": job.status.as_str(),
+        "command": job.command.as_str(),
+        "total_lines": job.total_lines,
+        "last_output_age_seconds": job.last_output_age.map(|value| value.as_secs()),
+        "recent_lines": job.recent_lines
     })
 }
 
@@ -330,9 +393,11 @@ mod tests {
     use crate::rpc::RequestId;
     use crate::runtime_event_sources::AsyncToolResponse;
     use serde_json::json;
+    use std::process::Child;
     use std::process::Command;
     use std::process::Stdio;
     use std::time::Duration;
+    use tempfile::TempDir;
 
     fn spawn_sink_stdin() -> std::process::ChildStdin {
         Command::new("sh")
@@ -346,6 +411,37 @@ mod tests {
             .stdin
             .take()
             .expect("stdin")
+    }
+
+    fn spawn_recording_stdin() -> (TempDir, Child, std::process::ChildStdin, std::path::PathBuf) {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let path = temp.path().join("requests.jsonl");
+        let mut child = Command::new("sh")
+            .arg("-c")
+            .arg("cat > \"$1\"")
+            .arg("sh")
+            .arg(&path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn recorder");
+        let stdin = child.stdin.take().expect("stdin");
+        (temp, child, stdin, path)
+    }
+
+    fn read_recorded_requests(
+        child: &mut Child,
+        writer: std::process::ChildStdin,
+        path: &std::path::Path,
+    ) -> Vec<serde_json::Value> {
+        drop(writer);
+        child.wait().expect("wait recorder");
+        let contents = std::fs::read_to_string(path).expect("read requests");
+        contents
+            .lines()
+            .map(|line| serde_json::from_str::<serde_json::Value>(line).expect("parse request"))
+            .collect()
     }
 
     fn test_request(method: &str, tool: &str, arguments: serde_json::Value) -> RpcRequest {
@@ -497,7 +593,7 @@ mod tests {
     fn saturated_abandoned_async_backlog_refuses_new_shell_tool_requests() {
         let mut state = AppState::new(true, false);
         let mut output = Output::default();
-        let mut writer = spawn_sink_stdin();
+        let (_temp, mut child, mut writer, path) = spawn_recording_stdin();
         let (tx, rx) = mpsc::channel();
         for id in 1..=crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS {
             state.record_async_tool_request_with_timeout(
@@ -535,6 +631,24 @@ mod tests {
             crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
         );
         assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
+        let responses = read_recorded_requests(&mut child, writer, &path);
+        assert_eq!(responses.len(), 1);
+        let result = &responses[0]["result"];
+        assert_eq!(result["success"], false);
+        assert_eq!(result["failure_kind"], "async_tool_backpressure");
+        assert_eq!(
+            result["backpressure"]["abandoned_request_count"],
+            crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+        );
+        assert_eq!(result["backpressure"]["saturated"], true);
+        assert_eq!(
+            result["backpressure"]["oldest_tool"],
+            "background_shell_start"
+        );
+        let oldest_summary = result["backpressure"]["oldest_summary"]
+            .as_str()
+            .expect("oldest summary");
+        assert!(matches!(oldest_summary, "summary-1" | "summary-2"));
     }
 
     #[test]
@@ -597,6 +711,7 @@ mod tests {
             1,
             &oldest.summary,
             &context,
+            background_shell_backpressure_details(&state, Some(oldest)),
         );
         let failure_text = failure["contentItems"][0]["text"]
             .as_str()
@@ -610,5 +725,31 @@ mod tests {
         assert!(context.contains("output=READY"));
         assert!(failure_text.contains("oldest backlog summary"));
         assert!(failure_text.contains("job=bg-1 running"));
+        assert_eq!(failure["failure_kind"], "async_tool_backpressure");
+        assert_eq!(failure["backpressure"]["oldest_source_call_id"], "call-9");
+        assert_eq!(
+            failure["backpressure"]["oldest_target_background_shell_reference"],
+            "dev.api"
+        );
+        assert_eq!(
+            failure["backpressure"]["oldest_target_background_shell_job_id"],
+            "bg-1"
+        );
+        assert_eq!(
+            failure["backpressure"]["oldest_observation_state"],
+            "wrapper_background_shell_streaming_output"
+        );
+        assert_eq!(
+            failure["backpressure"]["oldest_output_state"],
+            "recent_output_observed"
+        );
+        assert_eq!(
+            failure["backpressure"]["oldest_observed_background_shell_job"]["job_id"],
+            "bg-1"
+        );
+        assert_eq!(
+            failure["backpressure"]["oldest_observed_background_shell_job"]["recent_lines"][0],
+            "READY"
+        );
     }
 }

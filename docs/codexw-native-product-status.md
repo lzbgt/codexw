@@ -101,6 +101,10 @@ The implemented native-side product already has:
   `wrapper_background_shell`
 - local refusal of new background-shell async requests when the abandoned async
   backlog is saturated
+- machine-readable local refusal payloads for that saturation case through
+  `failure_kind=async_tool_backpressure` plus a structured backpressure object
+  that keeps the oldest blocked worker's source/target/observation/output/job
+  facts
 - orchestrator-owned periodic inspection of active async shell-tool workers,
   including explicit notices when no completion or output has been observed yet
   for the visible tool summary / shell command

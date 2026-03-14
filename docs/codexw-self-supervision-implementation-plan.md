@@ -144,6 +144,11 @@ It should also use that oldest abandoned-worker inspection context in the local
 refusal text when backlog saturation blocks a new background-shell async
 request, so the operator can see which stuck shell/tool pair is consuming the
 remaining safety budget.
+
+That same refusal should also expose a narrow machine-readable
+`failure_kind=async_tool_backpressure` result with a structured backpressure object,
+so agents do not need to scrape prose to learn which abandoned worker is
+blocking new async shell work.
 backend can inspect the dedicated worker-thread lane directly:
 
 - request id

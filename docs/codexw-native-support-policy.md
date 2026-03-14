@@ -105,6 +105,10 @@ drift casually:
   visible after timeout
 - local refusal of new background-shell async requests when that backlog is
   saturated
+- machine-readable saturation refusal results through
+  `failure_kind=async_tool_backpressure` and a structured `backpressure`
+  object, so callers do not have to parse prose to understand the blocked
+  oldest worker
 - single-pass resume-history hydration for resumed-thread state seeding and
   latest-message preview extraction
 - a local recent-thread cache that can render last-known numbered sessions

@@ -191,6 +191,9 @@ first-class safety issue:
 - saturation refusal should reuse that same oldest-worker shell context, so a
   locally refused async request tells the operator which abandoned tool/shell
   pair is blocking new work
+- that same local refusal should stay machine-readable through
+  `failure_kind=async_tool_backpressure` plus a structured backpressure object carrying
+  the oldest blocked worker's source/target/observation/output/job facts
 - if that correlated `bg-*` shell is still observable after timeout, the same
   abandoned worker should keep reporting its current observation/output state
   and matched job facts instead of degrading back to null inspection data

@@ -1049,6 +1049,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        "failure_kind=async_tool_backpressure",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "backpressure object",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "retained observation/output visibility",
         "docs/codexw-native-product-status.md",
     );
@@ -1276,6 +1286,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "oldest_observed_background_shell_job",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "failure_kind=async_tool_backpressure",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "backpressure",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -1541,6 +1561,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision,
+        "failure_kind=async_tool_backpressure",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "backpressure object",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
         "still observable after timeout",
         "docs/codexw-self-supervision.md",
     );
@@ -1667,6 +1697,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision_plan,
         "oldest_observed_background_shell_job",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "failure_kind=async_tool_backpressure",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "backpressure object",
         "docs/codexw-self-supervision-implementation-plan.md",
     );
     assert_contains_case_insensitive(
