@@ -164,6 +164,7 @@ impl AppState {
         );
     }
 
+    #[cfg(test)]
     pub(crate) fn record_async_tool_request_with_timeout(
         &mut self,
         id: RequestId,
@@ -354,6 +355,7 @@ fn request_id_label(id: &RequestId) -> String {
     }
 }
 
+#[cfg(test)]
 fn fallback_async_tool_worker_name(id: &RequestId) -> String {
     format!("codexw-async-tool-worker-{}", request_id_label(id))
 }
