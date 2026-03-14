@@ -1,4 +1,7 @@
+use std::collections::BTreeMap;
+use std::ffi::OsString;
 use std::fs;
+use std::path::PathBuf;
 
 use serde_json::Value;
 
@@ -26,12 +29,8 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
         return Err(format!("`{}` is not a directory", target.display()));
     }
     let limit = extract_limit(object.get("limit"));
-    let mut entries = fs::read_dir(&target)
-        .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?
-        .collect::<Result<Vec<_>, _>>()
+    let (entries, total_entries) = collect_sorted_dir_entries(&target, limit)
         .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?;
-    entries.sort_by_key(|entry| entry.file_name());
-    let total_entries = entries.len();
 
     let relative = rel_display(&root, &target);
     let mut rendered = vec![format!("Directory: {}", normalize_root_label(&relative))];
@@ -39,10 +38,8 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
         rendered.push("(empty directory)".to_string());
         return Ok(rendered.join("\n"));
     }
-    for entry in entries.into_iter().take(limit) {
-        let path = entry.path();
-        let metadata = entry
-            .metadata()
+    for path in entries {
+        let metadata = fs::metadata(&path)
             .map_err(|err| format!("failed to stat `{}`: {err}", path.display()))?;
         let kind = if metadata.is_dir() { "dir " } else { "file" };
         let size = if metadata.is_file() {
@@ -59,6 +56,25 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
         ));
     }
     Ok(rendered.join("\n"))
+}
+
+fn collect_sorted_dir_entries(
+    target: &PathBuf,
+    limit: usize,
+) -> Result<(Vec<PathBuf>, usize), std::io::Error> {
+    let mut kept = BTreeMap::<OsString, PathBuf>::new();
+    let mut total_entries = 0;
+    for entry in fs::read_dir(target)? {
+        let entry = entry?;
+        total_entries += 1;
+        kept.insert(entry.file_name(), entry.path());
+        if kept.len() > limit
+            && let Some(largest) = kept.last_key_value().map(|(name, _)| name.clone())
+        {
+            kept.remove(&largest);
+        }
+    }
+    Ok((kept.into_values().collect(), total_entries))
 }
 
 pub(crate) fn workspace_stat_path(arguments: &Value, resolved_cwd: &str) -> Result<String, String> {
