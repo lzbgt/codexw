@@ -290,6 +290,11 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
     );
     assert_contains(
         &workspace_policy,
+        "transcript and history summaries",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains(
+        &workspace_policy,
         "legacy workspace compatibility path",
         "docs/codexw-workspace-tool-policy.md",
     );

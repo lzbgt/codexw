@@ -178,6 +178,9 @@ The intended product posture is:
   `[tool] legacy workspace compatibility failure` stderr line with the
   concrete failure reason instead of collapsing everything into a generic tool
   failure message
+- transcript and history summaries should also label those hidden helpers as
+  legacy workspace compatibility instead of rendering them like ordinary
+  current-surface dynamic tools
 - wrapper-owned background shell tools exist because async shell control has
   product value and app-server does not expose equivalent public control of
   model-owned command sessions

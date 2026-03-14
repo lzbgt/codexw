@@ -39,7 +39,7 @@ pub(crate) fn legacy_workspace_tool_names() -> &'static [&'static str] {
     LEGACY_WORKSPACE_TOOLS
 }
 
-fn is_legacy_workspace_tool(tool: &str) -> bool {
+pub(crate) fn is_legacy_workspace_tool(tool: &str) -> bool {
     LEGACY_WORKSPACE_TOOLS.contains(&tool)
 }
 

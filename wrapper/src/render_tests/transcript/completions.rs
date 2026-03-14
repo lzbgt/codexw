@@ -178,17 +178,33 @@ fn long_tool_text_result_is_abbreviated() {
     let rendered = summarize_tool_item(
         "dynamicToolCall",
         &serde_json::json!({
-            "tool": "workspace_read_file",
+            "tool": "orchestration_status",
             "contentItems": [
                 {"text": long_text}
             ]
         }),
         false,
     );
-    assert!(rendered.contains("workspace_read_file"));
+    assert!(rendered.contains("orchestration_status"));
     assert!(rendered.contains("\n...\n"));
     assert!(!rendered.contains("line 21"));
     assert!(rendered.contains("line 62"));
+}
+
+#[test]
+fn legacy_workspace_tool_results_are_labeled_as_compatibility_items() {
+    let rendered = summarize_tool_item(
+        "dynamicToolCall",
+        &serde_json::json!({
+            "tool": "workspace_read_file",
+            "contentItems": [
+                {"text": "File: hello.txt\n   1 | alpha"}
+            ]
+        }),
+        false,
+    );
+    assert!(rendered.contains("workspace_read_file (legacy workspace compatibility)"));
+    assert!(rendered.contains("File: hello.txt"));
 }
 
 #[test]

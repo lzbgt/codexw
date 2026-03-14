@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+use crate::client_dynamic_tools::is_legacy_workspace_tool;
 use crate::state::get_string;
 use crate::state::summarize_text;
 use crate::status_value::summarize_value;
@@ -71,7 +72,8 @@ fn summarize_tool_result_block(item: &Value) -> Option<String> {
     let title = get_string(item, &["title"])
         .or_else(|| get_string(item, &["toolName"]))
         .or_else(|| get_string(item, &["tool"]))
-        .or_else(|| get_string(item, &["command"]));
+        .or_else(|| get_string(item, &["command"]))
+        .map(render_tool_summary_title);
     let body = extract_tool_result_text(item);
 
     match (title, body) {
@@ -79,6 +81,14 @@ fn summarize_tool_result_block(item: &Value) -> Option<String> {
         (Some(title), _) => Some(title.to_string()),
         (None, Some(body)) if !body.trim().is_empty() => Some(body),
         _ => None,
+    }
+}
+
+fn render_tool_summary_title(title: &str) -> String {
+    if is_legacy_workspace_tool(title) {
+        format!("{title} (legacy workspace compatibility)")
+    } else {
+        title.to_string()
     }
 }
 
