@@ -45,6 +45,7 @@ pub(crate) struct LocalApiSnapshot {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) classification: String,
+    pub(crate) recommended_action: String,
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) elapsed_seconds: u64,
@@ -269,6 +270,7 @@ fn async_tool_supervision_snapshot(state: &AppState) -> Option<LocalApiAsyncTool
     let classification = activity.supervision_class()?;
     Some(LocalApiAsyncToolSupervision {
         classification: classification.label().to_string(),
+        recommended_action: classification.recommended_action().to_string(),
         tool: activity.tool.clone(),
         summary: activity.summary.clone(),
         elapsed_seconds: activity.elapsed().as_secs(),

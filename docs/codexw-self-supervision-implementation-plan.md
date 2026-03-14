@@ -59,6 +59,12 @@ Emit machine- and operator-readable classifications such as:
 The first concrete emitted slice should classify long-running async shell-tool
 work at least as `tool_slow` and `tool_wedged` in prompt/runtime status.
 
+That slice should also expose a small machine-readable recommendation field so
+clients do not need to invent recovery guidance from the class label alone:
+
+- `tool_slow` -> `observe_or_interrupt`
+- `tool_wedged` -> `interrupt_or_exit_resume`
+
 ### 4. Recovery policy hooks
 
 When a stalled state is classified, the runtime should decide whether to:
@@ -76,7 +82,8 @@ is inspectable rather than mysterious.
 
 The first audit-trail slice should expose supervision classifications through
 the local API snapshot and `status.updated` SSE events, so WebUI or broker
-clients can observe `tool_slow` and `tool_wedged` without scraping prompt text.
+clients can observe `tool_slow` and `tool_wedged` plus their recommended next
+operator action without scraping prompt text.
 
 ## Explicitly Deferred
 

@@ -55,6 +55,7 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
         active_personality: Some("balanced".to_string()),
         async_tool_supervision: Some(LocalApiAsyncToolSupervision {
             classification: "tool_slow".to_string(),
+            recommended_action: "observe_or_interrupt".to_string(),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             elapsed_seconds: 21,

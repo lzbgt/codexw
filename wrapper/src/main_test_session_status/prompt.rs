@@ -74,6 +74,7 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("tool_slow"));
     assert!(rendered.contains("async tool background_shell_start"));
+    assert!(rendered.contains("observe or interrupt"));
 }
 
 #[test]

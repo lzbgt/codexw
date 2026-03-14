@@ -191,6 +191,8 @@ At:
 - last status line changes materially
 - async-tool supervision classification changes such as `tool_slow` to
   `tool_wedged`
+- async-tool supervision recommendation changes such as
+  `observe_or_interrupt` to `interrupt_or_exit_resume`
 
 Likely emission owners:
 

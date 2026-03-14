@@ -76,6 +76,10 @@ fn session_snapshot_is_returned_with_valid_token() {
         "tool_slow"
     );
     assert_eq!(
+        body["async_tool_supervision"]["recommended_action"],
+        "observe_or_interrupt"
+    );
+    assert_eq!(
         body["session"]["async_tool_supervision"]["tool"],
         "background_shell_start"
     );
@@ -107,6 +111,10 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(
         body["session"]["async_tool_supervision"]["classification"],
         "tool_slow"
+    );
+    assert_eq!(
+        body["session"]["async_tool_supervision"]["recommended_action"],
+        "observe_or_interrupt"
     );
     assert_eq!(body["active_turn_id"], "turn_456");
 }

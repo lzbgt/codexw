@@ -74,6 +74,11 @@ hidden inside internal timers.
 The first emitted native runtime slice should at least expose `tool_slow` and
 `tool_wedged` for long-running async shell-tool work.
 
+The first recommended actions should stay narrow and operator-safe:
+
+- `tool_slow` -> `observe_or_interrupt`
+- `tool_wedged` -> `interrupt_or_exit_resume`
+
 ## Relationship To Runtime Responsiveness
 
 The first concrete runtime rule should be:

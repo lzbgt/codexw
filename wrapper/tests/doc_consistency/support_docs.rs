@@ -19,6 +19,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let broker_adapter_plan = read_repo_file("docs/codexw-broker-connector-adapter-plan.md");
     let broker_shared_assumptions = read_repo_file("docs/codexw-broker-shared-assumptions.md");
     let broker_session_identity = read_repo_file("docs/codexw-broker-session-identity.md");
+    let broker_event_envelope = read_repo_file("docs/codexw-broker-event-envelope.md");
     let native_boundaries = read_repo_file("docs/codexw-native-support-boundaries.md");
     let native_status = read_repo_file("docs/codexw-native-product-status.md");
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
@@ -34,6 +35,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let local_api_sketch = read_repo_file("docs/codexw-local-api-sketch.md");
     let local_api_plan = read_repo_file("docs/codexw-local-api-implementation-plan.md");
     let local_api_route_matrix = read_repo_file("docs/codexw-local-api-route-matrix.md");
+    let local_api_event_sourcing = read_repo_file("docs/codexw-local-api-event-sourcing.md");
     let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
     let cross_deployment = read_repo_file("docs/codexw-cross-deployment-collaboration.md");
     let cross_project_dependency =
@@ -67,6 +69,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-connector-adapter-plan.md",
         "docs/codexw-broker-shared-assumptions.md",
         "docs/codexw-broker-session-identity.md",
+        "docs/codexw-broker-event-envelope.md",
         "docs/codexw-native-support-boundaries.md",
         "docs/codexw-native-product-status.md",
         "docs/codexw-native-proof-matrix.md",
@@ -78,6 +81,10 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision-implementation-plan.md",
         "docs/codexw-plugin-system.md",
         "docs/codexw-plugin-system-implementation-plan.md",
+        "docs/codexw-local-api-sketch.md",
+        "docs/codexw-local-api-implementation-plan.md",
+        "docs/codexw-local-api-route-matrix.md",
+        "docs/codexw-local-api-event-sourcing.md",
         "docs/codexw-broker-client-architecture.md",
         "docs/codexw-cross-deployment-collaboration.md",
         "docs/codexw-cross-project-dependency-collaboration.md",
@@ -341,6 +348,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "tool_wedged",
         "docs/codexw-broker-adapter-status.md",
     );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "observe_or_interrupt",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "interrupt_or_exit_resume",
+        "docs/codexw-broker-adapter-status.md",
+    );
     assert_contains(
         &broker_proof,
         "supported experimental adapter",
@@ -365,6 +382,26 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_proof,
         "tool_wedged",
         "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
+        "observe_or_interrupt",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
+        "interrupt_or_exit_resume",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "observe_or_interrupt",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "interrupt_or_exit_resume",
+        "docs/codexw-broker-event-envelope.md",
     );
     assert_contains(
         &broker_policy,
@@ -578,6 +615,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-product-status.md",
     );
     assert_contains_case_insensitive(
+        &native_status,
+        "observe_or_interrupt",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "interrupt_or_exit_resume",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "terminal-first",
         "docs/codexw-native-proof-matrix.md",
@@ -623,6 +670,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
+        &native_policy,
+        "observe_or_interrupt",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "interrupt_or_exit_resume",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "tool_slow",
         "docs/codexw-native-proof-matrix.md",
@@ -630,6 +687,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_proof,
         "tool_wedged",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "observe_or_interrupt",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "interrupt_or_exit_resume",
         "docs/codexw-native-proof-matrix.md",
     );
     assert_contains_case_insensitive(
@@ -704,6 +771,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
+        &self_supervision,
+        "observe_or_interrupt",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "interrupt_or_exit_resume",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
         &self_supervision_plan,
         "background-shell dynamic tools",
         "docs/codexw-self-supervision-implementation-plan.md",
@@ -722,6 +799,26 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &self_supervision_plan,
         "tool_wedged",
         "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "observe_or_interrupt",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "interrupt_or_exit_resume",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "observe_or_interrupt",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "interrupt_or_exit_resume",
+        "docs/codexw-local-api-event-sourcing.md",
     );
     assert_contains_case_insensitive(
         &plugin_system,

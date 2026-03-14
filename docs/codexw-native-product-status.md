@@ -65,7 +65,9 @@ The implemented native-side product already has:
 - prompt/status visibility for in-flight async shell-tool work until the tool
   response completes
 - first self-supervision classifications for async shell-tool stalls, currently
-  `tool_slow` and `tool_wedged`, surfaced in prompt/status output
+  `tool_slow` and `tool_wedged`, surfaced in prompt/status output with narrow
+  recommended actions such as `observe_or_interrupt` and
+  `interrupt_or_exit_resume`
 - orchestration views over agents, shells, services, capabilities, and
   terminals
 - a new self-supervision design lane for stalled tool/runtime recovery

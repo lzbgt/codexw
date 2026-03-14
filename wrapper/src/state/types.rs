@@ -69,6 +69,20 @@ impl AsyncToolSupervisionClass {
             Self::ToolWedged => "tool_wedged",
         }
     }
+
+    pub(crate) fn recommended_action(self) -> &'static str {
+        match self {
+            Self::ToolSlow => "observe_or_interrupt",
+            Self::ToolWedged => "interrupt_or_exit_resume",
+        }
+    }
+
+    pub(crate) fn prompt_hint(self) -> &'static str {
+        match self {
+            Self::ToolSlow => "observe or interrupt",
+            Self::ToolWedged => "interrupt or exit",
+        }
+    }
 }
 
 pub(crate) const ASYNC_TOOL_SLOW_THRESHOLD: Duration = Duration::from_secs(15);

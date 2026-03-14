@@ -83,7 +83,11 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
         format!("async tool {}: {}", async_tool.tool, async_tool.summary)
     };
     let detail = if let Some(classification) = state.oldest_async_tool_supervision_class() {
-        format!("{} {detail}", classification.label())
+        format!(
+            "{} {detail} [{}]",
+            classification.label(),
+            classification.prompt_hint()
+        )
     } else {
         detail
     };

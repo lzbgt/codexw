@@ -461,6 +461,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 },
                                 "async_tool_supervision": {
                                     "classification": "tool_slow",
+                                    "recommended_action": "observe_or_interrupt",
                                     "tool": "background_shell_start"
                                 }
                             }
@@ -480,7 +481,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             ": heartbeat\n",
                             "id: 30\n",
                             "event: status.updated\n",
-                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_slow\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":21,\"active_request_count\":1}}\n\n"
+                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_slow\",\"recommended_action\":\"observe_or_interrupt\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":21,\"active_request_count\":1}}\n\n"
                         )
                         .as_bytes(),
                     )?;
@@ -497,7 +498,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             ": heartbeat\n",
                             "id: 31\n",
                             "event: status.updated\n",
-                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_wedged\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":75,\"active_request_count\":1}}\n\n"
+                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_wedged\",\"recommended_action\":\"interrupt_or_exit_resume\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":75,\"active_request_count\":1}}\n\n"
                         )
                         .as_bytes(),
                     )?;
@@ -532,6 +533,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("\"agent_id\":\"codexw-lab\""));
     assert!(initial_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(initial_events.contains("\"classification\":\"tool_slow\""));
+    assert!(initial_events.contains("\"recommended_action\":\"observe_or_interrupt\""));
     assert!(initial_events.contains("\"tool\":\"background_shell_start\""));
 
     let resumed_events =
@@ -543,6 +545,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"agent_id\":\"codexw-lab\""));
     assert!(resumed_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(resumed_events.contains("\"classification\":\"tool_wedged\""));
+    assert!(resumed_events.contains("\"recommended_action\":\"interrupt_or_exit_resume\""));
     assert!(resumed_events.contains("\"elapsed_seconds\":75"));
 
     fake_server.join().expect("fake server thread")?;

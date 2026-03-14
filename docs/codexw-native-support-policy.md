@@ -55,7 +55,8 @@ drift casually:
 - async shell-tool execution that remains visible in prompt/status surfaces
   while the request is in flight, rather than freezing the input loop
 - operator-visible async-tool supervision classifications such as `tool_slow`
-  and `tool_wedged` for long-running shell-tool work
+  and `tool_wedged` for long-running shell-tool work, with narrow recommended
+  actions such as `observe_or_interrupt` and `interrupt_or_exit_resume`
 - the direction that stalled tool/runtime paths should be recoverable through
   self-supervision rather than left as indefinite hangs
 - the direction that optional capabilities should prefer plugin delivery when

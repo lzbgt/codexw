@@ -113,6 +113,7 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
     });
     let rendered = render_status_runtime(&cli, &state).join("\n");
     assert!(rendered.contains("async class     tool_wedged"));
+    assert!(rendered.contains("async action    interrupt_or_exit_resume"));
 }
 
 #[test]
@@ -201,6 +202,12 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             .map(|class| class.label()),
         Some("tool_slow")
     );
+    assert_eq!(
+        state
+            .oldest_async_tool_supervision_class()
+            .map(|class| class.recommended_action()),
+        Some("observe_or_interrupt")
+    );
 
     state.active_async_tool_requests.insert(
         crate::rpc::RequestId::Integer(10),
@@ -215,5 +222,11 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             .oldest_async_tool_supervision_class()
             .map(|class| class.label()),
         Some("tool_wedged")
+    );
+    assert_eq!(
+        state
+            .oldest_async_tool_supervision_class()
+            .map(|class| class.recommended_action()),
+        Some("interrupt_or_exit_resume")
     );
 }

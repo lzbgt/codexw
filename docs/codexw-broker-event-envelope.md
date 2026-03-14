@@ -26,6 +26,7 @@ Candidate envelope:
     "working": true,
     "async_tool_supervision": {
       "classification": "tool_slow",
+      "recommended_action": "observe_or_interrupt",
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "elapsed_seconds": 21,
@@ -154,6 +155,7 @@ Optional means “present only when semantically relevant,” not “randomly om
     "turn_running": true,
     "async_tool_supervision": {
       "classification": "tool_wedged",
+      "recommended_action": "interrupt_or_exit_resume",
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "elapsed_seconds": 75,
@@ -165,7 +167,8 @@ Optional means “present only when semantically relevant,” not “randomly om
 
 `status.updated` now also carries the first emitted self-supervision audit-trail
 slice: async-tool supervision classifications such as `tool_slow` and
-`tool_wedged`.
+`tool_wedged`, plus a narrow recommended-action field such as
+`observe_or_interrupt` or `interrupt_or_exit_resume`.
 
 ## Exclusions
 
