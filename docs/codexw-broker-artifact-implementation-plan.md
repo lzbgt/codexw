@@ -17,6 +17,7 @@ Companion docs:
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [codexw-broker-endpoint-audit.md](codexw-broker-endpoint-audit.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 
 ## Implementation Goal

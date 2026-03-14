@@ -189,6 +189,25 @@ into shared local-API helpers.
 - mutate service capability/label/contract
 - retarget service dependencies
 
+### Future Artifact Track
+
+This route matrix is about the currently implemented local API plus its thin
+planning boundary. The artifact surface is not implemented yet, but it is no
+longer an unnamed future bucket.
+
+If the artifact track moves into implementation, the first candidate route
+family should be:
+
+- `GET /api/v1/session/{session_id}/artifacts`
+- `GET /api/v1/session/{session_id}/artifacts/{artifact_id}`
+- `GET /api/v1/session/{session_id}/artifacts/{artifact_id}/content`
+
+That work should follow the dedicated artifact docs rather than being designed
+ad hoc here:
+
+- [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
+- [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
+
 ## Exit Criteria
 
 The original route-matrix phase is complete when:

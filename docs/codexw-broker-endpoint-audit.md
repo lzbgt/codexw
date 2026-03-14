@@ -43,7 +43,7 @@ Its purpose is to map relevant `~/work/agent` broker/client surfaces to current
 | --- | --- | --- | --- |
 | `POST /api/v1/run` | `adapter fit` | request builders + turn lifecycle | `codexw` is thread/turn-centric, not `agentd` run-centric, but a remote turn API is clearly feasible |
 | run-event envelopes | `adapter fit` | item/turn/status/orchestration state | Stable public semantic event envelopes now exist for the supported local API and connector surface, but they remain intentionally narrower than a generic broker-wide run stream |
-| artifact signaling | `adapter fit` | transcript/item surfaces + attachment state | Likely useful later, but not required for the first status/control API |
+| artifact signaling | `adapter fit` | transcript/item surfaces + attachment state | The gap is no longer an unnamed future bucket: see [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md) and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md) for the dedicated artifact track |
 
 ## `codexw`-Specific Surfaces
 
@@ -58,6 +58,7 @@ compatibility shape:
 | wrapper-owned background shells | `GET/POST /api/v1/shells/*` | One of the strongest differentiators versus plain app-server clients |
 | reusable service capability registry | `GET /api/v1/capabilities` | Valuable for mobile/WebUI attachment and orchestration |
 | service mutation controls (`provide`, `depend`, `contract`, `relabel`) | `POST /api/v1/services/{job}/...` | Probably remains `codexw`-specific even if broker-compatible transport is adopted |
+| session-scoped artifact index/detail/content | `GET /api/v1/session/{session_id}/artifacts*` | Planned `codexw`-specific layer derived from transcript/event/shell/service truth; not implemented yet and should not be confused with generic filesystem browsing |
 
 ## Recommended First Audit Outputs
 

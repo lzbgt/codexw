@@ -8,6 +8,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let _broker_client_policy = read_repo_file("docs/codexw-broker-client-policy.md");
     let broker_out_of_scope = read_repo_file("docs/codexw-broker-out-of-scope.md");
+    let broker_endpoint_audit = read_repo_file("docs/codexw-broker-endpoint-audit.md");
     let broker_proof = read_repo_file("docs/codexw-broker-proof-matrix.md");
     let broker_policy = read_repo_file("docs/codexw-broker-support-policy.md");
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
@@ -179,6 +180,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_out_of_scope,
         "out of scope",
         "docs/codexw-broker-out-of-scope.md",
+    );
+    assert_contains(
+        &broker_endpoint_audit,
+        "codexw-broker-artifact-implementation-plan.md",
+        "docs/codexw-broker-endpoint-audit.md",
+    );
+    assert_contains(
+        &broker_endpoint_audit,
+        "session-scoped artifact index/detail/content",
+        "docs/codexw-broker-endpoint-audit.md",
     );
     assert_contains(
         &broker_hardening,
