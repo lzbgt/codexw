@@ -13,6 +13,15 @@ This is a design note, not an implementation claim. It explains how
 cross-deployment collaboration should fit the current `codexw` session,
 identity, broker, and artifact boundaries.
 
+For the first broker-visible handoff contract sketch and implementation-facing
+delivery order, see
+[codexw-cross-deployment-handoff-contract-sketch.md](codexw-cross-deployment-handoff-contract-sketch.md)
+and
+[codexw-cross-deployment-handoff-implementation-plan.md](codexw-cross-deployment-handoff-implementation-plan.md).
+For the more specific case where multiple deployments each work on different
+projects with dependency edges between them, see
+[codexw-cross-project-dependency-collaboration.md](codexw-cross-project-dependency-collaboration.md).
+
 ## Why This Requirement Exists
 
 The repo already treats these statements as required architecture:
@@ -42,12 +51,14 @@ Cross-deployment collaboration should be:
 
 - broker-mediated rather than ad hoc deployment-to-deployment RPC
 - session-scoped rather than thread-agnostic
+- project-aware rather than deployment-aware only
 - explicit rather than inferred from transcript text
 - replayable through events rather than hidden in one-off side channels
 - provenance-preserving rather than summary-only
 
 The broker should remain the routing/control plane. The source of truth should
 still be the per-deployment `codexw` runtime plus its local session state.
+That is especially important because the collaborating deployments may not coexist on one host, so same-host assumptions cannot be part of the contract.
 
 ## Core Objects
 

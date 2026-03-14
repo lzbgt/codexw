@@ -29,6 +29,12 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let local_api_route_matrix = read_repo_file("docs/codexw-local-api-route-matrix.md");
     let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
     let cross_deployment = read_repo_file("docs/codexw-cross-deployment-collaboration.md");
+    let cross_project_dependency =
+        read_repo_file("docs/codexw-cross-project-dependency-collaboration.md");
+    let cross_deployment_contract =
+        read_repo_file("docs/codexw-cross-deployment-handoff-contract-sketch.md");
+    let cross_deployment_plan =
+        read_repo_file("docs/codexw-cross-deployment-handoff-implementation-plan.md");
     let broker_artifact_sketch = read_repo_file("docs/codexw-broker-artifact-contract-sketch.md");
     let broker_artifact_plan = read_repo_file("docs/codexw-broker-artifact-implementation-plan.md");
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
@@ -57,6 +63,9 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-hardening-catalog.md",
         "docs/codexw-broker-client-architecture.md",
         "docs/codexw-cross-deployment-collaboration.md",
+        "docs/codexw-cross-project-dependency-collaboration.md",
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
         "docs/codexw-broker-client-fixture.md",
         "docs/codexw-broker-host-examination-matrix.md",
         "docs/codexw-broker-integration-handoff.md",
@@ -86,6 +95,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &readme,
         "docs/codexw-cross-deployment-collaboration.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-cross-project-dependency-collaboration.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
         "README.md",
     );
     assert_contains(
@@ -145,6 +169,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &todos,
         "docs/codexw-cross-deployment-collaboration.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-cross-project-dependency-collaboration.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
         "TODOS.md",
     );
     assert_contains(
@@ -453,6 +492,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "codexw-cross-deployment-collaboration.md",
         "docs/codexw-broker-integration-handoff.md",
     );
+    assert_contains(
+        &broker_handoff,
+        "codexw-cross-project-dependency-collaboration.md",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains(
+        &broker_handoff,
+        "codexw-cross-deployment-handoff-contract-sketch.md",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains(
+        &broker_handoff,
+        "codexw-cross-deployment-handoff-implementation-plan.md",
+        "docs/codexw-broker-integration-handoff.md",
+    );
     assert_contains_case_insensitive(
         &cross_deployment,
         "work handoff",
@@ -470,8 +524,78 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &cross_deployment,
+        "may not coexist on one host",
+        "docs/codexw-cross-deployment-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment,
         "artifact-contract gap",
         "docs/codexw-cross-deployment-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_dependency,
+        "projects may depend on one another",
+        "docs/codexw-cross-project-dependency-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_dependency,
+        "broker-mediated",
+        "docs/codexw-cross-project-dependency-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_dependency,
+        "dependency edge",
+        "docs/codexw-cross-project-dependency-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_contract,
+        "handoff record",
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_contract,
+        "source.project_id",
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_contract,
+        "dependency_refs",
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_contract,
+        "session_handoff_proposed",
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_contract,
+        "artifact api",
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "accept/decline/complete",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "target project identity",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "same-host",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "route family exists",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "do not fake handoff",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
     );
     assert_contains_case_insensitive(
         &broker_client_fixture,

@@ -137,6 +137,9 @@ External workspaces should treat that as a separate design track from both:
 Reference:
 
 - [codexw-cross-deployment-collaboration.md](codexw-cross-deployment-collaboration.md)
+- [codexw-cross-project-dependency-collaboration.md](codexw-cross-project-dependency-collaboration.md)
+- [codexw-cross-deployment-handoff-contract-sketch.md](codexw-cross-deployment-handoff-contract-sketch.md)
+- [codexw-cross-deployment-handoff-implementation-plan.md](codexw-cross-deployment-handoff-implementation-plan.md)
 
 ## Recommended Consumption Order For `~/work/agent`
 
@@ -153,6 +156,9 @@ For the sibling workspace, the lowest-risk implementation order is:
 5. if one deployment needs to hand work to another deployment, treat that as an
    explicit cross-deployment collaboration/handoff requirement rather than as a
    hidden operator convention
+6. if multiple deployments are each working on related projects, model that
+   through broker-visible project identity and dependency-aware handoffs rather
+   than assuming those deployments share one host or one workspace
 
 This keeps the external client aligned with what `codexw` actually proves
 today.

@@ -19,6 +19,9 @@ Primary source docs:
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
+- [docs/codexw-cross-project-dependency-collaboration.md](docs/codexw-cross-project-dependency-collaboration.md)
+- [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)
+- [docs/codexw-cross-deployment-handoff-implementation-plan.md](docs/codexw-cross-deployment-handoff-implementation-plan.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
 - [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md)
 - [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
@@ -59,9 +62,17 @@ Concrete tasks:
     inspection model
 - keep the new cross-deployment collaboration requirement explicit:
   - cross-deployment `codexw` collaboration should be broker-mediated
+  - the broker mediation is required because deployments may not share a host
+  - collaboration should stay project-aware when each deployment is advancing a
+    different dependent project
+  - dependency edges between projects should be explicit collaboration context
   - work handoff should be session-scoped and replayable
   - work handoff should preserve provenance rather than relying on transcript
     prose alone
+- keep the first handoff route/event track narrow:
+  - explicit handoff record
+  - explicit proposed/accepted/declined/completed states
+  - no implied artifact replication or global scheduler
 - make any remaining artifact-surface gaps explicit whenever broker/client docs
   claim that remote clients can examine host results
 - keep the current workflow-level host-examination read aligned across:
@@ -77,6 +88,9 @@ Concrete tasks:
 Primary source:
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
+- [docs/codexw-cross-project-dependency-collaboration.md](docs/codexw-cross-project-dependency-collaboration.md)
+- [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)
+- [docs/codexw-cross-deployment-handoff-implementation-plan.md](docs/codexw-cross-deployment-handoff-implementation-plan.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
 - [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md)
 - [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
