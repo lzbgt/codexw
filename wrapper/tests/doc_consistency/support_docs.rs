@@ -256,6 +256,7 @@ fn broker_and_native_docs_link_to_automated_support_claim_guard() {
 fn design_doc_keeps_workspace_tool_policy_note_linked() {
     let design = read_repo_file("docs/codexw-design.md");
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
+    let readme = read_repo_file("README.md");
 
     assert_contains(
         &design,
@@ -277,6 +278,12 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
         "shell is the general-purpose execution substrate",
         "docs/codexw-workspace-tool-policy.md",
     );
+    assert_contains(
+        &workspace_policy,
+        "legacy workspace compatibility path",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains(&readme, "legacy workspace compatibility path", "README.md");
 }
 
 #[test]
