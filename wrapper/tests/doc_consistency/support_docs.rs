@@ -331,6 +331,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "codexw-cross-project-dependency-contract-sketch.md",
         "docs/codexw-broker-adapter-status.md",
     );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "tool_slow",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "tool_wedged",
+        "docs/codexw-broker-adapter-status.md",
+    );
     assert_contains(
         &broker_proof,
         "supported experimental adapter",
@@ -344,6 +354,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &broker_proof,
         "codexw-cross-project-dependency-contract-sketch.md",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
+        "tool_slow",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
+        "tool_wedged",
         "docs/codexw-broker-proof-matrix.md",
     );
     assert_contains(

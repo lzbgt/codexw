@@ -24,7 +24,13 @@ Candidate envelope:
   "source": "codexw",
   "data": {
     "working": true,
-    "elapsed_ms": 12450
+    "async_tool_supervision": {
+      "classification": "tool_slow",
+      "tool": "background_shell_start",
+      "summary": "arguments= command=sleep 5 tool=background_shell_start",
+      "elapsed_seconds": 21,
+      "active_request_count": 1
+    }
   }
 }
 ```
@@ -135,6 +141,31 @@ Optional means “present only when semantically relevant,” not “randomly om
   }
 }
 ```
+
+### `status.updated`
+
+```json
+{
+  "type": "status.updated",
+  "session_id": "sess_01HX...",
+  "thread_id": "thread_abc123",
+  "ts_unix_ms": 1760000001500,
+  "data": {
+    "turn_running": true,
+    "async_tool_supervision": {
+      "classification": "tool_wedged",
+      "tool": "background_shell_start",
+      "summary": "arguments= command=sleep 5 tool=background_shell_start",
+      "elapsed_seconds": 75,
+      "active_request_count": 1
+    }
+  }
+}
+```
+
+`status.updated` now also carries the first emitted self-supervision audit-trail
+slice: async-tool supervision classifications such as `tool_slow` and
+`tool_wedged`.
 
 ## Exclusions
 

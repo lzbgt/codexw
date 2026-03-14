@@ -427,3 +427,124 @@ fn connector_broker_style_focused_detail_workflow_handles_event_resume() -> Resu
     fake_server.join().expect("fake server thread")?;
     Ok(())
 }
+
+#[test]
+fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..3 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/new");
+                    let body: Value =
+                        serde_json::from_slice(&request.body).context("parse create body")?;
+                    assert_eq!(body["thread_id"], "thread_1");
+                    assert_eq!(body["client_id"], "remote-web");
+                    assert_eq!(body["lease_seconds"], 45);
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_1",
+                                "attachment": {
+                                    "client_id": "remote-web",
+                                    "lease_seconds": 45
+                                },
+                                "async_tool_supervision": {
+                                    "classification": "tool_slow",
+                                    "tool": "background_shell_start"
+                                }
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/events");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "text/event-stream")],
+                        concat!(
+                            ": heartbeat\n",
+                            "id: 30\n",
+                            "event: status.updated\n",
+                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_slow\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":21,\"active_request_count\":1}}\n\n"
+                        )
+                        .as_bytes(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/events");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "text/event-stream")],
+                        concat!(
+                            ": heartbeat\n",
+                            "id: 31\n",
+                            "event: status.updated\n",
+                            "data: {\"session_id\":\"sess_1\",\"thread_id\":\"thread_1\",\"turn_running\":true,\"async_tool_supervision\":{\"classification\":\"tool_wedged\",\"tool\":\"background_shell_start\",\"summary\":\"arguments= command=sleep 5 tool=background_shell_start\",\"elapsed_seconds\":75,\"active_request_count\":1}}\n\n"
+                        )
+                        .as_bytes(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let client = BrokerClient::new(connector_port, "codexw-lab");
+    let create_response = client.create_session(
+        "{\"thread_id\":\"thread_1\"}",
+        &[
+            ("Content-Type", "application/json"),
+            ("X-Codexw-Client-Id", "remote-web"),
+            ("X-Codexw-Lease-Seconds", "45"),
+        ],
+    )?;
+    assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(create_response.contains("\"async_tool_supervision\""));
+
+    let initial_events = client.session_request("GET", "sess_1", "/events", None, &[])?;
+    assert!(initial_events.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(initial_events.contains(": heartbeat\n"));
+    assert!(initial_events.contains("event: status.updated\n"));
+    assert!(initial_events.contains("\"source\":\"codexw\""));
+    assert!(initial_events.contains("\"agent_id\":\"codexw-lab\""));
+    assert!(initial_events.contains("\"deployment_id\":\"mac-mini-01\""));
+    assert!(initial_events.contains("\"classification\":\"tool_slow\""));
+    assert!(initial_events.contains("\"tool\":\"background_shell_start\""));
+
+    let resumed_events =
+        client.session_request("GET", "sess_1", "/events", None, &[("Last-Event-ID", "30")])?;
+    assert!(resumed_events.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(resumed_events.contains(": heartbeat\n"));
+    assert!(resumed_events.contains("event: status.updated\n"));
+    assert!(resumed_events.contains("\"source\":\"codexw\""));
+    assert!(resumed_events.contains("\"agent_id\":\"codexw-lab\""));
+    assert!(resumed_events.contains("\"deployment_id\":\"mac-mini-01\""));
+    assert!(resumed_events.contains("\"classification\":\"tool_wedged\""));
+    assert!(resumed_events.contains("\"elapsed_seconds\":75"));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}

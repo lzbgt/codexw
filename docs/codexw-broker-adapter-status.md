@@ -175,6 +175,8 @@ the real connector binary:
 - explicit rejection of malformed percent-encoded broker alias path segments
 - broker-style SSE consumption
 - broker-style SSE resume through `Last-Event-ID`
+- broker-style `status.updated` supervision visibility and replay for
+  `tool_slow` / `tool_wedged`
 - structured lease-conflict propagation
 - structured connector-local validation failures for malformed injected request
   bodies and malformed client/lease headers
