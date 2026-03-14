@@ -40,6 +40,8 @@ This policy does not create a promise for:
 - production deployment, auth, or fleet semantics
 - multi-daemon lease coordination
 - a general-purpose public SDK
+- a broker-visible artifact catalog/detail/content surface unless and until that
+  route family is explicitly added to the adapter contract and proof set
 
 ## Support Level
 
@@ -79,6 +81,11 @@ can depend on them:
   - `details`
 - SSE replay behavior through `Last-Event-ID`
 - explicit rejection of unsupported broker/client surfaces
+
+The current supported experimental adapter should therefore be read as
+supporting remote host examination through the documented session/event/
+orchestration/shell/service/capability surface, while the artifact-contract
+track remains separate and design-only for now.
 
 ### Still Allowed To Evolve
 
@@ -155,6 +162,8 @@ If a batch changes supported adapter behavior, it should update:
 - connector smoke coverage where relevant
 - broker-client fixture coverage when the behavior affects an external
   consumer shape
+- the artifact-contract sketch/implementation docs too when the behavior
+  changes the planned or supported artifact surface
 
 For policy-sensitive changes, process-level proof is preferred over only unit
 coverage.
@@ -183,6 +192,8 @@ and update the relevant docs, usually a subset of:
 - [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+- [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
 The goal is to keep status, contract, support level, and proof claims aligned
 instead of letting one doc quietly outrun the others.

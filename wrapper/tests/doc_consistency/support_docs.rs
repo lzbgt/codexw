@@ -335,6 +335,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &checklist,
+        "codexw-broker-host-examination-matrix.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-broker-artifact-contract-sketch.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-broker-artifact-implementation-plan.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
         "codexw-broker-hardening-catalog.md",
         "docs/codexw-support-claim-checklist.md",
     );

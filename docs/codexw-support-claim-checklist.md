@@ -102,6 +102,9 @@ When broker-facing wording changes, review:
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
+- [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+- [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
 Confirm all of the following:
 
@@ -124,6 +127,12 @@ Confirm all of the following:
   blockers
 - the proof matrix still matches the strongest verified route / error / event /
   lease claims
+- the current supported claim still clearly excludes artifact index/detail/
+  content routes unless those routes were explicitly implemented and proven in
+  the same batch
+- host-examination docs still distinguish:
+  - already-supported shell/service/transcript/event remote inspection
+  - design-only artifact contract work
 
 If the broker contract changes, also confirm:
 

@@ -19,6 +19,7 @@ That recommendation is intentionally narrower than:
 - production browser/mobile UX
 - multi-daemon lease coordination
 - a general-purpose public SDK commitment
+- a dedicated broker-visible artifact catalog/detail/content contract
 
 The recommended claim is:
 
@@ -29,6 +30,10 @@ The recommended claim is:
 - the structured error and SSE replay behavior are part of the supported
   contract
 - the unsupported boundary remains explicit and enforced
+
+That supported claim currently covers the verified session/event/orchestration/
+shell/service/capability surface. It does **not** yet imply that artifact index,
+detail, or content routes are part of the supported adapter.
 
 The operational meaning of that support level now lives in
 [codexw-broker-support-policy.md](codexw-broker-support-policy.md), so this
@@ -83,6 +88,9 @@ The remaining gaps still mentioned in the repo are things like:
 - longer-lived contention churn
 - broader adversarial permutations
 - route-by-route proof density beyond representative workflows
+- the still-design-only artifact contract track documented in
+  [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+  and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
 Those are good hardening tasks, but they are not evidence that the current
 adapter claim is false.
@@ -141,7 +149,9 @@ The next high-leverage tasks should be:
    when it is actually a supported experimental adapter
 4. preserve the unsupported boundary explicitly so promotion does not silently
    expand the claim surface
-5. only reopen the promotion decision if the connector starts needing shadow
+5. keep the artifact-contract track explicit as design-only until local routes,
+   connector mapping decisions, and process-level proof actually exist
+6. only reopen the promotion decision if the connector starts needing shadow
    state or if the local API authority model changes
 
 ## Decision Rule
@@ -165,3 +175,5 @@ not:
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+- [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
