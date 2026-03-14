@@ -21,6 +21,7 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
@@ -98,7 +99,7 @@ Status labels:
 | Workflow | Status | Evidence | Remaining gap |
 | --- | --- | --- | --- |
 | Remote host examination through session/event/orchestration/shell/service surfaces | strong proof | Route and workflow proof across [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md), [wrapper/tests/connector_prototype_smoke/aliases/session.rs](../wrapper/tests/connector_prototype_smoke/aliases/session.rs), [wrapper/tests/connector_prototype_smoke/aliases/services.rs](../wrapper/tests/connector_prototype_smoke/aliases/services.rs), [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/workflows/services.rs](../wrapper/tests/connector_prototype_smoke/workflows/services.rs), and [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md) | The current broker-visible shell/service/transcript/event surface is already a valid remote host-examination foundation. |
-| Artifact browsing via transcript/event/shell/service references | partial proof | Transcript, SSE, shell detail/poll, service attach/run, and fixture-driven workflows exercised in the same evidence set above, plus the workflow framing in [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md) | `codexw` still lacks a dedicated broker-visible artifact catalog or fetch/download contract; clients must currently assemble artifact understanding from transcript, shell, service, and event references. |
+| Artifact browsing via transcript/event/shell/service references | partial proof | Transcript, SSE, shell detail/poll, service attach/run, and fixture-driven workflows exercised in the same evidence set above, plus the workflow framing in [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md) | `codexw` still lacks a dedicated broker-visible artifact catalog or fetch/download contract; clients must currently assemble artifact understanding from transcript, shell, service, and event references. The intended next design slice is now sketched in [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md). |
 
 ## Current Read
 

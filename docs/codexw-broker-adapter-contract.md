@@ -12,6 +12,7 @@ This document is the contract-oriented companion to:
 - [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 
@@ -35,6 +36,10 @@ This contract does not claim:
 - production deployment/auth semantics
 - compatibility with every future broker route family
 - a dedicated artifact catalog or artifact download API
+
+The future artifact-specific track is now sketched separately in
+[codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+rather than being left as an unnamed caveat.
 
 Those boundaries remain explicit in
 [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md).

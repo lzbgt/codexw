@@ -17,6 +17,7 @@ implementation.
 Companion docs:
 
 - [codexw-broker-client-architecture.md](codexw-broker-client-architecture.md)
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
@@ -84,6 +85,9 @@ as:
 
 That means the current remote host-examination story is shell-first and
 transcript/event-first rather than artifact-catalog-first.
+
+For the concrete design sketch of that missing contract, see
+[codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md).
 
 ## Design Consequence
 

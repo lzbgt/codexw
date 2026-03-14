@@ -19,6 +19,7 @@ Primary source docs:
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
+- [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
 - [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md)
 - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
 - [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
@@ -61,10 +62,14 @@ Concrete tasks:
   - README
 - treat a future dedicated artifact inventory/fetch contract as a separate gap
   from the already-supported shell/service/transcript remote-control surface
+- when artifact-centric app/WebUI requirements get concrete, drive them through
+  the artifact-contract track instead of expanding shell or transcript routes
+  ad hoc
 
 Primary source:
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
+- [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
 - [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md)
 - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
