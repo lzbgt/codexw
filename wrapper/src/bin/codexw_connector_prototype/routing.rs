@@ -92,32 +92,32 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["attach"] => Some(ProxyTarget {
+                ["attach"] if method == "POST" => Some(ProxyTarget {
                     local_path: "/api/v1/session/attach".to_string(),
                     is_sse: false,
                     session_id_hint: Some(session_id),
                 }),
-                ["attachment", "renew"] => Some(ProxyTarget {
+                ["attachment", "renew"] if method == "POST" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "attachment/renew"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["attachment", "release"] => Some(ProxyTarget {
+                ["attachment", "release"] if method == "POST" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "attachment/release"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["client-events"] => Some(ProxyTarget {
+                ["client-events"] if method == "POST" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "client_event"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["turns"] => Some(ProxyTarget {
+                ["turns"] if method == "POST" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "turn/start"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["interrupt"] => Some(ProxyTarget {
+                ["interrupt"] if method == "POST" => Some(ProxyTarget {
                     local_path: local_session_path(&session_id, "turn/interrupt"),
                     is_sse: false,
                     session_id_hint: None,
@@ -127,7 +127,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["shells"] => Some(ProxyTarget {
+                ["shells"] if method == "GET" || method == "POST" => Some(ProxyTarget {
                     local_path: if method == "GET" {
                         local_session_path(&session_id, "shells")
                     } else {
@@ -141,7 +141,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["shells", job_ref, "poll"] => Some(ProxyTarget {
+                ["shells", job_ref, "poll"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "shells",
@@ -151,7 +151,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["shells", job_ref, "send"] => Some(ProxyTarget {
+                ["shells", job_ref, "send"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "shells",
@@ -161,7 +161,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["shells", job_ref, "terminate"] => Some(ProxyTarget {
+                ["shells", job_ref, "terminate"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "shells",
@@ -191,7 +191,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref, "provide"] => Some(ProxyTarget {
+                ["services", job_ref, "provide"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "services",
@@ -201,7 +201,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref, "depend"] => Some(ProxyTarget {
+                ["services", job_ref, "depend"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "services",
@@ -211,7 +211,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref, "contract"] => Some(ProxyTarget {
+                ["services", job_ref, "contract"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "services",
@@ -221,7 +221,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref, "relabel"] => Some(ProxyTarget {
+                ["services", job_ref, "relabel"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "services",
@@ -231,7 +231,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref, "attach"] => Some(ProxyTarget {
+                ["services", job_ref, "attach"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "services",
@@ -241,7 +241,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref, "wait"] => Some(ProxyTarget {
+                ["services", job_ref, "wait"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "services",
@@ -251,7 +251,7 @@ pub(super) fn resolve_proxy_target(
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref, "run"] => Some(ProxyTarget {
+                ["services", job_ref, "run"] if method == "POST" => Some(ProxyTarget {
                     local_path: decoded_session_ref_action_path(
                         &session_id,
                         "services",
@@ -287,7 +287,9 @@ pub(super) fn resolve_proxy_target(
     }
 
     let sessions_root = format!("/v1/agents/{agent_id}/sessions");
-    if path == sessions_root || path == format!("{sessions_root}/") {
+    if (path == sessions_root || path == format!("{sessions_root}/"))
+        && (method == "GET" || method == "POST")
+    {
         return Some(ProxyTarget {
             local_path: if method == "POST" {
                 "/api/v1/session/new".to_string()

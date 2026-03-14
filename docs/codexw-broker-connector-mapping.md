@@ -202,11 +202,11 @@ The initial connector adapter should ship with a small compatibility table:
 | `/v1/agents/{agent_id}/proxy/...` session create | `/api/v1/session/new` | works |
 | `/v1/agents/{agent_id}/proxy/...` turn start | `/api/v1/turn/start` | works |
 | `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works; non-`GET` methods are rejected as `method_not_allowed` |
-| `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as alias surface |
-| `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works with `session_id` body injection when missing |
-| `/v1/agents/{agent_id}/sessions/{session_id}/attachment/renew` | `/api/v1/session/{session_id}/attachment/renew` | works as alias surface with client/lease header projection |
-| `/v1/agents/{agent_id}/sessions/{session_id}/attachment/release` | `/api/v1/session/{session_id}/attachment/release` | works as alias surface with client header projection |
-| `/v1/agents/{agent_id}/sessions/{session_id}/turns` | `/api/v1/session/{session_id}/turn/start` | works as alias surface |
+| `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as method-sensitive alias surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works as POST-only alias with `session_id` body injection when missing |
+| `/v1/agents/{agent_id}/sessions/{session_id}/attachment/renew` | `/api/v1/session/{session_id}/attachment/renew` | works as POST-only alias surface with client/lease header projection |
+| `/v1/agents/{agent_id}/sessions/{session_id}/attachment/release` | `/api/v1/session/{session_id}/attachment/release` | works as POST-only alias surface with client header projection |
+| `/v1/agents/{agent_id}/sessions/{session_id}/turns` | `/api/v1/session/{session_id}/turn/start` | works as POST-only alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/events` | `/api/v1/session/{session_id}/events` | works as alias SSE surface; non-`GET` methods are rejected as `method_not_allowed` |
 | `/v1/agents/{agent_id}/sessions/{session_id}/shells` | `/api/v1/session/{session_id}/shells` and `/shells/start` | works as method-sensitive alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/shells/{job_ref}` | `/api/v1/session/{session_id}/shells/{job_ref}` | works as alias surface with percent-decoded path segments on both detail and action routes |
@@ -225,6 +225,9 @@ alias surfaces do not need to be added to two separate behavioral lists.
 Read-only broker aliases are also method-sensitive at resolution time now, so
 wrong-method requests fail as unknown connector routes instead of falling into
 the generic raw-proxy allowlist rejection path.
+The same is now true for the remaining write aliases and the `/sessions`
+collection root, so alias routing no longer treats arbitrary verbs as if they
+were implicit GET or POST variants.
 
 The current repo now also includes a minimal consumer-side artifact for this
 mapping:

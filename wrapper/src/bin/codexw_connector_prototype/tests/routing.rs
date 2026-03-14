@@ -485,3 +485,36 @@ fn resolve_proxy_target_rejects_wrong_methods_for_read_only_alias_routes() {
         );
     }
 }
+
+#[test]
+fn resolve_proxy_target_rejects_wrong_methods_for_write_alias_routes() {
+    for (method, path) in [
+        ("GET", "/v1/agents/codexw-lab/sessions/sess_1/attach"),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/attachment/renew",
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/attachment/release",
+        ),
+        ("GET", "/v1/agents/codexw-lab/sessions/sess_1/client-events"),
+        ("GET", "/v1/agents/codexw-lab/sessions/sess_1/turns"),
+        ("GET", "/v1/agents/codexw-lab/sessions/sess_1/interrupt"),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells/%40api.http/send",
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/run",
+        ),
+        ("DELETE", "/v1/agents/codexw-lab/sessions"),
+        ("DELETE", "/v1/agents/codexw-lab/sessions/sess_1/shells"),
+    ] {
+        assert!(
+            resolve_proxy_target(method, path, "codexw-lab").is_none(),
+            "expected write alias route to reject wrong method for {method} {path}"
+        );
+    }
+}

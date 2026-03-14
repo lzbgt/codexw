@@ -137,6 +137,9 @@ the real connector binary:
   proxy SSE event routes
 - method-sensitive alias resolution for read-only broker routes such as session
   inspect, transcript, orchestration, services, and capabilities
+- method-sensitive alias resolution for write-only broker routes such as
+  attach, renew/release, turn start, client-events, shell/service actions, and
+  the `/sessions` collection root
 - explicit rejection of malformed percent-encoded broker alias path segments
 - broker-style SSE consumption
 - broker-style SSE resume through `Last-Event-ID`

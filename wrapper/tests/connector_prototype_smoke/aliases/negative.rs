@@ -269,3 +269,49 @@ fn connector_returns_not_found_for_wrong_method_on_read_only_orchestration_alias
 
     Ok(())
 }
+
+#[test]
+fn connector_returns_not_found_for_wrong_method_on_write_alias_route() -> Result<()> {
+    let local_api_port = reserve_port()?;
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_api_port)?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/sessions/sess_1/attachment/renew HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(response.starts_with("HTTP/1.1 404 Not Found\r\n"));
+    assert!(response.contains("\"code\":\"not_found\""));
+    assert!(response.contains("unknown connector route"));
+
+    Ok(())
+}
+
+#[test]
+fn connector_returns_not_found_for_wrong_method_on_sessions_root_alias() -> Result<()> {
+    let local_api_port = reserve_port()?;
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_api_port)?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let response = send_raw_request(
+        connector_port,
+        concat!(
+            "DELETE /v1/agents/codexw-lab/sessions HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(response.starts_with("HTTP/1.1 404 Not Found\r\n"));
+    assert!(response.contains("\"code\":\"not_found\""));
+    assert!(response.contains("unknown connector route"));
+
+    Ok(())
+}
