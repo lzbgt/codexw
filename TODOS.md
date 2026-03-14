@@ -19,6 +19,7 @@ Primary source docs:
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
+- [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md)
 - [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
 - [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 - [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md)
@@ -70,6 +71,7 @@ Concrete tasks:
 Primary source:
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
+- [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md)
 - [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
 - [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 - [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md)

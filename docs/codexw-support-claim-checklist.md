@@ -109,6 +109,7 @@ When broker-facing wording changes, review:
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
+- [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
@@ -143,6 +144,8 @@ Confirm all of the following:
 - host-examination docs still distinguish:
   - already-supported shell/service/transcript/event remote inspection
   - design-only artifact contract work
+- the implementer-facing handoff doc for the sibling `~/work/agent` workspace
+  still matches the current support, proof, and boundary docs
 - the older broker decision / compatibility / session-identity / client-policy
   docs still describe the same client surface as the status / support / proof
   docs instead of lagging behind with narrower historical wording

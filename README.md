@@ -35,6 +35,9 @@ For the design sketch of that remaining broker-visible artifact gap, see
 [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md).
 For the implementation-facing delivery order for that artifact track, see
 [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md).
+For the short implementer-facing handoff for the sibling `~/work/agent`
+workspace, see
+[docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
 For a concise implementation/proof snapshot of the broker/local-API adapter,

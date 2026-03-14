@@ -18,6 +18,9 @@ above the narrower route, adapter, and proof docs.
 
 For the workflow-level read on what remote clients can already inspect today,
 see [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
+For the short implementer-facing handoff to the sibling `~/work/agent`
+workspace, see
+[codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
 ## External Baseline
 

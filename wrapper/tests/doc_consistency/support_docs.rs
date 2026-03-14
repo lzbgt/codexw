@@ -30,6 +30,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
     let broker_client_arch = read_repo_file("docs/codexw-broker-client-architecture.md");
     let broker_client_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
+    let broker_handoff = read_repo_file("docs/codexw-broker-integration-handoff.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
 
     for file in [
@@ -53,6 +54,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-client-architecture.md",
         "docs/codexw-broker-client-fixture.md",
         "docs/codexw-broker-host-examination-matrix.md",
+        "docs/codexw-broker-integration-handoff.md",
         "docs/codexw-broker-artifact-contract-sketch.md",
         "docs/codexw-broker-artifact-implementation-plan.md",
         "docs/codexw-workspace-tool-policy.md",
@@ -79,6 +81,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &readme,
         "docs/codexw-broker-host-examination-matrix.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-broker-integration-handoff.md",
         "README.md",
     );
     assert_contains(
@@ -128,6 +135,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &todos,
         "docs/codexw-broker-host-examination-matrix.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-broker-integration-handoff.md",
         "TODOS.md",
     );
     assert_contains(
@@ -382,6 +394,26 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-host-examination-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_handoff,
+        "sibling `~/work/agent` workspace",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "shell-first",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "artifact list/detail/content api",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains(
+        &broker_handoff,
+        "codexw-broker-artifact-implementation-plan.md",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
         &broker_client_fixture,
         "shell-first host examination",
         "docs/codexw-broker-client-fixture.md",
@@ -464,6 +496,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &checklist,
+        "codexw-broker-integration-handoff.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
         "codexw-broker-client-architecture.md",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -535,6 +572,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &checklist,
         "fixture docs still describe shell-first host examination",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "sibling `~/work/agent` workspace",
         "docs/codexw-support-claim-checklist.md",
     );
 }
