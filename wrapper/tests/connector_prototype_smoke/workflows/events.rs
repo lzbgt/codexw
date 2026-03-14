@@ -517,11 +517,13 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "tool": "background_shell_start",
                                     "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                     "observation_state": "wrapper_background_shell_streaming_output",
+                                    "output_state": "recent_output_observed",
                                     "observed_background_shell_job": {
                                         "job_id": "bg-7",
                                         "status": "running",
                                         "command": "python stage2.py --quick",
                                         "total_lines": 3,
+                                        "last_output_age_seconds": 2,
                                         "recent_lines": ["stage1 ok", "stage2 running"]
                                     },
                                     "elapsed_seconds": 21,
@@ -547,11 +549,14 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "source_call_id": "call_123",
                                         "tool": "background_shell_start",
                                         "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                        "observation_state": "wrapper_background_shell_streaming_output",
+                                        "output_state": "recent_output_observed",
                                         "observed_background_shell_job": {
                                             "job_id": "bg-7",
                                             "status": "running",
                                             "command": "python stage2.py --quick",
                                             "total_lines": 3,
+                                            "last_output_age_seconds": 2,
                                             "recent_lines": ["stage1 ok", "stage2 running"]
                                         },
                                         "runtime_elapsed_seconds": 21,
@@ -567,6 +572,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "source_call_id": "call_456",
                                         "tool": "background_shell_start",
                                         "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                        "observation_state": Value::Null,
+                                        "output_state": Value::Null,
                                         "observed_background_shell_job": Value::Null,
                                         "runtime_elapsed_seconds": 21,
                                         "state_elapsed_seconds": 6,
@@ -616,11 +623,13 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "tool": "background_shell_start",
                                     "summary": "arguments= command=sleep 5 tool=background_shell_start",
                                     "observation_state": "wrapper_background_shell_streaming_output",
+                                    "output_state": "recent_output_observed",
                                     "observed_background_shell_job": {
                                         "job_id": "bg-7",
                                         "status": "running",
                                         "command": "python stage2.py --quick",
                                         "total_lines": 3,
+                                        "last_output_age_seconds": 2,
                                         "recent_lines": ["stage1 ok", "stage2 running"]
                                     },
                                     "elapsed_seconds": 21,
@@ -646,11 +655,14 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "source_call_id": "call_123",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observation_state": "wrapper_background_shell_streaming_output",
+                                "output_state": "recent_output_observed",
                                 "observed_background_shell_job": {
                                     "job_id": "bg-7",
                                     "status": "running",
                                     "command": "python stage2.py --quick",
                                     "total_lines": 3,
+                                    "last_output_age_seconds": 2,
                                     "recent_lines": ["stage1 ok", "stage2 running"]
                                 },
                                 "runtime_elapsed_seconds": 21,
@@ -666,6 +678,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "source_call_id": "call_456",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observation_state": Value::Null,
+                                "output_state": Value::Null,
                                 "observed_background_shell_job": Value::Null,
                                 "runtime_elapsed_seconds": 21,
                                 "state_elapsed_seconds": 6,
@@ -748,11 +762,13 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "tool": "background_shell_start",
                             "summary": "arguments= command=sleep 5 tool=background_shell_start",
                             "observation_state": "wrapper_background_shell_terminal_without_tool_response",
+                            "output_state": "stale_output_observed",
                             "observed_background_shell_job": {
                                 "job_id": "bg-7",
                                 "status": "failed",
                                 "command": "python stage2.py --quick",
                                 "total_lines": 5,
+                                "last_output_age_seconds": 75,
                                 "recent_lines": ["stage1 ok", "hang suspected", "still no tool response"]
                             },
                             "elapsed_seconds": 75,
@@ -778,11 +794,14 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "source_call_id": "call_123",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observation_state": "wrapper_background_shell_terminal_without_tool_response",
+                                "output_state": "stale_output_observed",
                                 "observed_background_shell_job": {
                                     "job_id": "bg-7",
                                     "status": "failed",
                                     "command": "python stage2.py --quick",
                                     "total_lines": 5,
+                                    "last_output_age_seconds": 75,
                                     "recent_lines": ["stage1 ok", "hang suspected", "still no tool response"]
                                 },
                                 "runtime_elapsed_seconds": 75,
@@ -798,6 +817,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "source_call_id": "call_456",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observation_state": Value::Null,
+                                "output_state": Value::Null,
                                 "observed_background_shell_job": Value::Null,
                                 "runtime_elapsed_seconds": 30,
                                 "state_elapsed_seconds": 30,
@@ -869,7 +890,9 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(create_response.contains("\"supervision_notice\""));
     assert!(create_response.contains("\"owner\":\"wrapper_background_shell\""));
     assert!(create_response.contains("\"source_call_id\":\"call_123\""));
+    assert!(create_response.contains("\"output_state\":\"recent_output_observed\""));
     assert!(create_response.contains("\"observed_background_shell_job\""));
+    assert!(create_response.contains("\"last_output_age_seconds\":2"));
     assert!(create_response.contains("\"job_id\":\"bg-7\""));
     assert!(create_response.contains("\"command\":\"python stage2.py --quick\""));
 
@@ -885,7 +908,9 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("\"owner\":\"wrapper_background_shell\""));
     assert!(initial_events.contains("\"source_call_id\":\"call_123\""));
     assert!(initial_events.contains("wrapper_background_shell_streaming_output"));
+    assert!(initial_events.contains("\"output_state\":\"recent_output_observed\""));
     assert!(initial_events.contains("\"observed_background_shell_job\""));
+    assert!(initial_events.contains("\"last_output_age_seconds\":2"));
     assert!(initial_events.contains("\"job_id\":\"bg-7\""));
     assert!(initial_events.contains("\"status\":\"running\""));
     assert!(initial_events.contains("\"command\":\"python stage2.py --quick\""));
@@ -912,7 +937,9 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"owner\":\"wrapper_background_shell\""));
     assert!(resumed_events.contains("\"source_call_id\":\"call_123\""));
     assert!(resumed_events.contains("wrapper_background_shell_terminal_without_tool_response"));
+    assert!(resumed_events.contains("\"output_state\":\"stale_output_observed\""));
     assert!(resumed_events.contains("\"observed_background_shell_job\""));
+    assert!(resumed_events.contains("\"last_output_age_seconds\":75"));
     assert!(resumed_events.contains("\"job_id\":\"bg-7\""));
     assert!(resumed_events.contains("\"status\":\"failed\""));
     assert!(resumed_events.contains("\"command\":\"python stage2.py --quick\""));

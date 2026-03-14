@@ -95,6 +95,7 @@ fn append_output_line(
     };
     let mut state = job.lock().expect("background shell job lock");
     state.total_lines += 1;
+    state.last_output_at = Some(std::time::Instant::now());
     let cursor = state.total_lines;
     if !state.service_ready
         && let Some(pattern) = state.ready_pattern.as_deref()

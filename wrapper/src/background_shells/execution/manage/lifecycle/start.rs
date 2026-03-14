@@ -113,6 +113,7 @@ impl BackgroundShellManager {
             stdin: Some(stdin),
             status: BackgroundShellJobStatus::Running,
             total_lines: 0,
+            last_output_at: None,
             lines: Default::default(),
         }));
 

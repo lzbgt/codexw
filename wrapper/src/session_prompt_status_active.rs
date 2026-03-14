@@ -98,15 +98,21 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
                     .latest_output_preview()
                     .map(|line| format!("; out {}", summarize_inline(line)))
                     .unwrap_or_default();
+                let output_state = format_output_state_detail(observation.output_state, job);
                 format!(
-                    "{}; job {} {}{}",
+                    "{}; {}; job {} {}{}",
                     observation.observation_state.prompt_label(),
+                    output_state,
                     job.job_id,
                     job.status,
                     last_output
                 )
             }
-            None => observation.observation_state.prompt_label().to_string(),
+            None => format!(
+                "{}; {}",
+                observation.observation_state.prompt_label(),
+                observation.output_state.prompt_label()
+            ),
         };
         let detail = format!(
             "{detail} [{}; {}; next check {}]",
@@ -134,6 +140,30 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
         )
     };
     Some((abandoned.timed_out_at, detail))
+}
+
+fn format_output_state_detail(
+    output_state: crate::state::AsyncToolOutputState,
+    job: &crate::state::AsyncToolObservedBackgroundShellJob,
+) -> String {
+    match (output_state, job.last_output_age) {
+        (crate::state::AsyncToolOutputState::RecentOutputObserved, Some(age)) => {
+            format!("{} {}", output_state.prompt_label(), summarize_age(age))
+        }
+        (crate::state::AsyncToolOutputState::StaleOutputObserved, Some(age)) => {
+            format!("{} {}", output_state.prompt_label(), summarize_age(age))
+        }
+        _ => output_state.prompt_label().to_string(),
+    }
+}
+
+fn summarize_age(age: std::time::Duration) -> String {
+    let secs = age.as_secs();
+    if secs < 60 {
+        format!("{secs}s ago")
+    } else {
+        format!("{}m{:02}s ago", secs / 60, secs % 60)
+    }
 }
 
 fn append_async_backlog_suffix(state: &AppState, detail: String) -> String {

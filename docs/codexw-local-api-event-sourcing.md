@@ -201,6 +201,8 @@ At:
 - active-worker observation-state or next-check-horizon changes, so clients can
   tell whether the orchestrator is still awaiting any completion/output and
   when it plans to inspect that worker again
+- active-worker output-state or output-age changes, so clients can distinguish
+  `recent_output_observed` from `stale_output_observed` without prompt scraping
 - owner-lane changes for active async supervision, so clients can tell that the
   unresolved work belongs to the wrapper-owned `background_shell_*` lane rather
   than inventing a generic background-task model
@@ -220,7 +222,8 @@ Likely emission owners:
 - response/notification handlers that mutate status-relevant fields
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
   current supervision-classification, `async_tool_backpressure`,
-  `async_tool_workers`, and `supervision_notice` slice
+  `async_tool_workers`, `output_state` / `last_output_age_seconds`, and
+  `supervision_notice` slice
 
 ### Emit `orchestration.updated`
 

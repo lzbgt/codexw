@@ -31,6 +31,7 @@ impl BackgroundShellManager {
 
 fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShellJobSnapshot {
     let state = job.lock().expect("background shell job lock");
+    let now = std::time::Instant::now();
     BackgroundShellJobSnapshot {
         id: state.id.clone(),
         pid: state.pid,
@@ -51,6 +52,9 @@ fn snapshot_from_job(job: &Arc<Mutex<BackgroundShellJobState>>) -> BackgroundShe
         status: status_label(&state.status).to_string(),
         exit_code: exit_code(&state.status),
         total_lines: state.total_lines,
+        last_output_age: state
+            .last_output_at
+            .map(|last_output_at| now.saturating_duration_since(last_output_at)),
         recent_lines: state
             .lines
             .iter()

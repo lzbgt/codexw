@@ -8,6 +8,7 @@ use super::AppState;
 use super::AsyncToolObservation;
 use super::AsyncToolObservationState;
 use super::AsyncToolObservedBackgroundShellJob;
+use super::AsyncToolOutputState;
 use super::AsyncToolWorkerLifecycleState;
 use super::AsyncToolWorkerStatus;
 use super::ConversationMessage;
@@ -269,6 +270,7 @@ impl AppState {
                     hard_timeout: activity.hard_timeout,
                     supervision_classification: activity.supervision_class(),
                     observation_state: Some(observation.observation_state),
+                    output_state: Some(observation.output_state),
                     observed_background_shell_job: observation.observed_background_shell_job,
                     next_health_check_in: Some(activity.next_health_check_in()),
                 }
@@ -289,6 +291,7 @@ impl AppState {
                         hard_timeout: request.hard_timeout,
                         supervision_classification: None,
                         observation_state: None,
+                        output_state: None,
                         observed_background_shell_job: None,
                         next_health_check_in: None,
                     }),
@@ -331,6 +334,7 @@ impl AppState {
                     supervision_classification:
                         super::AsyncToolActivity::supervision_class_at_elapsed(elapsed),
                     observation_state: observation.observation_state,
+                    output_state: observation.output_state,
                     observed_background_shell_job: observation.observed_background_shell_job,
                 })
             })
@@ -435,9 +439,14 @@ fn async_tool_observation_from_snapshots(
         Some(_) => AsyncToolObservationState::WrapperBackgroundShellStartedNoOutputYet,
         None => AsyncToolObservationState::NoJobOrOutputObservedYet,
     };
+    let output_state = observed_background_shell_job
+        .as_ref()
+        .map(|job| job.output_state())
+        .unwrap_or(AsyncToolOutputState::NoOutputObservedYet);
     AsyncToolObservation {
         owner_kind: activity.owner_kind,
         observation_state,
+        output_state,
         observed_background_shell_job,
     }
 }

@@ -95,6 +95,9 @@ That same slice should expose two more explicit inspection facts:
 - when the owner is the wrapper background-shell lane, the matched `bg-*` job
   id, job status, command, and recent output preview whenever those facts are
   available
+- explicit output freshness facts, such as `no_output_observed_yet`,
+  `recent_output_observed`, or `stale_output_observed`, plus output age when a
+  correlated shell job has produced output already
 
 The first recommended actions should stay narrow and operator-safe:
 
@@ -160,6 +163,10 @@ first-class safety issue:
   `background_shell_start` requests to the started `bg-*` shell job via origin
   `callId` so the runtime can report real job/output facts instead of only a
   generic spinner
+- when a correlated `bg-*` job exists, the same lane should expose output
+  freshness through `output_state` and a concrete age fact such as
+  `last_output_age_seconds`, so operators and broker clients can distinguish
+  active streaming from silent stalls without scraping prose
 - a timed-out detached worker may still return later, but its late response
   must be ignored for protocol correctness
 - the runtime should keep counting that abandoned async worker until the late

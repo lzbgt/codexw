@@ -101,12 +101,20 @@ fn session_snapshot_is_returned_with_valid_token() {
         "wrapper_background_shell_streaming_output"
     );
     assert_eq!(
+        body["async_tool_supervision"]["output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
         body["async_tool_supervision"]["observed_background_shell_job"]["job_id"],
         "bg-1"
     );
     assert_eq!(
         body["async_tool_supervision"]["observed_background_shell_job"]["command"],
         "npm run dev"
+    );
+    assert_eq!(
+        body["async_tool_supervision"]["observed_background_shell_job"]["last_output_age_seconds"],
+        2
     );
     assert_eq!(body["async_tool_supervision"]["next_check_in_seconds"], 9);
     assert_eq!(
@@ -132,6 +140,10 @@ fn session_snapshot_is_returned_with_valid_token() {
         "wrapper_background_shell_streaming_output"
     );
     assert_eq!(
+        body["async_tool_workers"][0]["output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
         body["async_tool_workers"][0]["owner"],
         "wrapper_background_shell"
     );
@@ -139,6 +151,10 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["async_tool_workers"][0]["observed_background_shell_job"]["job_id"],
         "bg-1"
+    );
+    assert_eq!(
+        body["async_tool_workers"][0]["observed_background_shell_job"]["last_output_age_seconds"],
+        2
     );
     assert_eq!(body["async_tool_workers"][0]["next_check_in_seconds"], 9);
     assert_eq!(
@@ -162,6 +178,10 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["session"]["async_tool_workers"][0]["observation_state"],
         "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["session"]["async_tool_workers"][0]["output_state"],
+        "recent_output_observed"
     );
     assert_eq!(
         body["session"]["async_tool_workers"][0]["owner"],
@@ -223,6 +243,10 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(
         body["session"]["async_tool_supervision"]["observation_state"],
         "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["session"]["async_tool_supervision"]["output_state"],
+        "recent_output_observed"
     );
     assert_eq!(
         body["session"]["async_tool_supervision"]["recovery_policy"]["kind"],

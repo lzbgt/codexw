@@ -84,10 +84,20 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             "async obs       {}",
             observation.observation_state.label()
         ));
+        lines.push(format!(
+            "async out       {}",
+            observation.output_state.label()
+        ));
         if let Some(job) = observation.observed_background_shell_job.as_ref() {
             lines.push(format!("async job       {} {}", job.job_id, job.status));
             lines.push(format!("async cmd       {}", summarize_text(&job.command)));
             lines.push(format!("async lines     {}", job.total_lines));
+            if let Some(age) = job.last_output_age {
+                lines.push(format!(
+                    "async out age   {}",
+                    format_elapsed(Some(std::time::Instant::now() - age))
+                ));
+            }
             if let Some(output) = job.latest_output_preview() {
                 lines.push(format!("async output    {}", summarize_text(output)));
             }
@@ -117,9 +127,18 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         if let Some(observation_state) = worker.observation_state {
             lines.push(format!("async worker ob {}", observation_state.label()));
         }
+        if let Some(output_state) = worker.output_state {
+            lines.push(format!("async worker os {}", output_state.label()));
+        }
         if let Some(job) = worker.observed_background_shell_job.as_ref() {
             lines.push(format!("async worker jb {} {}", job.job_id, job.status));
             lines.push(format!("async worker ln {}", job.total_lines));
+            if let Some(age) = job.last_output_age {
+                lines.push(format!(
+                    "async worker oa {}",
+                    format_elapsed(Some(std::time::Instant::now() - age))
+                ));
+            }
             if let Some(output) = job.latest_output_preview() {
                 lines.push(format!("async worker ot {}", summarize_text(output)));
             }

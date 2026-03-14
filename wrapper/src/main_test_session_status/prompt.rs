@@ -58,6 +58,7 @@ fn prompt_status_mentions_async_tool_activity_when_present() {
     assert!(rendered.contains("async tool background_shell_start"));
     assert!(rendered.contains("background_shell_start"));
     assert!(rendered.contains("awaiting shell start/output"));
+    assert!(rendered.contains("no output yet"));
     assert!(rendered.contains("next check"));
 }
 
@@ -110,7 +111,7 @@ fn prompt_status_mentions_correlated_background_job_output_when_observed() {
         .background_shells
         .start_from_tool_with_context(
             &json!({
-                "command": "printf 'READY\\n'; sleep 2",
+                "command": "echo READY; sleep 2",
                 "intent": "observation",
             }),
             "/tmp",
@@ -120,16 +121,15 @@ fn prompt_status_mentions_correlated_background_job_output_when_observed() {
                 source_tool: Some("background_shell_start".to_string()),
             },
         );
-    for _ in 0..20 {
-        let rendered = state
-            .orchestration
-            .background_shells
-            .poll_job("bg-1", 0, 20)
-            .unwrap_or_default();
-        if rendered.contains("READY") {
-            break;
-        }
-        std::thread::sleep(Duration::from_millis(25));
+    if let Ok(job) = state.orchestration.background_shells.lookup_job("bg-1") {
+        let mut job = job.lock().expect("background shell job");
+        job.total_lines = 1;
+        job.last_output_at = Some(Instant::now());
+        job.lines
+            .push_back(crate::background_shells::BackgroundShellOutputLine {
+                cursor: 1,
+                text: "READY".to_string(),
+            });
     }
     let observation = state.async_tool_observation(
         state
@@ -140,8 +140,10 @@ fn prompt_status_mentions_correlated_background_job_output_when_observed() {
 
     let rendered = render_prompt_status(&state);
 
+    assert_eq!(observation.output_state.label(), "recent_output_observed");
     assert!(rendered.contains("wrapper bg shell"));
     assert!(rendered.contains("job bg-1"));
+    assert!(rendered.contains("recent output"));
     assert!(rendered.contains("READY"));
     assert!(observation.observed_background_shell_job.is_some());
 }

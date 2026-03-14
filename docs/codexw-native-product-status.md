@@ -93,6 +93,8 @@ The implemented native-side product already has:
   for the visible tool summary / shell command
 - structured inspection visibility for that active async work, including
   observation state plus the orchestrator's next planned health check horizon
+- explicit output-freshness visibility for correlated wrapper shell work,
+  including `output_state` and `last_output_age_seconds`
 - correlation from wrapper-owned `background_shell_start` requests to the
   observed `bg-*` shell job via source `callId`, so prompt/status/local-API
   surfaces can show job id, job status, command, and recent output preview

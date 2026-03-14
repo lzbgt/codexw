@@ -17,6 +17,7 @@ pub(crate) use types::AsyncToolHealthCheck;
 pub(crate) use types::AsyncToolObservation;
 pub(crate) use types::AsyncToolObservationState;
 pub(crate) use types::AsyncToolObservedBackgroundShellJob;
+pub(crate) use types::AsyncToolOutputState;
 pub(crate) use types::AsyncToolOwnerKind;
 pub(crate) use types::AsyncToolSupervisionClass;
 pub(crate) use types::AsyncToolWorkerLifecycleState;

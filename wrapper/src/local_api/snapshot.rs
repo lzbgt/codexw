@@ -58,6 +58,7 @@ pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) observation_state: String,
+    pub(crate) output_state: String,
     pub(crate) observed_background_shell_job: Option<LocalApiObservedBackgroundShellJob>,
     pub(crate) next_check_in_seconds: u64,
     pub(crate) elapsed_seconds: u64,
@@ -86,6 +87,7 @@ pub(crate) struct LocalApiAsyncToolWorker {
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) observation_state: Option<String>,
+    pub(crate) output_state: Option<String>,
     pub(crate) observed_background_shell_job: Option<LocalApiObservedBackgroundShellJob>,
     pub(crate) next_check_in_seconds: Option<u64>,
     pub(crate) runtime_elapsed_seconds: u64,
@@ -110,6 +112,7 @@ pub(crate) struct LocalApiObservedBackgroundShellJob {
     pub(crate) status: String,
     pub(crate) command: String,
     pub(crate) total_lines: u64,
+    pub(crate) last_output_age_seconds: Option<u64>,
     pub(crate) recent_lines: Vec<String>,
 }
 
@@ -220,6 +223,7 @@ pub(crate) struct LocalApiBackgroundShellJob {
     pub(crate) status: String,
     pub(crate) exit_code: Option<i32>,
     pub(crate) total_lines: u64,
+    pub(crate) last_output_age_seconds: Option<u64>,
     pub(crate) recent_lines: Vec<String>,
 }
 
@@ -374,6 +378,7 @@ fn async_tool_supervision_snapshot(
         tool: activity.tool.clone(),
         summary: activity.summary.clone(),
         observation_state: observation.observation_state.label().to_string(),
+        output_state: observation.output_state.label().to_string(),
         observed_background_shell_job: observation
             .observed_background_shell_job
             .map(local_api_observed_background_shell_job),
@@ -412,6 +417,9 @@ fn async_tool_workers_snapshot(state: &AppState) -> Vec<LocalApiAsyncToolWorker>
             observation_state: worker
                 .observation_state
                 .map(|observation_state| observation_state.label().to_string()),
+            output_state: worker
+                .output_state
+                .map(|output_state| output_state.label().to_string()),
             observed_background_shell_job: worker
                 .observed_background_shell_job
                 .map(local_api_observed_background_shell_job),
@@ -456,6 +464,7 @@ fn local_api_observed_background_shell_job(
         status: job.status,
         command: job.command,
         total_lines: job.total_lines,
+        last_output_age_seconds: job.last_output_age.map(|value| value.as_secs()),
         recent_lines: job.recent_lines,
     }
 }
@@ -691,6 +700,7 @@ pub(crate) fn local_api_shell_job(
         status: snapshot.status,
         exit_code: snapshot.exit_code,
         total_lines: snapshot.total_lines,
+        last_output_age_seconds: snapshot.last_output_age.map(|value| value.as_secs()),
         recent_lines: snapshot.recent_lines,
     }
 }

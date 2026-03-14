@@ -82,11 +82,13 @@ Candidate envelope:
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "observation_state": "wrapper_background_shell_streaming_output",
+      "output_state": "recent_output_observed",
       "observed_background_shell_job": {
         "job_id": "bg-1",
         "status": "running",
         "command": "npm run dev",
         "total_lines": 1,
+        "last_output_age_seconds": 2,
         "recent_lines": ["READY"]
       },
       "next_check_in_seconds": 9,
@@ -272,11 +274,13 @@ Optional means “present only when semantically relevant,” not “randomly om
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
       "observation_state": "wrapper_background_shell_terminal_without_tool_response",
+      "output_state": "stale_output_observed",
       "observed_background_shell_job": {
         "job_id": "bg-1",
         "status": "failed",
         "command": "npm run dev",
         "total_lines": 3,
+        "last_output_age_seconds": 75,
         "recent_lines": ["boom"]
       },
       "next_check_in_seconds": 30,
@@ -301,8 +305,9 @@ should currently be refused, plus `async_tool_workers` so a remote agent
 backend can inspect dedicated worker thread names and lifecycle states such as
 `running` and `abandoned_after_timeout` without scraping prompt text, plus
 explicit owner-lane state such as `wrapper_background_shell`, source `callId`,
-and correlated `bg-*` job facts when a wrapper-owned
-`background_shell_start` request has already produced a shell job.
+correlated `bg-*` job facts when a wrapper-owned `background_shell_start`
+request has already produced a shell job, plus output freshness through
+`output_state` and `last_output_age_seconds`.
 
 ## Exclusions
 

@@ -138,12 +138,14 @@ backend can inspect the dedicated worker-thread lane directly:
 - current observation state such as
   `no_job_or_output_observed_yet` or
   `wrapper_background_shell_streaming_output`
+- current output freshness state such as `no_output_observed_yet`,
+  `recent_output_observed`, or `stale_output_observed`
 - next planned orchestrator health check horizon in seconds
 - explicit owner lane such as `wrapper_background_shell`
 - source call id when available
 - when the owner is the wrapper background-shell lane, the matched `bg-*` job
   snapshot facts needed for operator inspection:
-  job id, status, command, line count, and recent output preview
+  job id, status, command, line count, output age, and recent output preview
 
 The same audit trail should keep the concrete tool summary or shell command
 visible in periodic inspection notices, so the operator is not left with only

@@ -175,6 +175,7 @@ pub(crate) enum SupervisionNoticeTransition {
 
 pub(crate) const ASYNC_TOOL_SLOW_THRESHOLD: Duration = Duration::from_secs(15);
 pub(crate) const ASYNC_TOOL_WEDGED_THRESHOLD: Duration = Duration::from_secs(60);
+pub(crate) const ASYNC_TOOL_OUTPUT_STALE_THRESHOLD: Duration = Duration::from_secs(30);
 pub(crate) const MAX_ABANDONED_ASYNC_TOOL_REQUESTS: usize = 2;
 #[cfg(test)]
 pub(crate) const DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
@@ -248,6 +249,7 @@ pub(crate) struct AsyncToolHealthCheck {
     pub(crate) elapsed: Duration,
     pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
     pub(crate) observation_state: AsyncToolObservationState,
+    pub(crate) output_state: AsyncToolOutputState,
     pub(crate) observed_background_shell_job: Option<AsyncToolObservedBackgroundShellJob>,
 }
 
@@ -257,6 +259,31 @@ pub(crate) enum AsyncToolObservationState {
     WrapperBackgroundShellStartedNoOutputYet,
     WrapperBackgroundShellStreamingOutput,
     WrapperBackgroundShellTerminalWithoutToolResponse,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AsyncToolOutputState {
+    NoOutputObservedYet,
+    RecentOutputObserved,
+    StaleOutputObserved,
+}
+
+impl AsyncToolOutputState {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Self::NoOutputObservedYet => "no_output_observed_yet",
+            Self::RecentOutputObserved => "recent_output_observed",
+            Self::StaleOutputObserved => "stale_output_observed",
+        }
+    }
+
+    pub(crate) fn prompt_label(self) -> &'static str {
+        match self {
+            Self::NoOutputObservedYet => "no output yet",
+            Self::RecentOutputObserved => "recent output",
+            Self::StaleOutputObserved => "stale output",
+        }
+    }
 }
 
 impl AsyncToolObservationState {
@@ -293,6 +320,7 @@ pub(crate) struct AsyncToolObservedBackgroundShellJob {
     pub(crate) status: String,
     pub(crate) command: String,
     pub(crate) total_lines: u64,
+    pub(crate) last_output_age: Option<Duration>,
     pub(crate) recent_lines: Vec<String>,
 }
 
@@ -303,6 +331,7 @@ impl AsyncToolObservedBackgroundShellJob {
             status: snapshot.status,
             command: snapshot.command,
             total_lines: snapshot.total_lines,
+            last_output_age: snapshot.last_output_age,
             recent_lines: snapshot.recent_lines,
         }
     }
@@ -314,12 +343,25 @@ impl AsyncToolObservedBackgroundShellJob {
             .find(|line| !line.trim().is_empty())
             .map(String::as_str)
     }
+
+    pub(crate) fn output_state(&self) -> AsyncToolOutputState {
+        if self.total_lines == 0 {
+            return AsyncToolOutputState::NoOutputObservedYet;
+        }
+        match self.last_output_age {
+            Some(age) if age <= ASYNC_TOOL_OUTPUT_STALE_THRESHOLD => {
+                AsyncToolOutputState::RecentOutputObserved
+            }
+            Some(_) | None => AsyncToolOutputState::StaleOutputObserved,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AsyncToolObservation {
     pub(crate) owner_kind: AsyncToolOwnerKind,
     pub(crate) observation_state: AsyncToolObservationState,
+    pub(crate) output_state: AsyncToolOutputState,
     pub(crate) observed_background_shell_job: Option<AsyncToolObservedBackgroundShellJob>,
 }
 
@@ -362,6 +404,7 @@ pub(crate) struct AsyncToolWorkerStatus {
     pub(crate) hard_timeout: Duration,
     pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
     pub(crate) observation_state: Option<AsyncToolObservationState>,
+    pub(crate) output_state: Option<AsyncToolOutputState>,
     pub(crate) observed_background_shell_job: Option<AsyncToolObservedBackgroundShellJob>,
     pub(crate) next_health_check_in: Option<Duration>,
 }

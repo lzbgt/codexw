@@ -4,6 +4,8 @@ use std::process::ChildStdin;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicU64;
+use std::time::Duration;
+use std::time::Instant;
 
 use super::services::BackgroundShellInteractionRecipe;
 use super::services::BackgroundShellServiceReadiness;
@@ -84,6 +86,7 @@ pub(crate) struct BackgroundShellJobSnapshot {
     pub(crate) status: String,
     pub(crate) exit_code: Option<i32>,
     pub(crate) total_lines: u64,
+    pub(crate) last_output_age: Option<Duration>,
     pub(crate) recent_lines: Vec<String>,
 }
 
@@ -108,6 +111,7 @@ pub(crate) struct BackgroundShellJobState {
     pub(crate) stdin: Option<ChildStdin>,
     pub(crate) status: BackgroundShellJobStatus,
     pub(crate) total_lines: u64,
+    pub(crate) last_output_at: Option<Instant>,
     pub(crate) lines: VecDeque<BackgroundShellOutputLine>,
 }
 
