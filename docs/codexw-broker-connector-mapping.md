@@ -191,6 +191,13 @@ separated in:
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
+It also should not imply broker-visible project-assignment or dependency-edge
+routes exist before the local API collaboration-metadata track is actually
+implemented. That track is now explicitly separated in:
+
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+- [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)
+
 ## Unsupported Or Deferred Areas
 
 The connector should explicitly reject or defer:
@@ -203,6 +210,9 @@ The connector should explicitly reject or defer:
 - any artifact index/detail/content route until the local API artifact layer
   exists and the adapter contract/policy docs explicitly add it to the
   supported surface
+- any project-assignment or dependency-edge route until the local API
+  collaboration-metadata layer exists and the adapter contract/policy docs
+  explicitly add it to the supported surface
 
 ## Initial Adapter Deliverable
 

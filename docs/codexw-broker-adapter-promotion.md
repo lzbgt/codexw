@@ -45,6 +45,11 @@ shell/service/capability surface. It does not automatically include the
 design-only artifact track documented in
 [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md).
+It also does not automatically include the design-only project/dependency
+collaboration lane documented in
+[codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+and
+[codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md).
 
 ## Required Contract Areas
 
@@ -144,6 +149,8 @@ Promotion requires a stable statement of what is intentionally unsupported:
 - parity assumptions `codexw` does not intend to honor
 - artifact index/detail/content routes until they are explicitly implemented,
   mapped, and proven
+- project-assignment and dependency-edge routes until they are explicitly
+  implemented, mapped, and proven
 
 That boundary should remain aligned with
 [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md).

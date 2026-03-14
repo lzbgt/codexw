@@ -1,6 +1,7 @@
 pub(super) use super::dynamic_tool_specs;
 pub(super) use super::execute_dynamic_tool_call;
 pub(super) use super::execute_dynamic_tool_call_with_state;
+pub(super) use super::is_background_shell_tool;
 pub(super) use crate::state::AppState;
 pub(super) use serde_json::json;
 
@@ -44,6 +45,15 @@ fn dynamic_tool_specs_exclude_workspace_tools() {
             "background_shell_clean"
         ]
     );
+}
+
+#[test]
+fn background_shell_tools_are_classified_separately_from_other_dynamic_tools() {
+    assert!(is_background_shell_tool("background_shell_start"));
+    assert!(is_background_shell_tool("background_shell_wait_ready"));
+    assert!(is_background_shell_tool("background_shell_clean"));
+    assert!(!is_background_shell_tool("orchestration_status"));
+    assert!(!is_background_shell_tool("workspace_read_file"));
 }
 
 #[test]

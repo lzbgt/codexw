@@ -1,10 +1,12 @@
 use anyhow::Result;
 use std::process::ChildStdin;
+use std::sync::mpsc;
 
 use crate::Cli;
 use crate::output::Output;
 use crate::rpc;
 use crate::rpc::IncomingMessage;
+use crate::runtime_event_sources::AppEvent;
 use crate::runtime_process::StartMode;
 use crate::state::AppState;
 
@@ -29,6 +31,7 @@ pub(crate) fn process_server_line(
     state: &mut AppState,
     output: &mut Output,
     writer: &mut ChildStdin,
+    tx: &mpsc::Sender<AppEvent>,
     start_after_initialize: &mut Option<StartMode>,
 ) -> Result<()> {
     if state.raw_json {
@@ -45,7 +48,7 @@ pub(crate) fn process_server_line(
             start_after_initialize,
         )?,
         Ok(IncomingMessage::Request(request)) => {
-            requests::handle_server_request(request, cli, resolved_cwd, state, output, writer)?;
+            requests::handle_server_request(request, cli, resolved_cwd, state, output, writer, tx)?;
         }
         Ok(IncomingMessage::Notification(notification)) => {
             notifications::handle_notification(

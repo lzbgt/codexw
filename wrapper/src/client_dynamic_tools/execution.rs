@@ -1,7 +1,6 @@
 use serde_json::Value;
 use serde_json::json;
 
-#[cfg(test)]
 use crate::background_shells::BackgroundShellManager;
 use crate::client_dynamic_tools::workspace::workspace_find_files;
 use crate::client_dynamic_tools::workspace::workspace_list_dir;
@@ -41,6 +40,10 @@ pub(crate) fn legacy_workspace_tool_names() -> &'static [&'static str] {
 
 pub(crate) fn is_legacy_workspace_tool(tool: &str) -> bool {
     LEGACY_WORKSPACE_TOOLS.contains(&tool)
+}
+
+pub(crate) fn is_background_shell_tool(tool: &str) -> bool {
+    shells::is_background_shell_tool(tool)
 }
 
 fn execute_legacy_workspace_tool(
@@ -125,6 +128,34 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
         });
 
     match result {
+        Ok(text) => json!({
+            "contentItems": [{"type": "inputText", "text": text}],
+            "success": true
+        }),
+        Err(err) => json!({
+            "contentItems": [{"type": "inputText", "text": err}],
+            "success": false
+        }),
+    }
+}
+
+pub(crate) fn execute_background_shell_tool_call_with_manager(
+    params: &Value,
+    resolved_cwd: &str,
+    background_shells: &BackgroundShellManager,
+) -> Value {
+    let tool = params
+        .get("tool")
+        .and_then(Value::as_str)
+        .unwrap_or("dynamic tool");
+    let arguments = params.get("arguments").unwrap_or(&Value::Null);
+    match shells::execute_background_shell_tool_with_manager(
+        tool,
+        params,
+        arguments,
+        resolved_cwd,
+        background_shells,
+    ) {
         Ok(text) => json!({
             "contentItems": [{"type": "inputText", "text": text}],
             "success": true

@@ -20,6 +20,19 @@ For the concise native-side product decision and evidence summary, see
 For native-side support semantics and optional hardening work, see
 [codexw-native-support-policy.md](codexw-native-support-policy.md) and
 [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md).
+For the separate self-evolution lane, where a running older `codexw` instance
+safely hands off to a newer binary instead of waiting for manual restart, see
+[codexw-self-evolution.md](codexw-self-evolution.md) and
+[codexw-self-evolution-implementation-plan.md](codexw-self-evolution-implementation-plan.md).
+For the companion self-supervision lane, where `codexw` monitors stalled tool
+and runtime states and decides whether to warn, interrupt, hand off, or
+replace itself, see [codexw-self-supervision.md](codexw-self-supervision.md)
+and
+[codexw-self-supervision-implementation-plan.md](codexw-self-supervision-implementation-plan.md).
+For the plugin architecture that should carry optional capabilities without
+forcing a full core replacement, see
+[codexw-plugin-system.md](codexw-plugin-system.md) and
+[codexw-plugin-system-implementation-plan.md](codexw-plugin-system-implementation-plan.md).
 
 ## Design Goals
 

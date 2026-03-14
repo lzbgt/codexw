@@ -1,13 +1,19 @@
 use anyhow::Result;
 use std::process::ChildStdin;
+use std::sync::mpsc;
+use std::thread;
 
+use crate::client_dynamic_tools::execute_background_shell_tool_call_with_manager;
 use crate::client_dynamic_tools::execute_dynamic_tool_call_with_state;
+use crate::client_dynamic_tools::is_background_shell_tool;
 use crate::client_dynamic_tools::legacy_workspace_tool_failure_notice;
 use crate::client_dynamic_tools::legacy_workspace_tool_notice;
 use crate::output::Output;
 use crate::requests::send_json;
 use crate::rpc::OutgoingResponse;
 use crate::rpc::RpcRequest;
+use crate::runtime_event_sources::AppEvent;
+use crate::runtime_event_sources::AsyncToolResponse;
 use crate::state::AppState;
 use crate::transcript_approval_summary::summarize_tool_request;
 use crate::transcript_plan_render::build_mcp_elicitation_response;
@@ -19,6 +25,7 @@ pub(crate) fn handle_tool_request(
     state: &mut AppState,
     output: &mut Output,
     writer: &mut ChildStdin,
+    tx: &mpsc::Sender<AppEvent>,
 ) -> Result<bool> {
     match request.method.as_str() {
         "tool/requestUserInput" | "item/tool/requestUserInput" => {
@@ -61,6 +68,29 @@ pub(crate) fn handle_tool_request(
                 .get("tool")
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("dynamic tool");
+            if is_background_shell_tool(tool) {
+                let request_id = request.id.clone();
+                let params = request.params.clone();
+                let summary = summarize_tool_request(&params);
+                let tool_name = tool.to_string();
+                let resolved_cwd = resolved_cwd.to_string();
+                let tx = tx.clone();
+                let background_shells = state.orchestration.background_shells.clone();
+                thread::spawn(move || {
+                    let result = execute_background_shell_tool_call_with_manager(
+                        &params,
+                        &resolved_cwd,
+                        &background_shells,
+                    );
+                    let _ = tx.send(AppEvent::AsyncToolResponseReady(AsyncToolResponse {
+                        id: request_id,
+                        tool: tool_name,
+                        summary,
+                        result,
+                    }));
+                });
+                return Ok(true);
+            }
             let result = execute_dynamic_tool_call_with_state(&request.params, resolved_cwd, state);
             let success = result
                 .get("success")

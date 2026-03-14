@@ -56,6 +56,7 @@ fn windows_sandbox_setup_completed_persists_mode() {
     let mut state = AppState::new(true, false);
     let (_temp, codex_home) = test_codex_home();
     state.codex_home_override = Some(codex_home.clone());
+    let (tx, _rx) = std::sync::mpsc::channel();
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
     let mut start_after_initialize = None;
@@ -75,6 +76,7 @@ fn windows_sandbox_setup_completed_persists_mode() {
         &mut state,
         &mut output,
         &mut writer,
+        &tx,
         &mut start_after_initialize,
     )
     .expect("process notification");

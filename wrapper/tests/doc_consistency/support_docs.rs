@@ -24,6 +24,13 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
+    let self_evolution = read_repo_file("docs/codexw-self-evolution.md");
+    let self_evolution_plan = read_repo_file("docs/codexw-self-evolution-implementation-plan.md");
+    let self_supervision = read_repo_file("docs/codexw-self-supervision.md");
+    let self_supervision_plan =
+        read_repo_file("docs/codexw-self-supervision-implementation-plan.md");
+    let plugin_system = read_repo_file("docs/codexw-plugin-system.md");
+    let plugin_system_plan = read_repo_file("docs/codexw-plugin-system-implementation-plan.md");
     let local_api_sketch = read_repo_file("docs/codexw-local-api-sketch.md");
     let local_api_plan = read_repo_file("docs/codexw-local-api-implementation-plan.md");
     let local_api_route_matrix = read_repo_file("docs/codexw-local-api-route-matrix.md");
@@ -65,6 +72,12 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-proof-matrix.md",
         "docs/codexw-native-support-policy.md",
         "docs/codexw-native-hardening-catalog.md",
+        "docs/codexw-self-evolution.md",
+        "docs/codexw-self-evolution-implementation-plan.md",
+        "docs/codexw-self-supervision.md",
+        "docs/codexw-self-supervision-implementation-plan.md",
+        "docs/codexw-plugin-system.md",
+        "docs/codexw-plugin-system-implementation-plan.md",
         "docs/codexw-broker-client-architecture.md",
         "docs/codexw-cross-deployment-collaboration.md",
         "docs/codexw-cross-project-dependency-collaboration.md",
@@ -165,6 +178,24 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-hardening-catalog.md",
         "README.md",
     );
+    assert_contains(&readme, "docs/codexw-self-evolution.md", "README.md");
+    assert_contains(
+        &readme,
+        "docs/codexw-self-evolution-implementation-plan.md",
+        "README.md",
+    );
+    assert_contains(&readme, "docs/codexw-self-supervision.md", "README.md");
+    assert_contains(
+        &readme,
+        "docs/codexw-self-supervision-implementation-plan.md",
+        "README.md",
+    );
+    assert_contains(&readme, "docs/codexw-plugin-system.md", "README.md");
+    assert_contains(
+        &readme,
+        "docs/codexw-plugin-system-implementation-plan.md",
+        "README.md",
+    );
     assert_contains(&readme, "no longer advertised by default", "README.md");
     assert_contains(
         &readme,
@@ -249,6 +280,24 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-hardening-catalog.md",
         "TODOS.md",
     );
+    assert_contains(&todos, "docs/codexw-self-evolution.md", "TODOS.md");
+    assert_contains(
+        &todos,
+        "docs/codexw-self-evolution-implementation-plan.md",
+        "TODOS.md",
+    );
+    assert_contains(&todos, "docs/codexw-self-supervision.md", "TODOS.md");
+    assert_contains(
+        &todos,
+        "docs/codexw-self-supervision-implementation-plan.md",
+        "TODOS.md",
+    );
+    assert_contains(&todos, "docs/codexw-plugin-system.md", "TODOS.md");
+    assert_contains(
+        &todos,
+        "docs/codexw-plugin-system-implementation-plan.md",
+        "TODOS.md",
+    );
     assert_contains(&todos, "docs/codexw-workspace-tool-policy.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-support-claim-checklist.md", "TODOS.md");
 
@@ -303,8 +352,18 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-support-policy.md",
     );
     assert_contains_case_insensitive(
+        &broker_policy,
+        "project-assignment or dependency-edge surface",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
         &broker_out_of_scope,
         "out of scope",
+        "docs/codexw-broker-out-of-scope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_out_of_scope,
+        "project-assignment or dependency-edge contract",
         "docs/codexw-broker-out-of-scope.md",
     );
     assert_contains(
@@ -363,6 +422,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-adapter-promotion.md",
     );
     assert_contains(
+        &broker_promotion,
+        "codexw-cross-project-dependency-contract-sketch.md",
+        "docs/codexw-broker-adapter-promotion.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_promotion,
+        "project-assignment and dependency-edge routes",
+        "docs/codexw-broker-adapter-promotion.md",
+    );
+    assert_contains(
         &broker_mapping,
         "codexw-broker-artifact-implementation-plan.md",
         "docs/codexw-broker-connector-mapping.md",
@@ -370,6 +439,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_mapping,
         "any artifact index/detail/content route",
+        "docs/codexw-broker-connector-mapping.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_mapping,
+        "project-assignment or dependency-edge route",
         "docs/codexw-broker-connector-mapping.md",
     );
     assert_contains_case_insensitive(
@@ -432,6 +506,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "artifact surface exists",
         "docs/codexw-broker-client-policy.md",
     );
+    assert_contains_case_insensitive(
+        &broker_client_policy,
+        "project-assignment or dependency-edge collaboration surface exists",
+        "docs/codexw-broker-client-policy.md",
+    );
 
     assert_contains_case_insensitive(
         &native_boundaries,
@@ -477,6 +556,97 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &native_hardening,
         "not currently a blocker",
         "docs/codexw-native-hardening-catalog.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution,
+        "safely hands off to a newer binary",
+        "docs/codexw-self-evolution.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution,
+        "checkpoint",
+        "docs/codexw-self-evolution.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution,
+        "standalone local-runtime-first",
+        "docs/codexw-self-evolution.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution,
+        "plugin-aware",
+        "docs/codexw-self-evolution.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution_plan,
+        "resume-handoff",
+        "docs/codexw-self-evolution-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution_plan,
+        "old process does not exit before acknowledgment",
+        "docs/codexw-self-evolution-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(&self_evolution, "git repo", "docs/codexw-self-evolution.md");
+    assert_contains_case_insensitive(
+        &self_evolution_plan,
+        "git pull",
+        "docs/codexw-self-evolution-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution_plan,
+        "plugin versus core decision policy",
+        "docs/codexw-self-evolution-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "no `codexw` tool use or shell exec should be allowed to hang the runtime indefinitely",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "standalone local-runtime-first",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "background-shell dynamic tools must not execute in a way that freezes the input loop indefinitely",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "background-shell dynamic tools",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "plugin-first",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system,
+        "voice reminder over the host speaker",
+        "docs/codexw-plugin-system.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system,
+        "https://github.com/lzbgt/codexw-plugins",
+        "docs/codexw-plugin-system.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system,
+        "self-evolution",
+        "docs/codexw-plugin-system.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system_plan,
+        "trusted-source checks",
+        "docs/codexw-plugin-system-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &plugin_system_plan,
+        "plugin install/update over full core replacement",
+        "docs/codexw-plugin-system-implementation-plan.md",
     );
     assert_contains_case_insensitive(
         &broker_client_arch,
@@ -706,6 +876,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &broker_contract,
         "codexw-broker-integration-handoff.md",
+        "docs/codexw-broker-adapter-contract.md",
+    );
+    assert_contains(
+        &broker_contract,
+        "codexw-cross-project-dependency-contract-sketch.md",
         "docs/codexw-broker-adapter-contract.md",
     );
     assert_contains(
@@ -1043,6 +1218,12 @@ fn broker_and_native_support_docs_keep_current_support_level_wording() {
     ] {
         assert_contains(contents, "supported experimental adapter", name);
     }
+
+    assert_contains_case_insensitive(
+        &broker_recommendation,
+        "project-assignment or dependency-edge route family",
+        "docs/codexw-broker-promotion-recommendation.md",
+    );
 
     for (name, contents) in [
         ("docs/codexw-native-product-status.md", &native_status),

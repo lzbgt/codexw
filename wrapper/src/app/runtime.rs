@@ -24,7 +24,10 @@ use crate::prompt_state::prompt_accepts_input;
 use crate::prompt_state::update_prompt;
 use crate::render_markdown_code::set_theme;
 use crate::requests::send_initialize;
+use crate::requests::send_json;
+use crate::rpc::OutgoingResponse;
 use crate::runtime_event_sources::AppEvent;
+use crate::runtime_event_sources::AsyncToolResponse;
 use crate::runtime_event_sources::RawModeGuard;
 use crate::runtime_event_sources::start_stdin_thread;
 use crate::runtime_event_sources::start_stdout_thread;
@@ -107,6 +110,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                     &mut state,
                     &mut output,
                     &mut writer,
+                    &tx,
                     &mut start_after_initialize,
                 )?;
             }
@@ -124,6 +128,9 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                 }
             }
             Ok(AppEvent::Tick) => {}
+            Ok(AppEvent::AsyncToolResponseReady(tool_response)) => {
+                handle_async_tool_response(tool_response, &mut output, &mut writer)?;
+            }
             Ok(AppEvent::StdinClosed) => {
                 output.line_stderr("[session] stdin closed; exiting")?;
                 break;
@@ -157,6 +164,31 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
         handle.shutdown()?;
     }
     shutdown_child(writer, child)?;
+    Ok(())
+}
+
+fn handle_async_tool_response(
+    tool_response: AsyncToolResponse,
+    output: &mut Output,
+    writer: &mut std::process::ChildStdin,
+) -> Result<()> {
+    let success = tool_response
+        .result
+        .get("success")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    output.line_stderr(format!(
+        "[tool] dynamic tool {}: {}",
+        if success { "completed" } else { "failed" },
+        tool_response.summary
+    ))?;
+    send_json(
+        writer,
+        &OutgoingResponse {
+            id: tool_response.id,
+            result: tool_response.result,
+        },
+    )?;
     Ok(())
 }
 

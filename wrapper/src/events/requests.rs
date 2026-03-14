@@ -1,11 +1,13 @@
 use anyhow::Result;
 use std::process::ChildStdin;
+use std::sync::mpsc;
 
 use crate::Cli;
 use crate::event_request_approvals::handle_approval_request;
 use crate::event_request_tools::handle_tool_request;
 use crate::output::Output;
 use crate::rpc;
+use crate::runtime_event_sources::AppEvent;
 use crate::state::AppState;
 
 pub(crate) fn handle_server_request(
@@ -15,11 +17,12 @@ pub(crate) fn handle_server_request(
     state: &mut AppState,
     output: &mut Output,
     writer: &mut ChildStdin,
+    tx: &mpsc::Sender<AppEvent>,
 ) -> Result<()> {
     if handle_approval_request(&request, cli, output, writer)? {
         return Ok(());
     }
-    if handle_tool_request(&request, resolved_cwd, state, output, writer)? {
+    if handle_tool_request(&request, resolved_cwd, state, output, writer, tx)? {
         return Ok(());
     }
     if cli.verbose_events || cli.raw_json {

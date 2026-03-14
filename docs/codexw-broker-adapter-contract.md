@@ -14,6 +14,7 @@ This document is the contract-oriented companion to:
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 
@@ -37,10 +38,16 @@ This contract does not claim:
 - production deployment/auth semantics
 - compatibility with every future broker route family
 - a dedicated artifact catalog or artifact download API
+- a project-assignment or dependency-edge route family for cross-project
+  collaboration metadata
 
 The future artifact-specific track is now sketched separately in
 [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 rather than being left as an unnamed caveat.
+The future project/dependency-specific track is sketched separately in
+[codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+and
+[codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md).
 
 Those boundaries remain explicit in
 [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md).

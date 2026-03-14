@@ -42,6 +42,9 @@ This policy does not create a promise for:
 - a general-purpose public SDK
 - a broker-visible artifact catalog/detail/content surface unless and until that
   route family is explicitly added to the adapter contract and proof set
+- a broker-visible project-assignment or dependency-edge surface unless and
+  until that route family is explicitly added to the adapter contract and proof
+  set
 
 ## Support Level
 
@@ -85,7 +88,8 @@ can depend on them:
 The current supported experimental adapter should therefore be read as
 supporting remote host examination through the documented session/event/
 orchestration/shell/service/capability surface, while the artifact-contract
-track remains separate and design-only for now.
+track and the project/dependency collaboration track remain separate and
+design-only for now.
 
 ### Still Allowed To Evolve
 
@@ -164,6 +168,8 @@ If a batch changes supported adapter behavior, it should update:
   consumer shape
 - the artifact-contract sketch/implementation docs too when the behavior
   changes the planned or supported artifact surface
+- the project/dependency contract sketch/implementation docs too when the
+  behavior changes the planned or supported collaboration-metadata surface
 
 For policy-sensitive changes, process-level proof is preferred over only unit
 coverage.
@@ -223,3 +229,5 @@ fully frozen production platform API.
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+- [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)

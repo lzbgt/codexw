@@ -191,6 +191,7 @@ The connector should continue to do exactly these policy-sensitive things:
 - not invent a second lease model of its own
 - not imply that a separate artifact surface exists before the local API and
   support docs actually define one
+- not imply that a separate project-assignment or dependency-edge collaboration surface exists before the local API and support docs actually define one
 
 ## Explicit Non-Goals
 

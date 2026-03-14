@@ -22,6 +22,12 @@ Primary source docs:
 - [docs/codexw-cross-project-dependency-collaboration.md](docs/codexw-cross-project-dependency-collaboration.md)
 - [docs/codexw-cross-project-dependency-contract-sketch.md](docs/codexw-cross-project-dependency-contract-sketch.md)
 - [docs/codexw-cross-project-dependency-implementation-plan.md](docs/codexw-cross-project-dependency-implementation-plan.md)
+- [docs/codexw-self-evolution.md](docs/codexw-self-evolution.md)
+- [docs/codexw-self-evolution-implementation-plan.md](docs/codexw-self-evolution-implementation-plan.md)
+- [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
+- [docs/codexw-self-supervision-implementation-plan.md](docs/codexw-self-supervision-implementation-plan.md)
+- [docs/codexw-plugin-system.md](docs/codexw-plugin-system.md)
+- [docs/codexw-plugin-system-implementation-plan.md](docs/codexw-plugin-system-implementation-plan.md)
 - [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)
 - [docs/codexw-cross-deployment-handoff-implementation-plan.md](docs/codexw-cross-deployment-handoff-implementation-plan.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
@@ -159,6 +165,24 @@ Concrete tasks:
 - only reopen audio/realtime expansion if a concrete supported target is chosen
 - keep the wrapper-owned async shell boundary explicit whenever orchestration or
   local-API work expands
+- turn the new self-evolution requirement into a narrow implementation lane:
+  - checkpoint current thread/cwd/draft/continuation state
+  - launch a newer binary in an explicit self-handoff resume mode
+  - gate old-process exit on explicit acknowledgment from the new process
+  - keep rollback/manual resume explicit on failure
+- keep the new self-supervision lane explicit:
+  - dynamic tools and shell workflows should execute without wedging the input
+    loop
+  - long-running or stalled tool calls should be detectable as supervision
+    events, not just operator anecdotes
+  - the runtime should decide whether to warn, interrupt, hand off, or replace
+    itself rather than staying stuck indefinitely
+- keep the plugin-first expansion rule explicit:
+  - optional capabilities such as voice reminder or live IM reporting should
+    land through the plugin system when core runtime contracts do not need to
+    change
+  - full binary self-evolution should remain for core fixes, protocol changes,
+    or safety/runtime changes
 - keep optional native-side polish or parity ideas in
   [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
   unless they become real support-level blockers
@@ -170,6 +194,12 @@ Primary source:
 - [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
 - [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
+- [docs/codexw-self-evolution.md](docs/codexw-self-evolution.md)
+- [docs/codexw-self-evolution-implementation-plan.md](docs/codexw-self-evolution-implementation-plan.md)
+- [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
+- [docs/codexw-self-supervision-implementation-plan.md](docs/codexw-self-supervision-implementation-plan.md)
+- [docs/codexw-plugin-system.md](docs/codexw-plugin-system.md)
+- [docs/codexw-plugin-system-implementation-plan.md](docs/codexw-plugin-system-implementation-plan.md)
 
 ## Secondary Work
 

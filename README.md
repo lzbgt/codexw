@@ -39,6 +39,23 @@ implementation plan for that lane, see
 [docs/codexw-cross-project-dependency-contract-sketch.md](docs/codexw-cross-project-dependency-contract-sketch.md)
 and
 [docs/codexw-cross-project-dependency-implementation-plan.md](docs/codexw-cross-project-dependency-implementation-plan.md).
+For the native self-evolution lane, where a running older `codexw` instance
+safely hands off to a newer binary without user restart, see
+[docs/codexw-self-evolution.md](docs/codexw-self-evolution.md)
+and
+[docs/codexw-self-evolution-implementation-plan.md](docs/codexw-self-evolution-implementation-plan.md).
+For the required self-supervision lane, where `codexw` monitors for wedged
+tools/runtime paths and decides whether to interrupt, hand off, or roll back,
+see
+[docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
+and
+[docs/codexw-self-supervision-implementation-plan.md](docs/codexw-self-supervision-implementation-plan.md).
+For the plugin architecture that should carry optional new capabilities such as
+voice reminders or live IM reporting without forcing a full binary replacement,
+see
+[docs/codexw-plugin-system.md](docs/codexw-plugin-system.md)
+and
+[docs/codexw-plugin-system-implementation-plan.md](docs/codexw-plugin-system-implementation-plan.md).
 For the first broker-visible contract sketch and implementation order for that
 handoff lane, see
 [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)

@@ -51,6 +51,7 @@ fn test_cli() -> Cli {
 fn empty_workspace_resume_list_retries_without_cwd_filter() {
     let cli = test_cli();
     let mut state = AppState::new(true, false);
+    let (tx, _rx) = std::sync::mpsc::channel();
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
     let mut start_after_initialize = None;
@@ -76,6 +77,7 @@ fn empty_workspace_resume_list_retries_without_cwd_filter() {
         &mut state,
         &mut output,
         &mut writer,
+        &tx,
         &mut start_after_initialize,
     )
     .expect("process response");

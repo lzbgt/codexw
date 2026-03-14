@@ -20,6 +20,8 @@ That recommendation is intentionally narrower than:
 - multi-daemon lease coordination
 - a general-purpose public SDK commitment
 - a dedicated broker-visible artifact catalog/detail/content contract
+- a project-assignment or dependency-edge route family for cross-project
+  collaboration metadata
 
 The recommended claim is:
 
@@ -33,7 +35,9 @@ The recommended claim is:
 
 That supported claim currently covers the verified session/event/orchestration/
 shell/service/capability surface. It does **not** yet imply that artifact index,
-detail, or content routes are part of the supported adapter.
+detail, or content routes are part of the supported adapter. It also does
+**not** yet imply that session project-assignment or project dependency-edge
+routes are part of the supported adapter.
 
 The operational meaning of that support level now lives in
 [codexw-broker-support-policy.md](codexw-broker-support-policy.md), so this
@@ -91,6 +95,9 @@ The remaining gaps still mentioned in the repo are things like:
 - the still-design-only artifact contract track documented in
   [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
   and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
+- the still-design-only project/dependency contract track documented in
+  [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+  and [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)
 
 Those are good hardening tasks, but they are not evidence that the current
 adapter claim is false.
@@ -151,7 +158,10 @@ The next high-leverage tasks should be:
    expand the claim surface
 5. keep the artifact-contract track explicit as design-only until local routes,
    connector mapping decisions, and process-level proof actually exist
-6. only reopen the promotion decision if the connector starts needing shadow
+6. keep the project/dependency collaboration-metadata track explicit as
+   design-only until local routes, connector mapping decisions, and
+   process-level proof actually exist
+7. only reopen the promotion decision if the connector starts needing shadow
    state or if the local API authority model changes
 
 ## Decision Rule
@@ -177,3 +187,5 @@ not:
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+- [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)
