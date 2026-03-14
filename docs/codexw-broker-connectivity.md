@@ -807,6 +807,12 @@ proof expansion:
   [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md)
 - the explicit broker/client boundary, now captured in
   [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
+- the current supported experimental adapter boundary, which should still be
+  read as shell-first host examination while artifact index/detail/content
+  remains design-only in the separate artifact track:
+  [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md),
+  [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
+  [docs/codexw-broker-out-of-scope.md](docs/codexw-broker-out-of-scope.md)
 - the criteria for promoting the current broker/local-API stack into a
   supported adapter layer, now captured in
   [docs/codexw-broker-adapter-promotion.md](docs/codexw-broker-adapter-promotion.md)

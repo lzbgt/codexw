@@ -185,8 +185,10 @@ It should not:
 - invent a second session model
 
 It also should not imply broker-visible artifact routes exist before the local
-API artifact track is actually implemented. That track is now explicitly
-separated in:
+API artifact track is actually implemented. The current supported experimental
+adapter remains the shell-first host-examination foundation, and the artifact
+route family stays outside that supported surface until it is implemented and
+proven. That track is now explicitly separated in:
 
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
@@ -208,8 +210,8 @@ The connector should explicitly reject or defer:
 - any route that assumes a generic run/artifact model where `codexw` has a more
   specific orchestration/service abstraction
 - any artifact index/detail/content route until the local API artifact layer
-  exists and the adapter contract/policy docs explicitly add it to the
-  supported surface
+  exists, is proven, and the adapter contract/policy docs explicitly add it to
+  the supported experimental adapter surface
 - any project-assignment or dependency-edge route until the local API
   collaboration-metadata layer exists and the adapter contract/policy docs
   explicitly add it to the supported surface

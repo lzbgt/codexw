@@ -7,6 +7,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let broker_contract = read_repo_file("docs/codexw-broker-adapter-contract.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_client_policy = read_repo_file("docs/codexw-broker-client-policy.md");
+    let broker_connectivity = read_repo_file("docs/codexw-broker-connectivity.md");
     let broker_out_of_scope = read_repo_file("docs/codexw-broker-out-of-scope.md");
     let broker_endpoint_audit = read_repo_file("docs/codexw-broker-endpoint-audit.md");
     let broker_proof = read_repo_file("docs/codexw-broker-proof-matrix.md");
@@ -62,6 +63,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-adapter-contract.md",
         "docs/codexw-broker-adapter-status.md",
         "docs/codexw-broker-client-policy.md",
+        "docs/codexw-broker-connectivity.md",
         "docs/codexw-broker-out-of-scope.md",
         "docs/codexw-broker-proof-matrix.md",
         "docs/codexw-broker-support-policy.md",
@@ -114,6 +116,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(&readme, "docs/codexw-broker-adapter-status.md", "README.md");
     assert_contains(&readme, "docs/codexw-broker-client-policy.md", "README.md");
+    assert_contains(&readme, "docs/codexw-broker-connectivity.md", "README.md");
     assert_contains(&readme, "docs/codexw-broker-out-of-scope.md", "README.md");
     assert_contains(&readme, "docs/codexw-broker-proof-matrix.md", "README.md");
     assert_contains(
@@ -221,6 +224,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(&todos, "docs/codexw-broker-adapter-contract.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-broker-adapter-status.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-broker-client-policy.md", "TODOS.md");
+    assert_contains(&todos, "docs/codexw-broker-connectivity.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-broker-out-of-scope.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-broker-proof-matrix.md", "TODOS.md");
     assert_contains(
@@ -811,6 +815,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "session-scoped artifact index/detail/content",
         "docs/codexw-broker-endpoint-audit.md",
     );
+    assert_contains_case_insensitive(
+        &broker_endpoint_audit,
+        "not part of the current supported experimental adapter",
+        "docs/codexw-broker-endpoint-audit.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_endpoint_audit,
+        "shell-first",
+        "docs/codexw-broker-endpoint-audit.md",
+    );
     assert_contains(
         &broker_endpoint_audit,
         "session-scoped project assignment",
@@ -873,6 +887,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_mapping,
+        "supported experimental adapter",
+        "docs/codexw-broker-connector-mapping.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_mapping,
+        "shell-first",
+        "docs/codexw-broker-connector-mapping.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_mapping,
         "project-assignment or dependency-edge route",
         "docs/codexw-broker-connector-mapping.md",
     );
@@ -886,10 +910,25 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "host shell examination",
         "docs/codexw-broker-compatibility-target.md",
     );
+    assert_contains_case_insensitive(
+        &broker_compat_target,
+        "supported experimental adapter",
+        "docs/codexw-broker-compatibility-target.md",
+    );
     assert_contains(
         &broker_compat_target,
         "codexw-broker-artifact-contract-sketch.md",
         "docs/codexw-broker-compatibility-target.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_connectivity,
+        "supported experimental adapter boundary",
+        "docs/codexw-broker-connectivity.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_connectivity,
+        "shell-first host examination",
+        "docs/codexw-broker-connectivity.md",
     );
     assert_contains_case_insensitive(
         &broker_adapter_plan,

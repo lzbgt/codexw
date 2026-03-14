@@ -47,7 +47,7 @@ workspace should assume today, see
 | --- | --- | --- | --- |
 | `POST /api/v1/run` | `adapter fit` | request builders + turn lifecycle | `codexw` is thread/turn-centric, not `agentd` run-centric, but a remote turn API is clearly feasible |
 | run-event envelopes | `adapter fit` | item/turn/status/orchestration state | Stable public semantic event envelopes now exist for the supported local API and connector surface, but they remain intentionally narrower than a generic broker-wide run stream |
-| artifact signaling | `adapter fit` | transcript/item surfaces + attachment state | The gap is no longer an unnamed future bucket: see [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md) and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md) for the dedicated artifact track |
+| artifact signaling | `adapter fit` | transcript/item surfaces + attachment state | The current supported experimental adapter still treats host examination as shell-first via transcript, shell, service, and event surfaces. A dedicated artifact index/detail/content route family remains outside that supported surface until the separate artifact track is implemented and proven: see [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md) and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md). |
 
 ## `codexw`-Specific Surfaces
 
@@ -64,7 +64,7 @@ compatibility shape:
 | service mutation controls (`provide`, `depend`, `contract`, `relabel`) | `POST /api/v1/services/{job}/...` | Probably remains `codexw`-specific even if broker-compatible transport is adopted |
 | session-scoped project assignment | `POST/GET /api/v1/session/{session_id}/project` | Planned broker-visible collaboration metadata lane for binding one session to one project without inventing a global scheduler |
 | project dependency edges | `POST/GET /api/v1/projects/{project_id}/dependencies` and `GET /api/v1/dependencies/{dependency_id}` | Planned broker-visible collaboration metadata lane for expressing which project blocks on which other project before a later handoff is created |
-| session-scoped artifact index/detail/content | `GET /api/v1/session/{session_id}/artifacts*` | Planned `codexw`-specific layer derived from transcript/event/shell/service truth; not implemented yet and should not be confused with generic filesystem browsing |
+| session-scoped artifact index/detail/content | `GET /api/v1/session/{session_id}/artifacts*` | Planned `codexw`-specific layer derived from transcript/event/shell/service truth; not implemented yet, not part of the current supported experimental adapter, and should not be confused with generic filesystem browsing |
 
 ## Recommended First Audit Outputs
 

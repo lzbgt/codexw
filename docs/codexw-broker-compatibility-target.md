@@ -145,7 +145,9 @@ compatibility claim:
 - full broker deployment management
 - perfect transport parity for every websocket/broker lifecycle detail
 - any artifact index/detail/content route until it is explicitly implemented,
-  mapped, and proven through the separate artifact-contract track
+  mapped, and proven through the separate artifact-contract track; the current
+  supported experimental adapter should still be read as shell-first host
+  examination rather than as an implicit artifact browser
 
 ## Implementation Rule
 
