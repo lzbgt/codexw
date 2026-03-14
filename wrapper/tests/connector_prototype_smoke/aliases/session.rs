@@ -661,3 +661,163 @@ fn connector_raw_proxy_read_and_event_replay_routes_work() -> Result<()> {
     fake_server.join().expect("fake server thread")?;
     Ok(())
 }
+
+#[test]
+fn connector_raw_proxy_session_list_and_orchestration_reads_work() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..4 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "sessions": [
+                                {
+                                    "session_id": "sess_raw_proxy",
+                                    "thread_id": "thread_raw_proxy"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_raw_proxy/orchestration/status"
+                    );
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "counts": {
+                                "workers": 2,
+                                "dependencies": 1
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_raw_proxy/orchestration/workers"
+                    );
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "workers": [
+                                {
+                                    "job_id": "bg-1",
+                                    "alias": "dev.api"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                3 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_raw_proxy/orchestration/dependencies"
+                    );
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "dependencies": [
+                                {
+                                    "consumer": "bg-2",
+                                    "provider": "bg-1",
+                                    "capability": "@api.http"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let sessions_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(sessions_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(sessions_response.contains("\"session_id\":\"sess_raw_proxy\""));
+
+    let status_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_raw_proxy/orchestration/status HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(status_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(status_response.contains("\"workers\":2"));
+
+    let workers_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_raw_proxy/orchestration/workers HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(workers_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(workers_response.contains("\"alias\":\"dev.api\""));
+
+    let dependencies_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_raw_proxy/orchestration/dependencies HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(dependencies_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(dependencies_response.contains("\"capability\":\"@api.http\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}

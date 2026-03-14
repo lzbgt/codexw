@@ -242,6 +242,222 @@ fn connector_alias_shell_service_and_capability_detail_routes_map_cleanly() -> R
 }
 
 #[test]
+fn connector_raw_proxy_shell_service_and_capability_reads_work() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..6 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/shells");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "shells": [
+                                {
+                                    "job_id": "bg-1",
+                                    "alias": "dev.api"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/shells/%40api.http");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "shell": {
+                                "job_id": "bg-1",
+                                "alias": "dev.api",
+                                "service_capabilities": ["@api.http"]
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/services");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "services": [
+                                {
+                                    "job_id": "bg-1",
+                                    "alias": "dev.api"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                3 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/services/dev.api");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "service": {
+                                "job_id": "bg-1",
+                                "alias": "dev.api",
+                                "capabilities": ["@api.http"]
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                4 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/capabilities");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "capabilities": [
+                                {
+                                    "name": "@frontend.dev",
+                                    "status": "healthy"
+                                }
+                            ]
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                5 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_1/capabilities/%40frontend.dev"
+                    );
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "capability": {
+                                "name": "@frontend.dev",
+                                "status": "healthy"
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let shells_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_1/shells HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(shells_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(shells_response.contains("\"job_id\":\"bg-1\""));
+
+    let shell_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_1/shells/%40api.http HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(shell_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(shell_response.contains("\"alias\":\"dev.api\""));
+    assert!(shell_response.contains("\"@api.http\""));
+
+    let services_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_1/services HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(services_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(services_response.contains("\"alias\":\"dev.api\""));
+
+    let service_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_1/services/dev.api HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(service_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(service_response.contains("\"capabilities\":[\"@api.http\"]"));
+
+    let capabilities_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_1/capabilities HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(capabilities_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(capabilities_response.contains("\"name\":\"@frontend.dev\""));
+
+    let capability_response = send_raw_request(
+        connector_port,
+        concat!(
+            "GET /v1/agents/codexw-lab/proxy/api/v1/session/sess_1/capabilities/%40frontend.dev HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ),
+    )?;
+    assert!(capability_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(capability_response.contains("\"status\":\"healthy\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
+#[test]
 fn connector_alias_action_routes_decode_percent_encoded_job_refs() -> Result<()> {
     let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
     let local_addr = local_listener.local_addr().context("local api addr")?;

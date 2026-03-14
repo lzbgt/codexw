@@ -201,6 +201,7 @@ The initial connector adapter should ship with a small compatibility table:
 | Broker-facing route | Local `codexw` route | Status |
 | --- | --- | --- |
 | `/v1/agents/{agent_id}/proxy/...` session create | `/api/v1/session/new` | works |
+| `/v1/agents/{agent_id}/proxy/...` session list | `/api/v1/session` | works as thin pass-through for canonical local session reads |
 | `/v1/agents/{agent_id}/proxy/...` session inspect | `/api/v1/session/{session_id}` | works as thin pass-through for canonical local session reads |
 | `/v1/agents/{agent_id}/proxy/...` session attach | `/api/v1/session/attach` | works with the same client/lease header projection policy as the session-scoped attach alias when the caller provides `session_id` in the body |
 | `/v1/agents/{agent_id}/proxy/...` top-level client event | `/api/v1/session/client_event` | works with the same client/lease header projection policy as the session-scoped client-event alias when the caller provides `session_id` in the body |
@@ -208,6 +209,10 @@ The initial connector adapter should ship with a small compatibility table:
 | `/v1/agents/{agent_id}/proxy/...` turn interrupt | `/api/v1/turn/interrupt` | works with the same client header projection policy as the session-scoped interrupt alias |
 | `/v1/agents/{agent_id}/proxy/...` transcript | `/api/v1/session/{session_id}/transcript` | works as thin pass-through for canonical local transcript reads |
 | `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works; non-`GET` methods are rejected as `method_not_allowed`, and `Last-Event-ID` replay stays a thin pass-through to the local API |
+| `/v1/agents/{agent_id}/proxy/...` orchestration reads | `/api/v1/session/{session_id}/orchestration/*` | works as thin pass-through for canonical local orchestration status/worker/dependency reads |
+| `/v1/agents/{agent_id}/proxy/...` shell reads | `/api/v1/session/{session_id}/shells*` | works as thin pass-through for canonical local shell list/detail reads, including preserving encoded path segments instead of alias-level decoding |
+| `/v1/agents/{agent_id}/proxy/...` service reads | `/api/v1/session/{session_id}/services*` | works as thin pass-through for canonical local service list/detail reads |
+| `/v1/agents/{agent_id}/proxy/...` capability reads | `/api/v1/session/{session_id}/capabilities*` | works as thin pass-through for canonical local capability list/detail reads, including preserving encoded path segments instead of alias-level decoding |
 | `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as method-sensitive alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works as POST-only alias with `session_id` body injection when missing |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attachment/renew` | `/api/v1/session/{session_id}/attachment/renew` | works as POST-only alias surface with client/lease header projection |
@@ -229,6 +234,9 @@ The current connector now also keeps the mutating-route header projection policy
 and the connector allowlist on one shared local-route classifier, so new POST
 alias surfaces and the supported raw proxy turn-control routes do not need to
 be added to two separate behavioral lists.
+The same thin-pass-through proof now covers canonical raw proxy session list,
+orchestration, shell, service, and capability reads too, rather than only the
+mutating raw proxy routes and event replay path.
 Read-only broker aliases are also method-sensitive at resolution time now, so
 wrong-method requests fail as unknown connector routes instead of falling into
 the generic raw-proxy allowlist rejection path.

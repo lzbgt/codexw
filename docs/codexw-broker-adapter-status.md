@@ -163,7 +163,9 @@ the real connector binary:
   raw proxy turn-control routes plus top-level raw proxy session attach and
   `client_event`
 - thin raw-proxy pass-through proof for canonical session inspect, transcript,
-  and `Last-Event-ID` SSE replay routes
+  session list, orchestration, shell, service, and capability reads, plus
+  `Last-Event-ID` SSE replay routes; raw proxy canonical detail reads preserve
+  encoded path segments instead of applying alias-level decode rules
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation
