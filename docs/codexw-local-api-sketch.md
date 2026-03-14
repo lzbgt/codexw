@@ -15,6 +15,12 @@ This sketch remains intentionally narrower than a full protocol spec. Its job
 is to preserve the design intent and resource model behind the local API,
 rather than to duplicate the full implemented route inventory.
 
+It also inherits the current support boundary used across the repo: the
+supported experimental adapter still stops at the shell-first
+host-examination surface. The local API can support remote shell/service/
+transcript inspection without implying that a broker-visible artifact
+index/detail/content API already exists.
+
 ## Design Goals
 
 - preserve existing `codexw` identities:

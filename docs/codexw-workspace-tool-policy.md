@@ -14,6 +14,12 @@ It exists because the repo now has both:
 Those surfaces overlap in capability, but they do not serve the same product
 goal.
 
+This policy also sits inside the broader support boundary already used across
+the repo: the current supported experimental adapter still stops at the
+shell-first host-examination surface. Workspace helpers should not be treated
+as proof that a broker-visible artifact index/detail/content API already
+exists.
+
 Related docs:
 
 - [codexw-design.md](codexw-design.md)
@@ -37,6 +43,10 @@ The intended split is:
 This means the product is now intentionally shell-first for workspace
 inspection, while staying tool-first only for the wrapper-owned orchestration
 and background-shell surfaces.
+
+That shell-first workspace posture is part of the same shell-first
+host-examination surface described in the broker/native support docs, not a
+parallel artifact-browser contract.
 
 ## Why Dynamic Workspace Tools Exist
 

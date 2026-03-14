@@ -2797,6 +2797,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "supported experimental adapter",
         "docs/codexw-local-api-sketch.md",
     );
+    assert_contains_case_insensitive(
+        &local_api_sketch,
+        "host-examination surface",
+        "docs/codexw-local-api-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_sketch,
+        "broker-visible artifact",
+        "docs/codexw-local-api-sketch.md",
+    );
     assert_contains(
         &local_api_plan,
         "docs/codexw-broker-integration-handoff.md",
@@ -2809,7 +2819,17 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &local_api_plan,
-        "supported experimental adapter",
+        "supported experimental",
+        "docs/codexw-local-api-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_plan,
+        "host-examination surface",
+        "docs/codexw-local-api-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_plan,
+        "artifact list/detail/content api",
         "docs/codexw-local-api-implementation-plan.md",
     );
     assert_contains(
@@ -2825,6 +2845,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &local_api_route_matrix,
         "supported experimental adapter",
+        "docs/codexw-local-api-route-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_route_matrix,
+        "shell-first host-examination",
         "docs/codexw-local-api-route-matrix.md",
     );
     assert_contains_case_insensitive(
@@ -3090,6 +3115,21 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
     assert_contains(
         &workspace_policy,
         "shell is the general-purpose execution substrate",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &workspace_policy,
+        "supported experimental adapter",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &workspace_policy,
+        "shell-first host-examination surface",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &workspace_policy,
+        "artifact index/detail/content api",
         "docs/codexw-workspace-tool-policy.md",
     );
     assert_contains(

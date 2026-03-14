@@ -117,9 +117,9 @@ projection, not whether the local API can carry client/lease intent at all.
 - deployment routing
 
 The current local-API posture for remote host examination therefore remains the
-shell-first foundation of the current supported experimental adapter, with any
-richer artifact list/detail/content API tracked separately rather than implied
-by the implemented route baseline.
+shell-first host-examination surface of the current supported experimental
+adapter, with any richer artifact list/detail/content API tracked separately
+rather than implied by the implemented route baseline.
 
 ## Proposed Runtime Shape
 
