@@ -198,6 +198,9 @@ At:
 - dedicated worker inspection changes through `async_tool_workers`, including
   worker thread names and lifecycle states such as `running` and
   `abandoned_after_timeout`
+- active-worker observation-state or next-check-horizon changes, so clients can
+  tell whether the orchestrator is still awaiting any completion/output and
+  when it plans to inspect that worker again
 - recovery-policy changes such as `warn_only` to
   `operator_interrupt_or_exit_resume`
 - recovery-option changes such as `observe_status` yielding to

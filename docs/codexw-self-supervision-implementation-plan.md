@@ -134,6 +134,9 @@ backend can inspect the dedicated worker-thread lane directly:
 - lifecycle state such as `running` or `abandoned_after_timeout`
 - runtime/state elapsed seconds and hard timeout
 - current per-worker supervision classification when one exists
+- current observation state such as
+  `no_completion_or_output_observed_yet`
+- next planned orchestrator health check horizon in seconds
 
 The same audit trail should keep the concrete tool summary or shell command
 visible in periodic inspection notices, so the operator is not left with only

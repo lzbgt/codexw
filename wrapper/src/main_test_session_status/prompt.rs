@@ -57,6 +57,8 @@ fn prompt_status_mentions_async_tool_activity_when_present() {
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("async tool background_shell_start"));
     assert!(rendered.contains("background_shell_start"));
+    assert!(rendered.contains("awaiting completion/output"));
+    assert!(rendered.contains("next check"));
 }
 
 #[test]

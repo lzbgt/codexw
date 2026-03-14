@@ -79,6 +79,8 @@ Candidate envelope:
       ],
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
+      "observation_state": "no_completion_or_output_observed_yet",
+      "next_check_in_seconds": 9,
       "elapsed_seconds": 21,
       "active_request_count": 1
     }
@@ -258,6 +260,8 @@ Optional means “present only when semantically relevant,” not “randomly om
       ],
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
+      "observation_state": "no_completion_or_output_observed_yet",
+      "next_check_in_seconds": 30,
       "elapsed_seconds": 75,
       "active_request_count": 1
     }

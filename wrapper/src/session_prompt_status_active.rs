@@ -91,6 +91,11 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
         } else {
             detail
         };
+        let detail = format!(
+            "{detail} [{}; next check {}]",
+            async_tool.observation_state().prompt_label(),
+            format_elapsed(Some(Instant::now() - async_tool.next_health_check_in()))
+        );
         return Some((
             async_tool.started_at,
             append_async_backlog_suffix(state, detail),

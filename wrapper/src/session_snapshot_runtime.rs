@@ -73,6 +73,16 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             summarize_text(&async_tool.summary)
         ));
         lines.push(format!(
+            "async obs       {}",
+            async_tool.observation_state().label()
+        ));
+        lines.push(format!(
+            "async chk in    {}",
+            format_elapsed(Some(
+                std::time::Instant::now() - async_tool.next_health_check_in()
+            ))
+        ));
+        lines.push(format!(
             "async time      {}",
             format_elapsed(Some(async_tool.started_at))
         ));
@@ -84,6 +94,15 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             summarize_text(&worker.worker_thread_name)
         ));
         lines.push(format!("async worker id {}", worker.request_id));
+        if let Some(observation_state) = worker.observation_state {
+            lines.push(format!("async worker ob {}", observation_state.label()));
+        }
+        if let Some(next_health_check_in) = worker.next_health_check_in {
+            lines.push(format!(
+                "async worker ck {}",
+                format_elapsed(Some(std::time::Instant::now() - next_health_check_in))
+            ));
+        }
     }
     if let Some(abandoned) = state.oldest_abandoned_async_tool_request() {
         lines.push(format!(

@@ -62,6 +62,14 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         "observe_or_interrupt"
     );
     assert_eq!(
+        events[2].data["async_tool_supervision"]["observation_state"],
+        "no_completion_or_output_observed_yet"
+    );
+    assert_eq!(
+        events[2].data["async_tool_supervision"]["next_check_in_seconds"],
+        9
+    );
+    assert_eq!(
         events[2].data["async_tool_backpressure"]["abandoned_request_count"],
         1
     );
@@ -73,6 +81,14 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     assert_eq!(
         events[2].data["async_tool_workers"][0]["lifecycle_state"],
         "running"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][0]["observation_state"],
+        "no_completion_or_output_observed_yet"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][0]["next_check_in_seconds"],
+        9
     );
     assert_eq!(
         events[2].data["async_tool_workers"][1]["lifecycle_state"],
@@ -191,6 +207,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             ],
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            observation_state: "no_completion_or_output_observed_yet".to_string(),
+            next_check_in_seconds: 30,
             elapsed_seconds: 75,
             active_request_count: 1,
         });
@@ -212,6 +230,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            observation_state: Some("no_completion_or_output_observed_yet".to_string()),
+            next_check_in_seconds: Some(30),
             runtime_elapsed_seconds: 75,
             state_elapsed_seconds: 75,
             hard_timeout_seconds: 30,
@@ -223,6 +243,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            observation_state: None,
+            next_check_in_seconds: None,
             runtime_elapsed_seconds: 30,
             state_elapsed_seconds: 30,
             hard_timeout_seconds: 30,
@@ -294,8 +316,20 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         "interrupt_or_exit_resume"
     );
     assert_eq!(
+        events[1].data["async_tool_supervision"]["observation_state"],
+        "no_completion_or_output_observed_yet"
+    );
+    assert_eq!(
+        events[1].data["async_tool_supervision"]["next_check_in_seconds"],
+        30
+    );
+    assert_eq!(
         events[1].data["async_tool_workers"][0]["supervision_classification"],
         "tool_wedged"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][0]["observation_state"],
+        "no_completion_or_output_observed_yet"
     );
     assert_eq!(
         events[1].data["async_tool_workers"][1]["lifecycle_state"],

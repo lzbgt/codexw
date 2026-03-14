@@ -89,6 +89,8 @@ The implemented native-side product already has:
 - orchestrator-owned periodic inspection of active async shell-tool workers,
   including explicit notices when no completion or output has been observed yet
   for the visible tool summary / shell command
+- structured inspection visibility for that active async work, including
+  observation state plus the orchestrator's next planned health check horizon
 - single-pass resume-history hydration, so loading a large resumed thread does
   not walk the full turn history multiple times just to seed state and render
   the latest conversation preview

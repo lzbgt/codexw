@@ -74,9 +74,13 @@ fn status_snapshot_includes_async_tool_fields() {
     assert!(
         rendered.contains("async tool      arguments= command=sleep 5 tool=background_shell_start")
     );
+    assert!(rendered.contains("async obs       no_completion_or_output_observed_yet"));
+    assert!(rendered.contains("async chk in"));
     assert!(rendered.contains("async time"));
     assert!(rendered.contains("async worker    running"));
     assert!(rendered.contains("async worker id 3"));
+    assert!(rendered.contains("async worker ob no_completion_or_output_observed_yet"));
+    assert!(rendered.contains("async worker ck"));
 }
 
 #[test]
@@ -326,6 +330,13 @@ fn async_tool_worker_statuses_expose_running_and_abandoned_workers() {
             .map(|classification| classification.label()),
         Some("tool_slow")
     );
+    assert_eq!(
+        workers[0]
+            .observation_state
+            .map(|observation_state| observation_state.label()),
+        Some("no_completion_or_output_observed_yet")
+    );
+    assert!(workers[0].next_health_check_in.is_some());
     assert_eq!(workers[1].request_id, "8");
     assert_eq!(
         workers[1].lifecycle_state.label(),
@@ -336,6 +347,8 @@ fn async_tool_worker_statuses_expose_running_and_abandoned_workers() {
         "codexw-bgtool-background_shell_start-8"
     );
     assert_eq!(workers[1].supervision_classification, None);
+    assert_eq!(workers[1].observation_state, None);
+    assert_eq!(workers[1].next_health_check_in, None);
 }
 
 #[test]

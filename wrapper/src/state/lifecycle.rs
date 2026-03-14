@@ -257,6 +257,8 @@ impl AppState {
                 state_elapsed: activity.elapsed(),
                 hard_timeout: activity.hard_timeout,
                 supervision_classification: activity.supervision_class(),
+                observation_state: Some(activity.observation_state()),
+                next_health_check_in: Some(activity.next_health_check_in()),
             })
             .chain(
                 self.abandoned_async_tool_requests
@@ -271,6 +273,8 @@ impl AppState {
                         state_elapsed: request.timed_out_elapsed(),
                         hard_timeout: request.hard_timeout,
                         supervision_classification: None,
+                        observation_state: None,
+                        next_health_check_in: None,
                     }),
             )
             .collect::<Vec<_>>();

@@ -209,6 +209,14 @@ impl AsyncToolActivity {
     pub(crate) fn supervision_class(&self) -> Option<AsyncToolSupervisionClass> {
         Self::supervision_class_at_elapsed(self.elapsed())
     }
+
+    pub(crate) fn observation_state(&self) -> AsyncToolObservationState {
+        AsyncToolObservationState::NoCompletionOrOutputObservedYet
+    }
+
+    pub(crate) fn next_health_check_in(&self) -> Duration {
+        self.next_health_check_after.saturating_sub(self.elapsed())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -219,6 +227,25 @@ pub(crate) struct AsyncToolHealthCheck {
     pub(crate) worker_thread_name: String,
     pub(crate) elapsed: Duration,
     pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AsyncToolObservationState {
+    NoCompletionOrOutputObservedYet,
+}
+
+impl AsyncToolObservationState {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Self::NoCompletionOrOutputObservedYet => "no_completion_or_output_observed_yet",
+        }
+    }
+
+    pub(crate) fn prompt_label(self) -> &'static str {
+        match self {
+            Self::NoCompletionOrOutputObservedYet => "awaiting completion/output",
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -257,6 +284,8 @@ pub(crate) struct AsyncToolWorkerStatus {
     pub(crate) state_elapsed: Duration,
     pub(crate) hard_timeout: Duration,
     pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
+    pub(crate) observation_state: Option<AsyncToolObservationState>,
+    pub(crate) next_health_check_in: Option<Duration>,
 }
 
 pub(crate) struct AppState {

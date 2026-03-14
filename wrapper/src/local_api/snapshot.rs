@@ -55,6 +55,8 @@ pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) observation_state: String,
+    pub(crate) next_check_in_seconds: u64,
     pub(crate) elapsed_seconds: u64,
     pub(crate) active_request_count: usize,
 }
@@ -78,6 +80,8 @@ pub(crate) struct LocalApiAsyncToolWorker {
     pub(crate) thread_name: String,
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) observation_state: Option<String>,
+    pub(crate) next_check_in_seconds: Option<u64>,
     pub(crate) runtime_elapsed_seconds: u64,
     pub(crate) state_elapsed_seconds: u64,
     pub(crate) hard_timeout_seconds: u64,
@@ -351,6 +355,8 @@ fn async_tool_supervision_snapshot(
         recovery_options: recovery_options_snapshot(session_id, cwd, state, classification),
         tool: activity.tool.clone(),
         summary: activity.summary.clone(),
+        observation_state: activity.observation_state().label().to_string(),
+        next_check_in_seconds: activity.next_health_check_in().as_secs(),
         elapsed_seconds: activity.elapsed().as_secs(),
         active_request_count: state.active_async_tool_requests.len(),
     })
@@ -380,6 +386,10 @@ fn async_tool_workers_snapshot(state: &AppState) -> Vec<LocalApiAsyncToolWorker>
             thread_name: worker.worker_thread_name,
             tool: worker.tool,
             summary: worker.summary,
+            observation_state: worker
+                .observation_state
+                .map(|observation_state| observation_state.label().to_string()),
+            next_check_in_seconds: worker.next_health_check_in.map(|value| value.as_secs()),
             runtime_elapsed_seconds: worker.runtime_elapsed.as_secs(),
             state_elapsed_seconds: worker.state_elapsed.as_secs(),
             hard_timeout_seconds: worker.hard_timeout.as_secs(),

@@ -79,6 +79,13 @@ should decide when to inspect an active async worker again based on the scale
 it can actually observe locally, such as tool kind, declared timeout budget,
 elapsed runtime, and whether completion or output has been observed yet.
 
+That same slice should expose two more explicit inspection facts:
+
+- the current observation state, for example
+  `no_completion_or_output_observed_yet`
+- the orchestrator's next planned inspection horizon rather than leaving the
+  operator to guess when the worker will be re-evaluated
+
 The first recommended actions should stay narrow and operator-safe:
 
 - `tool_slow` -> `observe_or_interrupt`

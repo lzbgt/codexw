@@ -72,6 +72,8 @@ drift casually:
 - orchestrator-owned periodic async-worker inspection notices that keep the
   concrete tool summary or shell command visible and say when no
   completion/output has been observed yet
+- structured async-worker inspection fields that expose the current
+  observation state and the orchestrator's next planned health check horizon
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - single-pass resume-history hydration for resumed-thread state seeding and
