@@ -311,6 +311,9 @@ as `oldest_request_id`, `oldest_thread_name`, `oldest_source_call_id`,
 `oldest_target_background_shell_job_id`, plus oldest abandoned-worker
 inspection facts such as `oldest_observation_state`,
 `oldest_output_state`, and `oldest_observed_background_shell_job`, plus
+backlog-level `recovery_options` so remote clients can render the same
+`observe_status` / `interrupt_turn` / `exit_and_resume` next steps even after
+the active worker has timed out, plus
 `async_tool_workers` so a remote agent
 backend can inspect dedicated worker thread names and lifecycle states such as
 `running` and `abandoned_after_timeout` without scraping prompt text, plus

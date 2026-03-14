@@ -103,6 +103,10 @@ The implemented native-side product already has:
   facts instead of only a timed-out summary string through
   `oldest_request_id`, `oldest_thread_name`, `oldest_observation_state`,
   `oldest_output_state`, and `oldest_observed_background_shell_job`
+- explicit backlog `recovery_options` on `async_tool_backpressure`, so
+  machine-readable timeout/backpressure status keeps the same
+  `observe_status`, `interrupt_turn`, and `exit_and_resume` next steps that
+  active supervision already exposes
 - backlog-only prompt/status guidance for abandoned async work, so once active
   supervision has timed out the operator still sees compact next steps such as
   `:status`, `:interrupt`, and `resume`
@@ -119,7 +123,7 @@ The implemented native-side product already has:
 - machine-readable local refusal payloads for that saturation case through
   `failure_kind=async_tool_backpressure` plus a structured backpressure object
   that keeps the oldest blocked worker's source/target/observation/output/job
-  facts
+  facts plus explicit backlog `recovery_options`
 - orchestrator-owned periodic inspection of active async shell-tool workers,
   including explicit notices when no completion or output has been observed yet
   for the visible tool summary / shell command

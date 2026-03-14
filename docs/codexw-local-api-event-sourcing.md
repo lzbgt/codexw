@@ -200,7 +200,9 @@ At:
   `oldest_target_background_shell_reference`, and
   `oldest_target_background_shell_job_id`, plus oldest-worker observation /
   output / matched-job facts such as `oldest_observation_state`,
-  `oldest_output_state`, and `oldest_observed_background_shell_job`
+  `oldest_output_state`, and `oldest_observed_background_shell_job`, plus
+  backlog `recovery_options` such as `observe_status`, `interrupt_turn`, and
+  `exit_and_resume`
 - dedicated worker inspection changes through `async_tool_workers`, including
   worker thread names and lifecycle states such as `running` and
   `abandoned_after_timeout`

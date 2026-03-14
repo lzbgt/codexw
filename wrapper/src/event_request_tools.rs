@@ -101,7 +101,7 @@ pub(crate) fn handle_tool_request(
                                 backlog,
                                 oldest_summary,
                                 &oldest_context,
-                                background_shell_backpressure_details(state, oldest),
+                                background_shell_backpressure_details(resolved_cwd, state, oldest),
                             ),
                         },
                     )?;
@@ -245,12 +245,18 @@ fn background_shell_backpressure_failure(
 }
 
 fn background_shell_backpressure_details(
+    resolved_cwd: &str,
     state: &AppState,
     request: Option<(
         &crate::rpc::RequestId,
         &crate::state::AbandonedAsyncToolRequest,
     )>,
 ) -> serde_json::Value {
+    let recovery_options = async_backpressure_recovery_options_json(
+        state.realtime_session_id.as_deref(),
+        resolved_cwd,
+        state,
+    );
     match request {
         Some((request_id, request)) => {
             let observation = state.abandoned_async_tool_observation(request);
@@ -258,6 +264,7 @@ fn background_shell_backpressure_details(
                 "abandoned_request_count": state.abandoned_async_tool_request_count(),
                 "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
                 "saturated": state.async_tool_backpressure_active(),
+                "recovery_options": recovery_options,
                 "oldest_request_id": crate::state::request_id_label(request_id),
                 "oldest_thread_name": request.worker_thread_name.as_str(),
                 "oldest_tool": request.tool.as_str(),
@@ -280,6 +287,7 @@ fn background_shell_backpressure_details(
             "abandoned_request_count": state.abandoned_async_tool_request_count(),
             "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             "saturated": state.async_tool_backpressure_active(),
+            "recovery_options": recovery_options,
             "oldest_request_id": serde_json::Value::Null,
             "oldest_thread_name": serde_json::Value::Null,
             "oldest_tool": serde_json::Value::Null,
@@ -295,6 +303,32 @@ fn background_shell_backpressure_details(
             "oldest_elapsed_seconds": serde_json::Value::Null
         }),
     }
+}
+
+fn async_backpressure_recovery_options_json(
+    session_id: Option<&str>,
+    resolved_cwd: &str,
+    state: &AppState,
+) -> serde_json::Value {
+    serde_json::Value::Array(
+        crate::supervision_recovery::async_backpressure_recovery_options(
+            state,
+            session_id,
+            resolved_cwd,
+        )
+        .into_iter()
+        .map(|option| {
+            serde_json::json!({
+                "kind": option.kind,
+                "label": option.label,
+                "automation_ready": option.automation_ready,
+                "cli_command": option.cli_command,
+                "local_api_method": option.local_api_method,
+                "local_api_path": option.local_api_path,
+            })
+        })
+        .collect(),
+    )
 }
 
 fn backpressure_observed_background_shell_job(
@@ -601,6 +635,9 @@ mod tests {
     #[test]
     fn saturated_abandoned_async_backlog_refuses_new_shell_tool_requests() {
         let mut state = AppState::new(true, false);
+        state.realtime_session_id = Some("sess_test".to_string());
+        state.thread_id = Some("thread_123".to_string());
+        state.turn_running = true;
         let mut output = Output::default();
         let (_temp, mut child, mut writer, path) = spawn_recording_stdin();
         let (tx, rx) = mpsc::channel();
@@ -651,6 +688,20 @@ mod tests {
             crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
         );
         assert_eq!(result["backpressure"]["saturated"], true);
+        assert_eq!(
+            result["backpressure"]["recovery_options"][0]["kind"],
+            "observe_status"
+        );
+        assert_eq!(
+            result["backpressure"]["recovery_options"][1]["local_api_path"],
+            "/api/v1/session/sess_test/turn/interrupt"
+        );
+        assert!(
+            result["backpressure"]["recovery_options"][2]["cli_command"]
+                .as_str()
+                .expect("resume command")
+                .ends_with(" --cwd /tmp resume thread_123")
+        );
         assert_eq!(
             result["backpressure"]["oldest_tool"],
             "background_shell_start"
@@ -721,7 +772,7 @@ mod tests {
             1,
             &oldest.1.summary,
             &context,
-            background_shell_backpressure_details(&state, Some(oldest)),
+            background_shell_backpressure_details("/tmp", &state, Some(oldest)),
         );
         let failure_text = failure["contentItems"][0]["text"]
             .as_str()

@@ -134,6 +134,18 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_backpressure"]["abandoned_request_count"],
         1
     );
+    assert_eq!(
+        body["async_tool_backpressure"]["recovery_options"][0]["kind"],
+        "observe_status"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["recovery_options"][1]["local_api_path"],
+        "/api/v1/session/sess_test/turn/interrupt"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["recovery_options"][2]["cli_command"],
+        "codexw --cwd /tmp/repo resume thread_123"
+    );
     assert_eq!(body["async_tool_backpressure"]["oldest_request_id"], "8");
     assert_eq!(
         body["async_tool_backpressure"]["oldest_thread_name"],
@@ -279,6 +291,10 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["session"]["async_tool_backpressure"]["oldest_request_id"],
         "8"
+    );
+    assert_eq!(
+        body["session"]["async_tool_backpressure"]["recovery_options"][2]["kind"],
+        "exit_and_resume"
     );
     assert_eq!(
         body["session"]["async_tool_workers"][0]["supervision_classification"],

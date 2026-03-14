@@ -183,6 +183,8 @@ The statuses are:
     runtime-enforced local failure path when an async shell-tool request
     exceeds its bounded runtime limit, plus dedicated wrapper worker threads,
     abandoned async backlog visibility through `async_tool_backpressure`, and
+    backlog `recovery_options` on that same `async_tool_backpressure` slice and
+    structured saturation-refusal payload, plus
     dedicated worker inspection visibility through `async_tool_workers` with
     lifecycle states such as `running` and `abandoned_after_timeout`, and
     local refusal of new background-shell async requests once that backlog is

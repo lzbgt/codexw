@@ -153,7 +153,8 @@ The first emitted recovery signal should also be sticky enough to notice:
 - expose that backlog through an `async_tool_backpressure` state slice,
   including the oldest abandoned worker's `observation_state`,
   `output_state`, and `observed_background_shell_job` when the correlated
-  shell is still visible
+  shell is still visible, plus explicit `recovery_options` such as
+  `observe_status`, `interrupt_turn`, and `exit_and_resume`
 - once the abandoned async backlog is saturated, refuse new background-shell
   async requests locally until the backlog drains or the operator exits and
   resumes
@@ -211,7 +212,8 @@ first-class safety issue:
   hash map
 - that same local refusal should stay machine-readable through
   `failure_kind=async_tool_backpressure` plus a structured backpressure object carrying
-  the oldest blocked worker's source/target/observation/output/job facts
+  the oldest blocked worker's source/target/observation/output/job facts and
+  explicit `recovery_options`
 - if that correlated `bg-*` shell is still observable after timeout, the same
   abandoned worker should keep reporting its current observation/output state
   and matched job facts instead of degrading back to null inspection data

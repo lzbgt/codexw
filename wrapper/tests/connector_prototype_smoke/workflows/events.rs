@@ -554,6 +554,32 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "abandoned_request_count": 1,
                                     "saturation_threshold": 2,
                                     "saturated": false,
+                                    "recovery_options": [
+                                        {
+                                            "kind": "observe_status",
+                                            "label": "Observe current session status",
+                                            "automation_ready": false,
+                                            "cli_command": Value::Null,
+                                            "local_api_method": "GET",
+                                            "local_api_path": "/api/v1/session/sess_1"
+                                        },
+                                        {
+                                            "kind": "interrupt_turn",
+                                            "label": "Interrupt the active turn",
+                                            "automation_ready": false,
+                                            "cli_command": Value::Null,
+                                            "local_api_method": "POST",
+                                            "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                        },
+                                        {
+                                            "kind": "exit_and_resume",
+                                            "label": "Exit and resume the thread in a newer client",
+                                            "automation_ready": false,
+                                            "cli_command": "codexw --cwd /tmp/repo resume thread_1",
+                                            "local_api_method": Value::Null,
+                                            "local_api_path": Value::Null
+                                        }
+                                    ],
                                     "oldest_request_id": "8",
                                     "oldest_thread_name": "codexw-bgtool-background_shell_start-8",
                                     "oldest_tool": "background_shell_start",
@@ -690,6 +716,32 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "abandoned_request_count": 1,
                             "saturation_threshold": 2,
                             "saturated": false,
+                            "recovery_options": [
+                                {
+                                    "kind": "observe_status",
+                                    "label": "Observe current session status",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "GET",
+                                    "local_api_path": "/api/v1/session/sess_1"
+                                },
+                                {
+                                    "kind": "interrupt_turn",
+                                    "label": "Interrupt the active turn",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "POST",
+                                    "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                },
+                                {
+                                    "kind": "exit_and_resume",
+                                    "label": "Exit and resume the thread in a newer client",
+                                    "automation_ready": false,
+                                    "cli_command": "codexw --cwd /tmp/repo resume thread_1",
+                                    "local_api_method": Value::Null,
+                                    "local_api_path": Value::Null
+                                }
+                            ],
                             "oldest_request_id": "8",
                             "oldest_thread_name": "codexw-bgtool-background_shell_start-8",
                             "oldest_tool": "background_shell_start",
@@ -875,6 +927,32 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "abandoned_request_count": 2,
                             "saturation_threshold": 2,
                             "saturated": true,
+                            "recovery_options": [
+                                {
+                                    "kind": "observe_status",
+                                    "label": "Observe current session status",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "GET",
+                                    "local_api_path": "/api/v1/session/sess_1"
+                                },
+                                {
+                                    "kind": "interrupt_turn",
+                                    "label": "Interrupt the active turn",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "POST",
+                                    "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
+                                },
+                                {
+                                    "kind": "exit_and_resume",
+                                    "label": "Exit and resume the thread in a newer client",
+                                    "automation_ready": false,
+                                    "cli_command": "codexw --cwd /tmp/repo resume thread_1",
+                                    "local_api_method": Value::Null,
+                                    "local_api_path": Value::Null
+                                }
+                            ],
                             "oldest_request_id": "8",
                             "oldest_thread_name": "codexw-bgtool-background_shell_start-8",
                             "oldest_tool": "background_shell_start",
@@ -1028,6 +1106,10 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
         create_response
             .contains("\"oldest_observation_state\":\"wrapper_background_shell_streaming_output\"")
     );
+    assert!(create_response.contains("\"recovery_options\":[{"));
+    assert!(create_response.contains("\"kind\":\"observe_status\""));
+    assert!(create_response.contains("\"kind\":\"interrupt_turn\""));
+    assert!(create_response.contains("\"kind\":\"exit_and_resume\""));
     assert!(create_response.contains("\"oldest_request_id\":\"8\""));
     assert!(
         create_response
@@ -1088,6 +1170,9 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
         initial_events
             .contains("\"oldest_observation_state\":\"wrapper_background_shell_streaming_output\"")
     );
+    assert!(initial_events.contains("\"kind\":\"observe_status\""));
+    assert!(initial_events.contains("\"kind\":\"interrupt_turn\""));
+    assert!(initial_events.contains("\"kind\":\"exit_and_resume\""));
     assert!(initial_events.contains("\"oldest_output_state\":\"recent_output_observed\""));
     assert!(initial_events.contains("\"oldest_observed_background_shell_job\""));
     assert!(initial_events.contains("\"async_tool_workers\""));
@@ -1133,6 +1218,9 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains(
         "\"oldest_observation_state\":\"wrapper_background_shell_terminal_without_tool_response\""
     ));
+    assert!(resumed_events.contains("\"kind\":\"observe_status\""));
+    assert!(resumed_events.contains("\"kind\":\"interrupt_turn\""));
+    assert!(resumed_events.contains("\"kind\":\"exit_and_resume\""));
     assert!(resumed_events.contains("\"oldest_output_state\":\"stale_output_observed\""));
     assert!(resumed_events.contains("\"oldest_observed_background_shell_job\""));
     assert!(resumed_events.contains("\"async_tool_workers\""));

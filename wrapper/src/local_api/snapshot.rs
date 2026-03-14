@@ -72,6 +72,7 @@ pub(crate) struct LocalApiAsyncToolBackpressure {
     pub(crate) abandoned_request_count: usize,
     pub(crate) saturation_threshold: usize,
     pub(crate) saturated: bool,
+    pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
     pub(crate) oldest_request_id: String,
     pub(crate) oldest_thread_name: String,
     pub(crate) oldest_tool: String,
@@ -341,7 +342,8 @@ pub(crate) fn sync_shared_snapshot(
         guard.active_personality = state.active_personality.clone();
         guard.async_tool_supervision =
             async_tool_supervision_snapshot(&guard.session_id, &guard.cwd, state);
-        guard.async_tool_backpressure = async_tool_backpressure_snapshot(state);
+        guard.async_tool_backpressure =
+            async_tool_backpressure_snapshot(&guard.session_id, &guard.cwd, state);
         guard.async_tool_workers = async_tool_workers_snapshot(state);
         guard.supervision_notice =
             supervision_notice_snapshot(&guard.session_id, &guard.cwd, state);
@@ -413,13 +415,18 @@ fn async_tool_supervision_snapshot(
     })
 }
 
-fn async_tool_backpressure_snapshot(state: &AppState) -> Option<LocalApiAsyncToolBackpressure> {
+fn async_tool_backpressure_snapshot(
+    session_id: &str,
+    cwd: &str,
+    state: &AppState,
+) -> Option<LocalApiAsyncToolBackpressure> {
     let (request_id, abandoned) = state.oldest_abandoned_async_tool_entry()?;
     let observation = state.abandoned_async_tool_observation(abandoned);
     Some(LocalApiAsyncToolBackpressure {
         abandoned_request_count: state.abandoned_async_tool_request_count(),
         saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
         saturated: state.async_tool_backpressure_active(),
+        recovery_options: async_backpressure_recovery_options_snapshot(session_id, cwd, state),
         oldest_request_id: crate::state::request_id_label(request_id),
         oldest_thread_name: abandoned.worker_thread_name.clone(),
         oldest_tool: abandoned.tool.clone(),
@@ -616,6 +623,24 @@ fn orchestration_dependencies_snapshot(state: &AppState) -> Vec<LocalApiDependen
             to: edge.to,
             kind: edge.kind,
             blocking: edge.blocking,
+        })
+        .collect()
+}
+
+fn async_backpressure_recovery_options_snapshot(
+    session_id: &str,
+    cwd: &str,
+    state: &AppState,
+) -> Vec<LocalApiRecoveryOption> {
+    crate::supervision_recovery::async_backpressure_recovery_options(state, Some(session_id), cwd)
+        .into_iter()
+        .map(|option| LocalApiRecoveryOption {
+            kind: option.kind.to_string(),
+            label: option.label.to_string(),
+            automation_ready: option.automation_ready,
+            cli_command: option.cli_command,
+            local_api_method: option.local_api_method,
+            local_api_path: option.local_api_path,
         })
         .collect()
 }

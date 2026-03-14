@@ -100,6 +100,9 @@ drift casually:
 - explicit oldest-backlog observation/output/job visibility through
   `async_tool_backpressure`, including `oldest_observation_state`,
   `oldest_output_state`, and `oldest_observed_background_shell_job`
+- explicit backlog `recovery_options` on `async_tool_backpressure`, so
+  timeout/backpressure status keeps the same `observe_status`,
+  `interrupt_turn`, and `exit_and_resume` next steps as active supervision
 - live self-supervision inspection notices that include observation/output
   state, source call id when present, and next-check timing in the terminal
   stream
@@ -125,8 +128,8 @@ drift casually:
   saturated
 - machine-readable saturation refusal results through
   `failure_kind=async_tool_backpressure` and a structured `backpressure`
-  object, so callers do not have to parse prose to understand the blocked
-  oldest worker
+  object, including explicit backlog `recovery_options`, so callers do not
+  have to parse prose to understand the blocked oldest worker or next step
 - single-pass resume-history hydration for resumed-thread state seeding and
   latest-message preview extraction
 - a local recent-thread cache that can render last-known numbered sessions
