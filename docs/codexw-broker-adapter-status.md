@@ -142,7 +142,9 @@ the real connector binary:
 - focused service-detail and capability-detail reads after mutation workflows
 - client-event publish and replay/resume
 - explicit route-by-route local-API session lifecycle assertions
-- explicit route-by-route connector allowlist and broker-alias mapping
+- explicit route-by-route connector allowlist and broker-alias mapping,
+  including an invariant that every claimed broker-style alias resolves only to
+  a local target the connector allowlist still permits
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation
