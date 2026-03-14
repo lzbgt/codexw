@@ -40,6 +40,12 @@ Promotion means a smaller, explicit claim:
 - the client/lease model is explicit enough that independent consumers can act
   correctly without reverse-engineering implementation details
 
+That smaller claim currently covers the documented session/event/orchestration/
+shell/service/capability surface. It does not automatically include the
+design-only artifact track documented in
+[codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+and [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md).
+
 ## Required Contract Areas
 
 ### 1. Route Contract
@@ -136,6 +142,8 @@ Promotion requires a stable statement of what is intentionally unsupported:
 - scene/entity models
 - audio/video expectations
 - parity assumptions `codexw` does not intend to honor
+- artifact index/detail/content routes until they are explicitly implemented,
+  mapped, and proven
 
 That boundary should remain aligned with
 [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md).

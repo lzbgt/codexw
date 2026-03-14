@@ -184,6 +184,13 @@ It should not:
 - rewrite transcript content
 - invent a second session model
 
+It also should not imply broker-visible artifact routes exist before the local
+API artifact track is actually implemented. That track is now explicitly
+separated in:
+
+- [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+- [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
+
 ## Unsupported Or Deferred Areas
 
 The connector should explicitly reject or defer:
@@ -193,6 +200,9 @@ The connector should explicitly reject or defer:
 - any route that requires native `agentd` DB/scene semantics
 - any route that assumes a generic run/artifact model where `codexw` has a more
   specific orchestration/service abstraction
+- any artifact index/detail/content route until the local API artifact layer
+  exists and the adapter contract/policy docs explicitly add it to the
+  supported surface
 
 ## Initial Adapter Deliverable
 

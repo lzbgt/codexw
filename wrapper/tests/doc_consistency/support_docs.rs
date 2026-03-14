@@ -12,6 +12,8 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let broker_proof = read_repo_file("docs/codexw-broker-proof-matrix.md");
     let broker_policy = read_repo_file("docs/codexw-broker-support-policy.md");
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
+    let broker_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
+    let broker_mapping = read_repo_file("docs/codexw-broker-connector-mapping.md");
     let native_boundaries = read_repo_file("docs/codexw-native-support-boundaries.md");
     let native_status = read_repo_file("docs/codexw-native-product-status.md");
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
@@ -195,6 +197,26 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_hardening,
         "not a blocker",
         "docs/codexw-broker-hardening-catalog.md",
+    );
+    assert_contains(
+        &broker_promotion,
+        "codexw-broker-artifact-contract-sketch.md",
+        "docs/codexw-broker-adapter-promotion.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_promotion,
+        "artifact index/detail/content routes",
+        "docs/codexw-broker-adapter-promotion.md",
+    );
+    assert_contains(
+        &broker_mapping,
+        "codexw-broker-artifact-implementation-plan.md",
+        "docs/codexw-broker-connector-mapping.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_mapping,
+        "any artifact index/detail/content route",
+        "docs/codexw-broker-connector-mapping.md",
     );
 
     assert_contains_case_insensitive(
