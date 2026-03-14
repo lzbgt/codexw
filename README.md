@@ -71,6 +71,10 @@ For the design sketch of that remaining broker-visible artifact gap, see
 [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md).
 For the implementation-facing delivery order for that artifact track, see
 [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md).
+The current supported experimental adapter therefore stops at the existing
+shell-first host-examination surface; artifact index/detail/content routes stay
+outside that support boundary until the separate artifact track is implemented
+and proven.
 For the short implementer-facing handoff for the sibling `~/work/agent`
 workspace, see
 [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).

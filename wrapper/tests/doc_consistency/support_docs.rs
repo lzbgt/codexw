@@ -2874,6 +2874,7 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
 #[test]
 fn broker_docs_preserve_fixture_diversity_claims() {
     let readme = read_repo_file("README.md");
+    let todos = read_repo_file("TODOS.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
@@ -2982,6 +2983,21 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "Those standalone Python and Node fixtures now also prove enriched",
         "README.md",
     );
+    assert_contains_case_insensitive(
+        &readme,
+        "supported experimental adapter",
+        "README.md",
+    );
+    assert_contains_case_insensitive(
+        &readme,
+        "shell-first host-examination surface",
+        "README.md",
+    );
+    assert_contains_case_insensitive(
+        &readme,
+        "artifact index/detail/content routes stay",
+        "README.md",
+    );
 
     assert_contains(
         &broker_hardening,
@@ -2992,6 +3008,36 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         &checklist,
         "Python and Node",
         "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "readme and todo/backlog docs still summarize the same support boundary",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "artifact routes remain outside that boundary",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &todos,
+        "supported experimental adapter ends",
+        "TODOS.md",
+    );
+    assert_contains_case_insensitive(
+        &todos,
+        "shell-first host-examination surface",
+        "TODOS.md",
+    );
+    assert_contains_case_insensitive(
+        &todos,
+        "shell-first host-examination surface",
+        "TODOS.md",
+    );
+    assert_contains_case_insensitive(
+        &todos,
+        "artifact track is implemented and proven",
+        "TODOS.md",
     );
 }
 

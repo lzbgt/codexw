@@ -148,6 +148,10 @@ Confirm all of the following:
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch
+- README and TODO/backlog docs still summarize the same support boundary:
+  supported experimental adapter means the current shell-first
+  host-examination surface, while artifact routes remain outside that boundary
+  until the separate artifact track is implemented and proven
 - artifact sketch/plan/host-examination docs still say the supported
   experimental adapter ends at the current shell-first host-examination
   surface, with artifact routes remaining design-only until contract, proof,

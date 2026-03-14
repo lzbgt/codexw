@@ -133,6 +133,10 @@ Concrete tasks:
   - broker status docs
   - promotion docs
   - proof docs
+- keep the repo summary explicit that the supported experimental adapter ends
+  at the current shell-first host-examination surface, with artifact
+  index/detail/content routes remaining outside that boundary until the
+  artifact track is implemented and proven
 - keep README, status docs, and future release notes aligned with the current
   support-level claim
 - avoid reintroducing stale wording that describes the adapter as “only a
