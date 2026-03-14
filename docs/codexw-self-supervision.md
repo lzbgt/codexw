@@ -165,8 +165,13 @@ first-class safety issue:
   `running` or `abandoned_after_timeout`
 - that same inspection lane should correlate wrapper-owned
   `background_shell_start` requests to the started `bg-*` shell job via origin
-  `callId` so the runtime can report real job/output facts instead of only a
-  generic spinner
+  `callId`
+- for wrapper-owned shell tools that target an existing shell, such as
+  `background_shell_wait_ready`, `background_shell_poll`,
+  `background_shell_send`, or `background_shell_invoke_recipe`, the same lane
+  should also resolve the requested `jobId|alias|@capability` target to the
+  concrete `bg-*` job so the runtime can report real job/output facts instead
+  of only a generic spinner
 - when a correlated `bg-*` job exists, the same lane should expose output
   freshness through `output_state` and a concrete age fact such as
   `last_output_age_seconds`, so operators and broker clients can distinguish

@@ -99,6 +99,8 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: None,
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-13".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -148,6 +150,8 @@ fn status_snapshot_includes_correlated_background_shell_job_details() {
             summary: "arguments= command=printf READY tool=background_shell_start".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: Some("call-31".to_string()),
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-31".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -236,6 +240,8 @@ fn status_snapshot_marks_correlated_background_shell_output_as_stale() {
             summary: "arguments= command=sleep 2 tool=background_shell_start".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: Some("call-41".to_string()),
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-41".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(70),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -308,6 +314,102 @@ fn status_snapshot_marks_correlated_background_shell_output_as_stale() {
 }
 
 #[test]
+fn status_snapshot_correlates_wait_ready_to_target_background_job() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    state.turn_running = true;
+    let _ = state
+        .orchestration
+        .background_shells
+        .start_from_tool_with_context(
+            &serde_json::json!({
+                "command": "echo READY; sleep 20",
+                "intent": "service",
+                "readyPattern": "READY",
+            }),
+            "/tmp",
+            crate::background_shells::BackgroundShellOrigin::default(),
+        );
+    state
+        .orchestration
+        .background_shells
+        .set_job_alias("bg-1", "dev.api")
+        .expect("set alias");
+    if let Ok(job) = state.orchestration.background_shells.lookup_job("bg-1") {
+        let mut job = job.lock().expect("background shell job");
+        job.total_lines = 1;
+        job.last_output_at = Some(std::time::Instant::now());
+        job.lines
+            .push_back(crate::background_shells::BackgroundShellOutputLine {
+                cursor: 1,
+                text: "READY".to_string(),
+            });
+    }
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(43),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_wait_ready".to_string(),
+            summary: "arguments= jobId=dev.api timeoutMs=60000 tool=background_shell_wait_ready"
+                .to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: None,
+            target_background_shell_reference: Some("dev.api".to_string()),
+            target_background_shell_job_id: Some("bg-1".to_string()),
+            worker_thread_name: "codexw-bgtool-background_shell_wait_ready-43".to_string(),
+            started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
+        },
+    );
+    let observation = state.async_tool_observation(
+        state
+            .active_async_tool_requests
+            .get(&crate::rpc::RequestId::Integer(43))
+            .expect("active async tool"),
+    );
+    let cli = crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: false,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        local_api: false,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
+        prompt: Vec::new(),
+    });
+
+    let rendered = render_status_runtime(&cli, &state).join("\n");
+
+    assert_eq!(
+        observation.observation_state.label(),
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(observation.output_state.label(), "recent_output_observed");
+    assert!(rendered.contains(
+        "async tool      arguments= jobId=dev.api timeoutMs=60000 tool=background_shell_wait_ready"
+    ));
+    assert!(rendered.contains("async job       bg-1 "));
+    assert!(rendered.contains("async cmd       echo READY; sleep 20"));
+    assert!(rendered.contains("async out       recent_output_observed"));
+    assert!(rendered.contains("async worker jb bg-1 "));
+    assert!(rendered.contains("async worker os recent_output_observed"));
+    assert!(observation.observed_background_shell_job.is_some());
+}
+
+#[test]
 fn status_snapshot_marks_correlated_background_shell_started_without_output_yet() {
     let mut state = crate::state::AppState::new(true, false);
     state.thread_id = Some("thread-1".to_string());
@@ -319,6 +421,8 @@ fn status_snapshot_marks_correlated_background_shell_started_without_output_yet(
             summary: "arguments= command=sleep 20 tool=background_shell_start".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: Some("call-42".to_string()),
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-42".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(25),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -657,6 +761,8 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             summary: "slow".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: None,
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -691,6 +797,8 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             summary: "wedged".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: None,
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -729,6 +837,8 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             summary: "slow".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: None,
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -765,6 +875,8 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             summary: "wedged".to_string(),
             owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
             source_call_id: None,
+            target_background_shell_reference: None,
+            target_background_shell_job_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(75),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,

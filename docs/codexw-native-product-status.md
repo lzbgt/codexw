@@ -101,6 +101,10 @@ The implemented native-side product already has:
 - correlation from wrapper-owned `background_shell_start` requests to the
   observed `bg-*` shell job via source `callId`, so prompt/status/local-API
   surfaces can show job id, job status, command, and recent output preview
+- direct target correlation for wrapper-owned async shell tools that reuse an
+  existing shell by `jobId|alias|@capability`, so wait/poll/send/attach/invoke
+  supervision can inspect the same concrete `bg-*` job instead of remaining in
+  generic unresolved-worker state
 - single-pass resume-history hydration, so loading a large resumed thread does
   not walk the full turn history multiple times just to seed state and render
   the latest conversation preview

@@ -944,6 +944,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        "jobid",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "@capability",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "next-check",
         "docs/codexw-native-product-status.md",
     );
@@ -1019,6 +1029,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &background_execution_boundary,
+        "jobid",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "@capability",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
         "wrapper_background_shell_started_no_output_yet",
         "docs/codexw-background-execution-boundary.md",
     );
@@ -1033,6 +1053,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(&self_supervision, "bg-*", "docs/codexw-self-supervision.md");
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "jobid",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "@capability",
+        "docs/codexw-self-supervision.md",
+    );
     assert_contains_case_insensitive(
         &self_supervision_plan,
         "wrapper_background_shell_streaming_output",
@@ -1101,6 +1131,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "source call id",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "jobid",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "@capability",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(

@@ -4,6 +4,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
+use crate::background_shells::BackgroundShellManager;
 use crate::client_dynamic_tools::execute_background_shell_tool_call_with_manager;
 use crate::client_dynamic_tools::execute_dynamic_tool_call_with_state;
 use crate::client_dynamic_tools::is_background_shell_tool;
@@ -103,6 +104,8 @@ pub(crate) fn handle_tool_request(
                 let summary = summarize_tool_request(&params);
                 let tool_name = tool.to_string();
                 let worker_name = background_shell_worker_thread_name(tool, &request_id);
+                let (target_background_shell_reference, target_background_shell_job_id) =
+                    async_background_shell_target(&params, &state.orchestration.background_shells);
                 state.record_async_tool_request_with_timeout_and_worker(
                     request_id.clone(),
                     tool_name.clone(),
@@ -115,6 +118,8 @@ pub(crate) fn handle_tool_request(
                         .get("callId")
                         .and_then(serde_json::Value::as_str)
                         .map(ToOwned::to_owned);
+                    activity.target_background_shell_reference = target_background_shell_reference;
+                    activity.target_background_shell_job_id = target_background_shell_job_id;
                 }
                 let resolved_cwd = resolved_cwd.to_string();
                 let tx = tx.clone();
@@ -225,6 +230,24 @@ fn background_shell_backpressure_failure(
         }],
         "success": false
     })
+}
+
+fn async_background_shell_target(
+    params: &serde_json::Value,
+    background_shells: &BackgroundShellManager,
+) -> (Option<String>, Option<String>) {
+    let requested_reference = params
+        .get("arguments")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|arguments| arguments.get("jobId"))
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|reference| !reference.is_empty())
+        .map(ToOwned::to_owned);
+    let resolved_job_id = requested_reference
+        .as_deref()
+        .and_then(|reference| background_shells.resolve_job_reference(reference).ok());
+    (requested_reference, resolved_job_id)
 }
 
 fn duration_from_optional_timeout(value: Option<&serde_json::Value>, default_ms: u64) -> Duration {
@@ -356,6 +379,54 @@ mod tests {
             .get(&RequestId::Integer(7))
             .expect("tracked async tool activity");
         assert_eq!(activity.hard_timeout, Duration::from_millis(15_000));
+    }
+
+    #[test]
+    fn async_background_shell_request_tracks_resolved_target_job() {
+        let mut state = AppState::new(true, false);
+        let _ = state
+            .orchestration
+            .background_shells
+            .start_from_tool_with_context(
+                &json!({
+                    "command": "echo READY; sleep 20",
+                    "intent": "service",
+                    "readyPattern": "READY",
+                }),
+                "/tmp",
+                crate::background_shells::BackgroundShellOrigin::default(),
+            );
+        state
+            .orchestration
+            .background_shells
+            .set_job_alias("bg-1", "dev.api")
+            .expect("set alias");
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+        let (tx, _rx) = mpsc::channel();
+        let request = test_request(
+            "item/tool/call",
+            "background_shell_wait_ready",
+            json!({"jobId": "dev.api", "timeoutMs": 60000}),
+        );
+
+        let handled =
+            handle_tool_request(&request, "/tmp", &mut state, &mut output, &mut writer, &tx)
+                .expect("handle tool request");
+
+        assert!(handled);
+        let activity = state
+            .active_async_tool_requests
+            .get(&RequestId::Integer(7))
+            .expect("tracked async tool activity");
+        assert_eq!(
+            activity.target_background_shell_reference.as_deref(),
+            Some("dev.api")
+        );
+        assert_eq!(
+            activity.target_background_shell_job_id.as_deref(),
+            Some("bg-1")
+        );
     }
 
     #[test]

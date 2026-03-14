@@ -186,6 +186,8 @@ pub(crate) struct AsyncToolActivity {
     pub(crate) summary: String,
     pub(crate) owner_kind: AsyncToolOwnerKind,
     pub(crate) source_call_id: Option<String>,
+    pub(crate) target_background_shell_reference: Option<String>,
+    pub(crate) target_background_shell_job_id: Option<String>,
     pub(crate) worker_thread_name: String,
     pub(crate) started_at: Instant,
     pub(crate) hard_timeout: Duration,

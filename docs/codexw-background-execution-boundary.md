@@ -94,6 +94,20 @@ correlation path:
    wrapper-owned shell job
 4. supervision can report the real job facts instead of a meaningless spinner
 
+For wrapper-owned shell tools that target an existing shell, the runtime also
+has a direct target-correlation path:
+
+1. the async dynamic-tool request carries `jobId`, which may be a concrete
+   `bg-*` id, alias, or `@capability`
+2. `codexw` resolves that selector to the concrete wrapper-owned shell job at
+   request start when possible
+3. the main orchestrator can inspect that exact `bg-*` job while the async
+   tool worker is still unresolved
+4. supervision can report the same job/output facts for
+   `background_shell_wait_ready`, `background_shell_poll`,
+   `background_shell_send`, `background_shell_attach`, and
+   `background_shell_invoke_recipe`, not only for `background_shell_start`
+
 That gives the orchestrator concrete evidence such as:
 
 - owner kind: `wrapper_background_shell`

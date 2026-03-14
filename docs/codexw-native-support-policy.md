@@ -85,6 +85,12 @@ drift casually:
 - correlated wrapper-shell inspection facts, so a supervised
   `background_shell_start` can surface the matched `bg-*` job id, job status,
   command, and recent output preview when those facts exist
+- the same correlated wrapper-shell inspection for async shell tools that
+  reuse an existing shell by `jobId|alias|@capability`, so
+  `background_shell_wait_ready`, `background_shell_poll`,
+  `background_shell_send`, `background_shell_attach`, and
+  `background_shell_invoke_recipe` can surface the matched `bg-*` job instead
+  of remaining in generic unresolved-worker state
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - single-pass resume-history hydration for resumed-thread state seeding and
