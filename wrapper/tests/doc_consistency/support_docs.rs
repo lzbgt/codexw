@@ -239,6 +239,33 @@ fn broker_and_native_docs_link_to_automated_support_claim_guard() {
 }
 
 #[test]
+fn design_doc_keeps_workspace_tool_policy_note_linked() {
+    let design = read_repo_file("docs/codexw-design.md");
+    let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
+
+    assert_contains(
+        &design,
+        "codexw-workspace-tool-policy.md",
+        "docs/codexw-design.md",
+    );
+    assert_contains(
+        &workspace_policy,
+        "workspace_read_file",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains(
+        &workspace_policy,
+        "workspace_search_text",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains(
+        &workspace_policy,
+        "shell is the general-purpose execution substrate",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+}
+
+#[test]
 fn broker_docs_preserve_fixture_diversity_claims() {
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");

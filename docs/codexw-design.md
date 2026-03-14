@@ -569,6 +569,11 @@ Current user-facing capabilities include:
 
 `codexw` no longer leaves any of the user-facing slash-command side effects in a generic placeholder state. The Windows-only `:sandbox-add-read-dir` path is now handled client-side like upstream: it validates the requested absolute directory and refreshes sandbox read grants locally rather than going through app-server. The main remaining gaps are architectural or UX-level instead of command dispatch parity. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only. Upstream app-server also still does not expose a public client request that can write to or poll model-owned `item/commandExecution` sessions directly, so same-turn async shell work is implemented through wrapper-owned dynamic tools instead of reusing the backend's internal unified-exec handles.
 
+The focused policy for when read-only workspace inspection should stay in the
+dynamic-tool surface, versus when shell/Python should remain the preferred
+execution path, now lives in
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+
 ## Project Status
 
 The project is now in a relatively mature state.
