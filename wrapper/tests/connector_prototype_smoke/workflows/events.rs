@@ -512,7 +512,21 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                             "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
                                         }
                                     ],
-                                    "tool": "background_shell_start"
+                                    "owner": "wrapper_background_shell",
+                                    "source_call_id": "call_123",
+                                    "tool": "background_shell_start",
+                                    "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                    "observation_state": "wrapper_background_shell_streaming_output",
+                                    "observed_background_shell_job": {
+                                        "job_id": "bg-7",
+                                        "status": "running",
+                                        "command": "python stage2.py --quick",
+                                        "total_lines": 3,
+                                        "recent_lines": ["stage1 ok", "stage2 running"]
+                                    },
+                                    "elapsed_seconds": 21,
+                                    "next_check_in_seconds": 9,
+                                    "active_request_count": 1
                                 },
                                 "async_tool_backpressure": {
                                     "abandoned_request_count": 1,
@@ -529,8 +543,17 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "request_id": "7",
                                         "lifecycle_state": "running",
                                         "thread_name": "codexw-bgtool-background_shell_start-7",
+                                        "owner": "wrapper_background_shell",
+                                        "source_call_id": "call_123",
                                         "tool": "background_shell_start",
                                         "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                        "observed_background_shell_job": {
+                                            "job_id": "bg-7",
+                                            "status": "running",
+                                            "command": "python stage2.py --quick",
+                                            "total_lines": 3,
+                                            "recent_lines": ["stage1 ok", "stage2 running"]
+                                        },
                                         "runtime_elapsed_seconds": 21,
                                         "state_elapsed_seconds": 21,
                                         "hard_timeout_seconds": 15,
@@ -540,8 +563,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         "request_id": "8",
                                         "lifecycle_state": "abandoned_after_timeout",
                                         "thread_name": "codexw-bgtool-background_shell_start-8",
+                                        "owner": "wrapper_background_shell",
+                                        "source_call_id": "call_456",
                                         "tool": "background_shell_start",
                                         "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                        "observed_background_shell_job": Value::Null,
                                         "runtime_elapsed_seconds": 21,
                                         "state_elapsed_seconds": 6,
                                         "hard_timeout_seconds": 15,
@@ -583,13 +609,24 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "cli_command": Value::Null,
                                     "local_api_method": "POST",
                                     "local_api_path": "/api/v1/session/sess_1/turn/interrupt"
-                                }
-                            ],
-                            "tool": "background_shell_start",
-                            "summary": "arguments= command=sleep 5 tool=background_shell_start",
-                            "elapsed_seconds": 21,
-                            "active_request_count": 1
-                        },
+                                        }
+                                    ],
+                                    "owner": "wrapper_background_shell",
+                                    "source_call_id": "call_123",
+                                    "tool": "background_shell_start",
+                                    "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                    "observation_state": "wrapper_background_shell_streaming_output",
+                                    "observed_background_shell_job": {
+                                        "job_id": "bg-7",
+                                        "status": "running",
+                                        "command": "python stage2.py --quick",
+                                        "total_lines": 3,
+                                        "recent_lines": ["stage1 ok", "stage2 running"]
+                                    },
+                                    "elapsed_seconds": 21,
+                                    "next_check_in_seconds": 9,
+                                    "active_request_count": 1
+                                },
                         "async_tool_backpressure": {
                             "abandoned_request_count": 1,
                             "saturation_threshold": 2,
@@ -605,8 +642,17 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "request_id": "7",
                                 "lifecycle_state": "running",
                                 "thread_name": "codexw-bgtool-background_shell_start-7",
+                                "owner": "wrapper_background_shell",
+                                "source_call_id": "call_123",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observed_background_shell_job": {
+                                    "job_id": "bg-7",
+                                    "status": "running",
+                                    "command": "python stage2.py --quick",
+                                    "total_lines": 3,
+                                    "recent_lines": ["stage1 ok", "stage2 running"]
+                                },
                                 "runtime_elapsed_seconds": 21,
                                 "state_elapsed_seconds": 21,
                                 "hard_timeout_seconds": 15,
@@ -616,8 +662,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "request_id": "8",
                                 "lifecycle_state": "abandoned_after_timeout",
                                 "thread_name": "codexw-bgtool-background_shell_start-8",
+                                "owner": "wrapper_background_shell",
+                                "source_call_id": "call_456",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observed_background_shell_job": Value::Null,
                                 "runtime_elapsed_seconds": 21,
                                 "state_elapsed_seconds": 6,
                                 "hard_timeout_seconds": 15,
@@ -694,9 +743,20 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "local_api_path": Value::Null
                                 }
                             ],
+                            "owner": "wrapper_background_shell",
+                            "source_call_id": "call_123",
                             "tool": "background_shell_start",
                             "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                            "observation_state": "wrapper_background_shell_terminal_without_tool_response",
+                            "observed_background_shell_job": {
+                                "job_id": "bg-7",
+                                "status": "failed",
+                                "command": "python stage2.py --quick",
+                                "total_lines": 5,
+                                "recent_lines": ["stage1 ok", "hang suspected", "still no tool response"]
+                            },
                             "elapsed_seconds": 75,
+                            "next_check_in_seconds": 30,
                             "active_request_count": 1
                         },
                         "async_tool_backpressure": {
@@ -714,8 +774,17 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "request_id": "7",
                                 "lifecycle_state": "running",
                                 "thread_name": "codexw-bgtool-background_shell_start-7",
+                                "owner": "wrapper_background_shell",
+                                "source_call_id": "call_123",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observed_background_shell_job": {
+                                    "job_id": "bg-7",
+                                    "status": "failed",
+                                    "command": "python stage2.py --quick",
+                                    "total_lines": 5,
+                                    "recent_lines": ["stage1 ok", "hang suspected", "still no tool response"]
+                                },
                                 "runtime_elapsed_seconds": 75,
                                 "state_elapsed_seconds": 75,
                                 "hard_timeout_seconds": 30,
@@ -725,8 +794,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                 "request_id": "8",
                                 "lifecycle_state": "abandoned_after_timeout",
                                 "thread_name": "codexw-bgtool-background_shell_start-8",
+                                "owner": "wrapper_background_shell",
+                                "source_call_id": "call_456",
                                 "tool": "background_shell_start",
                                 "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "observed_background_shell_job": Value::Null,
                                 "runtime_elapsed_seconds": 30,
                                 "state_elapsed_seconds": 30,
                                 "hard_timeout_seconds": 30,
@@ -795,6 +867,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(create_response.contains("\"async_tool_backpressure\""));
     assert!(create_response.contains("\"async_tool_workers\""));
     assert!(create_response.contains("\"supervision_notice\""));
+    assert!(create_response.contains("\"owner\":\"wrapper_background_shell\""));
+    assert!(create_response.contains("\"source_call_id\":\"call_123\""));
+    assert!(create_response.contains("\"observed_background_shell_job\""));
+    assert!(create_response.contains("\"job_id\":\"bg-7\""));
+    assert!(create_response.contains("\"command\":\"python stage2.py --quick\""));
 
     let initial_events = client.session_request("GET", "sess_1", "/events", None, &[])?;
     assert!(initial_events.starts_with("HTTP/1.1 200 OK\r\n"));
@@ -805,12 +882,21 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(initial_events.contains("tool_slow"));
     assert!(initial_events.contains("observe_or_interrupt"));
+    assert!(initial_events.contains("\"owner\":\"wrapper_background_shell\""));
+    assert!(initial_events.contains("\"source_call_id\":\"call_123\""));
+    assert!(initial_events.contains("wrapper_background_shell_streaming_output"));
+    assert!(initial_events.contains("\"observed_background_shell_job\""));
+    assert!(initial_events.contains("\"job_id\":\"bg-7\""));
+    assert!(initial_events.contains("\"status\":\"running\""));
+    assert!(initial_events.contains("\"command\":\"python stage2.py --quick\""));
+    assert!(initial_events.contains("\"next_check_in_seconds\":9"));
     assert!(
         initial_events.contains("\"async_tool_backpressure\""),
         "{initial_events}"
     );
     assert!(initial_events.contains("\"async_tool_workers\""));
     assert!(initial_events.contains("codexw-bgtool-background_shell_start-7"));
+    assert!(initial_events.contains("\"source_call_id\":\"call_456\""));
     assert!(initial_events.contains("background_shell_start"));
 
     let resumed_events =
@@ -823,6 +909,14 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(resumed_events.contains("tool_wedged"));
     assert!(resumed_events.contains("interrupt_or_exit_resume"));
+    assert!(resumed_events.contains("\"owner\":\"wrapper_background_shell\""));
+    assert!(resumed_events.contains("\"source_call_id\":\"call_123\""));
+    assert!(resumed_events.contains("wrapper_background_shell_terminal_without_tool_response"));
+    assert!(resumed_events.contains("\"observed_background_shell_job\""));
+    assert!(resumed_events.contains("\"job_id\":\"bg-7\""));
+    assert!(resumed_events.contains("\"status\":\"failed\""));
+    assert!(resumed_events.contains("\"command\":\"python stage2.py --quick\""));
+    assert!(resumed_events.contains("\"next_check_in_seconds\":30"));
     assert!(resumed_events.contains("\"async_tool_backpressure\""));
     assert!(resumed_events.contains("\"async_tool_workers\""));
     assert!(resumed_events.contains("\"lifecycle_state\":\"abandoned_after_timeout\""));

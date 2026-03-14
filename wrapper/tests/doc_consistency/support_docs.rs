@@ -403,6 +403,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_status,
+        "wrapper_background_shell",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "source_call_id",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "observed_background_shell_job",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
         "async_tool_backpressure",
         "docs/codexw-broker-adapter-status.md",
     );
@@ -478,6 +493,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_proof,
+        "wrapper_background_shell",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
+        "source_call_id",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
+        "observed_background_shell_job",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
         "async_tool_backpressure",
         "docs/codexw-broker-proof-matrix.md",
     );
@@ -529,6 +559,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_event_envelope,
         "exit_and_resume",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "wrapper_background_shell",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "source_call_id",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "observed_background_shell_job",
         "docs/codexw-broker-event-envelope.md",
     );
     assert_contains_case_insensitive(

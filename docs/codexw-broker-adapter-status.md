@@ -179,6 +179,10 @@ the real connector binary:
   `tool_slow` / `tool_wedged`
 - broker-visible recommended-action hints such as `observe_or_interrupt` and
   `interrupt_or_exit_resume` in `status.updated`
+- broker-visible async-tool owner-lane and correlation facts such as
+  `owner=wrapper_background_shell`, `source_call_id`, and matched
+  `observed_background_shell_job` detail with `job_id`, `status`, `command`,
+  and recent output preview
 - broker-visible `supervision_notice` alert state for active supervised tool
   stalls
 - broker-visible recovery-policy decisions such as `warn_only` and
