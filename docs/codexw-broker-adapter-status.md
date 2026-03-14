@@ -16,6 +16,8 @@ design set:
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
 - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+- [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)
 
 Its goal is simple:
 
@@ -54,6 +56,14 @@ For that workflow-level read, see
 For the short implementer-facing summary for the sibling `~/work/agent`
 workspace, see
 [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
+For the explicit future design lane for project-aware cross-deployment
+collaboration metadata, see
+[codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+and
+[codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md).
+
+That project/dependency lane is documented, but it is not yet implemented or
+claimed as part of the current supported experimental adapter surface.
 
 ## Implemented Local API Surface
 

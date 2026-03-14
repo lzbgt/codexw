@@ -216,6 +216,32 @@ ad hoc here:
 - [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md)
 - [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 
+### Future Project/Dependency Collaboration Track
+
+The local API also now has an explicit design-only collaboration lane for
+cross-project work across multiple broker-routed deployments that may not share
+one host.
+
+If that track moves into implementation, the first candidate route family
+should be:
+
+- `POST /api/v1/session/{session_id}/project`
+- `GET /api/v1/session/{session_id}/project`
+- `POST /api/v1/projects/{project_id}/dependencies`
+- `GET /api/v1/projects/{project_id}/dependencies`
+- `GET /api/v1/dependencies/{dependency_id}`
+
+That work should follow the dedicated project/dependency docs rather than being
+designed ad hoc here:
+
+- [docs/codexw-cross-project-dependency-contract-sketch.md](docs/codexw-cross-project-dependency-contract-sketch.md)
+- [docs/codexw-cross-project-dependency-implementation-plan.md](docs/codexw-cross-project-dependency-implementation-plan.md)
+
+The intended split stays explicit:
+
+- project/dependency routes describe structural work relationships
+- handoff routes describe concrete collaboration requests between deployments
+
 ## Exit Criteria
 
 The original route-matrix phase is complete when:

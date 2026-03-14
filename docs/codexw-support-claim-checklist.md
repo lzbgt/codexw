@@ -110,6 +110,9 @@ When broker-facing wording changes, review:
 - [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
+- [codexw-cross-project-dependency-collaboration.md](codexw-cross-project-dependency-collaboration.md)
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+- [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
@@ -141,9 +144,16 @@ Confirm all of the following:
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch
+- the current supported claim also clearly excludes the design-only
+  project-assignment and dependency-edge route family unless those routes were
+  explicitly implemented and proven in the same batch
 - host-examination docs still distinguish:
   - already-supported shell/service/transcript/event remote inspection
   - design-only artifact contract work
+- collaboration docs still distinguish:
+  - already-supported single-deployment broker control
+  - design-only project/dependency collaboration metadata
+  - design-only cross-deployment handoff transport above that metadata layer
 - the implementer-facing handoff doc for the sibling `~/work/agent` workspace
   still matches the current support, proof, and boundary docs
 - the older broker decision / compatibility / session-identity / client-policy

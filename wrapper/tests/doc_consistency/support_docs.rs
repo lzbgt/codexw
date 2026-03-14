@@ -278,6 +278,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-adapter-status.md",
     );
     assert_contains(
+        &broker_status,
+        "codexw-cross-project-dependency-contract-sketch.md",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains(
         &broker_proof,
         "supported experimental adapter",
         "docs/codexw-broker-proof-matrix.md",
@@ -285,6 +290,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &broker_proof,
         "codexw-broker-integration-handoff.md",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains(
+        &broker_proof,
+        "codexw-cross-project-dependency-contract-sketch.md",
         "docs/codexw-broker-proof-matrix.md",
     );
     assert_contains(
@@ -310,6 +320,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &broker_endpoint_audit,
         "session-scoped artifact index/detail/content",
+        "docs/codexw-broker-endpoint-audit.md",
+    );
+    assert_contains(
+        &broker_endpoint_audit,
+        "session-scoped project assignment",
+        "docs/codexw-broker-endpoint-audit.md",
+    );
+    assert_contains(
+        &broker_endpoint_audit,
+        "project dependency edges",
         "docs/codexw-broker-endpoint-audit.md",
     );
     assert_contains(
@@ -719,6 +739,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-local-api-route-matrix.md",
     );
     assert_contains_case_insensitive(
+        &local_api_route_matrix,
+        "future project/dependency collaboration track",
+        "docs/codexw-local-api-route-matrix.md",
+    );
+    assert_contains(
+        &local_api_route_matrix,
+        "codexw-cross-project-dependency-contract-sketch.md",
+        "docs/codexw-local-api-route-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &broker_artifact_sketch,
         "artifact index",
         "docs/codexw-broker-artifact-contract-sketch.md",
@@ -826,6 +856,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &checklist,
+        "codexw-cross-project-dependency-contract-sketch.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-cross-project-dependency-implementation-plan.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
         "codexw-broker-artifact-implementation-plan.md",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -862,6 +902,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &checklist,
         "fixture docs still describe shell-first host examination",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "project-assignment and dependency-edge route family",
         "docs/codexw-support-claim-checklist.md",
     );
     assert_contains_case_insensitive(

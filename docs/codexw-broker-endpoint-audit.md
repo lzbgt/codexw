@@ -62,6 +62,8 @@ compatibility shape:
 | wrapper-owned background shells | `GET/POST /api/v1/shells/*` | One of the strongest differentiators versus plain app-server clients |
 | reusable service capability registry | `GET /api/v1/capabilities` | Valuable for mobile/WebUI attachment and orchestration |
 | service mutation controls (`provide`, `depend`, `contract`, `relabel`) | `POST /api/v1/services/{job}/...` | Probably remains `codexw`-specific even if broker-compatible transport is adopted |
+| session-scoped project assignment | `POST/GET /api/v1/session/{session_id}/project` | Planned broker-visible collaboration metadata lane for binding one session to one project without inventing a global scheduler |
+| project dependency edges | `POST/GET /api/v1/projects/{project_id}/dependencies` and `GET /api/v1/dependencies/{dependency_id}` | Planned broker-visible collaboration metadata lane for expressing which project blocks on which other project before a later handoff is created |
 | session-scoped artifact index/detail/content | `GET /api/v1/session/{session_id}/artifacts*` | Planned `codexw`-specific layer derived from transcript/event/shell/service truth; not implemented yet and should not be confused with generic filesystem browsing |
 
 ## Recommended First Audit Outputs

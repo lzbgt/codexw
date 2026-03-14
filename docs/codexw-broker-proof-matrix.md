@@ -22,6 +22,8 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+- [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
@@ -105,6 +107,7 @@ workspace can rely on today, see
 | --- | --- | --- | --- |
 | Remote host examination through session/event/orchestration/shell/service surfaces | strong proof | Route and workflow proof across [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md), [wrapper/tests/connector_prototype_smoke/aliases/session.rs](../wrapper/tests/connector_prototype_smoke/aliases/session.rs), [wrapper/tests/connector_prototype_smoke/aliases/services.rs](../wrapper/tests/connector_prototype_smoke/aliases/services.rs), [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/workflows/services.rs](../wrapper/tests/connector_prototype_smoke/workflows/services.rs), and [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md) | The current broker-visible shell/service/transcript/event surface is already a valid remote host-examination foundation. |
 | Artifact browsing via transcript/event/shell/service references | partial proof | Transcript, SSE, shell detail/poll, service attach/run, and fixture-driven workflows exercised in the same evidence set above, plus the workflow framing in [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md) | `codexw` still lacks a dedicated broker-visible artifact catalog or fetch/download contract; clients must currently assemble artifact understanding from transcript, shell, service, and event references. The intended next design slice is now sketched in [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md). |
+| Project-aware cross-deployment collaboration metadata | doc/policy only | [codexw-cross-project-dependency-collaboration.md](codexw-cross-project-dependency-collaboration.md), [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md), [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md), and the linked handoff docs | This lane is intentionally designed, but there is not yet route-level or process-level proof for session project assignment or dependency-edge routes. |
 
 ## Current Read
 
@@ -128,3 +131,7 @@ adversarial stress coverage cataloged in
 revising it if contradictory evidence appears. For the current workflow-level
 host-examination read, including the remaining artifact-contract gap, see
 [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
+For the separate design-only cross-project dependency lane, see
+[codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+and
+[codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md).
