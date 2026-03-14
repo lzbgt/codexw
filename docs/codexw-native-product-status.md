@@ -17,6 +17,9 @@ Related docs:
 - [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
+- [codexw-self-evolution.md](codexw-self-evolution.md)
+- [codexw-self-supervision.md](codexw-self-supervision.md)
+- [codexw-plugin-system.md](codexw-plugin-system.md)
 - [../TODOS.md](../TODOS.md)
 - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
 
@@ -59,6 +62,8 @@ The implemented native-side product already has:
 - wrapper-owned background shells with orchestration visibility
 - orchestration views over agents, shells, services, capabilities, and
   terminals
+- a new self-supervision design lane for stalled tool/runtime recovery
+- a new plugin-first expansion lane for optional capabilities
 
 That means most native-side remaining work is no longer “missing command
 handlers.” It is about explicit product boundaries and architecture choices.
@@ -75,6 +80,11 @@ The highest-leverage remaining native-side work is:
    appears
 4. keep the wrapper-owned async shell boundary explicit as orchestration and
    local-API surfaces evolve
+5. turn self-supervision into a real native runtime capability so wedged tool
+   paths do not leave the operator trapped in an old client generation
+6. prefer plugin-first expansion for optional capabilities such as voice
+   reminder or live IM progress reporting, reserving full self-evolution for
+   core runtime or protocol changes
 
 ## Remaining Gaps, Classified
 

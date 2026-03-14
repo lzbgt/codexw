@@ -18,6 +18,9 @@ Related docs:
 - [codexw-native-product-status.md](codexw-native-product-status.md)
 - [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
+- [codexw-self-evolution.md](codexw-self-evolution.md)
+- [codexw-self-supervision.md](codexw-self-supervision.md)
+- [codexw-plugin-system.md](codexw-plugin-system.md)
 - [../TODOS.md](../TODOS.md)
 
 ## Supported Native Product Surface
@@ -29,6 +32,10 @@ The supported non-broker product surface is:
 - inline prompt plus transient status
 - text-first realtime
 - wrapper-owned async shell orchestration
+- explicit self-supervision for wedged tool/runtime recovery as an intended
+  native capability direction
+- plugin-first optional capability expansion rather than forcing every new
+  feature into core replacement
 
 That means the native-side support claim is about the product that already
 exists, not about hypothetical upstream parity.
@@ -45,6 +52,10 @@ drift casually:
 - transient status rendering as the primary live-status surface
 - text-first realtime visibility
 - wrapper-owned background shell behavior and orchestration views
+- the direction that stalled tool/runtime paths should be recoverable through
+  self-supervision rather than left as indefinite hangs
+- the direction that optional capabilities should prefer plugin delivery when
+  core runtime semantics do not need to change
 - explicit documentation of unsupported native-parity areas
 
 Breaking one of those is not a harmless implementation detail. It is a change
@@ -60,6 +71,9 @@ claim by themselves:
 - better status wording
 - better orchestration visibility
 - better wrapper-owned shell tooling
+- stronger self-supervision and self-heal behavior inside the current
+  terminal-first model
+- better plugin-managed optional capability delivery
 - stronger local API or broker documentation around existing boundaries
 
 These are improvements inside the current support boundary, not changes to the
@@ -86,6 +100,8 @@ supported product surface:
 - breaking the inline prompt/editor interaction model
 - reducing text-first realtime observability
 - breaking wrapper-owned async shell workflows
+- regressing into indefinite wedged tool behavior without a coherent
+  self-supervision story
 - reintroducing vague wording that implies unsupported native parity is already
   expected
 

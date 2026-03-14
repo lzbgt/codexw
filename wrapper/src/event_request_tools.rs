@@ -119,3 +119,92 @@ pub(crate) fn handle_tool_request(
         _ => Ok(false),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rpc::RequestId;
+    use crate::runtime_event_sources::AsyncToolResponse;
+    use serde_json::json;
+    use std::process::Command;
+    use std::process::Stdio;
+    use std::time::Duration;
+
+    fn spawn_sink_stdin() -> std::process::ChildStdin {
+        Command::new("sh")
+            .arg("-c")
+            .arg("cat >/dev/null")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn sink")
+            .stdin
+            .take()
+            .expect("stdin")
+    }
+
+    fn test_request(method: &str, tool: &str, arguments: serde_json::Value) -> RpcRequest {
+        RpcRequest {
+            id: RequestId::Integer(7),
+            method: method.to_string(),
+            params: json!({
+                "tool": tool,
+                "threadId": "thread-1",
+                "callId": "call-1",
+                "arguments": arguments,
+            }),
+        }
+    }
+
+    #[test]
+    fn background_shell_tool_requests_complete_asynchronously() {
+        let mut state = AppState::new(true, false);
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+        let (tx, rx) = mpsc::channel();
+        let request = test_request(
+            "item/tool/call",
+            "background_shell_start",
+            json!({"command": "printf 'alpha\\n'"}),
+        );
+
+        let handled =
+            handle_tool_request(&request, "/tmp", &mut state, &mut output, &mut writer, &tx)
+                .expect("handle tool request");
+
+        assert!(handled);
+        let event = rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("async tool response");
+        let AsyncToolResponse {
+            id,
+            tool,
+            summary,
+            result,
+        } = match event {
+            AppEvent::AsyncToolResponseReady(event) => event,
+            other => panic!("expected async tool response, got {other:?}"),
+        };
+        assert_eq!(id, RequestId::Integer(7));
+        assert_eq!(tool, "background_shell_start");
+        assert!(summary.contains("background_shell_start"));
+        assert_eq!(result["success"], true);
+    }
+
+    #[test]
+    fn non_shell_dynamic_tool_requests_do_not_enqueue_async_response() {
+        let mut state = AppState::new(true, false);
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+        let (tx, rx) = mpsc::channel();
+        let request = test_request("item/tool/call", "orchestration_status", json!({}));
+
+        let handled =
+            handle_tool_request(&request, "/tmp", &mut state, &mut output, &mut writer, &tx)
+                .expect("handle tool request");
+
+        assert!(handled);
+        assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
+    }
+}

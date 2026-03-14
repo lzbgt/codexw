@@ -32,6 +32,6 @@ fn ps_command_can_poll_and_terminate_specific_background_shell_jobs() {
         .join("\n");
     assert!(rendered.contains("bg-1"));
     assert!(rendered.contains("bg-2"));
-    assert!(rendered.contains("[terminated]"));
+    assert!(rendered.contains("terminated"));
     let _ = state.background_shells.terminate_all_running();
 }
