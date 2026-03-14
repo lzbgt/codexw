@@ -541,6 +541,16 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "oldest_source_call_id": "call_456",
                                     "oldest_target_background_shell_reference": "dev.api",
                                     "oldest_target_background_shell_job_id": "bg-7",
+                                    "oldest_observation_state": "wrapper_background_shell_streaming_output",
+                                    "oldest_output_state": "recent_output_observed",
+                                    "oldest_observed_background_shell_job": {
+                                        "job_id": "bg-7",
+                                        "status": "running",
+                                        "command": "python stage2.py --quick",
+                                        "total_lines": 3,
+                                        "last_output_age_seconds": 2,
+                                        "recent_lines": ["stage1 ok", "stage2 running"]
+                                    },
                                     "oldest_elapsed_before_timeout_seconds": 21,
                                     "oldest_hard_timeout_seconds": 15,
                                     "oldest_elapsed_seconds": 6
@@ -663,6 +673,16 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "oldest_source_call_id": "call_456",
                             "oldest_target_background_shell_reference": "dev.api",
                             "oldest_target_background_shell_job_id": "bg-7",
+                            "oldest_observation_state": "wrapper_background_shell_streaming_output",
+                            "oldest_output_state": "recent_output_observed",
+                            "oldest_observed_background_shell_job": {
+                                "job_id": "bg-7",
+                                "status": "running",
+                                "command": "python stage2.py --quick",
+                                "total_lines": 3,
+                                "last_output_age_seconds": 2,
+                                "recent_lines": ["stage1 ok", "stage2 running"]
+                            },
                             "oldest_elapsed_before_timeout_seconds": 21,
                             "oldest_hard_timeout_seconds": 15,
                             "oldest_elapsed_seconds": 6
@@ -818,6 +838,16 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "oldest_source_call_id": "call_456",
                             "oldest_target_background_shell_reference": "dev.api",
                             "oldest_target_background_shell_job_id": "bg-7",
+                            "oldest_observation_state": "wrapper_background_shell_terminal_without_tool_response",
+                            "oldest_output_state": "stale_output_observed",
+                            "oldest_observed_background_shell_job": {
+                                "job_id": "bg-7",
+                                "status": "failed",
+                                "command": "python stage2.py --quick",
+                                "total_lines": 5,
+                                "last_output_age_seconds": 75,
+                                "recent_lines": ["stage1 ok", "hang suspected", "still no tool response"]
+                            },
                             "oldest_elapsed_before_timeout_seconds": 75,
                             "oldest_hard_timeout_seconds": 30,
                             "oldest_elapsed_seconds": 30
@@ -934,6 +964,12 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(create_response.contains("\"async_tool_supervision\""));
     assert!(create_response.contains("\"async_tool_backpressure\""));
+    assert!(
+        create_response
+            .contains("\"oldest_observation_state\":\"wrapper_background_shell_streaming_output\"")
+    );
+    assert!(create_response.contains("\"oldest_output_state\":\"recent_output_observed\""));
+    assert!(create_response.contains("\"oldest_observed_background_shell_job\""));
     assert!(create_response.contains("\"async_tool_workers\""));
     assert!(create_response.contains("\"supervision_notice\""));
     assert!(create_response.contains("\"owner\":\"wrapper_background_shell\""));
@@ -974,6 +1010,12 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("\"oldest_source_call_id\":\"call_456\""));
     assert!(initial_events.contains("\"oldest_target_background_shell_reference\":\"dev.api\""));
     assert!(initial_events.contains("\"oldest_target_background_shell_job_id\":\"bg-7\""));
+    assert!(
+        initial_events
+            .contains("\"oldest_observation_state\":\"wrapper_background_shell_streaming_output\"")
+    );
+    assert!(initial_events.contains("\"oldest_output_state\":\"recent_output_observed\""));
+    assert!(initial_events.contains("\"oldest_observed_background_shell_job\""));
     assert!(initial_events.contains("\"async_tool_workers\""));
     assert!(initial_events.contains("codexw-bgtool-background_shell_start-7"));
     assert!(initial_events.contains("\"source_call_id\":\"call_456\""));
@@ -1007,6 +1049,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"oldest_source_call_id\":\"call_456\""));
     assert!(resumed_events.contains("\"oldest_target_background_shell_reference\":\"dev.api\""));
     assert!(resumed_events.contains("\"oldest_target_background_shell_job_id\":\"bg-7\""));
+    assert!(resumed_events.contains(
+        "\"oldest_observation_state\":\"wrapper_background_shell_terminal_without_tool_response\""
+    ));
+    assert!(resumed_events.contains("\"oldest_output_state\":\"stale_output_observed\""));
+    assert!(resumed_events.contains("\"oldest_observed_background_shell_job\""));
     assert!(resumed_events.contains("\"async_tool_workers\""));
     assert!(resumed_events.contains("\"lifecycle_state\":\"abandoned_after_timeout\""));
     assert!(resumed_events.contains("\"saturated\":true"));

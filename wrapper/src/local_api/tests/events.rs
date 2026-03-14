@@ -113,6 +113,18 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         events[2].data["async_tool_backpressure"]["oldest_target_background_shell_job_id"],
         "bg-1"
     );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_observation_state"],
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
     assert_eq!(events[2].data["async_tool_workers"][0]["request_id"], "7");
     assert_eq!(
         events[2].data["async_tool_workers"][0]["lifecycle_state"],
@@ -322,6 +334,19 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             oldest_source_call_id: Some("call_2".to_string()),
             oldest_target_background_shell_reference: Some("dev.api".to_string()),
             oldest_target_background_shell_job_id: Some("bg-1".to_string()),
+            oldest_observation_state: "wrapper_background_shell_terminal_without_tool_response"
+                .to_string(),
+            oldest_output_state: "stale_output_observed".to_string(),
+            oldest_observed_background_shell_job: Some(
+                crate::local_api::snapshot::LocalApiObservedBackgroundShellJob {
+                    job_id: "bg-1".to_string(),
+                    status: "failed".to_string(),
+                    command: "npm run dev".to_string(),
+                    total_lines: 3,
+                    last_output_age_seconds: Some(75),
+                    recent_lines: vec!["boom".to_string()],
+                },
+            ),
             oldest_elapsed_before_timeout_seconds: 75,
             oldest_hard_timeout_seconds: 30,
             oldest_elapsed_seconds: 30,
@@ -525,6 +550,18 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         "bg-1"
     );
     assert_eq!(events[1].data["async_tool_backpressure"]["saturated"], true);
+    assert_eq!(
+        events[1].data["async_tool_backpressure"]["oldest_observation_state"],
+        "wrapper_background_shell_terminal_without_tool_response"
+    );
+    assert_eq!(
+        events[1].data["async_tool_backpressure"]["oldest_output_state"],
+        "stale_output_observed"
+    );
+    assert_eq!(
+        events[1].data["async_tool_backpressure"]["oldest_observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
     assert_eq!(
         events[1].data["supervision_notice"]["classification"],
         "tool_wedged"

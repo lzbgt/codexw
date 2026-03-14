@@ -102,7 +102,9 @@ The same slice should emit explicit recovery options:
 - a runtime-enforced async-tool deadline that fails an overdue request locally
   instead of waiting forever for the worker thread to return
 - explicit abandoned async backlog tracking after that local timeout
-- `async_tool_backpressure` in the local snapshot/SSE status slice
+- `async_tool_backpressure` in the local snapshot/SSE status slice, including
+  the oldest abandoned worker's `observation_state`, `output_state`, and
+  `observed_background_shell_job` when that correlated shell is still visible
 - admission control that refuses new background-shell async requests once the
   abandoned async backlog is saturated
 
@@ -128,6 +130,20 @@ It should also carry explicit `recovery_options`, so clients can present or log
 the actual next-step affordances without inventing their own route mapping.
 
 It should also carry an `async_tool_workers` inspection slice so an agent
+backend or WebUI can inspect active versus abandoned worker lifecycles without
+scraping prompt text.
+
+It should also carry the oldest abandoned-worker inspection context through
+`async_tool_backpressure`, so backlog saturation is not just a count/summary
+surface but preserves the same shell observation/output/job facts that appear
+on the corresponding abandoned worker row through
+`oldest_observation_state`, `oldest_output_state`, and
+`oldest_observed_background_shell_job`.
+
+It should also use that oldest abandoned-worker inspection context in the local
+refusal text when backlog saturation blocks a new background-shell async
+request, so the operator can see which stuck shell/tool pair is consuming the
+remaining safety budget.
 backend can inspect the dedicated worker-thread lane directly:
 
 - request id

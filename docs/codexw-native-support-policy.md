@@ -79,6 +79,9 @@ drift casually:
 - explicit async-worker output freshness through `output_state` and
   `last_output_age_seconds` when a correlated wrapper shell job has emitted
   output
+- explicit oldest-backlog observation/output/job visibility through
+  `async_tool_backpressure`, including `oldest_observation_state`,
+  `oldest_output_state`, and `oldest_observed_background_shell_job`
 - live self-supervision inspection notices that include observation/output
   state, source call id when present, and next-check timing in the terminal
   stream

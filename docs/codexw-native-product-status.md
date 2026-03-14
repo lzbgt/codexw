@@ -89,6 +89,11 @@ The implemented native-side product already has:
 - retained observation/output visibility for abandoned workers when the
   correlated `bg-*` shell is still visible, so timeout does not erase current
   `observation_state`, `output_state`, or matched job facts
+- retained oldest-worker observation/output visibility on
+  `async_tool_backpressure`, so backlog status exposes the same live shell
+  facts instead of only a timed-out summary string through
+  `oldest_observation_state`, `oldest_output_state`, and
+  `oldest_observed_background_shell_job`
 - `async_tool_workers` inspection visibility for dedicated async worker thread
   names and lifecycle states such as `running` and
   `abandoned_after_timeout`

@@ -77,6 +77,9 @@ pub(crate) struct LocalApiAsyncToolBackpressure {
     pub(crate) oldest_source_call_id: Option<String>,
     pub(crate) oldest_target_background_shell_reference: Option<String>,
     pub(crate) oldest_target_background_shell_job_id: Option<String>,
+    pub(crate) oldest_observation_state: String,
+    pub(crate) oldest_output_state: String,
+    pub(crate) oldest_observed_background_shell_job: Option<LocalApiObservedBackgroundShellJob>,
     pub(crate) oldest_elapsed_before_timeout_seconds: u64,
     pub(crate) oldest_hard_timeout_seconds: u64,
     pub(crate) oldest_elapsed_seconds: u64,
@@ -399,6 +402,7 @@ fn async_tool_supervision_snapshot(
 
 fn async_tool_backpressure_snapshot(state: &AppState) -> Option<LocalApiAsyncToolBackpressure> {
     let abandoned = state.oldest_abandoned_async_tool_request()?;
+    let observation = state.abandoned_async_tool_observation(abandoned);
     Some(LocalApiAsyncToolBackpressure {
         abandoned_request_count: state.abandoned_async_tool_request_count(),
         saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
@@ -410,6 +414,11 @@ fn async_tool_backpressure_snapshot(state: &AppState) -> Option<LocalApiAsyncToo
             .target_background_shell_reference
             .clone(),
         oldest_target_background_shell_job_id: abandoned.target_background_shell_job_id.clone(),
+        oldest_observation_state: observation.observation_state.label().to_string(),
+        oldest_output_state: observation.output_state.label().to_string(),
+        oldest_observed_background_shell_job: observation
+            .observed_background_shell_job
+            .map(local_api_observed_background_shell_job),
         oldest_elapsed_before_timeout_seconds: abandoned.elapsed_before_timeout.as_secs(),
         oldest_hard_timeout_seconds: abandoned.hard_timeout.as_secs(),
         oldest_elapsed_seconds: abandoned.timed_out_elapsed().as_secs(),

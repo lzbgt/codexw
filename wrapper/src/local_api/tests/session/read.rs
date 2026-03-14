@@ -149,6 +149,18 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_backpressure"]["oldest_target_background_shell_job_id"],
         "bg-1"
     );
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_observation_state"],
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
     assert_eq!(body["async_tool_workers"][0]["request_id"], "7");
     assert_eq!(body["async_tool_workers"][0]["lifecycle_state"], "running");
     assert_eq!(
@@ -219,6 +231,10 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["session"]["async_tool_backpressure"]["oldest_tool"],
         "background_shell_start"
+    );
+    assert_eq!(
+        body["session"]["async_tool_backpressure"]["oldest_observation_state"],
+        "wrapper_background_shell_streaming_output"
     );
     assert_eq!(
         body["session"]["async_tool_workers"][0]["supervision_classification"],

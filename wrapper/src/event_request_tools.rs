@@ -82,9 +82,13 @@ pub(crate) fn handle_tool_request(
                     let oldest_summary = oldest
                         .map(|request| request.summary.as_str())
                         .unwrap_or("background-shell async backlog saturated");
+                    let oldest_context = oldest
+                        .map(|request| summarize_abandoned_backpressure_context(state, request))
+                        .unwrap_or_default();
                     output.line_stderr(format!(
-                        "[self-supervision] refusing async tool while abandoned backlog is saturated ({backlog}): {}",
-                        oldest_summary
+                        "[self-supervision] refusing async tool while abandoned backlog is saturated ({backlog}): {}{}",
+                        oldest_summary,
+                        oldest_context
                     ))?;
                     send_json(
                         writer,
@@ -94,6 +98,7 @@ pub(crate) fn handle_tool_request(
                                 tool,
                                 backlog,
                                 oldest_summary,
+                                &oldest_context,
                             ),
                         },
                     )?;
@@ -220,16 +225,75 @@ fn background_shell_backpressure_failure(
     tool: &str,
     backlog: usize,
     oldest_summary: &str,
+    oldest_context: &str,
 ) -> serde_json::Value {
     serde_json::json!({
         "contentItems": [{
             "type": "inputText",
             "text": format!(
-                "dynamic tool `{tool}` was refused locally because {backlog} timed-out background-shell worker(s) are still unresolved; newest work is blocked until the abandoned backlog drains or the operator interrupts/exits and resumes the thread; oldest backlog summary: {oldest_summary}"
+                "dynamic tool `{tool}` was refused locally because {backlog} timed-out background-shell worker(s) are still unresolved; newest work is blocked until the abandoned backlog drains or the operator interrupts/exits and resumes the thread; oldest backlog summary: {oldest_summary}{oldest_context}"
             )
         }],
         "success": false
     })
+}
+
+fn summarize_abandoned_backpressure_context(
+    state: &AppState,
+    request: &crate::state::AbandonedAsyncToolRequest,
+) -> String {
+    let observation = state.abandoned_async_tool_observation(request);
+    let call = request
+        .source_call_id
+        .as_deref()
+        .map(|value| format!(" call={value}"))
+        .unwrap_or_default();
+    let target = match (
+        request.target_background_shell_reference.as_deref(),
+        request.target_background_shell_job_id.as_deref(),
+    ) {
+        (Some(reference), Some(job_id)) if reference != job_id => {
+            format!(
+                " target={} resolved={job_id}",
+                crate::state::summarize_text(reference)
+            )
+        }
+        (Some(reference), _) => format!(" target={}", crate::state::summarize_text(reference)),
+        (None, Some(job_id)) => format!(" target={job_id}"),
+        (None, None) => String::new(),
+    };
+    match observation.observed_background_shell_job.as_ref() {
+        Some(job) => {
+            let output_age = job
+                .last_output_age
+                .map(|age| format!(" output_age={}s", age.as_secs()))
+                .unwrap_or_default();
+            let output = job
+                .latest_output_preview()
+                .map(|line| format!(" output={}", crate::state::summarize_text(line)))
+                .unwrap_or_default();
+            format!(
+                " [{}|{}{}{} job={} {} lines={} command={}{}{}]",
+                observation.observation_state.label(),
+                observation.output_state.label(),
+                call,
+                target,
+                job.job_id,
+                job.status,
+                job.total_lines,
+                crate::state::summarize_text(&job.command),
+                output_age,
+                output
+            )
+        }
+        None => format!(
+            " [{}|{}{}{}]",
+            observation.observation_state.label(),
+            observation.output_state.label(),
+            call,
+            target
+        ),
+    }
 }
 
 fn async_background_shell_target(
@@ -471,5 +535,80 @@ mod tests {
             crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
         );
         assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
+    }
+
+    #[test]
+    fn abandoned_backpressure_context_includes_correlated_shell_observation() {
+        let mut state = AppState::new(true, false);
+        let _ = state
+            .orchestration
+            .background_shells
+            .start_from_tool_with_context(
+                &json!({
+                    "command": "echo READY; sleep 20",
+                    "intent": "service",
+                    "readyPattern": "READY",
+                }),
+                "/tmp",
+                crate::background_shells::BackgroundShellOrigin {
+                    source_thread_id: Some("thread-1".to_string()),
+                    source_call_id: Some("call-9".to_string()),
+                    source_tool: Some("background_shell_wait_ready".to_string()),
+                },
+            );
+        state
+            .orchestration
+            .background_shells
+            .set_job_alias("bg-1", "dev.api")
+            .expect("set alias");
+        if let Ok(job) = state.orchestration.background_shells.lookup_job("bg-1") {
+            let mut job = job.lock().expect("background shell job");
+            job.total_lines = 1;
+            job.last_output_at = Some(std::time::Instant::now());
+            job.lines
+                .push_back(crate::background_shells::BackgroundShellOutputLine {
+                    cursor: 1,
+                    text: "READY".to_string(),
+                });
+        }
+        state.record_async_tool_request_with_timeout(
+            RequestId::Integer(9),
+            "background_shell_wait_ready".to_string(),
+            "arguments= jobId=dev.api timeoutMs=60000 tool=background_shell_wait_ready".to_string(),
+            Duration::from_secs(1),
+        );
+        if let Some(activity) = state
+            .active_async_tool_requests
+            .get_mut(&RequestId::Integer(9))
+        {
+            activity.source_call_id = Some("call-9".to_string());
+            activity.target_background_shell_reference = Some("dev.api".to_string());
+            activity.target_background_shell_job_id = Some("bg-1".to_string());
+            activity.started_at = std::time::Instant::now() - Duration::from_secs(30);
+        }
+        let _expired = state.expire_timed_out_async_tool_requests();
+        let oldest = state
+            .oldest_abandoned_async_tool_request()
+            .expect("oldest abandoned request");
+
+        let context = summarize_abandoned_backpressure_context(&state, oldest);
+        let failure = background_shell_backpressure_failure(
+            "background_shell_start",
+            1,
+            &oldest.summary,
+            &context,
+        );
+        let failure_text = failure["contentItems"][0]["text"]
+            .as_str()
+            .expect("failure text");
+
+        assert!(context.contains("wrapper_background_shell_streaming_output"));
+        assert!(context.contains("recent_output_observed"));
+        assert!(context.contains("call=call-9"));
+        assert!(context.contains("target=dev.api resolved=bg-1"));
+        assert!(context.contains("job=bg-1 running"));
+        assert!(context.contains("output=READY"));
+        assert!(failure_text.contains("oldest backlog summary"));
+        assert!(failure_text.contains("job=bg-1 running"));
     }
 }

@@ -136,7 +136,10 @@ The first emitted recovery signal should also be sticky enough to notice:
   request locally rather than leaving the active turn hung forever
 - retain a machine-readable abandoned async worker backlog after that timeout,
   rather than pretending the detached worker disappeared
-- expose that backlog through an `async_tool_backpressure` state slice
+- expose that backlog through an `async_tool_backpressure` state slice,
+  including the oldest abandoned worker's `observation_state`,
+  `output_state`, and `observed_background_shell_job` when the correlated
+  shell is still visible
 - once the abandoned async backlog is saturated, refuse new background-shell
   async requests locally until the backlog drains or the operator exits and
   resumes
@@ -178,6 +181,16 @@ first-class safety issue:
 - that same source/target correlation should survive hard-timeout handoff into
   the abandoned backlog, so an `abandoned_after_timeout` worker does not lose
   which wrapper request and `bg-*` shell target it belonged to
+- that same correlated shell observation should remain visible in both
+  `async_tool_workers` and `async_tool_backpressure` after timeout, so the
+  oldest abandoned worker still carries current `observation_state`,
+  `output_state`, and `observed_background_shell_job` instead of degrading to
+  only an old summary string; the backlog slice should carry that same state
+  through `oldest_observation_state`, `oldest_output_state`, and
+  `oldest_observed_background_shell_job`
+- saturation refusal should reuse that same oldest-worker shell context, so a
+  locally refused async request tells the operator which abandoned tool/shell
+  pair is blocking new work
 - if that correlated `bg-*` shell is still observable after timeout, the same
   abandoned worker should keep reporting its current observation/output state
   and matched job facts instead of degrading back to null inspection data

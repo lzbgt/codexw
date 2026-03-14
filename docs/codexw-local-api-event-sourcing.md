@@ -197,7 +197,9 @@ At:
   count, saturation, oldest timed-out worker summary, and retained source /
   target facts such as `oldest_source_call_id`,
   `oldest_target_background_shell_reference`, and
-  `oldest_target_background_shell_job_id`
+  `oldest_target_background_shell_job_id`, plus oldest-worker observation /
+  output / matched-job facts such as `oldest_observation_state`,
+  `oldest_output_state`, and `oldest_observed_background_shell_job`
 - dedicated worker inspection changes through `async_tool_workers`, including
   worker thread names and lifecycle states such as `running` and
   `abandoned_after_timeout`
@@ -232,7 +234,9 @@ Likely emission owners:
   `async_tool_workers`, `target_background_shell_reference` /
   `target_background_shell_job_id`, `oldest_source_call_id` /
   `oldest_target_background_shell_reference` /
-  `oldest_target_background_shell_job_id`, `output_state` /
+  `oldest_target_background_shell_job_id`,
+  `oldest_observation_state` / `oldest_output_state` /
+  `oldest_observed_background_shell_job`, `output_state` /
   `last_output_age_seconds`,
   and `supervision_notice` slice
 
