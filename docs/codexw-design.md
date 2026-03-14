@@ -687,6 +687,10 @@ and
 For the concrete sketch of a future broker-visible artifact index/detail/fetch
 surface, see
 [docs/codexw-broker-artifact-contract-sketch.md](docs/codexw-broker-artifact-contract-sketch.md).
+The current supported experimental adapter therefore still stops at the
+shell-first host-examination surface documented above; the artifact
+index/detail/fetch lane remains separate until that track is implemented and
+proven.
 
 The dedicated design notes now live in [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md), including:
 

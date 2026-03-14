@@ -218,6 +218,8 @@ That means:
 - artifact ids may become one optional supporting reference later
 - the dependency model should still work with shell/service/transcript/event
   provenance only
+- those missing artifact routes remain outside the current supported experimental adapter
+  until the separate artifact track is implemented and proven
 
 ## Acceptance Bar
 

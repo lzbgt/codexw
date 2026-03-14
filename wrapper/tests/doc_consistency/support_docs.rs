@@ -2409,6 +2409,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-cross-deployment-collaboration.md",
     );
     assert_contains_case_insensitive(
+        &cross_deployment,
+        "supported experimental adapter",
+        "docs/codexw-cross-deployment-collaboration.md",
+    );
+    assert_contains_case_insensitive(
         &cross_project_dependency,
         "projects may depend on one another",
         "docs/codexw-cross-project-dependency-collaboration.md",
@@ -2424,6 +2429,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-cross-project-dependency-collaboration.md",
     );
     assert_contains_case_insensitive(
+        &cross_project_dependency,
+        "already-supported shell/service/transcript/event host-examination surface",
+        "docs/codexw-cross-project-dependency-collaboration.md",
+    );
+    assert_contains_case_insensitive(
         &cross_project_contract,
         "session_project_bound",
         "docs/codexw-cross-project-dependency-contract-sketch.md",
@@ -2436,6 +2446,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &cross_project_contract,
         "session-to-project assignment",
+        "docs/codexw-cross-project-dependency-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_contract,
+        "supported experimental adapter",
         "docs/codexw-cross-project-dependency-contract-sketch.md",
     );
     assert_contains_case_insensitive(
@@ -2476,6 +2491,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &cross_deployment_contract,
         "artifact api",
+        "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_contract,
+        "supported experimental adapter",
         "docs/codexw-cross-deployment-handoff-contract-sketch.md",
     );
     assert_contains_case_insensitive(
@@ -2831,6 +2851,16 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
     assert_contains(
         &design,
         "codexw-workspace-tool-policy.md",
+        "docs/codexw-design.md",
+    );
+    assert_contains_case_insensitive(
+        &design,
+        "supported experimental adapter",
+        "docs/codexw-design.md",
+    );
+    assert_contains_case_insensitive(
+        &design,
+        "shell-first host-examination surface",
         "docs/codexw-design.md",
     );
     assert_contains(

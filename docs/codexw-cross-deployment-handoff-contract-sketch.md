@@ -246,6 +246,8 @@ That means:
   before artifact routes exist
 - provenance refs may include shell/service/transcript/event references
 - provenance refs do not imply artifact list/detail/content routes exist
+- those missing artifact routes remain outside the current supported experimental adapter
+  until the separate artifact track is implemented and proven
 - future artifact ids are additive, not required for the first handoff surface
 
 ## Acceptance Bar

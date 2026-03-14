@@ -213,7 +213,9 @@ The two should stay separate:
 - handoff needs durable structured provenance
 - a future artifact API may become one provenance source
 - but handoff should not wait for a complete artifact index/detail/content
-  surface to exist
+  surface to exist, because that artifact lane is still outside the current
+  supported experimental adapter while the shell/service/transcript/event
+  host-examination surface is already supported
 
 The first handoff implementation should therefore rely on:
 

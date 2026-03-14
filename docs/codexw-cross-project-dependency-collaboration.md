@@ -214,6 +214,8 @@ design should not wait for that.
 The first viable collaboration model can work with:
 
 - dependency metadata
+- the already-supported shell/service/transcript/event host-examination surface
+  instead of a not-yet-implemented artifact API
 - summary text
 - transcript refs
 - event refs
