@@ -79,6 +79,55 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
 }
 
 #[test]
+fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.turn_running = true;
+    state.record_async_tool_request_with_timeout(
+        crate::rpc::RequestId::Integer(11),
+        "background_shell_start".to_string(),
+        "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        Duration::from_secs(1),
+    );
+    if let Some(activity) = state
+        .active_async_tool_requests
+        .get_mut(&crate::rpc::RequestId::Integer(11))
+    {
+        activity.started_at = Instant::now() - Duration::from_secs(90);
+    }
+    let _expired = state.expire_timed_out_async_tool_requests();
+
+    let rendered = render_prompt_status(&state);
+
+    assert!(rendered.contains("async backlog 1"));
+    assert!(rendered.contains("background_shell_start"));
+}
+
+#[test]
+fn prompt_status_mentions_saturated_async_backlog() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.turn_running = true;
+    for id in 1..=crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS {
+        state.record_async_tool_request_with_timeout(
+            crate::rpc::RequestId::Integer(id as i64),
+            "background_shell_start".to_string(),
+            format!("summary-{id}"),
+            Duration::from_secs(1),
+        );
+        if let Some(activity) = state
+            .active_async_tool_requests
+            .get_mut(&crate::rpc::RequestId::Integer(id as i64))
+        {
+            activity.started_at = Instant::now() - Duration::from_secs(90);
+        }
+    }
+    let _expired = state.expire_timed_out_async_tool_requests();
+
+    let rendered = render_prompt_status(&state);
+
+    assert!(rendered.contains("async backlog saturated"));
+}
+
+#[test]
 fn prompt_status_mentions_startup_resume_picker() {
     let mut state = crate::state::AppState::new(true, false);
     state.startup_resume_picker = true;

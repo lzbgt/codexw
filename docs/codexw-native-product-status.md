@@ -76,6 +76,13 @@ The implemented native-side product already has:
   `exit_and_resume`
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
   a stuck dynamic tool no longer keeps the turn open forever
+- dedicated wrapper worker threads for background-shell dynamic tools, so the
+  main runtime loop is not the execution site for blocking shell startup/poll
+  work
+- abandoned async backlog tracking plus `async_tool_backpressure`, so timed-out
+  worker threads remain visible instead of silently leaking out of view
+- local refusal of new background-shell async requests when the abandoned async
+  backlog is saturated
 - orchestration views over agents, shells, services, capabilities, and
   terminals
 - a new self-supervision design lane for stalled tool/runtime recovery

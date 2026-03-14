@@ -273,7 +273,9 @@ slice: async-tool supervision classifications such as `tool_slow` and
 machine-readable recovery-policy object such as `warn_only` or
 `operator_interrupt_or_exit_resume` with `automation_ready=false`, plus
 explicit `recovery_options` such as `observe_status`, `interrupt_turn`, and
-`exit_and_resume`.
+`exit_and_resume`, plus `async_tool_backpressure` so remote clients can see the
+abandoned async worker backlog and whether new background-shell async requests
+should currently be refused.
 
 ## Exclusions
 

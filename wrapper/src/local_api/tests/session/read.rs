@@ -91,9 +91,26 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_supervision"]["recovery_options"][1]["local_api_path"],
         "/api/v1/session/sess_test/turn/interrupt"
     );
+    assert_eq!(
+        body["async_tool_backpressure"]["abandoned_request_count"],
+        1
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["saturation_threshold"],
+        crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_hard_timeout_seconds"],
+        15
+    );
+    assert_eq!(body["async_tool_backpressure"]["saturated"], false);
     assert_eq!(body["supervision_notice"]["classification"], "tool_slow");
     assert_eq!(
         body["session"]["async_tool_supervision"]["tool"],
+        "background_shell_start"
+    );
+    assert_eq!(
+        body["session"]["async_tool_backpressure"]["oldest_tool"],
         "background_shell_start"
     );
     assert_eq!(
@@ -148,6 +165,10 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(
         body["session"]["async_tool_supervision"]["recovery_options"][1]["kind"],
         "interrupt_turn"
+    );
+    assert_eq!(
+        body["session"]["async_tool_backpressure"]["abandoned_request_count"],
+        1
     );
     assert_eq!(
         body["session"]["supervision_notice"]["classification"],

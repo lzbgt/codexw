@@ -64,6 +64,10 @@ drift casually:
   `exit_and_resume`
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
   supported behavior does not include waiting forever for a wedged tool worker
+- dedicated wrapper worker threads for background-shell dynamic tools
+- explicit abandoned async backlog visibility through `async_tool_backpressure`
+- local refusal of new background-shell async requests when that backlog is
+  saturated
 - the direction that stalled tool/runtime paths should be recoverable through
   self-supervision rather than left as indefinite hangs
 - the direction that optional capabilities should prefer plugin delivery when

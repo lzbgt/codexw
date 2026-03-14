@@ -388,6 +388,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "supervision_notice",
         "docs/codexw-broker-adapter-status.md",
     );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "async_tool_backpressure",
+        "docs/codexw-broker-adapter-status.md",
+    );
     assert_contains(
         &broker_proof,
         "supported experimental adapter",
@@ -449,6 +454,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-proof-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_proof,
+        "async_tool_backpressure",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &broker_event_envelope,
         "observe_or_interrupt",
         "docs/codexw-broker-event-envelope.md",
@@ -486,6 +496,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_event_envelope,
         "exit_and_resume",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "async_tool_backpressure",
         "docs/codexw-broker-event-envelope.md",
     );
     assert_contains(
@@ -745,6 +760,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-product-status.md",
     );
     assert_contains_case_insensitive(
+        &native_status,
+        "dedicated wrapper worker threads",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "async_tool_backpressure",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "terminal-first",
         "docs/codexw-native-proof-matrix.md",
@@ -835,6 +860,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
+        &native_policy,
+        "async_tool_backpressure",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "tool_slow",
         "docs/codexw-native-proof-matrix.md",
@@ -887,6 +917,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_proof,
         "supervision_notice",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "async_tool_backpressure",
         "docs/codexw-native-proof-matrix.md",
     );
     assert_contains_case_insensitive(
@@ -1006,6 +1041,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
+        &self_supervision,
+        "dedicated wrapper worker threads",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "async_tool_backpressure",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "abandoned async",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
         &self_supervision_plan,
         "background-shell dynamic tools",
         "docs/codexw-self-supervision-implementation-plan.md",
@@ -1071,6 +1121,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision-implementation-plan.md",
     );
     assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "async_tool_backpressure",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "dedicated wrapper worker threads",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
         &local_api_event_sourcing,
         "observe_or_interrupt",
         "docs/codexw-local-api-event-sourcing.md",
@@ -1108,6 +1168,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &local_api_event_sourcing,
         "exit_and_resume",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "async_tool_backpressure",
         "docs/codexw-local-api-event-sourcing.md",
     );
     assert_contains_case_insensitive(

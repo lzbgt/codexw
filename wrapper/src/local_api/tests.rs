@@ -24,6 +24,7 @@ use super::server::HttpRequest;
 pub(super) use super::server::route_request;
 pub(super) use super::server::route_request_with_manager;
 pub(super) use super::server::start_local_api;
+use super::snapshot::LocalApiAsyncToolBackpressure;
 use super::snapshot::LocalApiAsyncToolSupervision;
 use super::snapshot::LocalApiBackgroundShellJob;
 use super::snapshot::LocalApiBackgroundShellOrigin;
@@ -85,6 +86,16 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             elapsed_seconds: 21,
             active_request_count: 1,
+        }),
+        async_tool_backpressure: Some(LocalApiAsyncToolBackpressure {
+            abandoned_request_count: 1,
+            saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
+            saturated: false,
+            oldest_tool: "background_shell_start".to_string(),
+            oldest_summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            oldest_elapsed_before_timeout_seconds: 21,
+            oldest_hard_timeout_seconds: 15,
+            oldest_elapsed_seconds: 6,
         }),
         supervision_notice: Some(LocalApiSupervisionNotice {
             classification: "tool_slow".to_string(),

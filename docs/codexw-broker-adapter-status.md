@@ -186,6 +186,8 @@ the real connector binary:
 - broker-visible recovery options such as `observe_status`, `interrupt_turn`,
   and `exit_and_resume`, including concrete local-API path or CLI command
   fields where available
+- broker-visible `async_tool_backpressure` for abandoned async worker backlog
+  count/saturation visibility and refusal-context rendering
 - structured lease-conflict propagation
 - structured connector-local validation failures for malformed injected request
   bodies and malformed client/lease headers

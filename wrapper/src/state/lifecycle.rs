@@ -3,10 +3,12 @@ use std::time::Duration;
 
 use crate::rpc::RequestId;
 
+use super::AbandonedAsyncToolRequest;
 use super::AppState;
 use super::ConversationMessage;
 #[cfg(test)]
 use super::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT;
+use super::MAX_ABANDONED_ASYNC_TOOL_REQUESTS;
 use super::OrchestrationState;
 use super::SessionOverrides;
 use super::TimedOutAsyncToolRequest;
@@ -26,6 +28,7 @@ impl AppState {
             active_turn_id: None,
             active_exec_process_id: None,
             active_async_tool_requests: HashMap::new(),
+            abandoned_async_tool_requests: HashMap::new(),
             realtime_active: false,
             realtime_session_id: None,
             realtime_last_error: None,
@@ -96,6 +99,7 @@ impl AppState {
         self.active_turn_id = None;
         self.active_exec_process_id = None;
         self.active_async_tool_requests.clear();
+        self.abandoned_async_tool_requests.clear();
         self.current_rollout_path = None;
         self.realtime_active = false;
         self.realtime_session_id = None;
@@ -163,6 +167,7 @@ impl AppState {
         summary: String,
         hard_timeout: Duration,
     ) {
+        self.abandoned_async_tool_requests.remove(&id);
         self.active_async_tool_requests.insert(
             id,
             super::AsyncToolActivity {
@@ -181,6 +186,13 @@ impl AppState {
         self.active_async_tool_requests.remove(id)
     }
 
+    pub(crate) fn finish_abandoned_async_tool_request(
+        &mut self,
+        id: &RequestId,
+    ) -> Option<AbandonedAsyncToolRequest> {
+        self.abandoned_async_tool_requests.remove(id)
+    }
+
     pub(crate) fn oldest_async_tool_activity(&self) -> Option<&super::AsyncToolActivity> {
         self.active_async_tool_requests
             .values()
@@ -194,6 +206,20 @@ impl AppState {
             .and_then(|activity| activity.supervision_class())
     }
 
+    pub(crate) fn abandoned_async_tool_request_count(&self) -> usize {
+        self.abandoned_async_tool_requests.len()
+    }
+
+    pub(crate) fn oldest_abandoned_async_tool_request(&self) -> Option<&AbandonedAsyncToolRequest> {
+        self.abandoned_async_tool_requests
+            .values()
+            .min_by_key(|request| request.timed_out_at)
+    }
+
+    pub(crate) fn async_tool_backpressure_active(&self) -> bool {
+        self.abandoned_async_tool_request_count() >= MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+    }
+
     pub(crate) fn expire_timed_out_async_tool_requests(&mut self) -> Vec<TimedOutAsyncToolRequest> {
         let timed_out_ids = self
             .active_async_tool_requests
@@ -204,6 +230,16 @@ impl AppState {
         for id in timed_out_ids {
             if let Some(activity) = self.active_async_tool_requests.remove(&id) {
                 let elapsed = activity.elapsed();
+                self.abandoned_async_tool_requests.insert(
+                    id.clone(),
+                    AbandonedAsyncToolRequest {
+                        tool: activity.tool.clone(),
+                        summary: activity.summary.clone(),
+                        timed_out_at: std::time::Instant::now(),
+                        elapsed_before_timeout: elapsed,
+                        hard_timeout: activity.hard_timeout,
+                    },
+                );
                 expired.push(TimedOutAsyncToolRequest {
                     id,
                     tool: activity.tool,

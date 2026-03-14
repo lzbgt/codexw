@@ -121,6 +121,53 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
 }
 
 #[test]
+fn status_snapshot_includes_abandoned_async_backpressure() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    state.turn_running = true;
+    state.record_async_tool_request_with_timeout(
+        crate::rpc::RequestId::Integer(21),
+        "background_shell_start".to_string(),
+        "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        std::time::Duration::from_secs(1),
+    );
+    if let Some(activity) = state
+        .active_async_tool_requests
+        .get_mut(&crate::rpc::RequestId::Integer(21))
+    {
+        activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(90);
+    }
+    let _expired = state.expire_timed_out_async_tool_requests();
+    let cli = crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: false,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        local_api: false,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
+        prompt: Vec::new(),
+    });
+    let rendered = render_status_runtime(&cli, &state).join("\n");
+    assert!(rendered.contains("async aban      1"));
+    assert!(
+        rendered.contains("async stale     arguments= command=sleep 5 tool=background_shell_start")
+    );
+    assert!(rendered.contains("async guard     monitoring"));
+}
+
+#[test]
 fn resetting_thread_context_clears_stream_buffers() {
     let mut state = crate::state::AppState::new(true, false);
     state
@@ -187,6 +234,67 @@ fn finishing_async_tool_request_removes_it_from_status_tracking() {
     assert!(removed.is_some());
     assert!(state.active_async_tool_requests.is_empty());
     assert!(state.oldest_async_tool_activity().is_none());
+}
+
+#[test]
+fn expiring_async_tool_requests_moves_them_into_abandoned_backlog() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.record_async_tool_request_with_timeout(
+        crate::rpc::RequestId::Integer(15),
+        "background_shell_start".to_string(),
+        "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        std::time::Duration::from_secs(1),
+    );
+    if let Some(activity) = state
+        .active_async_tool_requests
+        .get_mut(&crate::rpc::RequestId::Integer(15))
+    {
+        activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(80);
+    }
+
+    let expired = state.expire_timed_out_async_tool_requests();
+
+    assert_eq!(expired.len(), 1);
+    assert!(state.active_async_tool_requests.is_empty());
+    assert_eq!(state.abandoned_async_tool_request_count(), 1);
+    assert_eq!(
+        state
+            .oldest_abandoned_async_tool_request()
+            .map(|request| request.tool.as_str()),
+        Some("background_shell_start")
+    );
+    assert!(!state.async_tool_backpressure_active());
+}
+
+#[test]
+fn abandoned_async_backlog_becomes_saturated_at_threshold() {
+    let mut state = crate::state::AppState::new(true, false);
+    for id in 1..=crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS {
+        state.record_async_tool_request_with_timeout(
+            crate::rpc::RequestId::Integer(id as i64),
+            "background_shell_start".to_string(),
+            format!("summary-{id}"),
+            std::time::Duration::from_secs(1),
+        );
+        if let Some(activity) = state
+            .active_async_tool_requests
+            .get_mut(&crate::rpc::RequestId::Integer(id as i64))
+        {
+            activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(80);
+        }
+    }
+
+    let expired = state.expire_timed_out_async_tool_requests();
+
+    assert_eq!(
+        expired.len(),
+        crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+    );
+    assert!(state.async_tool_backpressure_active());
+    assert_eq!(
+        state.abandoned_async_tool_request_count(),
+        crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+    );
 }
 
 #[test]

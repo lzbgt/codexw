@@ -102,6 +102,7 @@ pub(in crate::local_api) fn session_payload(snapshot: &LocalApiSnapshot) -> serd
         "completed_turn_count": snapshot.completed_turn_count,
         "active_personality": snapshot.active_personality,
         "async_tool_supervision": snapshot.async_tool_supervision,
+        "async_tool_backpressure": snapshot.async_tool_backpressure,
         "supervision_notice": snapshot.supervision_notice,
         "orchestration": snapshot.orchestration_status,
         "transcript_length": snapshot.transcript.len(),
@@ -140,6 +141,7 @@ pub(in crate::local_api) fn session_summary(snapshot: &LocalApiSnapshot) -> serd
         "completed_turn_count": snapshot.completed_turn_count,
         "active_personality": snapshot.active_personality,
         "async_tool_supervision": snapshot.async_tool_supervision,
+        "async_tool_backpressure": snapshot.async_tool_backpressure,
         "supervision_notice": snapshot.supervision_notice,
         "transcript_length": snapshot.transcript.len(),
     })

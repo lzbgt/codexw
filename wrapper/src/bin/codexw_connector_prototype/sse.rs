@@ -105,19 +105,19 @@ pub(super) fn handle_sse_proxy(
     let mut pending_event: Option<String> = None;
     let mut pending_data: Vec<String> = Vec::new();
     let mut pending_comments: Vec<String> = Vec::new();
+    let mut pending_line_fragment = String::new();
 
     if !remainder.is_empty() {
-        for line in String::from_utf8_lossy(&remainder).split_inclusive('\n') {
-            consume_sse_line(
-                line.trim_end_matches('\n').trim_end_matches('\r'),
-                &mut pending_id,
-                &mut pending_event,
-                &mut pending_data,
-                &mut pending_comments,
-                &mut client_stream,
-                cli,
-            )?;
-        }
+        consume_sse_text(
+            &String::from_utf8_lossy(&remainder),
+            &mut pending_line_fragment,
+            &mut pending_id,
+            &mut pending_event,
+            &mut pending_data,
+            &mut pending_comments,
+            &mut client_stream,
+            cli,
+        )?;
     }
 
     let mut line = String::new();
@@ -127,6 +127,15 @@ pub(super) fn handle_sse_proxy(
             .read_line(&mut line)
             .context("read upstream SSE line")?;
         if read == 0 {
+            flush_pending_line_fragment(
+                &mut pending_line_fragment,
+                &mut pending_id,
+                &mut pending_event,
+                &mut pending_data,
+                &mut pending_comments,
+                &mut client_stream,
+                cli,
+            )?;
             flush_event(
                 &mut pending_id,
                 &mut pending_event,
@@ -137,8 +146,9 @@ pub(super) fn handle_sse_proxy(
             )?;
             break;
         }
-        consume_sse_line(
-            line.trim_end_matches('\n').trim_end_matches('\r'),
+        consume_sse_text(
+            &line,
+            &mut pending_line_fragment,
             &mut pending_id,
             &mut pending_event,
             &mut pending_data,
@@ -150,6 +160,57 @@ pub(super) fn handle_sse_proxy(
 
     let _ = client_stream.shutdown(Shutdown::Both);
     Ok(())
+}
+
+fn consume_sse_text(
+    text: &str,
+    pending_line_fragment: &mut String,
+    pending_id: &mut Option<String>,
+    pending_event: &mut Option<String>,
+    pending_data: &mut Vec<String>,
+    pending_comments: &mut Vec<String>,
+    client_stream: &mut TcpStream,
+    cli: &Cli,
+) -> Result<()> {
+    for segment in text.split_inclusive('\n') {
+        pending_line_fragment.push_str(segment);
+        if segment.ends_with('\n') {
+            flush_pending_line_fragment(
+                pending_line_fragment,
+                pending_id,
+                pending_event,
+                pending_data,
+                pending_comments,
+                client_stream,
+                cli,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn flush_pending_line_fragment(
+    pending_line_fragment: &mut String,
+    pending_id: &mut Option<String>,
+    pending_event: &mut Option<String>,
+    pending_data: &mut Vec<String>,
+    pending_comments: &mut Vec<String>,
+    client_stream: &mut TcpStream,
+    cli: &Cli,
+) -> Result<()> {
+    if pending_line_fragment.is_empty() {
+        return Ok(());
+    }
+    let line = std::mem::take(pending_line_fragment);
+    consume_sse_line(
+        line.trim_end_matches('\n').trim_end_matches('\r'),
+        pending_id,
+        pending_event,
+        pending_data,
+        pending_comments,
+        client_stream,
+        cli,
+    )
 }
 
 fn consume_sse_line(

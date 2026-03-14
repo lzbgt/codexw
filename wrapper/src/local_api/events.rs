@@ -191,6 +191,7 @@ fn status_event_payload(snapshot: &LocalApiSnapshot) -> Value {
         "thread_id": snapshot.thread_id,
         "turn_running": snapshot.turn_running,
         "async_tool_supervision": snapshot.async_tool_supervision,
+        "async_tool_backpressure": snapshot.async_tool_backpressure,
         "supervision_notice": snapshot.supervision_notice,
     })
 }

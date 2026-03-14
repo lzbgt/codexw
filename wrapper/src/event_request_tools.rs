@@ -75,6 +75,29 @@ pub(crate) fn handle_tool_request(
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("dynamic tool");
             if is_background_shell_tool(tool) {
+                if state.async_tool_backpressure_active() {
+                    let backlog = state.abandoned_async_tool_request_count();
+                    let oldest = state.oldest_abandoned_async_tool_request();
+                    let oldest_summary = oldest
+                        .map(|request| request.summary.as_str())
+                        .unwrap_or("background-shell async backlog saturated");
+                    output.line_stderr(format!(
+                        "[self-supervision] refusing async tool while abandoned backlog is saturated ({backlog}): {}",
+                        oldest_summary
+                    ))?;
+                    send_json(
+                        writer,
+                        &OutgoingResponse {
+                            id: request.id.clone(),
+                            result: background_shell_backpressure_failure(
+                                tool,
+                                backlog,
+                                oldest_summary,
+                            ),
+                        },
+                    )?;
+                    return Ok(true);
+                }
                 let request_id = request.id.clone();
                 let params = request.params.clone();
                 let summary = summarize_tool_request(&params);
@@ -88,6 +111,8 @@ pub(crate) fn handle_tool_request(
                 let resolved_cwd = resolved_cwd.to_string();
                 let tx = tx.clone();
                 let background_shells = state.orchestration.background_shells.clone();
+                // Background-shell dynamic tools run on dedicated worker threads so a blocking
+                // wrapper-side shell call cannot stall the main runtime loop forever.
                 thread::spawn(move || {
                     let result = execute_background_shell_tool_call_with_manager(
                         &params,
@@ -144,6 +169,22 @@ fn async_background_shell_timeout(tool: &str, params: &serde_json::Value) -> Dur
         }
         _ => Duration::from_millis(DEFAULT_BACKGROUND_SHELL_TOOL_TIMEOUT_MS),
     }
+}
+
+fn background_shell_backpressure_failure(
+    tool: &str,
+    backlog: usize,
+    oldest_summary: &str,
+) -> serde_json::Value {
+    serde_json::json!({
+        "contentItems": [{
+            "type": "inputText",
+            "text": format!(
+                "dynamic tool `{tool}` was refused locally because {backlog} timed-out background-shell worker(s) are still unresolved; newest work is blocked until the abandoned backlog drains or the operator interrupts/exits and resumes the thread; oldest backlog summary: {oldest_summary}"
+            )
+        }],
+        "success": false
+    })
 }
 
 fn duration_from_optional_timeout(value: Option<&serde_json::Value>, default_ms: u64) -> Duration {
@@ -268,5 +309,49 @@ mod tests {
             .get(&RequestId::Integer(7))
             .expect("tracked async tool activity");
         assert_eq!(activity.hard_timeout, Duration::from_millis(15_000));
+    }
+
+    #[test]
+    fn saturated_abandoned_async_backlog_refuses_new_shell_tool_requests() {
+        let mut state = AppState::new(true, false);
+        let mut output = Output::default();
+        let mut writer = spawn_sink_stdin();
+        let (tx, rx) = mpsc::channel();
+        for id in 1..=crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS {
+            state.record_async_tool_request_with_timeout(
+                RequestId::Integer(id as i64),
+                "background_shell_start".to_string(),
+                format!("summary-{id}"),
+                Duration::from_secs(1),
+            );
+            if let Some(activity) = state
+                .active_async_tool_requests
+                .get_mut(&RequestId::Integer(id as i64))
+            {
+                activity.started_at = std::time::Instant::now() - Duration::from_secs(10);
+            }
+        }
+        let expired = state.expire_timed_out_async_tool_requests();
+        assert_eq!(
+            expired.len(),
+            crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+        );
+        let request = test_request(
+            "item/tool/call",
+            "background_shell_start",
+            json!({"command": "printf 'alpha\\n'"}),
+        );
+
+        let handled =
+            handle_tool_request(&request, "/tmp", &mut state, &mut output, &mut writer, &tx)
+                .expect("handle tool request");
+
+        assert!(handled);
+        assert!(state.active_async_tool_requests.is_empty());
+        assert_eq!(
+            state.abandoned_async_tool_request_count(),
+            crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+        );
+        assert!(rx.recv_timeout(Duration::from_millis(200)).is_err());
     }
 }

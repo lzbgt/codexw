@@ -77,6 +77,28 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             format_elapsed(Some(async_tool.started_at))
         ));
     }
+    if let Some(abandoned) = state.oldest_abandoned_async_tool_request() {
+        lines.push(format!(
+            "async aban      {}",
+            state.abandoned_async_tool_request_count()
+        ));
+        lines.push(format!(
+            "async stale     {}",
+            summarize_text(&abandoned.summary)
+        ));
+        lines.push(format!(
+            "async stale tm  {}",
+            format_elapsed(Some(abandoned.timed_out_at))
+        ));
+        lines.push(format!(
+            "async guard     {}",
+            if state.async_tool_backpressure_active() {
+                "saturated"
+            } else {
+                "monitoring"
+            }
+        ));
+    }
     if let Some(notice) = state
         .active_supervision_notice
         .clone()

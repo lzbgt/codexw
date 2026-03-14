@@ -140,6 +140,7 @@ pub(crate) enum SupervisionNoticeTransition {
 
 pub(crate) const ASYNC_TOOL_SLOW_THRESHOLD: Duration = Duration::from_secs(15);
 pub(crate) const ASYNC_TOOL_WEDGED_THRESHOLD: Duration = Duration::from_secs(60);
+pub(crate) const MAX_ABANDONED_ASYNC_TOOL_REQUESTS: usize = 2;
 #[cfg(test)]
 pub(crate) const DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
 
@@ -181,11 +182,27 @@ pub(crate) struct TimedOutAsyncToolRequest {
     pub(crate) hard_timeout: Duration,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct AbandonedAsyncToolRequest {
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+    pub(crate) timed_out_at: Instant,
+    pub(crate) elapsed_before_timeout: Duration,
+    pub(crate) hard_timeout: Duration,
+}
+
+impl AbandonedAsyncToolRequest {
+    pub(crate) fn timed_out_elapsed(&self) -> Duration {
+        Instant::now().saturating_duration_since(self.timed_out_at)
+    }
+}
+
 pub(crate) struct AppState {
     pub(crate) thread_id: Option<String>,
     pub(crate) active_turn_id: Option<String>,
     pub(crate) active_exec_process_id: Option<String>,
     pub(crate) active_async_tool_requests: HashMap<RequestId, AsyncToolActivity>,
+    pub(crate) abandoned_async_tool_requests: HashMap<RequestId, AbandonedAsyncToolRequest>,
     pub(crate) realtime_active: bool,
     pub(crate) realtime_session_id: Option<String>,
     pub(crate) realtime_last_error: Option<String>,

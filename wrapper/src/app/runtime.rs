@@ -177,13 +177,21 @@ fn handle_async_tool_response(
     output: &mut Output,
     writer: &mut std::process::ChildStdin,
 ) -> Result<()> {
-    let Some(_) = state.finish_async_tool_request(&tool_response.id) else {
+    if state.finish_async_tool_request(&tool_response.id).is_none() {
+        if let Some(abandoned) = state.finish_abandoned_async_tool_request(&tool_response.id) {
+            output.line_stderr(format!(
+                "[tool] abandoned async tool worker finally returned after {}s: {}",
+                abandoned.timed_out_elapsed().as_secs(),
+                tool_response.summary
+            ))?;
+            return Ok(());
+        }
         output.line_stderr(format!(
             "[tool] dropped late async tool response: {}",
             tool_response.summary
         ))?;
         return Ok(());
-    };
+    }
     let _ = state.refresh_async_tool_supervision_notice();
     let success = tool_response
         .result
@@ -211,10 +219,12 @@ fn handle_supervision_tick(
     writer: &mut std::process::ChildStdin,
 ) -> Result<()> {
     for expired in state.expire_timed_out_async_tool_requests() {
+        let backlog = state.abandoned_async_tool_request_count();
         output.line_stderr(format!(
-            "[self-supervision] forcing async tool failure after {}s (limit {}s): {}",
+            "[self-supervision] forcing async tool failure after {}s (limit {}s, abandoned backlog {}): {}",
             expired.elapsed.as_secs(),
             expired.hard_timeout.as_secs(),
+            backlog,
             expired.summary
         ))?;
         send_json(
@@ -225,7 +235,7 @@ fn handle_supervision_tick(
                     "contentItems": [{
                         "type": "inputText",
                         "text": format!(
-                            "dynamic tool `{}` exceeded its {}s runtime limit and was failed locally to avoid hanging the active turn; summary: {}",
+                        "dynamic tool `{}` exceeded its {}s runtime limit and was failed locally to avoid hanging the active turn; summary: {}",
                             expired.tool,
                             expired.hard_timeout.as_secs(),
                             expired.summary
@@ -399,12 +409,27 @@ mod tests {
             .expect("expire timed out async tool");
 
         assert!(state.active_async_tool_requests.is_empty());
+        assert_eq!(state.abandoned_async_tool_request_count(), 1);
         assert!(state.active_supervision_notice.is_none());
     }
 
     #[test]
-    fn late_async_tool_response_is_dropped_after_timeout_cleanup() {
+    fn late_async_tool_response_clears_abandoned_request_after_timeout_cleanup() {
         let mut state = AppState::new(true, false);
+        state.record_async_tool_request_with_timeout(
+            RequestId::Integer(404),
+            "background_shell_start".to_string(),
+            "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            std::time::Duration::from_secs(1),
+        );
+        if let Some(activity) = state
+            .active_async_tool_requests
+            .get_mut(&RequestId::Integer(404))
+        {
+            activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(75);
+        }
+        let _expired = state.expire_timed_out_async_tool_requests();
+        assert_eq!(state.abandoned_async_tool_request_count(), 1);
         let mut output = Output::default();
         let mut writer = spawn_sink_stdin();
 
@@ -422,6 +447,7 @@ mod tests {
         .expect("drop late async tool response");
 
         assert!(state.active_async_tool_requests.is_empty());
+        assert_eq!(state.abandoned_async_tool_request_count(), 0);
         assert!(state.active_supervision_notice.is_none());
     }
 }

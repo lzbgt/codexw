@@ -103,6 +103,12 @@ The first emitted recovery signal should also be sticky enough to notice:
 - clear the notice explicitly when the tool issue is gone
 - enforce a hard runtime limit for async shell-tool calls and fail the overdue
   request locally rather than leaving the active turn hung forever
+- retain a machine-readable abandoned async worker backlog after that timeout,
+  rather than pretending the detached worker disappeared
+- expose that backlog through an `async_tool_backpressure` state slice
+- once the abandoned async backlog is saturated, refuse new background-shell
+  async requests locally until the backlog drains or the operator exits and
+  resumes
 
 ## Relationship To Runtime Responsiveness
 
@@ -117,6 +123,17 @@ to:
 - interrupt the turn
 - exit with a resume hint
 - resume later in a newer generation if needed
+
+The current self-heal floor should also treat abandoned async workers as a
+first-class safety issue:
+
+- background-shell tool calls belong on dedicated wrapper worker threads, not
+  the main runtime loop
+- a timed-out detached worker may still return later, but its late response
+  must be ignored for protocol correctness
+- the runtime should keep counting that abandoned async worker until the late
+  return arrives or the session is reset
+- that count should become an admission-control input, not just a debug fact
 
 ## Relationship To Self-Evolution
 

@@ -37,6 +37,7 @@ pub(crate) struct LocalApiSnapshot {
     pub(crate) completed_turn_count: u64,
     pub(crate) active_personality: Option<String>,
     pub(crate) async_tool_supervision: Option<LocalApiAsyncToolSupervision>,
+    pub(crate) async_tool_backpressure: Option<LocalApiAsyncToolBackpressure>,
     pub(crate) supervision_notice: Option<LocalApiSupervisionNotice>,
     pub(crate) orchestration_status: LocalApiOrchestrationStatus,
     pub(crate) orchestration_dependencies: Vec<LocalApiDependencyEdge>,
@@ -55,6 +56,18 @@ pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) summary: String,
     pub(crate) elapsed_seconds: u64,
     pub(crate) active_request_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct LocalApiAsyncToolBackpressure {
+    pub(crate) abandoned_request_count: usize,
+    pub(crate) saturation_threshold: usize,
+    pub(crate) saturated: bool,
+    pub(crate) oldest_tool: String,
+    pub(crate) oldest_summary: String,
+    pub(crate) oldest_elapsed_before_timeout_seconds: u64,
+    pub(crate) oldest_hard_timeout_seconds: u64,
+    pub(crate) oldest_elapsed_seconds: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -245,6 +258,7 @@ pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnap
         completed_turn_count: 0,
         active_personality: None,
         async_tool_supervision: None,
+        async_tool_backpressure: None,
         supervision_notice: None,
         orchestration_status: LocalApiOrchestrationStatus::default(),
         orchestration_dependencies: Vec::new(),
@@ -268,6 +282,7 @@ pub(crate) fn sync_shared_snapshot(
         guard.active_personality = state.active_personality.clone();
         guard.async_tool_supervision =
             async_tool_supervision_snapshot(&guard.session_id, &guard.cwd, state);
+        guard.async_tool_backpressure = async_tool_backpressure_snapshot(state);
         guard.supervision_notice =
             supervision_notice_snapshot(&guard.session_id, &guard.cwd, state);
         guard.orchestration_status = orchestration_status_snapshot(state);
@@ -292,6 +307,7 @@ pub(crate) fn sync_shared_snapshot(
         completed_turn_count: 0,
         active_personality: None,
         async_tool_supervision: None,
+        async_tool_backpressure: None,
         supervision_notice: None,
         orchestration_status: LocalApiOrchestrationStatus::default(),
         orchestration_dependencies: Vec::new(),
@@ -320,6 +336,20 @@ fn async_tool_supervision_snapshot(
         summary: activity.summary.clone(),
         elapsed_seconds: activity.elapsed().as_secs(),
         active_request_count: state.active_async_tool_requests.len(),
+    })
+}
+
+fn async_tool_backpressure_snapshot(state: &AppState) -> Option<LocalApiAsyncToolBackpressure> {
+    let abandoned = state.oldest_abandoned_async_tool_request()?;
+    Some(LocalApiAsyncToolBackpressure {
+        abandoned_request_count: state.abandoned_async_tool_request_count(),
+        saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
+        saturated: state.async_tool_backpressure_active(),
+        oldest_tool: abandoned.tool.clone(),
+        oldest_summary: abandoned.summary.clone(),
+        oldest_elapsed_before_timeout_seconds: abandoned.elapsed_before_timeout.as_secs(),
+        oldest_hard_timeout_seconds: abandoned.hard_timeout.as_secs(),
+        oldest_elapsed_seconds: abandoned.timed_out_elapsed().as_secs(),
     })
 }
 

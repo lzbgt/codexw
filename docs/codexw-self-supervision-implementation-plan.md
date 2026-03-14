@@ -94,6 +94,10 @@ The same slice should emit explicit recovery options:
   a thread id is available
 - a runtime-enforced async-tool deadline that fails an overdue request locally
   instead of waiting forever for the worker thread to return
+- explicit abandoned async backlog tracking after that local timeout
+- `async_tool_backpressure` in the local snapshot/SSE status slice
+- admission control that refuses new background-shell async requests once the
+  abandoned async backlog is saturated
 
 ### 5. Audit trail
 
@@ -120,6 +124,13 @@ The current self-heal floor should be explicit: if an async shell-tool worker
 does not return before its bounded runtime limit, `codexw` should emit a failed
 tool response itself and let the turn continue, even if the detached worker
 thread later returns and must be ignored.
+
+That worker model should stay explicit in the implementation:
+
+- background-shell tool calls belong on dedicated wrapper worker threads, not
+  the main runtime loop
+- the bug being fixed here is wrapper-side supervision/admission behavior in
+  `codexw`, not the upstream app-server transport model
 
 ## Explicitly Deferred
 

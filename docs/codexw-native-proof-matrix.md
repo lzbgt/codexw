@@ -178,7 +178,10 @@ The statuses are:
     `operator_interrupt_or_exit_resume`, plus explicit recovery options such as
     `observe_status`, `interrupt_turn`, and `exit_and_resume`, plus a
     runtime-enforced local failure path when an async shell-tool request
-    exceeds its bounded runtime limit
+    exceeds its bounded runtime limit, plus dedicated wrapper worker threads,
+    abandoned async backlog visibility through `async_tool_backpressure`, and
+    local refusal of new background-shell async requests once that backlog is
+    saturated
 - Evidence:
   - [codexw-self-supervision.md](codexw-self-supervision.md)
   - [codexw-native-product-status.md](codexw-native-product-status.md)

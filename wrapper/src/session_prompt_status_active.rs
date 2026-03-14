@@ -72,26 +72,57 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
 }
 
 fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
-    let async_tool = state.oldest_async_tool_activity()?;
-    let detail = if state.active_async_tool_requests.len() > 1 {
+    if let Some(async_tool) = state.oldest_async_tool_activity() {
+        let detail = if state.active_async_tool_requests.len() > 1 {
+            format!(
+                "async tools {}: {}",
+                state.active_async_tool_requests.len(),
+                async_tool.summary
+            )
+        } else {
+            format!("async tool {}: {}", async_tool.tool, async_tool.summary)
+        };
+        let detail = if let Some(classification) = state.oldest_async_tool_supervision_class() {
+            format!(
+                "{} {detail} [{}]",
+                classification.label(),
+                classification.prompt_hint()
+            )
+        } else {
+            detail
+        };
+        return Some((
+            async_tool.started_at,
+            append_async_backlog_suffix(state, detail),
+        ));
+    }
+    let abandoned = state.oldest_abandoned_async_tool_request()?;
+    let detail = if state.async_tool_backpressure_active() {
         format!(
-            "async tools {}: {}",
-            state.active_async_tool_requests.len(),
-            async_tool.summary
+            "async backlog saturated {}: {}",
+            state.abandoned_async_tool_request_count(),
+            abandoned.summary
         )
     } else {
-        format!("async tool {}: {}", async_tool.tool, async_tool.summary)
-    };
-    let detail = if let Some(classification) = state.oldest_async_tool_supervision_class() {
         format!(
-            "{} {detail} [{}]",
-            classification.label(),
-            classification.prompt_hint()
+            "async backlog {}: {}",
+            state.abandoned_async_tool_request_count(),
+            abandoned.summary
         )
-    } else {
-        detail
     };
-    Some((async_tool.started_at, detail))
+    Some((abandoned.timed_out_at, detail))
+}
+
+fn append_async_backlog_suffix(state: &AppState, detail: String) -> String {
+    let backlog = state.abandoned_async_tool_request_count();
+    if backlog == 0 {
+        return detail;
+    }
+    if state.async_tool_backpressure_active() {
+        format!("{detail} [backlog saturated {backlog}]")
+    } else {
+        format!("{detail} [backlog {backlog}]")
+    }
 }
 
 pub(crate) fn render_realtime_status(state: &AppState) -> String {

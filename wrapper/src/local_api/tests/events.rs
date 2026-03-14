@@ -62,6 +62,14 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         "observe_or_interrupt"
     );
     assert_eq!(
+        events[2].data["async_tool_backpressure"]["abandoned_request_count"],
+        1
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_hard_timeout_seconds"],
+        15
+    );
+    assert_eq!(
         events[2].data["supervision_notice"]["recommended_action"],
         "observe_or_interrupt"
     );
@@ -133,6 +141,7 @@ fn event_stream_route_replays_existing_events() {
     assert!(response_text.contains("event: turn.updated"));
     assert!(response_text.contains("event: status.updated"));
     assert!(response_text.contains("\"recommended_action\":\"observe_or_interrupt\""));
+    assert!(response_text.contains("\"async_tool_backpressure\""));
     assert!(response_text.contains("\"supervision_notice\""));
 
     drop(stream);
@@ -174,6 +183,17 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             elapsed_seconds: 75,
             active_request_count: 1,
+        });
+    current.async_tool_backpressure =
+        Some(crate::local_api::snapshot::LocalApiAsyncToolBackpressure {
+            abandoned_request_count: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
+            saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
+            saturated: true,
+            oldest_tool: "background_shell_start".to_string(),
+            oldest_summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            oldest_elapsed_before_timeout_seconds: 75,
+            oldest_hard_timeout_seconds: 30,
+            oldest_elapsed_seconds: 30,
         });
     current.supervision_notice = Some(crate::local_api::snapshot::LocalApiSupervisionNotice {
         classification: "tool_wedged".to_string(),
@@ -239,6 +259,7 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         events[1].data["async_tool_supervision"]["recommended_action"],
         "interrupt_or_exit_resume"
     );
+    assert_eq!(events[1].data["async_tool_backpressure"]["saturated"], true);
     assert_eq!(
         events[1].data["supervision_notice"]["classification"],
         "tool_wedged"

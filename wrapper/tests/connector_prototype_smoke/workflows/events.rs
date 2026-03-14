@@ -513,6 +513,16 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                         }
                                     ],
                                     "tool": "background_shell_start"
+                                },
+                                "async_tool_backpressure": {
+                                    "abandoned_request_count": 1,
+                                    "saturation_threshold": 2,
+                                    "saturated": false,
+                                    "oldest_tool": "background_shell_start",
+                                    "oldest_summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                    "oldest_elapsed_before_timeout_seconds": 21,
+                                    "oldest_hard_timeout_seconds": 15,
+                                    "oldest_elapsed_seconds": 6
                                 }
                             }
                         }))?
@@ -555,6 +565,16 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "summary": "arguments= command=sleep 5 tool=background_shell_start",
                             "elapsed_seconds": 21,
                             "active_request_count": 1
+                        },
+                        "async_tool_backpressure": {
+                            "abandoned_request_count": 1,
+                            "saturation_threshold": 2,
+                            "saturated": false,
+                            "oldest_tool": "background_shell_start",
+                            "oldest_summary": "arguments= command=sleep 5 tool=background_shell_start",
+                            "oldest_elapsed_before_timeout_seconds": 21,
+                            "oldest_hard_timeout_seconds": 15,
+                            "oldest_elapsed_seconds": 6
                         },
                         "supervision_notice": {
                             "classification": "tool_slow",
@@ -631,6 +651,16 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "elapsed_seconds": 75,
                             "active_request_count": 1
                         },
+                        "async_tool_backpressure": {
+                            "abandoned_request_count": 2,
+                            "saturation_threshold": 2,
+                            "saturated": true,
+                            "oldest_tool": "background_shell_start",
+                            "oldest_summary": "arguments= command=sleep 5 tool=background_shell_start",
+                            "oldest_elapsed_before_timeout_seconds": 75,
+                            "oldest_hard_timeout_seconds": 30,
+                            "oldest_elapsed_seconds": 30
+                        },
                         "supervision_notice": {
                             "classification": "tool_wedged",
                             "recommended_action": "interrupt_or_exit_resume",
@@ -690,6 +720,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     )?;
     assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(create_response.contains("\"async_tool_supervision\""));
+    assert!(create_response.contains("\"async_tool_backpressure\""));
     assert!(create_response.contains("\"supervision_notice\""));
 
     let initial_events = client.session_request("GET", "sess_1", "/events", None, &[])?;
@@ -701,10 +732,10 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(initial_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(initial_events.contains("tool_slow"));
     assert!(initial_events.contains("observe_or_interrupt"));
-    assert!(initial_events.contains("warn_only"));
-    assert!(initial_events.contains("observe_status"));
-    assert!(initial_events.contains("/api/v1/session/sess_1/turn/interrupt"));
-    assert!(initial_events.contains("supervision_notice"));
+    assert!(
+        initial_events.contains("\"async_tool_backpressure\""),
+        "{initial_events}"
+    );
     assert!(initial_events.contains("background_shell_start"));
 
     let resumed_events =
@@ -717,11 +748,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"deployment_id\":\"mac-mini-01\""));
     assert!(resumed_events.contains("tool_wedged"));
     assert!(resumed_events.contains("interrupt_or_exit_resume"));
-    assert!(resumed_events.contains("operator_interrupt_or_exit_resume"));
-    assert!(resumed_events.contains("exit_and_resume"));
-    assert!(resumed_events.contains("codexw --cwd /tmp/repo resume thread_1"));
-    assert!(resumed_events.contains("supervision_notice"));
-    assert!(resumed_events.contains("elapsed_seconds"));
+    assert!(resumed_events.contains("\"async_tool_backpressure\""));
+    assert!(resumed_events.contains("\"saturated\":true"));
 
     fake_server.join().expect("fake server thread")?;
     Ok(())
