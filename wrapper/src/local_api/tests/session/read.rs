@@ -71,6 +71,14 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(body["session"]["attached_thread_id"], "thread_123");
     assert_eq!(body["thread_id"], "thread_123");
     assert_eq!(body["working"], Value::Bool(true));
+    assert_eq!(
+        body["async_tool_supervision"]["classification"],
+        "tool_slow"
+    );
+    assert_eq!(
+        body["session"]["async_tool_supervision"]["tool"],
+        "background_shell_start"
+    );
     assert_eq!(body["orchestration"]["main_agent_state"], "blocked");
 }
 
@@ -96,6 +104,10 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(body["session"]["active_turn_id"], "turn_456");
     assert_eq!(body["session"]["attachment"]["scope"], "process");
     assert_eq!(body["session"]["attachment"]["client_id"], "client_web");
+    assert_eq!(
+        body["session"]["async_tool_supervision"]["classification"],
+        "tool_slow"
+    );
     assert_eq!(body["active_turn_id"], "turn_456");
 }
 

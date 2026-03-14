@@ -24,6 +24,7 @@ use super::server::HttpRequest;
 pub(super) use super::server::route_request;
 pub(super) use super::server::route_request_with_manager;
 pub(super) use super::server::start_local_api;
+use super::snapshot::LocalApiAsyncToolSupervision;
 use super::snapshot::LocalApiBackgroundShellJob;
 use super::snapshot::LocalApiBackgroundShellOrigin;
 use super::snapshot::LocalApiBackgroundTerminal;
@@ -52,6 +53,13 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
         started_turn_count: 3,
         completed_turn_count: 2,
         active_personality: Some("balanced".to_string()),
+        async_tool_supervision: Some(LocalApiAsyncToolSupervision {
+            classification: "tool_slow".to_string(),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            elapsed_seconds: 21,
+            active_request_count: 1,
+        }),
         orchestration_status: LocalApiOrchestrationStatus {
             main_agent_state: "blocked".to_string(),
             wait_summary: Some("waiting on agent thread_worker".to_string()),

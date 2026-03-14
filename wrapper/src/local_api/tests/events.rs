@@ -26,7 +26,7 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     publish_snapshot_change_events(&log, None, &current);
 
     let events = events_since(&log, "sess_test", None);
-    assert_eq!(events.len(), 6);
+    assert_eq!(events.len(), 7);
     assert_eq!(events[0].event, "session.updated");
     assert_eq!(
         events[0].data["session"]["attachment"]["id"],
@@ -36,10 +36,15 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     assert_eq!(events[0].data["attachment"]["client_id"], "client_web");
     assert_eq!(events[0].data["attachment"]["lease_seconds"], 300);
     assert_eq!(events[1].event, "turn.updated");
-    assert_eq!(events[2].event, "orchestration.updated");
-    assert_eq!(events[3].event, "workers.updated");
-    assert_eq!(events[4].event, "capabilities.updated");
-    assert_eq!(events[5].event, "transcript.updated");
+    assert_eq!(events[2].event, "status.updated");
+    assert_eq!(
+        events[2].data["async_tool_supervision"]["classification"],
+        "tool_slow"
+    );
+    assert_eq!(events[3].event, "orchestration.updated");
+    assert_eq!(events[4].event, "workers.updated");
+    assert_eq!(events[5].event, "capabilities.updated");
+    assert_eq!(events[6].event, "transcript.updated");
 }
 
 #[test]
@@ -80,6 +85,7 @@ fn event_stream_route_replays_existing_events() {
         let response_text = String::from_utf8_lossy(&response);
         if response_text.contains("event: session.updated")
             && response_text.contains("event: turn.updated")
+            && response_text.contains("event: status.updated")
         {
             break;
         }
@@ -93,9 +99,41 @@ fn event_stream_route_replays_existing_events() {
     )));
     assert!(response_text.contains("event: session.updated"));
     assert!(response_text.contains("event: turn.updated"));
+    assert!(response_text.contains("event: status.updated"));
 
     drop(stream);
     handle.shutdown().expect("shutdown local api");
+}
+
+#[test]
+fn publish_snapshot_change_events_emits_status_update_when_supervision_changes() {
+    let snapshot = sample_snapshot();
+    let previous = snapshot.read().expect("snapshot").clone();
+    let mut current = previous.clone();
+    current.async_tool_supervision =
+        Some(crate::local_api::snapshot::LocalApiAsyncToolSupervision {
+            classification: "tool_wedged".to_string(),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            elapsed_seconds: 75,
+            active_request_count: 1,
+        });
+    let log = new_event_log();
+
+    publish_snapshot_change_events(&log, Some(&previous), &current);
+
+    let events = events_since(&log, "sess_test", None);
+    assert_eq!(events.len(), 2);
+    assert_eq!(events[0].event, "session.updated");
+    assert_eq!(
+        events[0].data["session"]["async_tool_supervision"]["classification"],
+        "tool_wedged"
+    );
+    assert_eq!(events[1].event, "status.updated");
+    assert_eq!(
+        events[1].data["async_tool_supervision"]["classification"],
+        "tool_wedged"
+    );
 }
 
 #[test]

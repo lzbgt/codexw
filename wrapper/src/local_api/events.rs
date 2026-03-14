@@ -57,6 +57,17 @@ pub(crate) fn publish_snapshot_change_events(
         );
     }
 
+    if previous
+        .is_none_or(|snapshot| status_event_payload(snapshot) != status_event_payload(current))
+    {
+        push_event(
+            log,
+            &current.session_id,
+            "status.updated",
+            status_event_payload(current),
+        );
+    }
+
     if previous.is_none_or(|snapshot| snapshot.orchestration_status != current.orchestration_status)
     {
         push_event(
@@ -170,5 +181,14 @@ fn turn_event_payload(snapshot: &LocalApiSnapshot) -> Value {
         "turn_running": snapshot.turn_running,
         "started_turn_count": snapshot.started_turn_count,
         "completed_turn_count": snapshot.completed_turn_count,
+    })
+}
+
+fn status_event_payload(snapshot: &LocalApiSnapshot) -> Value {
+    json!({
+        "session_id": snapshot.session_id,
+        "thread_id": snapshot.thread_id,
+        "turn_running": snapshot.turn_running,
+        "async_tool_supervision": snapshot.async_tool_supervision,
     })
 }

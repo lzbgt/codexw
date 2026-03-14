@@ -74,6 +74,10 @@ When a stalled state is classified, the runtime should decide whether to:
 Keep supervision actions visible through status text or event logs so recovery
 is inspectable rather than mysterious.
 
+The first audit-trail slice should expose supervision classifications through
+the local API snapshot and `status.updated` SSE events, so WebUI or broker
+clients can observe `tool_slow` and `tool_wedged` without scraping prompt text.
+
 ## Explicitly Deferred
 
 The first slice should defer:

@@ -189,11 +189,15 @@ At:
 - changes to summary-visible working state
 - account/config/token/rate status changes
 - last status line changes materially
+- async-tool supervision classification changes such as `tool_slow` to
+  `tool_wedged`
 
 Likely emission owners:
 
 - runtime status update helpers
 - response/notification handlers that mutate status-relevant fields
+- snapshot diff publication in `wrapper/src/local_api/events.rs` for the
+  current supervision-classification slice
 
 ### Emit `orchestration.updated`
 

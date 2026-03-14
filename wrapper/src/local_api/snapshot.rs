@@ -34,11 +34,21 @@ pub(crate) struct LocalApiSnapshot {
     pub(crate) started_turn_count: u64,
     pub(crate) completed_turn_count: u64,
     pub(crate) active_personality: Option<String>,
+    pub(crate) async_tool_supervision: Option<LocalApiAsyncToolSupervision>,
     pub(crate) orchestration_status: LocalApiOrchestrationStatus,
     pub(crate) orchestration_dependencies: Vec<LocalApiDependencyEdge>,
     pub(crate) workers: LocalApiWorkersSnapshot,
     pub(crate) capabilities: Vec<LocalApiCapabilityEntry>,
     pub(crate) transcript: Vec<LocalApiTranscriptEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct LocalApiAsyncToolSupervision {
+    pub(crate) classification: String,
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+    pub(crate) elapsed_seconds: u64,
+    pub(crate) active_request_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
@@ -202,6 +212,7 @@ pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnap
         started_turn_count: 0,
         completed_turn_count: 0,
         active_personality: None,
+        async_tool_supervision: None,
         orchestration_status: LocalApiOrchestrationStatus::default(),
         orchestration_dependencies: Vec::new(),
         workers: LocalApiWorkersSnapshot::default(),
@@ -222,6 +233,7 @@ pub(crate) fn sync_shared_snapshot(
         guard.started_turn_count = state.started_turn_count;
         guard.completed_turn_count = state.completed_turn_count;
         guard.active_personality = state.active_personality.clone();
+        guard.async_tool_supervision = async_tool_supervision_snapshot(state);
         guard.orchestration_status = orchestration_status_snapshot(state);
         guard.orchestration_dependencies = orchestration_dependencies_snapshot(state);
         guard.workers = workers_snapshot(state);
@@ -243,12 +255,25 @@ pub(crate) fn sync_shared_snapshot(
         started_turn_count: 0,
         completed_turn_count: 0,
         active_personality: None,
+        async_tool_supervision: None,
         orchestration_status: LocalApiOrchestrationStatus::default(),
         orchestration_dependencies: Vec::new(),
         workers: LocalApiWorkersSnapshot::default(),
         capabilities: Vec::new(),
         transcript: Vec::new(),
     }
+}
+
+fn async_tool_supervision_snapshot(state: &AppState) -> Option<LocalApiAsyncToolSupervision> {
+    let activity = state.oldest_async_tool_activity()?;
+    let classification = activity.supervision_class()?;
+    Some(LocalApiAsyncToolSupervision {
+        classification: classification.label().to_string(),
+        tool: activity.tool.clone(),
+        summary: activity.summary.clone(),
+        elapsed_seconds: activity.elapsed().as_secs(),
+        active_request_count: state.active_async_tool_requests.len(),
+    })
 }
 
 fn orchestration_status_snapshot(state: &AppState) -> LocalApiOrchestrationStatus {
