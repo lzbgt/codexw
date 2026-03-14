@@ -22,6 +22,12 @@ It sits between:
 - [codexw-cross-deployment-handoff-contract-sketch.md](codexw-cross-deployment-handoff-contract-sketch.md)
 - [codexw-cross-deployment-handoff-implementation-plan.md](codexw-cross-deployment-handoff-implementation-plan.md)
 
+For the first broker-visible project/dependency contract sketch and delivery
+order, see
+[codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+and
+[codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md).
+
 ## Why This Requirement Exists
 
 The existing broker/client direction already implies:

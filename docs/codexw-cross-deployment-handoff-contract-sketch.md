@@ -8,6 +8,9 @@ This document sketches the first broker-visible contract for cross-deployment
 It sits below
 [codexw-cross-deployment-collaboration.md](codexw-cross-deployment-collaboration.md)
 and turns that architecture direction into an API-facing handoff shape.
+For the adjacent project/dependency metadata contract that this handoff lane
+should reference, see
+[codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md).
 
 This is still a design sketch, not an implemented claim.
 

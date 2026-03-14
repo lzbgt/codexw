@@ -658,6 +658,11 @@ handoff, see
 For the narrower project-aware case where collaborating deployments may each be
 working on a different dependent project and may not coexist on one host, see
 [docs/codexw-cross-project-dependency-collaboration.md](docs/codexw-cross-project-dependency-collaboration.md).
+For the first project/dependency contract sketch and implementation-facing
+delivery order for that lane, see
+[docs/codexw-cross-project-dependency-contract-sketch.md](docs/codexw-cross-project-dependency-contract-sketch.md)
+and
+[docs/codexw-cross-project-dependency-implementation-plan.md](docs/codexw-cross-project-dependency-implementation-plan.md).
 For the first handoff contract sketch and implementation-facing delivery order
 for that lane, see
 [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)

@@ -138,6 +138,8 @@ Reference:
 
 - [codexw-cross-deployment-collaboration.md](codexw-cross-deployment-collaboration.md)
 - [codexw-cross-project-dependency-collaboration.md](codexw-cross-project-dependency-collaboration.md)
+- [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
+- [codexw-cross-project-dependency-implementation-plan.md](codexw-cross-project-dependency-implementation-plan.md)
 - [codexw-cross-deployment-handoff-contract-sketch.md](codexw-cross-deployment-handoff-contract-sketch.md)
 - [codexw-cross-deployment-handoff-implementation-plan.md](codexw-cross-deployment-handoff-implementation-plan.md)
 

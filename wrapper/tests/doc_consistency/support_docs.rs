@@ -31,6 +31,10 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let cross_deployment = read_repo_file("docs/codexw-cross-deployment-collaboration.md");
     let cross_project_dependency =
         read_repo_file("docs/codexw-cross-project-dependency-collaboration.md");
+    let cross_project_contract =
+        read_repo_file("docs/codexw-cross-project-dependency-contract-sketch.md");
+    let cross_project_plan =
+        read_repo_file("docs/codexw-cross-project-dependency-implementation-plan.md");
     let cross_deployment_contract =
         read_repo_file("docs/codexw-cross-deployment-handoff-contract-sketch.md");
     let cross_deployment_plan =
@@ -64,6 +68,8 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-client-architecture.md",
         "docs/codexw-cross-deployment-collaboration.md",
         "docs/codexw-cross-project-dependency-collaboration.md",
+        "docs/codexw-cross-project-dependency-contract-sketch.md",
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
         "docs/codexw-cross-deployment-handoff-contract-sketch.md",
         "docs/codexw-cross-deployment-handoff-implementation-plan.md",
         "docs/codexw-broker-client-fixture.md",
@@ -100,6 +106,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &readme,
         "docs/codexw-cross-project-dependency-collaboration.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-cross-project-dependency-contract-sketch.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
         "README.md",
     );
     assert_contains(
@@ -174,6 +190,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &todos,
         "docs/codexw-cross-project-dependency-collaboration.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-cross-project-dependency-contract-sketch.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
         "TODOS.md",
     );
     assert_contains(
@@ -499,6 +525,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &broker_handoff,
+        "codexw-cross-project-dependency-contract-sketch.md",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains(
+        &broker_handoff,
+        "codexw-cross-project-dependency-implementation-plan.md",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains(
+        &broker_handoff,
         "codexw-cross-deployment-handoff-contract-sketch.md",
         "docs/codexw-broker-integration-handoff.md",
     );
@@ -546,6 +582,36 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &cross_project_dependency,
         "dependency edge",
         "docs/codexw-cross-project-dependency-collaboration.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_contract,
+        "session_project_bound",
+        "docs/codexw-cross-project-dependency-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_contract,
+        "project_dependency_declared",
+        "docs/codexw-cross-project-dependency-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_contract,
+        "session-to-project assignment",
+        "docs/codexw-cross-project-dependency-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_plan,
+        "dependency-edge create/list/detail routes",
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_plan,
+        "handoff creation can reference dependency ids",
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_plan,
+        "do not assume the participating deployments share a host",
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
     );
     assert_contains_case_insensitive(
         &cross_deployment_contract,

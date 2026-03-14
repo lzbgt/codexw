@@ -20,6 +20,8 @@ Primary source docs:
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
 - [docs/codexw-cross-project-dependency-collaboration.md](docs/codexw-cross-project-dependency-collaboration.md)
+- [docs/codexw-cross-project-dependency-contract-sketch.md](docs/codexw-cross-project-dependency-contract-sketch.md)
+- [docs/codexw-cross-project-dependency-implementation-plan.md](docs/codexw-cross-project-dependency-implementation-plan.md)
 - [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)
 - [docs/codexw-cross-deployment-handoff-implementation-plan.md](docs/codexw-cross-deployment-handoff-implementation-plan.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
@@ -66,6 +68,9 @@ Concrete tasks:
   - collaboration should stay project-aware when each deployment is advancing a
     different dependent project
   - dependency edges between projects should be explicit collaboration context
+  - project assignment and dependency-edge metadata should have their own narrow
+    broker-visible route family instead of being buried only inside handoff
+    payloads
   - work handoff should be session-scoped and replayable
   - work handoff should preserve provenance rather than relying on transcript
     prose alone
@@ -89,6 +94,8 @@ Primary source:
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
 - [docs/codexw-cross-project-dependency-collaboration.md](docs/codexw-cross-project-dependency-collaboration.md)
+- [docs/codexw-cross-project-dependency-contract-sketch.md](docs/codexw-cross-project-dependency-contract-sketch.md)
+- [docs/codexw-cross-project-dependency-implementation-plan.md](docs/codexw-cross-project-dependency-implementation-plan.md)
 - [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)
 - [docs/codexw-cross-deployment-handoff-implementation-plan.md](docs/codexw-cross-deployment-handoff-implementation-plan.md)
 - [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
