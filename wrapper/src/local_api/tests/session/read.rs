@@ -83,6 +83,11 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_supervision"]["owner"],
         "wrapper_background_shell"
     );
+    assert_eq!(body["async_tool_supervision"]["request_id"], "7");
+    assert_eq!(
+        body["async_tool_supervision"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
+    );
     assert_eq!(body["async_tool_supervision"]["source_call_id"], "call_1");
     assert_eq!(
         body["async_tool_supervision"]["target_background_shell_reference"],
@@ -229,6 +234,11 @@ fn session_snapshot_is_returned_with_valid_token() {
     );
     assert_eq!(body["async_tool_backpressure"]["saturated"], false);
     assert_eq!(body["supervision_notice"]["classification"], "tool_slow");
+    assert_eq!(body["supervision_notice"]["request_id"], "7");
+    assert_eq!(
+        body["supervision_notice"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
+    );
     assert_eq!(
         body["session"]["async_tool_supervision"]["tool"],
         "background_shell_start"
@@ -314,6 +324,11 @@ fn session_id_route_reuses_same_snapshot_payload() {
         body["session"]["async_tool_supervision"]["owner"],
         "wrapper_background_shell"
     );
+    assert_eq!(body["session"]["async_tool_supervision"]["request_id"], "7");
+    assert_eq!(
+        body["session"]["async_tool_supervision"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
+    );
     assert_eq!(
         body["session"]["async_tool_supervision"]["observation_state"],
         "wrapper_background_shell_streaming_output"
@@ -341,6 +356,11 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(
         body["session"]["supervision_notice"]["classification"],
         "tool_slow"
+    );
+    assert_eq!(body["session"]["supervision_notice"]["request_id"], "7");
+    assert_eq!(
+        body["session"]["supervision_notice"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
     );
     assert_eq!(body["active_turn_id"], "turn_456");
 }

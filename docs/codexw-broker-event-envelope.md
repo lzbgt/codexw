@@ -314,6 +314,7 @@ inspection facts such as `oldest_observation_state`,
 `async_tool_workers` so a remote agent
 backend can inspect dedicated worker thread names and lifecycle states such as
 `running` and `abandoned_after_timeout` without scraping prompt text, plus
+explicit active-worker identity such as `request_id` and `thread_name`, plus
 explicit owner-lane state such as `wrapper_background_shell`, source `callId`,
 resolved target facts such as `target_background_shell_reference` and
 `target_background_shell_job_id`, and correlated `bg-*` job facts when a

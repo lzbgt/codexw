@@ -190,6 +190,8 @@ the real connector binary:
   and recent output preview
 - broker-visible `supervision_notice` alert state for active supervised tool
   stalls
+- broker-visible active supervision identity through `request_id` and
+  `thread_name` on both `async_tool_supervision` and `supervision_notice`
 - broker-visible recovery-policy decisions such as `warn_only` and
   `operator_interrupt_or_exit_resume`, currently with `automation_ready=false`
 - broker-visible recovery options such as `observe_status`, `interrupt_turn`,

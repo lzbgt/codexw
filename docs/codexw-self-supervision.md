@@ -205,6 +205,10 @@ first-class safety issue:
   freshness through `output_state` and a concrete age fact such as
   `last_output_age_seconds`, so operators and broker clients can distinguish
   active streaming from silent stalls without scraping prose
+- the top-level active supervision slices should keep exact worker identity
+  explicit through `request_id` and `thread_name`, so clients do not have to
+  infer which running row in `async_tool_workers` is currently driving
+  `async_tool_supervision` or the sticky `supervision_notice`
 - a timed-out detached worker may still return later, but its late response
   must be ignored for protocol correctness
 - the runtime should keep counting that abandoned async worker until the late

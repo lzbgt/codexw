@@ -215,6 +215,10 @@ At:
 - owner-lane changes for active async supervision, so clients can tell that the
   unresolved work belongs to the wrapper-owned `background_shell_*` lane rather
   than inventing a generic background-task model
+- active-supervision identity changes through `request_id` and `thread_name`,
+  so clients can correlate `async_tool_supervision` and `supervision_notice`
+  to the exact running worker without scanning the full `async_tool_workers`
+  array
 - correlated wrapper-shell inspection changes, including source `callId` and
   resolved target facts such as `target_background_shell_reference` and
   `target_background_shell_job_id`, plus matched `bg-*` shell job facts such
@@ -231,8 +235,9 @@ Likely emission owners:
 - runtime status update helpers
 - response/notification handlers that mutate status-relevant fields
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
-  current supervision-classification, `async_tool_backpressure`,
-  `async_tool_workers`, `target_background_shell_reference` /
+  current supervision-classification, `request_id` / `thread_name`,
+  `async_tool_backpressure`, `async_tool_workers`,
+  `target_background_shell_reference` /
   `target_background_shell_job_id`, `oldest_request_id` /
   `oldest_thread_name` / `oldest_source_call_id` /
   `oldest_target_background_shell_reference` /

@@ -57,6 +57,8 @@ fn prompt_status_mentions_async_tool_activity_when_present() {
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("async tool background_shell_start"));
     assert!(rendered.contains("background_shell_start"));
+    assert!(rendered.contains("req 7"));
+    assert!(rendered.contains("worker codexw-async-tool-worker-7"));
     assert!(rendered.contains("awaiting shell start/output"));
     assert!(rendered.contains("no output yet"));
     assert!(rendered.contains("next check"));
@@ -86,6 +88,8 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("tool_slow"));
     assert!(rendered.contains("async tool background_shell_start"));
+    assert!(rendered.contains("req 8"));
+    assert!(rendered.contains("worker codexw-bgtool-background_shell_start-8"));
     assert!(rendered.contains("observe or interrupt"));
 }
 

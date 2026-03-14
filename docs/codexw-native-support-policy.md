@@ -71,6 +71,8 @@ drift casually:
   `abandoned_after_timeout`
 - explicit owner-lane visibility for that async work, currently
   `wrapper_background_shell`
+- explicit top-level active-worker identity on `async_tool_supervision` and
+  `supervision_notice` through `request_id` and `thread_name`
 - orchestrator-owned periodic async-worker inspection notices that keep the
   concrete tool summary or shell command visible and say when no
   completion/output has been observed yet

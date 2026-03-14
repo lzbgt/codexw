@@ -65,6 +65,11 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         events[2].data["async_tool_supervision"]["owner"],
         "wrapper_background_shell"
     );
+    assert_eq!(events[2].data["async_tool_supervision"]["request_id"], "7");
+    assert_eq!(
+        events[2].data["async_tool_supervision"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
+    );
     assert_eq!(
         events[2].data["async_tool_supervision"]["target_background_shell_reference"],
         "dev.api"
@@ -202,6 +207,11 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         events[2].data["supervision_notice"]["recommended_action"],
         "observe_or_interrupt"
     );
+    assert_eq!(events[2].data["supervision_notice"]["request_id"], "7");
+    assert_eq!(
+        events[2].data["supervision_notice"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
+    );
     assert_eq!(
         events[2].data["supervision_notice"]["recovery_policy"]["automation_ready"],
         false
@@ -309,6 +319,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
                     local_api_path: None,
                 },
             ],
+            request_id: "7".to_string(),
+            thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
             owner: "wrapper_background_shell".to_string(),
             source_call_id: Some("call_1".to_string()),
             target_background_shell_reference: Some("dev.api".to_string()),
@@ -448,6 +460,8 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
                 local_api_path: None,
             },
         ],
+        request_id: "7".to_string(),
+        thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
         tool: "background_shell_start".to_string(),
         summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
     });
@@ -490,6 +504,11 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     assert_eq!(
         events[1].data["async_tool_supervision"]["owner"],
         "wrapper_background_shell"
+    );
+    assert_eq!(events[1].data["async_tool_supervision"]["request_id"], "7");
+    assert_eq!(
+        events[1].data["async_tool_supervision"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
     );
     assert_eq!(
         events[1].data["async_tool_supervision"]["target_background_shell_reference"],
@@ -583,6 +602,11 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     assert_eq!(
         events[1].data["supervision_notice"]["classification"],
         "tool_wedged"
+    );
+    assert_eq!(events[1].data["supervision_notice"]["request_id"], "7");
+    assert_eq!(
+        events[1].data["supervision_notice"]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
     );
     assert_eq!(
         events[1].data["supervision_notice"]["recovery_policy"]["automation_ready"],

@@ -113,6 +113,10 @@ The implemented native-side product already has:
   for the visible tool summary / shell command
 - structured inspection visibility for that active async work, including
   observation state plus the orchestrator's next planned health check horizon
+- structured top-level identity for that same active supervision, including
+  `request_id` and `thread_name` on `async_tool_supervision` and
+  `supervision_notice`, so operators and clients can tell exactly which worker
+  is currently driving the alert without scanning `async_tool_workers`
 - explicit output-freshness visibility for correlated wrapper shell work,
   including `output_state` and `last_output_age_seconds`
 - live self-supervision inspection notices that echo those facts directly in

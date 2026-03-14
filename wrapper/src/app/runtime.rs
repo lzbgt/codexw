@@ -253,9 +253,11 @@ fn handle_supervision_tick(
     match state.refresh_async_tool_supervision_notice() {
         Some(SupervisionNoticeTransition::Raised(notice)) => {
             output.line_stderr(format!(
-                "[self-supervision] {} {} [{}|{}] {}",
+                "[self-supervision] {} {} request={} worker={} [{}|{}] {}",
                 notice.classification.label(),
                 notice.tool,
+                notice.request_id,
+                notice.worker_thread_name,
                 notice.recovery_policy_kind().label(),
                 notice.recommended_action(),
                 notice.summary

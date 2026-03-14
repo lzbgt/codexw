@@ -56,7 +56,7 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             format_elapsed(state.activity_started_at)
         ));
     }
-    if let Some(async_tool) = state.oldest_async_tool_activity() {
+    if let Some((request_id, async_tool)) = state.oldest_async_tool_entry() {
         let observation = state.async_tool_observation(async_tool);
         lines.push(format!(
             "async tools     {}",
@@ -72,6 +72,14 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         lines.push(format!(
             "async tool      {}",
             summarize_text(&async_tool.summary)
+        ));
+        lines.push(format!(
+            "async req       {}",
+            crate::state::request_id_label(request_id)
+        ));
+        lines.push(format!(
+            "async thread    {}",
+            summarize_text(&async_tool.worker_thread_name)
         ));
         lines.push(format!(
             "async owner     {}",

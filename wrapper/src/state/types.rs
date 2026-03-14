@@ -149,6 +149,8 @@ impl AsyncToolSupervisionClass {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SupervisionNotice {
     pub(crate) classification: AsyncToolSupervisionClass,
+    pub(crate) request_id: String,
+    pub(crate) worker_thread_name: String,
     pub(crate) tool: String,
     pub(crate) summary: String,
 }

@@ -229,9 +229,20 @@ impl AppState {
     }
 
     pub(crate) fn oldest_async_tool_activity(&self) -> Option<&super::AsyncToolActivity> {
+        self.oldest_async_tool_entry().map(|(_, activity)| activity)
+    }
+
+    pub(crate) fn oldest_async_tool_entry(
+        &self,
+    ) -> Option<(&RequestId, &super::AsyncToolActivity)> {
         self.active_async_tool_requests
-            .values()
-            .min_by_key(|activity| activity.started_at)
+            .iter()
+            .min_by(|(left_id, left), (right_id, right)| {
+                left.started_at
+                    .cmp(&right.started_at)
+                    .then_with(|| left.worker_thread_name.cmp(&right.worker_thread_name))
+                    .then_with(|| request_id_label(left_id).cmp(&request_id_label(right_id)))
+            })
     }
 
     pub(crate) fn oldest_async_tool_supervision_class(
@@ -260,9 +271,7 @@ impl AppState {
     }
 
     #[cfg(test)]
-    pub(crate) fn oldest_abandoned_async_tool_request(
-        &self,
-    ) -> Option<&AbandonedAsyncToolRequest> {
+    pub(crate) fn oldest_abandoned_async_tool_request(&self) -> Option<&AbandonedAsyncToolRequest> {
         self.oldest_abandoned_async_tool_entry()
             .map(|(_, request)| request)
     }
@@ -436,10 +445,12 @@ impl AppState {
     }
 
     pub(crate) fn current_async_tool_supervision_notice(&self) -> Option<super::SupervisionNotice> {
-        let activity = self.oldest_async_tool_activity()?;
+        let (request_id, activity) = self.oldest_async_tool_entry()?;
         let classification = activity.supervision_class()?;
         Some(super::SupervisionNotice {
             classification,
+            request_id: request_id_label(request_id),
+            worker_thread_name: activity.worker_thread_name.clone(),
             tool: activity.tool.clone(),
             summary: activity.summary.clone(),
         })

@@ -72,7 +72,7 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
 }
 
 fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
-    if let Some(async_tool) = state.oldest_async_tool_activity() {
+    if let Some((request_id, async_tool)) = state.oldest_async_tool_entry() {
         let observation = state.async_tool_observation(async_tool);
         let detail = if state.active_async_tool_requests.len() > 1 {
             format!(
@@ -125,10 +125,20 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             (None, Some(job_id)) => format!("; target {job_id}"),
             (None, None) => String::new(),
         };
+        let request_detail = format!(
+            "; req {}",
+            summarize_inline(&crate::state::request_id_label(request_id))
+        );
+        let worker_detail = format!(
+            "; worker {}",
+            summarize_inline(&async_tool.worker_thread_name)
+        );
         let detail = format!(
-            "{detail} [{}; {}{}; next check {}]",
+            "{detail} [{}; {}{}{}{}; next check {}]",
             observation.owner_kind.prompt_label(),
             observation_detail,
+            request_detail,
+            worker_detail,
             target_detail,
             format_elapsed(Some(Instant::now() - async_tool.next_health_check_in()))
         );

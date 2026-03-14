@@ -53,6 +53,8 @@ pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) recommended_action: String,
     pub(crate) recovery_policy: LocalApiRecoveryPolicy,
     pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
+    pub(crate) request_id: String,
+    pub(crate) thread_name: String,
     pub(crate) owner: String,
     pub(crate) source_call_id: Option<String>,
     pub(crate) target_background_shell_reference: Option<String>,
@@ -114,6 +116,8 @@ pub(crate) struct LocalApiSupervisionNotice {
     pub(crate) recommended_action: String,
     pub(crate) recovery_policy: LocalApiRecoveryPolicy,
     pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
+    pub(crate) request_id: String,
+    pub(crate) thread_name: String,
     pub(crate) tool: String,
     pub(crate) summary: String,
 }
@@ -374,7 +378,7 @@ fn async_tool_supervision_snapshot(
     cwd: &str,
     state: &AppState,
 ) -> Option<LocalApiAsyncToolSupervision> {
-    let activity = state.oldest_async_tool_activity()?;
+    let (request_id, activity) = state.oldest_async_tool_entry()?;
     let classification = activity.supervision_class()?;
     let observation = state.async_tool_observation(activity);
     Some(LocalApiAsyncToolSupervision {
@@ -385,6 +389,8 @@ fn async_tool_supervision_snapshot(
             automation_ready: classification.automation_ready(),
         },
         recovery_options: recovery_options_snapshot(session_id, cwd, state, classification),
+        request_id: crate::state::request_id_label(request_id),
+        thread_name: activity.worker_thread_name.clone(),
         owner: observation.owner_kind.label().to_string(),
         source_call_id: activity.source_call_id.clone(),
         target_background_shell_reference: activity.target_background_shell_reference.clone(),
@@ -480,6 +486,8 @@ fn supervision_notice_snapshot(
             automation_ready: notice.automation_ready(),
         },
         recovery_options: recovery_options_snapshot(session_id, cwd, state, notice.classification),
+        request_id: notice.request_id.clone(),
+        thread_name: notice.worker_thread_name.clone(),
         tool: notice.tool.clone(),
         summary: notice.summary.clone(),
     })

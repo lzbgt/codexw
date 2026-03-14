@@ -86,6 +86,7 @@ rely on broker-visible supervision facts rather than only a generic tool name:
 - classifications such as `tool_slow` and `tool_wedged`
 - narrow actions such as `observe_or_interrupt` and
   `interrupt_or_exit_resume`
+- active-worker identity through `request_id` and `thread_name`
 - explicit owner-lane facts such as `wrapper_background_shell`
 - explicit silent-started versus streaming output states such as
   `wrapper_background_shell_started_no_output_yet`,
