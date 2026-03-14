@@ -97,6 +97,9 @@ drift casually:
 - abandoned async backlog summaries also retain that same correlation through
   `oldest_source_call_id`, `oldest_target_background_shell_reference`, and
   `oldest_target_background_shell_job_id`
+- abandoned async worker rows also retain `observation_state`,
+  `output_state`, and correlated `bg-*` job facts when the shell is still
+  visible after timeout
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - single-pass resume-history hydration for resumed-thread state seeding and

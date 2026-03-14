@@ -163,6 +163,7 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         }
     }
     if let Some(abandoned) = state.oldest_abandoned_async_tool_request() {
+        let observation = state.abandoned_async_tool_observation(abandoned);
         lines.push(format!(
             "async aban      {}",
             state.abandoned_async_tool_request_count()
@@ -183,6 +184,27 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         }
         if let Some(target_job_id) = abandoned.target_background_shell_job_id.as_deref() {
             lines.push(format!("async stale tj  {target_job_id}"));
+        }
+        lines.push(format!(
+            "async stale ob  {}",
+            observation.observation_state.label()
+        ));
+        lines.push(format!(
+            "async stale os  {}",
+            observation.output_state.label()
+        ));
+        if let Some(job) = observation.observed_background_shell_job.as_ref() {
+            lines.push(format!("async stale jb  {} {}", job.job_id, job.status));
+            lines.push(format!("async stale ln  {}", job.total_lines));
+            if let Some(age) = job.last_output_age {
+                lines.push(format!(
+                    "async stale oa  {}",
+                    format_elapsed(Some(std::time::Instant::now() - age))
+                ));
+            }
+            if let Some(output) = job.latest_output_preview() {
+                lines.push(format!("async stale ot  {}", summarize_text(output)));
+            }
         }
         lines.push(format!(
             "async guard     {}",

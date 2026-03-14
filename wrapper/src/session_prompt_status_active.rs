@@ -167,9 +167,32 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
         (None, Some(job_id)) => format!("; target {job_id}"),
         (None, None) => String::new(),
     };
+    let observation = state.abandoned_async_tool_observation(abandoned);
+    let observation_detail = match observation.observed_background_shell_job.as_ref() {
+        Some(job) => {
+            let last_output = job
+                .latest_output_preview()
+                .map(|line| format!("; out {}", summarize_inline(line)))
+                .unwrap_or_default();
+            let output_state = format_output_state_detail(observation.output_state, job);
+            format!(
+                " [{}; {}; job {} {}{}]",
+                observation.observation_state.prompt_label(),
+                output_state,
+                job.job_id,
+                job.status,
+                last_output
+            )
+        }
+        None => format!(
+            " [{}; {}]",
+            observation.observation_state.prompt_label(),
+            observation.output_state.prompt_label()
+        ),
+    };
     Some((
         abandoned.timed_out_at,
-        format!("{detail}{source_detail}{target_detail}"),
+        format!("{detail}{source_detail}{target_detail}{observation_detail}"),
     ))
 }
 

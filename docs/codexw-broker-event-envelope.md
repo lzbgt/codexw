@@ -314,7 +314,8 @@ explicit owner-lane state such as `wrapper_background_shell`, source `callId`,
 resolved target facts such as `target_background_shell_reference` and
 `target_background_shell_job_id`, and correlated `bg-*` job facts when a
 wrapper-owned `background_shell_start`
-request has already produced a shell job, plus output freshness through
+request has already produced a shell job, including abandoned worker rows when
+that shell is still observable after timeout, plus output freshness through
 `output_state` and `last_output_age_seconds`.
 
 ## Exclusions

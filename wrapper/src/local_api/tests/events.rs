@@ -167,6 +167,18 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         "bg-1"
     );
     assert_eq!(
+        events[2].data["async_tool_workers"][1]["observation_state"],
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][1]["output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][1]["observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
+    assert_eq!(
         events[2].data["supervision_notice"]["recommended_action"],
         "observe_or_interrupt"
     );
@@ -355,9 +367,20 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             target_background_shell_job_id: Some("bg-1".to_string()),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
-            observation_state: None,
-            output_state: None,
-            observed_background_shell_job: None,
+            observation_state: Some(
+                "wrapper_background_shell_terminal_without_tool_response".to_string(),
+            ),
+            output_state: Some("stale_output_observed".to_string()),
+            observed_background_shell_job: Some(
+                crate::local_api::snapshot::LocalApiObservedBackgroundShellJob {
+                    job_id: "bg-1".to_string(),
+                    status: "failed".to_string(),
+                    command: "npm run dev".to_string(),
+                    total_lines: 3,
+                    last_output_age_seconds: Some(75),
+                    recent_lines: vec!["boom".to_string()],
+                },
+            ),
             next_check_in_seconds: None,
             runtime_elapsed_seconds: 30,
             state_elapsed_seconds: 30,
@@ -488,6 +511,18 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     assert_eq!(
         events[1].data["async_tool_workers"][1]["lifecycle_state"],
         "abandoned_after_timeout"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][1]["observation_state"],
+        "wrapper_background_shell_terminal_without_tool_response"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][1]["output_state"],
+        "stale_output_observed"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][1]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(events[1].data["async_tool_backpressure"]["saturated"], true);
     assert_eq!(

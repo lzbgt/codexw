@@ -201,6 +201,9 @@ At:
 - dedicated worker inspection changes through `async_tool_workers`, including
   worker thread names and lifecycle states such as `running` and
   `abandoned_after_timeout`
+- when an abandoned worker still correlates to a visible `bg-*` shell job,
+  keep its `observation_state`, `output_state`, and
+  `observed_background_shell_job` fields current instead of zeroing them out
 - active-worker observation-state or next-check-horizon changes, so clients can
   tell whether the orchestrator is still awaiting any completion/output and
   when it plans to inspect that worker again

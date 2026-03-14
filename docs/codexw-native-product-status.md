@@ -86,6 +86,9 @@ The implemented native-side product already has:
   target it belonged to through fields such as `oldest_source_call_id`,
   `oldest_target_background_shell_reference`, and
   `oldest_target_background_shell_job_id`
+- retained observation/output visibility for abandoned workers when the
+  correlated `bg-*` shell is still visible, so timeout does not erase current
+  `observation_state`, `output_state`, or matched job facts
 - `async_tool_workers` inspection visibility for dedicated async worker thread
   names and lifecycle states such as `running` and
   `abandoned_after_timeout`

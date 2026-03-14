@@ -147,6 +147,9 @@ backend can inspect the dedicated worker-thread lane directly:
   call id plus any resolved target fields such as
   `target_background_shell_reference` and
   `target_background_shell_job_id`
+- if the correlated shell is still visible, that abandoned worker entry should
+  still carry current `observation_state`, `output_state`, and matched `bg-*`
+  job facts instead of falling back to null inspection fields
 - when the owner is the wrapper background-shell lane, the matched `bg-*` job
   snapshot facts needed for operator inspection:
   job id, status, command, line count, output age, and recent output preview

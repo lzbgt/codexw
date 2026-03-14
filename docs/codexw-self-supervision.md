@@ -178,6 +178,9 @@ first-class safety issue:
 - that same source/target correlation should survive hard-timeout handoff into
   the abandoned backlog, so an `abandoned_after_timeout` worker does not lose
   which wrapper request and `bg-*` shell target it belonged to
+- if that correlated `bg-*` shell is still observable after timeout, the same
+  abandoned worker should keep reporting its current observation/output state
+  and matched job facts instead of degrading back to null inspection data
 - when a correlated `bg-*` job exists, the same lane should expose output
   freshness through `output_state` and a concrete age fact such as
   `last_output_age_seconds`, so operators and broker clients can distinguish

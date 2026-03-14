@@ -499,6 +499,37 @@ fn status_snapshot_includes_abandoned_async_backpressure() {
     let mut state = crate::state::AppState::new(true, false);
     state.thread_id = Some("thread-1".to_string());
     state.turn_running = true;
+    let _ = state
+        .orchestration
+        .background_shells
+        .start_from_tool_with_context(
+            &serde_json::json!({
+                "command": "echo READY; sleep 20",
+                "intent": "service",
+                "readyPattern": "READY",
+            }),
+            "/tmp",
+            crate::background_shells::BackgroundShellOrigin {
+                source_thread_id: Some("thread-1".to_string()),
+                source_call_id: Some("call-21".to_string()),
+                source_tool: Some("background_shell_start".to_string()),
+            },
+        );
+    state
+        .orchestration
+        .background_shells
+        .set_job_alias("bg-1", "dev.api")
+        .expect("set alias");
+    if let Ok(job) = state.orchestration.background_shells.lookup_job("bg-1") {
+        let mut job = job.lock().expect("background shell job");
+        job.total_lines = 1;
+        job.last_output_at = Some(std::time::Instant::now());
+        job.lines
+            .push_back(crate::background_shells::BackgroundShellOutputLine {
+                cursor: 1,
+                text: "READY".to_string(),
+            });
+    }
     state.record_async_tool_request_with_timeout(
         crate::rpc::RequestId::Integer(21),
         "background_shell_start".to_string(),
@@ -544,11 +575,19 @@ fn status_snapshot_includes_abandoned_async_backpressure() {
     assert!(rendered.contains("async stale cl  call-21"));
     assert!(rendered.contains("async stale tr  dev.api"));
     assert!(rendered.contains("async stale tj  bg-1"));
+    assert!(rendered.contains("async stale ob  wrapper_background_shell_streaming_output"));
+    assert!(rendered.contains("async stale os  recent_output_observed"));
+    assert!(rendered.contains("async stale jb  bg-1 running"));
+    assert!(rendered.contains("async stale ot  READY"));
     assert!(rendered.contains("async worker    abandoned_after_timeout"));
     assert!(rendered.contains("async worker id 21"));
     assert!(rendered.contains("async worker cl call-21"));
     assert!(rendered.contains("async worker tr dev.api"));
     assert!(rendered.contains("async worker tj bg-1"));
+    assert!(rendered.contains("async worker ob wrapper_background_shell_streaming_output"));
+    assert!(rendered.contains("async worker os recent_output_observed"));
+    assert!(rendered.contains("async worker jb bg-1 running"));
+    assert!(rendered.contains("async worker ot READY"));
     assert!(rendered.contains("async guard     monitoring"));
 }
 
@@ -752,8 +791,18 @@ fn async_tool_worker_statuses_expose_running_and_abandoned_workers() {
         "codexw-bgtool-background_shell_start-8"
     );
     assert_eq!(workers[1].supervision_classification, None);
-    assert_eq!(workers[1].observation_state, None);
-    assert_eq!(workers[1].output_state, None);
+    assert_eq!(
+        workers[1]
+            .observation_state
+            .map(|observation_state| observation_state.label()),
+        Some("no_job_or_output_observed_yet")
+    );
+    assert_eq!(
+        workers[1]
+            .output_state
+            .map(|output_state| output_state.label()),
+        Some("no_output_observed_yet")
+    );
     assert_eq!(workers[1].source_call_id.as_deref(), Some("call-8"));
     assert_eq!(
         workers[1].target_background_shell_reference.as_deref(),
@@ -763,6 +812,7 @@ fn async_tool_worker_statuses_expose_running_and_abandoned_workers() {
         workers[1].target_background_shell_job_id.as_deref(),
         Some("bg-1")
     );
+    assert!(workers[1].observed_background_shell_job.is_none());
     assert_eq!(workers[1].next_health_check_in, None);
 }
 

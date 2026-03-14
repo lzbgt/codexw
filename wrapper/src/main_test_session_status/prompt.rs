@@ -283,6 +283,37 @@ fn prompt_status_correlates_wait_ready_to_target_background_job() {
 fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() {
     let mut state = crate::state::AppState::new(true, false);
     state.turn_running = true;
+    let _ = state
+        .orchestration
+        .background_shells
+        .start_from_tool_with_context(
+            &json!({
+                "command": "echo READY; sleep 20",
+                "intent": "service",
+                "readyPattern": "READY",
+            }),
+            "/tmp",
+            crate::background_shells::BackgroundShellOrigin {
+                source_thread_id: Some("thread-1".to_string()),
+                source_call_id: Some("call-11".to_string()),
+                source_tool: Some("background_shell_wait_ready".to_string()),
+            },
+        );
+    state
+        .orchestration
+        .background_shells
+        .set_job_alias("bg-1", "dev.api")
+        .expect("set alias");
+    if let Ok(job) = state.orchestration.background_shells.lookup_job("bg-1") {
+        let mut job = job.lock().expect("background shell job");
+        job.total_lines = 1;
+        job.last_output_at = Some(Instant::now());
+        job.lines
+            .push_back(crate::background_shells::BackgroundShellOutputLine {
+                cursor: 1,
+                text: "READY".to_string(),
+            });
+    }
     state.record_async_tool_request_with_timeout(
         crate::rpc::RequestId::Integer(11),
         "background_shell_wait_ready".to_string(),
@@ -306,6 +337,10 @@ fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() 
     assert!(rendered.contains("background_shell_wait_ready"));
     assert!(rendered.contains("call call-11"));
     assert!(rendered.contains("target dev.api->bg-1"));
+    assert!(rendered.contains("job streaming output"));
+    assert!(rendered.contains("recent output"));
+    assert!(rendered.contains("job bg-1 running"));
+    assert!(rendered.contains("READY"));
 }
 
 #[test]

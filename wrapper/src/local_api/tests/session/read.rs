@@ -198,6 +198,18 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_workers"][1]["target_background_shell_job_id"],
         "bg-1"
     );
+    assert_eq!(
+        body["async_tool_workers"][1]["observation_state"],
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["async_tool_workers"][1]["output_state"],
+        "recent_output_observed"
+    );
+    assert_eq!(
+        body["async_tool_workers"][1]["observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
     assert_eq!(body["async_tool_backpressure"]["saturated"], false);
     assert_eq!(body["supervision_notice"]["classification"], "tool_slow");
     assert_eq!(
