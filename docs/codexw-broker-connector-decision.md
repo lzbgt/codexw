@@ -19,6 +19,17 @@ The decision question is:
 - should `codexw` expose a local API and also ship a broker connector?
 - should `codexw` speak to a broker directly?
 
+The answer now has to be read against the current architecture requirement:
+
+- broker-backed clients such as app and WebUI are intended first-class
+  consumers
+- those clients should be able to examine the host through broker-visible
+  shell/service/transcript surfaces without direct terminal access
+- a richer artifact index/detail/content layer is still a separate tracked lane,
+  not part of the historical connector decision itself:
+  - [docs/codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+  - [docs/codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
+
 ## Options
 
 ### Option A: Local API First
@@ -68,6 +79,8 @@ Strengths:
   `codexw` runtime
 - creates the best path to compatibility with `~/work/agent` without forcing
   `codexw` internals to look exactly like that system
+- supports broker-backed app/WebUI and host-shell consumers without pushing
+  remote routing/auth concerns into the daemon core
 - supports staged rollout:
   - local API first
   - connector second
@@ -132,6 +145,9 @@ That means:
 
 - the local daemon-facing API should be the canonical contract
 - a connector should map that API to a broker-facing protocol
+- broker-backed clients should reach host examination through the connector plus
+  shell/service/transcript/event surfaces, not through a second model-facing
+  filesystem API
 - direct broker mode should remain explicitly deferred unless later evidence
   shows the connector layer is an unacceptable burden
 
@@ -160,6 +176,8 @@ The `~/work/agent` project is still highly valuable here, but primarily as:
 - a broker/protocol reference
 - a relay/auth/session model reference
 - a compatibility target for the connector
+- the sibling home of app/WebUI clients that need broker-visible host
+  examination
 
 not as proof that `codexw` should collapse its daemon core directly into a
 broker-facing agent runtime.
@@ -185,6 +203,7 @@ following at once:
 - mobile/web/terminal client support
 - connector compatibility layer
 - deployment routing and multi-device coordination
+- a dedicated artifact catalog/detail/content layer
 
 Trying to do all of them at once would increase the risk of locking in a poor
 session model.

@@ -123,6 +123,8 @@ Examples:
 - an additional consumer shape beyond the current Python and Node fixtures
 - a tiny connector consumer that simulates a longer-lived remote dashboard
 - a narrowly scoped browser-side or Node-side consumer proof
+- once artifact routes exist, a focused app/WebUI-style consumer proof that
+  verifies artifact browsing without falling back to transcript scraping
 
 Why useful:
 
@@ -133,6 +135,8 @@ Why not a blocker:
 
 - the current standalone broker-style fixtures already give the repo real
   external consumer shape with process-level proof
+- the richer artifact-centric consumer story is still design-only until the
+  artifact-contract track becomes implemented surface
 
 ## Relationship To `TODOS.md`
 

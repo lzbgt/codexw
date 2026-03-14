@@ -6,6 +6,14 @@ throughout the repo.
 
 The goal is to avoid collapsing distinct concepts into one id too early.
 
+It also needs to support the current broker-facing architecture direction:
+
+- broker-backed app/WebUI clients should act through stable session-scoped
+  handles
+- host shell/service control should stay correlated to that same session handle
+- any future artifact index/detail/content surface should derive from that
+  session-scoped runtime truth rather than inventing an unrelated identity layer
+
 ## Identity Layers
 
 There are four different identity concepts in play:
@@ -56,6 +64,8 @@ Role in broker design:
 Recommended current rule:
 
 - one wrapper session may be unattached or attached to exactly one local thread at a time
+- host shell/service/event/result activity should stay attributable to that same
+  wrapper session even before a richer artifact catalog exists
 
 ## 3. Remote Client Attachment Id
 
@@ -114,6 +124,9 @@ Role in broker design:
   - `thread_id` when attached
 
 This gives the API a stable wrapper-scoped handle without hiding the underlying Codex thread identity.
+That is especially important for broker-backed app/WebUI clients, which need a
+stable session-scoped control and inspection handle even when the underlying
+thread identity is not yet known or is only one part of the visible state.
 
 ### Deferred Multi-Client Extension
 
@@ -171,6 +184,8 @@ All current session-scoped events should include:
 - `thread_id` when attached
 
 That preserves both the remote-control identity and the underlying conversation identity.
+It also keeps future shell/service/result references and any later artifact entries
+attributable to the same session-scoped control context.
 
 ## Current Status
 
@@ -187,6 +202,8 @@ The broker-style connector and fixture coverage also already consume that
 process-scoped `session_id` plus `thread_id` contract. The remaining open
 questions are therefore about future multi-client or multi-daemon policy, not
 whether the wrapper/local-thread identity split exists at all.
+Likewise, the remaining artifact gap is not an identity-model gap; it is a
+separate route and provenance-surface gap tracked in the artifact-contract docs.
 
 ## Open Questions
 

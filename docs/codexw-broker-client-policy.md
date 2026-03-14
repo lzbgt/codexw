@@ -7,6 +7,12 @@ The core question is not whether `codexw` can carry `client_id` and
 `lease_seconds` today. It can. The real question is what remote clients should
 be allowed to do concurrently, and which operations must remain lease-owned.
 
+Those remote clients now explicitly include broker-backed app/WebUI consumers
+that inspect sessions, orchestration state, host shell/service state, and the
+resulting references without direct terminal access. This policy therefore needs
+to stay aligned with the shell-first host-examination posture rather than
+assuming a terminal-only consumer.
+
 ## Purpose
 
 This document defines the current explicit policy contract for:
@@ -54,6 +60,8 @@ Capabilities:
 - may renew or release the lease
 - may start and interrupt turns
 - may mutate shell/service state
+- may drive broker-visible host shell/service examination workflows that require
+  mutation rights
 - may publish `client_event`
 
 ### 2. Observer
@@ -69,6 +77,8 @@ Capabilities:
 - may read transcript
 - may read orchestration views
 - may read shell/service/capability detail
+- may inspect host-result references already visible through transcript, shell,
+  service, or event surfaces
 - may consume SSE event streams
 
 Restrictions:
@@ -133,6 +143,10 @@ The following operations should remain readable without lease ownership:
 - capability list/detail
 - SSE event consumption
 
+If a dedicated artifact index/detail/content layer is later implemented, it
+should be added to this section deliberately rather than assumed implicitly from
+today's transcript or shell-read semantics.
+
 ## Renewal and Expiry Rules
 
 Current rules:
@@ -175,6 +189,8 @@ The connector should continue to do exactly these policy-sensitive things:
   provide them
 - preserve structured conflict/error payloads
 - not invent a second lease model of its own
+- not imply that a separate artifact surface exists before the local API and
+  support docs actually define one
 
 ## Explicit Non-Goals
 
@@ -196,3 +212,5 @@ The current contract is:
 - rival mutation is rejected with structured conflict details
 - connector preserves policy inputs and outputs
 - read paths remain broadly observable
+- broker-backed app/WebUI clients can participate in the same owner/observer/
+  rival model for shell-first host examination

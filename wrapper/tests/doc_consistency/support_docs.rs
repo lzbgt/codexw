@@ -6,17 +6,19 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let todos = read_repo_file("TODOS.md");
     let broker_contract = read_repo_file("docs/codexw-broker-adapter-contract.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
-    let _broker_client_policy = read_repo_file("docs/codexw-broker-client-policy.md");
+    let broker_client_policy = read_repo_file("docs/codexw-broker-client-policy.md");
     let broker_out_of_scope = read_repo_file("docs/codexw-broker-out-of-scope.md");
     let broker_endpoint_audit = read_repo_file("docs/codexw-broker-endpoint-audit.md");
     let broker_proof = read_repo_file("docs/codexw-broker-proof-matrix.md");
     let broker_policy = read_repo_file("docs/codexw-broker-support-policy.md");
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
+    let broker_decision = read_repo_file("docs/codexw-broker-connector-decision.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
     let broker_mapping = read_repo_file("docs/codexw-broker-connector-mapping.md");
     let broker_compat_target = read_repo_file("docs/codexw-broker-compatibility-target.md");
     let broker_adapter_plan = read_repo_file("docs/codexw-broker-connector-adapter-plan.md");
     let broker_shared_assumptions = read_repo_file("docs/codexw-broker-shared-assumptions.md");
+    let broker_session_identity = read_repo_file("docs/codexw-broker-session-identity.md");
     let native_boundaries = read_repo_file("docs/codexw-native-support-boundaries.md");
     let native_status = read_repo_file("docs/codexw-native-product-status.md");
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
@@ -37,9 +39,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-proof-matrix.md",
         "docs/codexw-broker-support-policy.md",
         "docs/codexw-broker-hardening-catalog.md",
+        "docs/codexw-broker-connector-decision.md",
         "docs/codexw-broker-compatibility-target.md",
         "docs/codexw-broker-connector-adapter-plan.md",
         "docs/codexw-broker-shared-assumptions.md",
+        "docs/codexw-broker-session-identity.md",
         "docs/codexw-native-support-boundaries.md",
         "docs/codexw-native-product-status.md",
         "docs/codexw-native-proof-matrix.md",
@@ -204,6 +208,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "not a blocker",
         "docs/codexw-broker-hardening-catalog.md",
     );
+    assert_contains_case_insensitive(
+        &broker_hardening,
+        "artifact-centric consumer story",
+        "docs/codexw-broker-hardening-catalog.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_decision,
+        "broker-backed clients such as app and webui",
+        "docs/codexw-broker-connector-decision.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_decision,
+        "artifact index/detail/content",
+        "docs/codexw-broker-connector-decision.md",
+    );
     assert_contains(
         &broker_promotion,
         "codexw-broker-artifact-contract-sketch.md",
@@ -263,6 +282,26 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_shared_assumptions,
         "dedicated artifact catalog",
         "docs/codexw-broker-shared-assumptions.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_session_identity,
+        "broker-backed app/webui clients",
+        "docs/codexw-broker-session-identity.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_session_identity,
+        "artifact entries",
+        "docs/codexw-broker-session-identity.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_policy,
+        "shell-first host-examination posture",
+        "docs/codexw-broker-client-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_policy,
+        "artifact surface exists",
+        "docs/codexw-broker-client-policy.md",
     );
 
     assert_contains_case_insensitive(
