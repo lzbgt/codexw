@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 use std::net::Shutdown;
@@ -9,6 +10,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -23,6 +25,7 @@ use super::SharedSnapshot;
 
 const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const READ_TIMEOUT: Duration = Duration::from_millis(250);
+const REQUEST_READ_DEADLINE: Duration = Duration::from_secs(2);
 const MAX_REQUEST_BYTES: usize = 65536;
 
 #[cfg_attr(not(test), allow(unused_imports))]
@@ -185,20 +188,31 @@ fn handle_connection(
 fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, RequestReadError> {
     let mut buffer = [0_u8; 1024];
     let mut request_bytes = Vec::new();
+    let header_deadline = Instant::now() + REQUEST_READ_DEADLINE;
     let header_end = loop {
-        let read = stream.read(&mut buffer)?;
-        if read == 0 {
-            return Err(RequestReadError::BadRequest);
-        }
-        request_bytes.extend_from_slice(&buffer[..read]);
-        if let Some(index) = request_bytes
-            .windows(4)
-            .position(|window| window == b"\r\n\r\n")
-        {
-            break index + 4;
-        }
-        if request_bytes.len() >= MAX_REQUEST_BYTES {
-            return Err(RequestReadError::BadRequest);
+        match stream.read(&mut buffer) {
+            Ok(0) => return Err(RequestReadError::BadRequest),
+            Ok(read) => {
+                request_bytes.extend_from_slice(&buffer[..read]);
+                if let Some(index) = request_bytes
+                    .windows(4)
+                    .position(|window| window == b"\r\n\r\n")
+                {
+                    break index + 4;
+                }
+                if request_bytes.len() >= MAX_REQUEST_BYTES {
+                    return Err(RequestReadError::BadRequest);
+                }
+            }
+            Err(err)
+                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
+            {
+                if Instant::now() >= header_deadline {
+                    return Err(RequestReadError::Io(err));
+                }
+                continue;
+            }
+            Err(err) => return Err(RequestReadError::Io(err)),
         }
     };
     let request_text = String::from_utf8_lossy(&request_bytes[..header_end]);
@@ -229,14 +243,25 @@ fn read_request(stream: &mut TcpStream) -> std::result::Result<HttpRequest, Requ
         .map_err(|_| RequestReadError::BadRequest)?
         .unwrap_or(0);
     let mut body = request_bytes[header_end..].to_vec();
+    let body_deadline = Instant::now() + REQUEST_READ_DEADLINE;
     while body.len() < content_length {
-        let read = stream.read(&mut buffer)?;
-        if read == 0 {
-            break;
-        }
-        body.extend_from_slice(&buffer[..read]);
-        if header_end + body.len() >= MAX_REQUEST_BYTES {
-            return Err(RequestReadError::BadRequest);
+        match stream.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(read) => {
+                body.extend_from_slice(&buffer[..read]);
+                if header_end + body.len() >= MAX_REQUEST_BYTES {
+                    return Err(RequestReadError::BadRequest);
+                }
+            }
+            Err(err)
+                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut =>
+            {
+                if Instant::now() >= body_deadline {
+                    return Err(RequestReadError::Io(err));
+                }
+                continue;
+            }
+            Err(err) => return Err(RequestReadError::Io(err)),
         }
     }
     if body.len() < content_length {
@@ -270,4 +295,76 @@ pub(super) fn write_response(stream: &mut TcpStream, response: &HttpResponse) ->
         .write_all(&response.body)
         .context("write local API response body")?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_request;
+    use std::io::Write;
+    use std::net::TcpListener;
+    use std::net::TcpStream;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn read_request_tolerates_header_fragmentation_across_socket_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("listener addr");
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            stream
+                .set_read_timeout(Some(Duration::from_millis(250)))
+                .expect("set read timeout");
+            let request = read_request(&mut stream).expect("read fragmented request");
+            (request.method, request.path, request.headers)
+        });
+
+        let mut client = TcpStream::connect(addr).expect("connect client");
+        client
+            .write_all(b"GET /api/v1/session/sess_test/events HTTP/1.1\r\nHost: localhost\r\n")
+            .expect("write first fragment");
+        thread::sleep(Duration::from_millis(350));
+        client
+            .write_all(b"Connection: close\r\n\r\n")
+            .expect("write second fragment");
+
+        let (method, path, headers) = server.join().expect("join server");
+        assert_eq!(method, "GET");
+        assert_eq!(path, "/api/v1/session/sess_test/events");
+        assert_eq!(headers.get("host").map(String::as_str), Some("localhost"));
+    }
+
+    #[test]
+    fn read_request_tolerates_body_fragmentation_across_socket_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("listener addr");
+
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            stream
+                .set_read_timeout(Some(Duration::from_millis(250)))
+                .expect("set read timeout");
+            let request = read_request(&mut stream).expect("read fragmented body");
+            (
+                request.method,
+                request.path,
+                String::from_utf8(request.body).expect("decode body"),
+            )
+        });
+
+        let mut client = TcpStream::connect(addr).expect("connect client");
+        client
+            .write_all(
+                b"POST /api/v1/session/client_event HTTP/1.1\r\nHost: localhost\r\nContent-Length: 17\r\n\r\n{\"event\":\"alpha\"",
+            )
+            .expect("write first body fragment");
+        thread::sleep(Duration::from_millis(350));
+        client.write_all(b"}").expect("write second body fragment");
+
+        let (method, path, body) = server.join().expect("join server");
+        assert_eq!(method, "POST");
+        assert_eq!(path, "/api/v1/session/client_event");
+        assert_eq!(body, "{\"event\":\"alpha\"}");
+    }
 }
