@@ -66,6 +66,9 @@ drift casually:
   supported behavior does not include waiting forever for a wedged tool worker
 - dedicated wrapper worker threads for background-shell dynamic tools
 - explicit abandoned async backlog visibility through `async_tool_backpressure`
+- explicit dedicated worker inspection visibility through `async_tool_workers`,
+  including lifecycle states such as `running` and
+  `abandoned_after_timeout`
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - the direction that stalled tool/runtime paths should be recoverable through

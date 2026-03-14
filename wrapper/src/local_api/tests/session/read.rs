@@ -103,6 +103,16 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_backpressure"]["oldest_hard_timeout_seconds"],
         15
     );
+    assert_eq!(body["async_tool_workers"][0]["request_id"], "7");
+    assert_eq!(body["async_tool_workers"][0]["lifecycle_state"], "running");
+    assert_eq!(
+        body["async_tool_workers"][0]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
+    );
+    assert_eq!(
+        body["async_tool_workers"][1]["lifecycle_state"],
+        "abandoned_after_timeout"
+    );
     assert_eq!(body["async_tool_backpressure"]["saturated"], false);
     assert_eq!(body["supervision_notice"]["classification"], "tool_slow");
     assert_eq!(
@@ -112,6 +122,14 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["session"]["async_tool_backpressure"]["oldest_tool"],
         "background_shell_start"
+    );
+    assert_eq!(
+        body["session"]["async_tool_workers"][0]["supervision_classification"],
+        "tool_slow"
+    );
+    assert_eq!(
+        body["session"]["async_tool_workers"][1]["supervision_classification"],
+        Value::Null
     );
     assert_eq!(
         body["session"]["supervision_notice"]["recommended_action"],
@@ -169,6 +187,10 @@ fn session_id_route_reuses_same_snapshot_payload() {
     assert_eq!(
         body["session"]["async_tool_backpressure"]["abandoned_request_count"],
         1
+    );
+    assert_eq!(
+        body["session"]["async_tool_workers"][0]["thread_name"],
+        "codexw-bgtool-background_shell_start-7"
     );
     assert_eq!(
         body["session"]["supervision_notice"]["classification"],

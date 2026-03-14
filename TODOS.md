@@ -175,6 +175,9 @@ Concrete tasks:
     loop
   - long-running or stalled tool calls should be detectable as supervision
     events, not just operator anecdotes
+  - the agent backend should be able to inspect dedicated async worker thread
+    names and lifecycle states through `async_tool_workers`, while keeping it
+    explicit that this is not yet a proof of in-worker forward progress
   - the runtime should decide whether to warn, interrupt, hand off, or replace
     itself rather than staying stuck indefinitely
 - keep the plugin-first expansion rule explicit:

@@ -81,6 +81,9 @@ The implemented native-side product already has:
   work
 - abandoned async backlog tracking plus `async_tool_backpressure`, so timed-out
   worker threads remain visible instead of silently leaking out of view
+- `async_tool_workers` inspection visibility for dedicated async worker thread
+  names and lifecycle states such as `running` and
+  `abandoned_after_timeout`
 - local refusal of new background-shell async requests when the abandoned async
   backlog is saturated
 - orchestration views over agents, shells, services, capabilities, and

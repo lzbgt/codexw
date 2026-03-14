@@ -120,6 +120,19 @@ without reverse-engineering the recommended-action string.
 It should also carry explicit `recovery_options`, so clients can present or log
 the actual next-step affordances without inventing their own route mapping.
 
+It should also carry an `async_tool_workers` inspection slice so an agent
+backend can inspect the dedicated worker-thread lane directly:
+
+- request id
+- dedicated worker thread name
+- lifecycle state such as `running` or `abandoned_after_timeout`
+- runtime/state elapsed seconds and hard timeout
+- current per-worker supervision classification when one exists
+
+That slice should stay explicit about its limit: it is an inspection-ready
+worker-lifecycle report, not yet a proof that a blocking call inside the worker
+thread is still making forward progress.
+
 The current self-heal floor should be explicit: if an async shell-tool worker
 does not return before its bounded runtime limit, `codexw` should emit a failed
 tool response itself and let the turn continue, even if the detached worker

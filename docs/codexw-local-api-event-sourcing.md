@@ -195,6 +195,9 @@ At:
   `observe_or_interrupt` to `interrupt_or_exit_resume`
 - abandoned async backlog changes through `async_tool_backpressure`, including
   count, saturation, and oldest timed-out worker summary
+- dedicated worker inspection changes through `async_tool_workers`, including
+  worker thread names and lifecycle states such as `running` and
+  `abandoned_after_timeout`
 - recovery-policy changes such as `warn_only` to
   `operator_interrupt_or_exit_resume`
 - recovery-option changes such as `observe_status` yielding to
@@ -207,8 +210,8 @@ Likely emission owners:
 - runtime status update helpers
 - response/notification handlers that mutate status-relevant fields
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
-  current supervision-classification, `async_tool_backpressure`, and
-  `supervision_notice` slice
+  current supervision-classification, `async_tool_backpressure`,
+  `async_tool_workers`, and `supervision_notice` slice
 
 ### Emit `orchestration.updated`
 

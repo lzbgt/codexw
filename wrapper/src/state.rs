@@ -14,6 +14,8 @@ pub(crate) use types::AbandonedAsyncToolRequest;
 pub(crate) use types::AppState;
 pub(crate) use types::AsyncToolActivity;
 pub(crate) use types::AsyncToolSupervisionClass;
+pub(crate) use types::AsyncToolWorkerLifecycleState;
+pub(crate) use types::AsyncToolWorkerStatus;
 pub(crate) use types::ConversationMessage;
 #[cfg(test)]
 pub(crate) use types::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT;

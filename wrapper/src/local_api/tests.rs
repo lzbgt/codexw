@@ -26,6 +26,7 @@ pub(super) use super::server::route_request_with_manager;
 pub(super) use super::server::start_local_api;
 use super::snapshot::LocalApiAsyncToolBackpressure;
 use super::snapshot::LocalApiAsyncToolSupervision;
+use super::snapshot::LocalApiAsyncToolWorker;
 use super::snapshot::LocalApiBackgroundShellJob;
 use super::snapshot::LocalApiBackgroundShellOrigin;
 use super::snapshot::LocalApiBackgroundTerminal;
@@ -97,6 +98,30 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
             oldest_hard_timeout_seconds: 15,
             oldest_elapsed_seconds: 6,
         }),
+        async_tool_workers: vec![
+            LocalApiAsyncToolWorker {
+                request_id: "7".to_string(),
+                lifecycle_state: "running".to_string(),
+                thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
+                tool: "background_shell_start".to_string(),
+                summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+                runtime_elapsed_seconds: 21,
+                state_elapsed_seconds: 21,
+                hard_timeout_seconds: 15,
+                supervision_classification: Some("tool_slow".to_string()),
+            },
+            LocalApiAsyncToolWorker {
+                request_id: "8".to_string(),
+                lifecycle_state: "abandoned_after_timeout".to_string(),
+                thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
+                tool: "background_shell_start".to_string(),
+                summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+                runtime_elapsed_seconds: 21,
+                state_elapsed_seconds: 6,
+                hard_timeout_seconds: 15,
+                supervision_classification: None,
+            },
+        ],
         supervision_notice: Some(LocalApiSupervisionNotice {
             classification: "tool_slow".to_string(),
             recommended_action: "observe_or_interrupt".to_string(),

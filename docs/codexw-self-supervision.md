@@ -129,11 +129,18 @@ first-class safety issue:
 
 - background-shell tool calls belong on dedicated wrapper worker threads, not
   the main runtime loop
+- the backend inspection lane should expose `async_tool_workers` with each
+  worker's request id, dedicated thread name, and lifecycle state such as
+  `running` or `abandoned_after_timeout`
 - a timed-out detached worker may still return later, but its late response
   must be ignored for protocol correctness
 - the runtime should keep counting that abandoned async worker until the late
   return arrives or the session is reset
 - that count should become an admission-control input, not just a debug fact
+- this inspection lane is intentionally narrower than a true progress oracle:
+  it tells the agent backend which dedicated worker thread still exists and
+  whether `codexw` still considers it running, but not yet whether a blocking
+  syscall inside that worker is making forward progress
 
 ## Relationship To Self-Evolution
 

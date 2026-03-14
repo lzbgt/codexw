@@ -62,6 +62,21 @@ pub(crate) enum AsyncToolSupervisionClass {
     ToolWedged,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum AsyncToolWorkerLifecycleState {
+    Running,
+    AbandonedAfterTimeout,
+}
+
+impl AsyncToolWorkerLifecycleState {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Self::Running => "running",
+            Self::AbandonedAfterTimeout => "abandoned_after_timeout",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SupervisionRecoveryPolicyKind {
     WarnOnly,
@@ -148,6 +163,7 @@ pub(crate) const DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT: Duration = Duration::from_s
 pub(crate) struct AsyncToolActivity {
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) worker_thread_name: String,
     pub(crate) started_at: Instant,
     pub(crate) hard_timeout: Duration,
 }
@@ -186,6 +202,7 @@ pub(crate) struct TimedOutAsyncToolRequest {
 pub(crate) struct AbandonedAsyncToolRequest {
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) worker_thread_name: String,
     pub(crate) timed_out_at: Instant,
     pub(crate) elapsed_before_timeout: Duration,
     pub(crate) hard_timeout: Duration,
@@ -195,6 +212,19 @@ impl AbandonedAsyncToolRequest {
     pub(crate) fn timed_out_elapsed(&self) -> Duration {
         Instant::now().saturating_duration_since(self.timed_out_at)
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct AsyncToolWorkerStatus {
+    pub(crate) request_id: String,
+    pub(crate) lifecycle_state: AsyncToolWorkerLifecycleState,
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+    pub(crate) worker_thread_name: String,
+    pub(crate) runtime_elapsed: Duration,
+    pub(crate) state_elapsed: Duration,
+    pub(crate) hard_timeout: Duration,
+    pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
 }
 
 pub(crate) struct AppState {

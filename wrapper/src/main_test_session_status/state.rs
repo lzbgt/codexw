@@ -75,6 +75,8 @@ fn status_snapshot_includes_async_tool_fields() {
         rendered.contains("async tool      arguments= command=sleep 5 tool=background_shell_start")
     );
     assert!(rendered.contains("async time"));
+    assert!(rendered.contains("async worker    running"));
+    assert!(rendered.contains("async worker id 3"));
 }
 
 #[test]
@@ -87,6 +89,7 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
         crate::state::AsyncToolActivity {
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            worker_thread_name: "codexw-bgtool-background_shell_start-13".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
@@ -164,6 +167,8 @@ fn status_snapshot_includes_abandoned_async_backpressure() {
     assert!(
         rendered.contains("async stale     arguments= command=sleep 5 tool=background_shell_start")
     );
+    assert!(rendered.contains("async worker    abandoned_after_timeout"));
+    assert!(rendered.contains("async worker id 21"));
     assert!(rendered.contains("async guard     monitoring"));
 }
 
@@ -263,7 +268,71 @@ fn expiring_async_tool_requests_moves_them_into_abandoned_backlog() {
             .map(|request| request.tool.as_str()),
         Some("background_shell_start")
     );
+    assert_eq!(
+        state
+            .oldest_abandoned_async_tool_request()
+            .map(|request| request.worker_thread_name.as_str()),
+        Some("codexw-async-tool-worker-15")
+    );
     assert!(!state.async_tool_backpressure_active());
+}
+
+#[test]
+fn async_tool_worker_statuses_expose_running_and_abandoned_workers() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.record_async_tool_request_with_timeout_and_worker(
+        crate::rpc::RequestId::Integer(7),
+        "background_shell_start".to_string(),
+        "running".to_string(),
+        std::time::Duration::from_secs(30),
+        "codexw-bgtool-background_shell_start-7".to_string(),
+    );
+    if let Some(activity) = state
+        .active_async_tool_requests
+        .get_mut(&crate::rpc::RequestId::Integer(7))
+    {
+        activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(20);
+    }
+    state.record_async_tool_request_with_timeout_and_worker(
+        crate::rpc::RequestId::Integer(8),
+        "background_shell_start".to_string(),
+        "abandoned".to_string(),
+        std::time::Duration::from_secs(5),
+        "codexw-bgtool-background_shell_start-8".to_string(),
+    );
+    if let Some(activity) = state
+        .active_async_tool_requests
+        .get_mut(&crate::rpc::RequestId::Integer(8))
+    {
+        activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(80);
+    }
+    let _expired = state.expire_timed_out_async_tool_requests();
+
+    let workers = state.async_tool_worker_statuses();
+
+    assert_eq!(workers.len(), 2);
+    assert_eq!(workers[0].request_id, "7");
+    assert_eq!(workers[0].lifecycle_state.label(), "running");
+    assert_eq!(
+        workers[0].worker_thread_name,
+        "codexw-bgtool-background_shell_start-7"
+    );
+    assert_eq!(
+        workers[0]
+            .supervision_classification
+            .map(|classification| classification.label()),
+        Some("tool_slow")
+    );
+    assert_eq!(workers[1].request_id, "8");
+    assert_eq!(
+        workers[1].lifecycle_state.label(),
+        "abandoned_after_timeout"
+    );
+    assert_eq!(
+        workers[1].worker_thread_name,
+        "codexw-bgtool-background_shell_start-8"
+    );
+    assert_eq!(workers[1].supervision_classification, None);
 }
 
 #[test]
@@ -305,6 +374,7 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
         crate::state::AsyncToolActivity {
             tool: "background_shell_start".to_string(),
             summary: "slow".to_string(),
+            worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
@@ -333,6 +403,7 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
         crate::state::AsyncToolActivity {
             tool: "background_shell_start".to_string(),
             summary: "wedged".to_string(),
+            worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
@@ -365,6 +436,7 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
         crate::state::AsyncToolActivity {
             tool: "background_shell_start".to_string(),
             summary: "slow".to_string(),
+            worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },
@@ -395,6 +467,7 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
         crate::state::AsyncToolActivity {
             tool: "background_shell_start".to_string(),
             summary: "wedged".to_string(),
+            worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(75),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
         },

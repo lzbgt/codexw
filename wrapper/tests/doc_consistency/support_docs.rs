@@ -393,6 +393,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "async_tool_backpressure",
         "docs/codexw-broker-adapter-status.md",
     );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "async_tool_workers",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_status,
+        "abandoned_after_timeout",
+        "docs/codexw-broker-adapter-status.md",
+    );
     assert_contains(
         &broker_proof,
         "supported experimental adapter",
@@ -459,6 +469,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-proof-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_proof,
+        "async_tool_workers",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_proof,
+        "abandoned_after_timeout",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &broker_event_envelope,
         "observe_or_interrupt",
         "docs/codexw-broker-event-envelope.md",
@@ -501,6 +521,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_event_envelope,
         "async_tool_backpressure",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "async_tool_workers",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "abandoned_after_timeout",
         "docs/codexw-broker-event-envelope.md",
     );
     assert_contains(
@@ -770,6 +800,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-product-status.md",
     );
     assert_contains_case_insensitive(
+        &native_status,
+        "async_tool_workers",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "abandoned_after_timeout",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "terminal-first",
         "docs/codexw-native-proof-matrix.md",
@@ -865,6 +905,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
+        &native_policy,
+        "async_tool_workers",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "abandoned_after_timeout",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "tool_slow",
         "docs/codexw-native-proof-matrix.md",
@@ -922,6 +972,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_proof,
         "async_tool_backpressure",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "async_tool_workers",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "abandoned_after_timeout",
         "docs/codexw-native-proof-matrix.md",
     );
     assert_contains_case_insensitive(
@@ -1052,6 +1112,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision,
+        "async_tool_workers",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "abandoned_after_timeout",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
         "abandoned async",
         "docs/codexw-self-supervision.md",
     );
@@ -1127,6 +1197,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision_plan,
+        "async_tool_workers",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "abandoned_after_timeout",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
         "dedicated wrapper worker threads",
         "docs/codexw-self-supervision-implementation-plan.md",
     );
@@ -1173,6 +1253,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &local_api_event_sourcing,
         "async_tool_backpressure",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "async_tool_workers",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "abandoned_after_timeout",
         "docs/codexw-local-api-event-sourcing.md",
     );
     assert_contains_case_insensitive(

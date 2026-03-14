@@ -38,6 +38,7 @@ pub(crate) struct LocalApiSnapshot {
     pub(crate) active_personality: Option<String>,
     pub(crate) async_tool_supervision: Option<LocalApiAsyncToolSupervision>,
     pub(crate) async_tool_backpressure: Option<LocalApiAsyncToolBackpressure>,
+    pub(crate) async_tool_workers: Vec<LocalApiAsyncToolWorker>,
     pub(crate) supervision_notice: Option<LocalApiSupervisionNotice>,
     pub(crate) orchestration_status: LocalApiOrchestrationStatus,
     pub(crate) orchestration_dependencies: Vec<LocalApiDependencyEdge>,
@@ -68,6 +69,19 @@ pub(crate) struct LocalApiAsyncToolBackpressure {
     pub(crate) oldest_elapsed_before_timeout_seconds: u64,
     pub(crate) oldest_hard_timeout_seconds: u64,
     pub(crate) oldest_elapsed_seconds: u64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct LocalApiAsyncToolWorker {
+    pub(crate) request_id: String,
+    pub(crate) lifecycle_state: String,
+    pub(crate) thread_name: String,
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+    pub(crate) runtime_elapsed_seconds: u64,
+    pub(crate) state_elapsed_seconds: u64,
+    pub(crate) hard_timeout_seconds: u64,
+    pub(crate) supervision_classification: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -259,6 +273,7 @@ pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnap
         active_personality: None,
         async_tool_supervision: None,
         async_tool_backpressure: None,
+        async_tool_workers: Vec::new(),
         supervision_notice: None,
         orchestration_status: LocalApiOrchestrationStatus::default(),
         orchestration_dependencies: Vec::new(),
@@ -283,6 +298,7 @@ pub(crate) fn sync_shared_snapshot(
         guard.async_tool_supervision =
             async_tool_supervision_snapshot(&guard.session_id, &guard.cwd, state);
         guard.async_tool_backpressure = async_tool_backpressure_snapshot(state);
+        guard.async_tool_workers = async_tool_workers_snapshot(state);
         guard.supervision_notice =
             supervision_notice_snapshot(&guard.session_id, &guard.cwd, state);
         guard.orchestration_status = orchestration_status_snapshot(state);
@@ -308,6 +324,7 @@ pub(crate) fn sync_shared_snapshot(
         active_personality: None,
         async_tool_supervision: None,
         async_tool_backpressure: None,
+        async_tool_workers: Vec::new(),
         supervision_notice: None,
         orchestration_status: LocalApiOrchestrationStatus::default(),
         orchestration_dependencies: Vec::new(),
@@ -351,6 +368,26 @@ fn async_tool_backpressure_snapshot(state: &AppState) -> Option<LocalApiAsyncToo
         oldest_hard_timeout_seconds: abandoned.hard_timeout.as_secs(),
         oldest_elapsed_seconds: abandoned.timed_out_elapsed().as_secs(),
     })
+}
+
+fn async_tool_workers_snapshot(state: &AppState) -> Vec<LocalApiAsyncToolWorker> {
+    state
+        .async_tool_worker_statuses()
+        .into_iter()
+        .map(|worker| LocalApiAsyncToolWorker {
+            request_id: worker.request_id,
+            lifecycle_state: worker.lifecycle_state.label().to_string(),
+            thread_name: worker.worker_thread_name,
+            tool: worker.tool,
+            summary: worker.summary,
+            runtime_elapsed_seconds: worker.runtime_elapsed.as_secs(),
+            state_elapsed_seconds: worker.state_elapsed.as_secs(),
+            hard_timeout_seconds: worker.hard_timeout.as_secs(),
+            supervision_classification: worker
+                .supervision_classification
+                .map(|classification| classification.label().to_string()),
+        })
+        .collect()
 }
 
 fn supervision_notice_snapshot(

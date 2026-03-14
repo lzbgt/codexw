@@ -102,18 +102,19 @@ pub(crate) fn handle_tool_request(
                 let params = request.params.clone();
                 let summary = summarize_tool_request(&params);
                 let tool_name = tool.to_string();
-                state.record_async_tool_request_with_timeout(
+                let worker_name = background_shell_worker_thread_name(tool, &request_id);
+                state.record_async_tool_request_with_timeout_and_worker(
                     request_id.clone(),
                     tool_name.clone(),
                     summary.clone(),
                     async_background_shell_timeout(tool, &params),
+                    worker_name.clone(),
                 );
                 let resolved_cwd = resolved_cwd.to_string();
                 let tx = tx.clone();
                 let background_shells = state.orchestration.background_shells.clone();
                 // Background-shell dynamic tools run on dedicated worker threads so a blocking
                 // wrapper-side shell call cannot stall the main runtime loop forever.
-                let worker_name = background_shell_worker_thread_name(tool, &request_id);
                 let spawn_result = thread::Builder::new().name(worker_name).spawn(move || {
                     let result = execute_background_shell_tool_call_with_manager(
                         &params,
@@ -285,6 +286,13 @@ mod tests {
 
         assert!(handled);
         assert_eq!(state.active_async_tool_requests.len(), 1);
+        assert_eq!(
+            state
+                .active_async_tool_requests
+                .get(&RequestId::Integer(7))
+                .map(|activity| activity.worker_thread_name.as_str()),
+            Some("codexw-bgtool-background_shell_start-7")
+        );
         let event = rx
             .recv_timeout(Duration::from_secs(2))
             .expect("async tool response");

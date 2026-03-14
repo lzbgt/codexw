@@ -523,7 +523,31 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "oldest_elapsed_before_timeout_seconds": 21,
                                     "oldest_hard_timeout_seconds": 15,
                                     "oldest_elapsed_seconds": 6
-                                }
+                                },
+                                "async_tool_workers": [
+                                    {
+                                        "request_id": "7",
+                                        "lifecycle_state": "running",
+                                        "thread_name": "codexw-bgtool-background_shell_start-7",
+                                        "tool": "background_shell_start",
+                                        "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                        "runtime_elapsed_seconds": 21,
+                                        "state_elapsed_seconds": 21,
+                                        "hard_timeout_seconds": 15,
+                                        "supervision_classification": "tool_slow"
+                                    },
+                                    {
+                                        "request_id": "8",
+                                        "lifecycle_state": "abandoned_after_timeout",
+                                        "thread_name": "codexw-bgtool-background_shell_start-8",
+                                        "tool": "background_shell_start",
+                                        "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                        "runtime_elapsed_seconds": 21,
+                                        "state_elapsed_seconds": 6,
+                                        "hard_timeout_seconds": 15,
+                                        "supervision_classification": Value::Null
+                                    }
+                                ]
                             }
                         }))?
                         .as_slice(),
@@ -576,6 +600,30 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "oldest_hard_timeout_seconds": 15,
                             "oldest_elapsed_seconds": 6
                         },
+                        "async_tool_workers": [
+                            {
+                                "request_id": "7",
+                                "lifecycle_state": "running",
+                                "thread_name": "codexw-bgtool-background_shell_start-7",
+                                "tool": "background_shell_start",
+                                "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "runtime_elapsed_seconds": 21,
+                                "state_elapsed_seconds": 21,
+                                "hard_timeout_seconds": 15,
+                                "supervision_classification": "tool_slow"
+                            },
+                            {
+                                "request_id": "8",
+                                "lifecycle_state": "abandoned_after_timeout",
+                                "thread_name": "codexw-bgtool-background_shell_start-8",
+                                "tool": "background_shell_start",
+                                "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "runtime_elapsed_seconds": 21,
+                                "state_elapsed_seconds": 6,
+                                "hard_timeout_seconds": 15,
+                                "supervision_classification": Value::Null
+                            }
+                        ],
                         "supervision_notice": {
                             "classification": "tool_slow",
                             "recommended_action": "observe_or_interrupt",
@@ -661,6 +709,30 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "oldest_hard_timeout_seconds": 30,
                             "oldest_elapsed_seconds": 30
                         },
+                        "async_tool_workers": [
+                            {
+                                "request_id": "7",
+                                "lifecycle_state": "running",
+                                "thread_name": "codexw-bgtool-background_shell_start-7",
+                                "tool": "background_shell_start",
+                                "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "runtime_elapsed_seconds": 75,
+                                "state_elapsed_seconds": 75,
+                                "hard_timeout_seconds": 30,
+                                "supervision_classification": "tool_wedged"
+                            },
+                            {
+                                "request_id": "8",
+                                "lifecycle_state": "abandoned_after_timeout",
+                                "thread_name": "codexw-bgtool-background_shell_start-8",
+                                "tool": "background_shell_start",
+                                "summary": "arguments= command=sleep 5 tool=background_shell_start",
+                                "runtime_elapsed_seconds": 30,
+                                "state_elapsed_seconds": 30,
+                                "hard_timeout_seconds": 30,
+                                "supervision_classification": Value::Null
+                            }
+                        ],
                         "supervision_notice": {
                             "classification": "tool_wedged",
                             "recommended_action": "interrupt_or_exit_resume",
@@ -721,6 +793,7 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(create_response.contains("\"async_tool_supervision\""));
     assert!(create_response.contains("\"async_tool_backpressure\""));
+    assert!(create_response.contains("\"async_tool_workers\""));
     assert!(create_response.contains("\"supervision_notice\""));
 
     let initial_events = client.session_request("GET", "sess_1", "/events", None, &[])?;
@@ -736,6 +809,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
         initial_events.contains("\"async_tool_backpressure\""),
         "{initial_events}"
     );
+    assert!(initial_events.contains("\"async_tool_workers\""));
+    assert!(initial_events.contains("codexw-bgtool-background_shell_start-7"));
     assert!(initial_events.contains("background_shell_start"));
 
     let resumed_events =
@@ -749,6 +824,8 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("tool_wedged"));
     assert!(resumed_events.contains("interrupt_or_exit_resume"));
     assert!(resumed_events.contains("\"async_tool_backpressure\""));
+    assert!(resumed_events.contains("\"async_tool_workers\""));
+    assert!(resumed_events.contains("\"lifecycle_state\":\"abandoned_after_timeout\""));
     assert!(resumed_events.contains("\"saturated\":true"));
 
     fake_server.join().expect("fake server thread")?;

@@ -5,6 +5,8 @@ use crate::rpc::RequestId;
 
 use super::AbandonedAsyncToolRequest;
 use super::AppState;
+use super::AsyncToolWorkerLifecycleState;
+use super::AsyncToolWorkerStatus;
 use super::ConversationMessage;
 #[cfg(test)]
 use super::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT;
@@ -152,11 +154,13 @@ impl AppState {
         tool: String,
         summary: String,
     ) {
-        self.record_async_tool_request_with_timeout(
+        let worker_thread_name = fallback_async_tool_worker_name(&id);
+        self.record_async_tool_request_with_timeout_and_worker(
             id,
             tool,
             summary,
             DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            worker_thread_name,
         );
     }
 
@@ -167,12 +171,31 @@ impl AppState {
         summary: String,
         hard_timeout: Duration,
     ) {
+        let worker_thread_name = fallback_async_tool_worker_name(&id);
+        self.record_async_tool_request_with_timeout_and_worker(
+            id,
+            tool,
+            summary,
+            hard_timeout,
+            worker_thread_name,
+        );
+    }
+
+    pub(crate) fn record_async_tool_request_with_timeout_and_worker(
+        &mut self,
+        id: RequestId,
+        tool: String,
+        summary: String,
+        hard_timeout: Duration,
+        worker_thread_name: String,
+    ) {
         self.abandoned_async_tool_requests.remove(&id);
         self.active_async_tool_requests.insert(
             id,
             super::AsyncToolActivity {
                 tool,
                 summary,
+                worker_thread_name,
                 started_at: std::time::Instant::now(),
                 hard_timeout,
             },
@@ -216,6 +239,46 @@ impl AppState {
             .min_by_key(|request| request.timed_out_at)
     }
 
+    pub(crate) fn async_tool_worker_statuses(&self) -> Vec<AsyncToolWorkerStatus> {
+        let mut workers = self
+            .active_async_tool_requests
+            .iter()
+            .map(|(id, activity)| AsyncToolWorkerStatus {
+                request_id: request_id_label(id),
+                lifecycle_state: AsyncToolWorkerLifecycleState::Running,
+                tool: activity.tool.clone(),
+                summary: activity.summary.clone(),
+                worker_thread_name: activity.worker_thread_name.clone(),
+                runtime_elapsed: activity.elapsed(),
+                state_elapsed: activity.elapsed(),
+                hard_timeout: activity.hard_timeout,
+                supervision_classification: activity.supervision_class(),
+            })
+            .chain(
+                self.abandoned_async_tool_requests
+                    .iter()
+                    .map(|(id, request)| AsyncToolWorkerStatus {
+                        request_id: request_id_label(id),
+                        lifecycle_state: AsyncToolWorkerLifecycleState::AbandonedAfterTimeout,
+                        tool: request.tool.clone(),
+                        summary: request.summary.clone(),
+                        worker_thread_name: request.worker_thread_name.clone(),
+                        runtime_elapsed: request.elapsed_before_timeout,
+                        state_elapsed: request.timed_out_elapsed(),
+                        hard_timeout: request.hard_timeout,
+                        supervision_classification: None,
+                    }),
+            )
+            .collect::<Vec<_>>();
+        workers.sort_by(|left, right| {
+            left.lifecycle_state
+                .cmp(&right.lifecycle_state)
+                .then_with(|| right.runtime_elapsed.cmp(&left.runtime_elapsed))
+                .then_with(|| left.request_id.cmp(&right.request_id))
+        });
+        workers
+    }
+
     pub(crate) fn async_tool_backpressure_active(&self) -> bool {
         self.abandoned_async_tool_request_count() >= MAX_ABANDONED_ASYNC_TOOL_REQUESTS
     }
@@ -235,6 +298,7 @@ impl AppState {
                     AbandonedAsyncToolRequest {
                         tool: activity.tool.clone(),
                         summary: activity.summary.clone(),
+                        worker_thread_name: activity.worker_thread_name.clone(),
                         timed_out_at: std::time::Instant::now(),
                         elapsed_before_timeout: elapsed,
                         hard_timeout: activity.hard_timeout,
@@ -281,4 +345,15 @@ impl Default for AppState {
     fn default() -> Self {
         Self::new(true, false)
     }
+}
+
+fn request_id_label(id: &RequestId) -> String {
+    match id {
+        RequestId::Integer(value) => value.to_string(),
+        RequestId::String(value) => value.clone(),
+    }
+}
+
+fn fallback_async_tool_worker_name(id: &RequestId) -> String {
+    format!("codexw-async-tool-worker-{}", request_id_label(id))
 }

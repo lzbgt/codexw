@@ -69,6 +69,15 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         events[2].data["async_tool_backpressure"]["oldest_hard_timeout_seconds"],
         15
     );
+    assert_eq!(events[2].data["async_tool_workers"][0]["request_id"], "7");
+    assert_eq!(
+        events[2].data["async_tool_workers"][0]["lifecycle_state"],
+        "running"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][1]["lifecycle_state"],
+        "abandoned_after_timeout"
+    );
     assert_eq!(
         events[2].data["supervision_notice"]["recommended_action"],
         "observe_or_interrupt"
@@ -142,6 +151,7 @@ fn event_stream_route_replays_existing_events() {
     assert!(response_text.contains("event: status.updated"));
     assert!(response_text.contains("\"recommended_action\":\"observe_or_interrupt\""));
     assert!(response_text.contains("\"async_tool_backpressure\""));
+    assert!(response_text.contains("\"async_tool_workers\""));
     assert!(response_text.contains("\"supervision_notice\""));
 
     drop(stream);
@@ -195,6 +205,30 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             oldest_hard_timeout_seconds: 30,
             oldest_elapsed_seconds: 30,
         });
+    current.async_tool_workers = vec![
+        crate::local_api::snapshot::LocalApiAsyncToolWorker {
+            request_id: "7".to_string(),
+            lifecycle_state: "running".to_string(),
+            thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            runtime_elapsed_seconds: 75,
+            state_elapsed_seconds: 75,
+            hard_timeout_seconds: 30,
+            supervision_classification: Some("tool_wedged".to_string()),
+        },
+        crate::local_api::snapshot::LocalApiAsyncToolWorker {
+            request_id: "8".to_string(),
+            lifecycle_state: "abandoned_after_timeout".to_string(),
+            thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            runtime_elapsed_seconds: 30,
+            state_elapsed_seconds: 30,
+            hard_timeout_seconds: 30,
+            supervision_classification: None,
+        },
+    ];
     current.supervision_notice = Some(crate::local_api::snapshot::LocalApiSupervisionNotice {
         classification: "tool_wedged".to_string(),
         recommended_action: "interrupt_or_exit_resume".to_string(),
@@ -258,6 +292,14 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     assert_eq!(
         events[1].data["async_tool_supervision"]["recommended_action"],
         "interrupt_or_exit_resume"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][0]["supervision_classification"],
+        "tool_wedged"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][1]["lifecycle_state"],
+        "abandoned_after_timeout"
     );
     assert_eq!(events[1].data["async_tool_backpressure"]["saturated"], true);
     assert_eq!(

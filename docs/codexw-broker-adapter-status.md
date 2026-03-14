@@ -188,6 +188,8 @@ the real connector binary:
   fields where available
 - broker-visible `async_tool_backpressure` for abandoned async worker backlog
   count/saturation visibility and refusal-context rendering
+- broker-visible `async_tool_workers` for dedicated async worker thread names
+  and lifecycle states such as `running` and `abandoned_after_timeout`
 - structured lease-conflict propagation
 - structured connector-local validation failures for malformed injected request
   bodies and malformed client/lease headers

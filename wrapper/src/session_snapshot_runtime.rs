@@ -77,6 +77,14 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             format_elapsed(Some(async_tool.started_at))
         ));
     }
+    if let Some(worker) = state.async_tool_worker_statuses().first() {
+        lines.push(format!(
+            "async worker    {} {}",
+            worker.lifecycle_state.label(),
+            summarize_text(&worker.worker_thread_name)
+        ));
+        lines.push(format!("async worker id {}", worker.request_id));
+    }
     if let Some(abandoned) = state.oldest_abandoned_async_tool_request() {
         lines.push(format!(
             "async aban      {}",
