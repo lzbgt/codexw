@@ -606,7 +606,8 @@ mod tests {
                 .active_async_tool_requests
                 .get_mut(&RequestId::Integer(id as i64))
             {
-                activity.started_at = std::time::Instant::now() - Duration::from_secs(10);
+                activity.started_at =
+                    std::time::Instant::now() - Duration::from_secs(if id == 1 { 20 } else { 10 });
             }
         }
         let expired = state.expire_timed_out_async_tool_requests();
@@ -648,7 +649,7 @@ mod tests {
         let oldest_summary = result["backpressure"]["oldest_summary"]
             .as_str()
             .expect("oldest summary");
-        assert!(matches!(oldest_summary, "summary-1" | "summary-2"));
+        assert_eq!(oldest_summary, "summary-1");
     }
 
     #[test]

@@ -830,7 +830,8 @@ fn abandoned_async_backlog_becomes_saturated_at_threshold() {
             .active_async_tool_requests
             .get_mut(&crate::rpc::RequestId::Integer(id as i64))
         {
-            activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(80);
+            activity.started_at = std::time::Instant::now()
+                - std::time::Duration::from_secs(if id == 1 { 120 } else { 80 });
         }
     }
 
@@ -844,6 +845,12 @@ fn abandoned_async_backlog_becomes_saturated_at_threshold() {
     assert_eq!(
         state.abandoned_async_tool_request_count(),
         crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS
+    );
+    assert_eq!(
+        state
+            .oldest_abandoned_async_tool_request()
+            .map(|request| request.summary.as_str()),
+        Some("summary-1")
     );
 }
 

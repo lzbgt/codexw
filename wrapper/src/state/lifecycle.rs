@@ -248,7 +248,12 @@ impl AppState {
     pub(crate) fn oldest_abandoned_async_tool_request(&self) -> Option<&AbandonedAsyncToolRequest> {
         self.abandoned_async_tool_requests
             .values()
-            .min_by_key(|request| request.timed_out_at)
+            .min_by(|left, right| {
+                left.started_at
+                    .cmp(&right.started_at)
+                    .then_with(|| left.timed_out_at.cmp(&right.timed_out_at))
+                    .then_with(|| left.worker_thread_name.cmp(&right.worker_thread_name))
+            })
     }
 
     pub(crate) fn async_tool_worker_statuses(&self) -> Vec<AsyncToolWorkerStatus> {
@@ -401,6 +406,7 @@ impl AppState {
                             .target_background_shell_job_id
                             .clone(),
                         worker_thread_name: activity.worker_thread_name.clone(),
+                        started_at: activity.started_at,
                         timed_out_at: std::time::Instant::now(),
                         elapsed_before_timeout: elapsed,
                         hard_timeout: activity.hard_timeout,

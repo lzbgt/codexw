@@ -191,6 +191,9 @@ first-class safety issue:
 - saturation refusal should reuse that same oldest-worker shell context, so a
   locally refused async request tells the operator which abandoned tool/shell
   pair is blocking new work
+- `oldest` in those backlog surfaces should mean the oldest original request,
+  not whichever timed-out worker happened to be inserted first while draining a
+  hash map
 - that same local refusal should stay machine-readable through
   `failure_kind=async_tool_backpressure` plus a structured backpressure object carrying
   the oldest blocked worker's source/target/observation/output/job facts

@@ -387,6 +387,7 @@ pub(crate) struct AbandonedAsyncToolRequest {
     pub(crate) target_background_shell_reference: Option<String>,
     pub(crate) target_background_shell_job_id: Option<String>,
     pub(crate) worker_thread_name: String,
+    pub(crate) started_at: Instant,
     pub(crate) timed_out_at: Instant,
     pub(crate) elapsed_before_timeout: Duration,
     pub(crate) hard_timeout: Duration,

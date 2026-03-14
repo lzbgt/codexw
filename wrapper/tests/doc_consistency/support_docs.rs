@@ -1049,6 +1049,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        "oldest original async request",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "failure_kind=async_tool_backpressure",
         "docs/codexw-native-product-status.md",
     );
@@ -1557,6 +1562,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision,
         "oldest_observed_background_shell_job",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "oldest original request",
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
