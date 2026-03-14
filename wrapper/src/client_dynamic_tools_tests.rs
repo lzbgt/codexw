@@ -50,3 +50,24 @@ fn dynamic_tool_specs_include_workspace_tools() {
         ]
     );
 }
+
+#[test]
+fn workspace_tool_specs_keep_bounded_read_only_framing() {
+    let specs = dynamic_tool_specs().as_array().expect("array").clone();
+    let tool_description = |name: &str| {
+        specs
+            .iter()
+            .find(|tool| tool.get("name").and_then(serde_json::Value::as_str) == Some(name))
+            .and_then(|tool| tool.get("description").and_then(serde_json::Value::as_str))
+            .unwrap_or_else(|| panic!("missing description for {}", name))
+    };
+
+    assert!(
+        tool_description("workspace_list_dir").contains("bounded")
+            && tool_description("workspace_list_dir").contains("read-only inspection")
+    );
+    assert!(tool_description("workspace_stat_path").contains("read-only metadata"));
+    assert!(tool_description("workspace_read_file").contains("bounded read-only inspection"));
+    assert!(tool_description("workspace_find_files").contains("bounded set"));
+    assert!(tool_description("workspace_search_text").contains("bounded set"));
+}

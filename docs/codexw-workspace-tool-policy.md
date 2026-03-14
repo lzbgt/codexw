@@ -67,6 +67,10 @@ gives the model stable parameter shapes such as:
 That is materially easier for the model than generating shell syntax, handling
 quoting, and then parsing arbitrary stdout.
 
+The advertised tool descriptions should keep that same bounded read-only
+framing. They should not describe the workspace tools like a second
+general-purpose automation surface.
+
 ### Portability and Determinism
 
 The dynamic tools behave the same way regardless of local shell flavor or
