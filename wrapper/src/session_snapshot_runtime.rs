@@ -228,6 +228,18 @@ pub(crate) fn render_status_runtime(cli: &Cli, state: &AppState) -> Vec<String> 
                 "monitoring"
             }
         ));
+        lines.push(format!(
+            "async guard act {}",
+            crate::supervision_recovery::async_backpressure_recommended_action(state)
+        ));
+        lines.push(format!(
+            "async guard pol {}",
+            crate::supervision_recovery::async_backpressure_recovery_policy_kind(state).label()
+        ));
+        lines.push(format!(
+            "async guard auto {}",
+            crate::supervision_recovery::async_backpressure_automation_ready(state)
+        ));
         for option in crate::supervision_recovery::async_backpressure_recovery_options(
             state,
             None,

@@ -554,6 +554,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                                     "abandoned_request_count": 1,
                                     "saturation_threshold": 2,
                                     "saturated": false,
+                                    "recommended_action": "observe_or_interrupt",
+                                    "recovery_policy": {
+                                        "kind": "warn_only",
+                                        "automation_ready": false
+                                    },
                                     "recovery_options": [
                                         {
                                             "kind": "observe_status",
@@ -716,6 +721,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "abandoned_request_count": 1,
                             "saturation_threshold": 2,
                             "saturated": false,
+                            "recommended_action": "observe_or_interrupt",
+                            "recovery_policy": {
+                                "kind": "warn_only",
+                                "automation_ready": false
+                            },
                             "recovery_options": [
                                 {
                                     "kind": "observe_status",
@@ -927,6 +937,11 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
                             "abandoned_request_count": 2,
                             "saturation_threshold": 2,
                             "saturated": true,
+                            "recommended_action": "interrupt_or_exit_resume",
+                            "recovery_policy": {
+                                "kind": "operator_interrupt_or_exit_resume",
+                                "automation_ready": false
+                            },
                             "recovery_options": [
                                 {
                                     "kind": "observe_status",
@@ -1102,6 +1117,10 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(create_response.contains("\"async_tool_supervision\""));
     assert!(create_response.contains("\"async_tool_backpressure\""));
+    assert!(create_response.contains("\"recommended_action\":\"observe_or_interrupt\""));
+    assert!(create_response.contains("\"recovery_policy\""));
+    assert!(create_response.contains("\"kind\":\"warn_only\""));
+    assert!(create_response.contains("\"automation_ready\":false"));
     assert!(
         create_response
             .contains("\"oldest_observation_state\":\"wrapper_background_shell_streaming_output\"")
@@ -1158,6 +1177,10 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
         initial_events.contains("\"async_tool_backpressure\""),
         "{initial_events}"
     );
+    assert!(initial_events.contains("\"recommended_action\":\"observe_or_interrupt\""));
+    assert!(initial_events.contains("\"recovery_policy\""));
+    assert!(initial_events.contains("\"kind\":\"warn_only\""));
+    assert!(initial_events.contains("\"automation_ready\":false"));
     assert!(initial_events.contains("\"oldest_source_call_id\":\"call_456\""));
     assert!(initial_events.contains("\"oldest_request_id\":\"8\""));
     assert!(
@@ -1207,6 +1230,10 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     assert!(resumed_events.contains("\"command\":\"python stage2.py --quick\""));
     assert!(resumed_events.contains("\"next_check_in_seconds\":30"));
     assert!(resumed_events.contains("\"async_tool_backpressure\""));
+    assert!(resumed_events.contains("\"recommended_action\":\"interrupt_or_exit_resume\""));
+    assert!(resumed_events.contains("\"recovery_policy\""));
+    assert!(resumed_events.contains("\"kind\":\"operator_interrupt_or_exit_resume\""));
+    assert!(resumed_events.contains("\"automation_ready\":false"));
     assert!(resumed_events.contains("\"oldest_source_call_id\":\"call_456\""));
     assert!(resumed_events.contains("\"oldest_request_id\":\"8\""));
     assert!(

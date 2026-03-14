@@ -110,6 +110,11 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
             abandoned_request_count: 1,
             saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             saturated: false,
+            recommended_action: "observe_or_interrupt".to_string(),
+            recovery_policy: LocalApiRecoveryPolicy {
+                kind: "warn_only".to_string(),
+                automation_ready: false,
+            },
             recovery_options: vec![
                 LocalApiRecoveryOption {
                     kind: "observe_status".to_string(),

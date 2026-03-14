@@ -202,7 +202,8 @@ the real connector binary:
   and `exit_and_resume`, including concrete local-API path or CLI command
   fields where available
 - broker-visible `async_tool_backpressure` for abandoned async worker backlog
-  count/saturation visibility and refusal-context rendering
+  count/saturation visibility, backlog-level `recommended_action` /
+  `recovery_policy`, and refusal-context rendering
 - broker-visible `async_tool_workers` for dedicated async worker thread names
   and lifecycle states such as `running` and `abandoned_after_timeout`
 - structured lease-conflict propagation

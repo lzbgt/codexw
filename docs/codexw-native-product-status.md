@@ -107,6 +107,9 @@ The implemented native-side product already has:
   machine-readable timeout/backpressure status keeps the same
   `observe_status`, `interrupt_turn`, and `exit_and_resume` next steps that
   active supervision already exposes
+- explicit backlog `recommended_action` plus `recovery_policy`, so clients can
+  distinguish warn-only backlog monitoring from operator-action-required
+  saturation without inferring it only from counts
 - backlog-only prompt/status guidance for abandoned async work, so once active
   supervision has timed out the operator still sees compact next steps such as
   `:status`, `:interrupt`, and `resume`
@@ -123,7 +126,8 @@ The implemented native-side product already has:
 - machine-readable local refusal payloads for that saturation case through
   `failure_kind=async_tool_backpressure` plus a structured backpressure object
   that keeps the oldest blocked worker's source/target/observation/output/job
-  facts plus explicit backlog `recovery_options`
+  facts plus explicit backlog `recommended_action`, `recovery_policy`, and
+  `recovery_options`
 - orchestrator-owned periodic inspection of active async shell-tool workers,
   including explicit notices when no completion or output has been observed yet
   for the visible tool summary / shell command

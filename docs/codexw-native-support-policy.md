@@ -103,6 +103,9 @@ drift casually:
 - explicit backlog `recovery_options` on `async_tool_backpressure`, so
   timeout/backpressure status keeps the same `observe_status`,
   `interrupt_turn`, and `exit_and_resume` next steps as active supervision
+- explicit backlog `recommended_action` and `recovery_policy`, so supported
+  clients can tell when backlog state has crossed from warn-only monitoring
+  into operator-action-required saturation
 - live self-supervision inspection notices that include observation/output
   state, source call id when present, and next-check timing in the terminal
   stream
@@ -128,8 +131,9 @@ drift casually:
   saturated
 - machine-readable saturation refusal results through
   `failure_kind=async_tool_backpressure` and a structured `backpressure`
-  object, including explicit backlog `recovery_options`, so callers do not
-  have to parse prose to understand the blocked oldest worker or next step
+  object, including explicit backlog `recommended_action`, `recovery_policy`,
+  and `recovery_options`, so callers do not have to parse prose to understand
+  the blocked oldest worker or next step
 - single-pass resume-history hydration for resumed-thread state seeding and
   latest-message preview extraction
 - a local recent-thread cache that can render last-known numbered sessions

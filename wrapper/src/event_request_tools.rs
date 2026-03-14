@@ -264,6 +264,11 @@ fn background_shell_backpressure_details(
                 "abandoned_request_count": state.abandoned_async_tool_request_count(),
                 "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
                 "saturated": state.async_tool_backpressure_active(),
+                "recommended_action": crate::supervision_recovery::async_backpressure_recommended_action(state),
+                "recovery_policy": {
+                    "kind": crate::supervision_recovery::async_backpressure_recovery_policy_kind(state).label(),
+                    "automation_ready": crate::supervision_recovery::async_backpressure_automation_ready(state),
+                },
                 "recovery_options": recovery_options,
                 "oldest_request_id": crate::state::request_id_label(request_id),
                 "oldest_thread_name": request.worker_thread_name.as_str(),
@@ -287,6 +292,11 @@ fn background_shell_backpressure_details(
             "abandoned_request_count": state.abandoned_async_tool_request_count(),
             "saturation_threshold": crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             "saturated": state.async_tool_backpressure_active(),
+            "recommended_action": crate::supervision_recovery::async_backpressure_recommended_action(state),
+            "recovery_policy": {
+                "kind": crate::supervision_recovery::async_backpressure_recovery_policy_kind(state).label(),
+                "automation_ready": crate::supervision_recovery::async_backpressure_automation_ready(state),
+            },
             "recovery_options": recovery_options,
             "oldest_request_id": serde_json::Value::Null,
             "oldest_thread_name": serde_json::Value::Null,
@@ -689,6 +699,18 @@ mod tests {
         );
         assert_eq!(result["backpressure"]["saturated"], true);
         assert_eq!(
+            result["backpressure"]["recommended_action"],
+            "interrupt_or_exit_resume"
+        );
+        assert_eq!(
+            result["backpressure"]["recovery_policy"]["kind"],
+            "operator_interrupt_or_exit_resume"
+        );
+        assert_eq!(
+            result["backpressure"]["recovery_policy"]["automation_ready"],
+            false
+        );
+        assert_eq!(
             result["backpressure"]["recovery_options"][0]["kind"],
             "observe_status"
         );
@@ -787,6 +809,14 @@ mod tests {
         assert!(failure_text.contains("oldest backlog summary"));
         assert!(failure_text.contains("job=bg-1 running"));
         assert_eq!(failure["failure_kind"], "async_tool_backpressure");
+        assert_eq!(
+            failure["backpressure"]["recommended_action"],
+            "observe_or_interrupt"
+        );
+        assert_eq!(
+            failure["backpressure"]["recovery_policy"]["kind"],
+            "warn_only"
+        );
         assert_eq!(failure["backpressure"]["oldest_request_id"], "9");
         assert_eq!(
             failure["backpressure"]["oldest_thread_name"],

@@ -135,6 +135,18 @@ fn session_snapshot_is_returned_with_valid_token() {
         1
     );
     assert_eq!(
+        body["async_tool_backpressure"]["recommended_action"],
+        "observe_or_interrupt"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["recovery_policy"]["kind"],
+        "warn_only"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["recovery_policy"]["automation_ready"],
+        false
+    );
+    assert_eq!(
         body["async_tool_backpressure"]["recovery_options"][0]["kind"],
         "observe_status"
     );
@@ -291,6 +303,10 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["session"]["async_tool_backpressure"]["oldest_request_id"],
         "8"
+    );
+    assert_eq!(
+        body["session"]["async_tool_backpressure"]["recovery_policy"]["kind"],
+        "warn_only"
     );
     assert_eq!(
         body["session"]["async_tool_backpressure"]["recovery_options"][2]["kind"],

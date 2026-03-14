@@ -33,4 +33,5 @@ pub(crate) use types::ProcessOutputBuffer;
 pub(crate) use types::SessionOverrides;
 pub(crate) use types::SupervisionNotice;
 pub(crate) use types::SupervisionNoticeTransition;
+pub(crate) use types::SupervisionRecoveryPolicyKind;
 pub(crate) use types::TimedOutAsyncToolRequest;

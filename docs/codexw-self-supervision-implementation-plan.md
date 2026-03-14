@@ -104,7 +104,9 @@ The same slice should emit explicit recovery options:
 - explicit abandoned async backlog tracking after that local timeout
 - `async_tool_backpressure` in the local snapshot/SSE status slice, including
   the oldest abandoned worker's `observation_state`, `output_state`, and
-  `observed_background_shell_job` when that correlated shell is still visible
+  `observed_background_shell_job` when that correlated shell is still visible,
+  plus backlog `recommended_action`, `recovery_policy`, and
+  `recovery_options`
 - admission control that refuses new background-shell async requests once the
   abandoned async backlog is saturated
 
@@ -148,7 +150,8 @@ remaining safety budget.
 That same refusal should also expose a narrow machine-readable
 `failure_kind=async_tool_backpressure` result with a structured backpressure object,
 so agents do not need to scrape prose to learn which abandoned worker is
-blocking new async shell work.
+blocking new async shell work or which supported recovery posture currently
+applies.
 backend can inspect the dedicated worker-thread lane directly:
 
 - request id

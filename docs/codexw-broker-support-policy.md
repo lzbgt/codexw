@@ -99,6 +99,8 @@ can depend on them:
   - output-age facts such as `last_output_age_seconds`
   - backlog and worker inspection slices such as `async_tool_backpressure` and
     `async_tool_workers`
+  - backlog-level `recommended_action`, `recovery_policy`, and
+    `recovery_options` on `async_tool_backpressure`
 - explicit rejection of unsupported broker/client surfaces
 
 The current supported experimental adapter should therefore be read as

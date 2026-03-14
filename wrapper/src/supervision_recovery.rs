@@ -2,6 +2,7 @@ use crate::app::build_resume_command;
 use crate::app::current_program_name;
 use crate::state::AppState;
 use crate::state::AsyncToolSupervisionClass;
+use crate::state::SupervisionRecoveryPolicyKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SupervisionRecoveryOption {
@@ -119,4 +120,26 @@ pub(crate) fn async_backpressure_recovery_options(
         });
     }
     options
+}
+
+pub(crate) fn async_backpressure_recommended_action(state: &AppState) -> &'static str {
+    if state.async_tool_backpressure_active() {
+        "interrupt_or_exit_resume"
+    } else {
+        "observe_or_interrupt"
+    }
+}
+
+pub(crate) fn async_backpressure_recovery_policy_kind(
+    state: &AppState,
+) -> SupervisionRecoveryPolicyKind {
+    if state.async_tool_backpressure_active() {
+        SupervisionRecoveryPolicyKind::OperatorInterruptOrExitResume
+    } else {
+        SupervisionRecoveryPolicyKind::WarnOnly
+    }
+}
+
+pub(crate) fn async_backpressure_automation_ready(_state: &AppState) -> bool {
+    false
 }

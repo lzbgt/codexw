@@ -119,6 +119,18 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         1
     );
     assert_eq!(
+        events[2].data["async_tool_backpressure"]["recommended_action"],
+        "observe_or_interrupt"
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["recovery_policy"]["kind"],
+        "warn_only"
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["recovery_policy"]["automation_ready"],
+        false
+    );
+    assert_eq!(
         events[2].data["async_tool_backpressure"]["recovery_options"][0]["kind"],
         "observe_status"
     );
@@ -405,6 +417,11 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             abandoned_request_count: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
             saturated: true,
+            recommended_action: "interrupt_or_exit_resume".to_string(),
+            recovery_policy: crate::local_api::snapshot::LocalApiRecoveryPolicy {
+                kind: "operator_interrupt_or_exit_resume".to_string(),
+                automation_ready: false,
+            },
             recovery_options: vec![
                 crate::local_api::snapshot::LocalApiRecoveryOption {
                     kind: "observe_status".to_string(),

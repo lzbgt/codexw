@@ -1049,6 +1049,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        "backlog `recommended_action`",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "async_tool_workers",
         "docs/codexw-native-product-status.md",
     );
@@ -1260,6 +1265,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "backlog `recovery_options`",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "backlog `recommended_action`",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -1515,7 +1525,12 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_proof,
-        "backlog `recovery_options`",
+        "`recovery_policy`, and `recovery_options`",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "backlog `recommended_action`",
         "docs/codexw-native-proof-matrix.md",
     );
     assert_contains_case_insensitive(
@@ -1667,6 +1682,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision,
         "explicit `recovery_options`",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "explicit `recommended_action`",
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
@@ -1996,7 +2016,12 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &local_api_event_sourcing,
-        "backlog `recovery_options`",
+        "`recovery_policy`, and `recovery_options`",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "backlog `recommended_action`",
         "docs/codexw-local-api-event-sourcing.md",
     );
     assert_contains_case_insensitive(

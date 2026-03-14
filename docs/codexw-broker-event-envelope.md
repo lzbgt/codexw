@@ -313,7 +313,9 @@ inspection facts such as `oldest_observation_state`,
 `oldest_output_state`, and `oldest_observed_background_shell_job`, plus
 backlog-level `recovery_options` so remote clients can render the same
 `observe_status` / `interrupt_turn` / `exit_and_resume` next steps even after
-the active worker has timed out, plus
+the active worker has timed out, plus backlog-level `recommended_action` and
+`recovery_policy` so clients do not have to infer severity from saturation
+alone, plus
 `async_tool_workers` so a remote agent
 backend can inspect dedicated worker thread names and lifecycle states such as
 `running` and `abandoned_after_timeout` without scraping prompt text, plus

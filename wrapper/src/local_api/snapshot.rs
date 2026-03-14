@@ -72,6 +72,8 @@ pub(crate) struct LocalApiAsyncToolBackpressure {
     pub(crate) abandoned_request_count: usize,
     pub(crate) saturation_threshold: usize,
     pub(crate) saturated: bool,
+    pub(crate) recommended_action: String,
+    pub(crate) recovery_policy: LocalApiRecoveryPolicy,
     pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
     pub(crate) oldest_request_id: String,
     pub(crate) oldest_thread_name: String,
@@ -426,6 +428,18 @@ fn async_tool_backpressure_snapshot(
         abandoned_request_count: state.abandoned_async_tool_request_count(),
         saturation_threshold: crate::state::MAX_ABANDONED_ASYNC_TOOL_REQUESTS,
         saturated: state.async_tool_backpressure_active(),
+        recommended_action: crate::supervision_recovery::async_backpressure_recommended_action(
+            state,
+        )
+        .to_string(),
+        recovery_policy: LocalApiRecoveryPolicy {
+            kind: crate::supervision_recovery::async_backpressure_recovery_policy_kind(state)
+                .label()
+                .to_string(),
+            automation_ready: crate::supervision_recovery::async_backpressure_automation_ready(
+                state,
+            ),
+        },
         recovery_options: async_backpressure_recovery_options_snapshot(session_id, cwd, state),
         oldest_request_id: crate::state::request_id_label(request_id),
         oldest_thread_name: abandoned.worker_thread_name.clone(),

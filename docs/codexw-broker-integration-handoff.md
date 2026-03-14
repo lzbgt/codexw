@@ -103,7 +103,9 @@ rely on broker-visible supervision facts rather than only a generic tool name:
 - matched `observed_background_shell_job` detail with `job_id`, `status`,
   `command`, `total_lines`, `last_output_age_seconds`, and recent output
   preview when the wrapper shell lane has already started a `bg-*` job
-- abandoned-backlog visibility through `async_tool_backpressure`
+- abandoned-backlog visibility through `async_tool_backpressure`, including
+  backlog-level `recommended_action`, `recovery_policy`, and
+  `recovery_options`
 - dedicated worker inspection through `async_tool_workers`
 
 Workflow-level reference:
