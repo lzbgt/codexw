@@ -33,11 +33,12 @@ The recommended claim is:
   contract
 - the unsupported boundary remains explicit and enforced
 
-That supported claim currently covers the verified session/event/orchestration/
-shell/service/capability surface. It does **not** yet imply that artifact index,
-detail, or content routes are part of the supported adapter. It also does
-**not** yet imply that session project-assignment or project dependency-edge
-routes are part of the supported adapter.
+That supported claim currently covers the verified shell-first
+session/event/orchestration/shell/service/capability surface. It does **not**
+yet imply that artifact index, detail, or content routes are part of the
+current supported experimental adapter. It also does **not** yet imply that
+session project-assignment or project dependency-edge routes are part of that
+supported adapter.
 
 The operational meaning of that support level now lives in
 [codexw-broker-support-policy.md](codexw-broker-support-policy.md), so this

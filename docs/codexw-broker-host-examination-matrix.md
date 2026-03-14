@@ -121,6 +121,6 @@ When evaluating broker-facing changes, use this sequence:
 3. If the remaining need is stable artifact browsing or download semantics,
    track it as an artifact-contract gap instead of inventing another ad hoc
    shell or transcript route.
-4. Do not describe artifact routes as part of the supported broker adapter
-   until the contract, proof, and support-policy docs are updated in the same
-   batch.
+4. Do not describe artifact routes as part of the current supported
+   experimental adapter until the contract, proof, and support-policy docs are
+   updated in the same batch.

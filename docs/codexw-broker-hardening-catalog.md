@@ -138,7 +138,8 @@ Why not a blocker:
 - the current standalone broker-style fixtures already give the repo real
   external consumer shape with process-level proof
 - the richer artifact-centric consumer story is still design-only until the
-  artifact-contract track becomes implemented surface
+  artifact-contract track becomes implemented surface and joins the supported
+  experimental adapter
 
 ## Relationship To `TODOS.md`
 

@@ -851,6 +851,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-hardening-catalog.md",
     );
     assert_contains_case_insensitive(
+        &broker_hardening,
+        "supported experimental adapter",
+        "docs/codexw-broker-hardening-catalog.md",
+    );
+    assert_contains_case_insensitive(
         &broker_decision,
         "broker-backed clients such as app and webui",
         "docs/codexw-broker-connector-decision.md",
@@ -2264,6 +2269,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-host-examination-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "current supported experimental adapter",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &broker_handoff,
         "sibling `~/work/agent` workspace",
         "docs/codexw-broker-integration-handoff.md",
@@ -2945,6 +2955,16 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     assert_contains(
         &broker_promotion,
         "Python and Node fixtures",
+        "docs/codexw-broker-promotion-recommendation.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_promotion,
+        "shell-first",
+        "docs/codexw-broker-promotion-recommendation.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_promotion,
+        "supported experimental adapter",
         "docs/codexw-broker-promotion-recommendation.md",
     );
     assert_contains(
