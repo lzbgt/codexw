@@ -1653,6 +1653,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-evolution.md",
     );
     assert_contains_case_insensitive(
+        &self_evolution,
+        "local runtime file",
+        "docs/codexw-self-evolution.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution,
+        "artifact api object",
+        "docs/codexw-self-evolution.md",
+    );
+    assert_contains_case_insensitive(
         &self_evolution_plan,
         "resume-handoff",
         "docs/codexw-self-evolution-implementation-plan.md",
@@ -1671,6 +1681,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_evolution_plan,
         "plugin versus core decision policy",
+        "docs/codexw-self-evolution-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution_plan,
+        "local checkpoint-and-resume lane",
+        "docs/codexw-self-evolution-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_evolution_plan,
+        "broker artifact",
         "docs/codexw-self-evolution-implementation-plan.md",
     );
     assert_contains_case_insensitive(
@@ -2469,6 +2489,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-cross-project-dependency-implementation-plan.md",
     );
     assert_contains_case_insensitive(
+        &cross_project_plan,
+        "supported experimental adapter",
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_plan,
+        "shell-first host-examination surface",
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_project_plan,
+        "artifact index/detail/content routes",
+        "docs/codexw-cross-project-dependency-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
         &cross_deployment_contract,
         "handoff record",
         "docs/codexw-cross-deployment-handoff-contract-sketch.md",
@@ -2521,6 +2556,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &cross_deployment_plan,
         "do not fake handoff",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "supported experimental adapter",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "shell-first host-examination surface",
+        "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &cross_deployment_plan,
+        "artifact index/detail/content routes",
         "docs/codexw-cross-deployment-handoff-implementation-plan.md",
     );
     assert_contains_case_insensitive(
@@ -3013,16 +3063,8 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "Those standalone Python and Node fixtures now also prove enriched",
         "README.md",
     );
-    assert_contains_case_insensitive(
-        &readme,
-        "supported experimental adapter",
-        "README.md",
-    );
-    assert_contains_case_insensitive(
-        &readme,
-        "shell-first host-examination surface",
-        "README.md",
-    );
+    assert_contains_case_insensitive(&readme, "supported experimental adapter", "README.md");
+    assert_contains_case_insensitive(&readme, "shell-first host-examination surface", "README.md");
     assert_contains_case_insensitive(
         &readme,
         "artifact index/detail/content routes stay",
@@ -3049,21 +3091,9 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "artifact routes remain outside that boundary",
         "docs/codexw-support-claim-checklist.md",
     );
-    assert_contains_case_insensitive(
-        &todos,
-        "supported experimental adapter ends",
-        "TODOS.md",
-    );
-    assert_contains_case_insensitive(
-        &todos,
-        "shell-first host-examination surface",
-        "TODOS.md",
-    );
-    assert_contains_case_insensitive(
-        &todos,
-        "shell-first host-examination surface",
-        "TODOS.md",
-    );
+    assert_contains_case_insensitive(&todos, "supported experimental adapter ends", "TODOS.md");
+    assert_contains_case_insensitive(&todos, "shell-first host-examination surface", "TODOS.md");
+    assert_contains_case_insensitive(&todos, "shell-first host-examination surface", "TODOS.md");
     assert_contains_case_insensitive(
         &todos,
         "artifact track is implemented and proven",

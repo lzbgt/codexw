@@ -22,6 +22,12 @@ Because the participating deployments may not share a host, this slice must
 stay broker-mediated and metadata-oriented rather than trying to share local
 filesystems or direct process state.
 
+This plan also stays inside the current supported experimental adapter
+boundary. The already-supported broker-facing foundation is the shell-first
+host-examination surface; project and dependency metadata should layer on top
+of that surface without implying that artifact index/detail/content routes are
+already supported.
+
 ## First Deliverables
 
 The first implementation slice should include:
@@ -39,6 +45,7 @@ The first slice should defer:
 - automatic dependency discovery from repo analysis
 - global project search across every deployment
 - artifact replication or artifact download semantics
+- any broker-visible artifact index/detail/content route family
 - cross-host workspace synchronization
 - automatic rescheduling of blocked work
 
@@ -100,7 +107,8 @@ The first implementation likely belongs near:
 
 The model should stay lightweight enough that it links deployments and sessions
 through broker-visible metadata rather than attempting a hidden distributed
-runtime.
+runtime. It should not widen the supported adapter boundary from shell-first
+host examination into an implied artifact-browser contract.
 
 ## Proof Expectations
 
@@ -112,6 +120,8 @@ The first implementation should prove all of:
 - handoff creation can reference dependency ids cleanly
 - the model does not require same-host deployment discovery
 - the model does not require artifact routes
+- the model does not silently expand the supported experimental adapter into
+  artifact index/detail/content routes
 
 ## Relationship To The Handoff Lane
 
@@ -144,5 +154,6 @@ The first implementation track is complete when:
 3. broker-facing clients can replay project/dependency state
 4. handoff records can reference dependency ids instead of inventing their own
    hidden graph model
-5. docs and status claims say exactly what is implemented and what remains
-   deferred
+5. docs and status claims say exactly what is implemented, what remains
+   deferred, and that the supported experimental adapter still stops at the
+   shell-first host-examination surface

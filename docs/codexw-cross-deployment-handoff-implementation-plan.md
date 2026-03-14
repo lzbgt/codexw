@@ -21,6 +21,13 @@ Because the participating deployments may live on different hosts, this slice
 must stay broker-mediated rather than relying on same-host deployment
 coexistence.
 
+This plan builds on the current supported experimental adapter boundary rather
+than widening it silently. The already-supported broker-facing foundation is
+the shell-first host-examination surface; this handoff lane adds explicit
+collaboration metadata and workflow on top of that surface without implying
+that broker-visible artifact index/detail/content routes are already part of
+the supported adapter.
+
 ## First Deliverables
 
 The first implementation slice should include:
@@ -41,6 +48,7 @@ The first slice should defer:
 - multi-deployment lease transfer
 - automatic task reassignment between deployments
 - artifact replication or content fetch
+- any broker-visible artifact index/detail/content route family
 - cross-session global search over all handoffs
 - non-broker direct deployment-to-deployment handoff transport
 - any requirement that the collaborating deployments share one host
@@ -121,7 +129,9 @@ The first implementation likely belongs near:
 
 The model should also leave room for a project/dependency metadata layer that
 the broker-facing surfaces can replay without pretending the deployments share
-storage or a filesystem.
+storage or a filesystem. Handoff provenance stays metadata-oriented and
+shell/service/transcript/event-linked; it does not require a broker artifact
+catalog to become part of the supported adapter first.
 
 ## Proof Expectations
 
@@ -135,6 +145,8 @@ The first implementation should prove all of:
 - invalid status transitions fail cleanly
 - handoff events replay in a way broker/WebUI clients can consume
 - handoff provenance refs do not require artifact routes
+- the route family does not silently expand the supported experimental adapter
+  from shell-first host examination into artifact index/detail/content routes
 - broker-mediated collaboration does not assume same-host deployment discovery
 
 ## Relationship To The Sibling Workspace
@@ -159,5 +171,6 @@ The first implementation track is complete when:
 3. accept/decline/complete are replayable state transitions
 4. broker/WebUI clients can render handoff state without inventing artifact
    routes
-5. the proof/docs/status layer says exactly what is implemented and what is
-   still deferred
+5. the proof/docs/status layer says exactly what is implemented, what remains
+   deferred, and that the supported experimental adapter still stops at the
+   shell-first host-examination surface

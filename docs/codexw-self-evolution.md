@@ -236,11 +236,19 @@ The existing `thread_id` model is the most important enabling fact.
 Because `codexw` already treats thread resume as durable and explicit:
 
 - self-evolution can be modeled as “resume the same thread in a newer binary”
-- the handoff artifact does not need to invent a second session model
+- the handoff checkpoint artifact is a local runtime file, not a broker-visible
+  artifact API object
+- the handoff checkpoint artifact does not need to invent a second session
+  model
 - the operator-visible rollback path can remain a plain resume command
 
 This is much safer than trying to migrate transient in-memory editor or event
 state wholesale.
+
+That distinction matters for the broader support boundary too: self-evolution
+does not imply that a broker artifact index/detail/content surface exists. The
+first self-evolution lane is a local checkpoint-and-resume path layered on the
+existing standalone runtime semantics.
 
 ## Relationship To Automation
 

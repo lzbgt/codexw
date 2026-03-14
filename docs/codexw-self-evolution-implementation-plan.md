@@ -20,6 +20,11 @@ Deliver the smallest safe slice that lets a running older `codexw` instance:
 - have that newer binary resume the same thread and operator intent
 - retire the old process only after explicit acknowledgment
 
+This plan is about a local checkpoint-and-resume lane, not a broker artifact
+API. The checkpoint file is a local self-handoff record layered on the
+existing runtime/thread semantics; it does not imply broker-visible artifact
+index/detail/content support.
+
 ## First Deliverables
 
 The first implementation slice should include:
@@ -42,6 +47,7 @@ The first slice should defer:
 - broker-coordinated remote self-upgrade
 - unrestricted automatic repo fetch/pull/update logic
 - cross-host replacement
+- any broker-visible artifact index/detail/content route family
 - replacing the upstream `codex` backend in the same workflow
 - silent always-on auto-upgrade behavior
 - automatic plugin publication or cross-host plugin distribution
