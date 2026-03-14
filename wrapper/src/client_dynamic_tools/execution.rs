@@ -26,6 +26,23 @@ pub(crate) fn execute_dynamic_tool_call(
     execute_dynamic_tool_call_with_state(params, resolved_cwd, &state)
 }
 
+pub(crate) fn legacy_workspace_tool_notice(tool: &str) -> Option<String> {
+    if matches!(
+        tool,
+        "workspace_list_dir"
+            | "workspace_stat_path"
+            | "workspace_read_file"
+            | "workspace_find_files"
+            | "workspace_search_text"
+    ) {
+        Some(format!(
+            "[tool] legacy workspace compatibility path: {tool} is hidden on new threads; this call came from an older session"
+        ))
+    } else {
+        None
+    }
+}
+
 pub(crate) fn execute_dynamic_tool_call_with_state(
     params: &Value,
     resolved_cwd: &str,
@@ -47,9 +64,10 @@ pub(crate) fn execute_dynamic_tool_call_with_state(
         "orchestration_list_dependencies" => {
             orchestration::render_orchestration_dependencies_for_tool(arguments, state)
         }
-        // Retained for already-running older sessions that were given the
+        // Retained only for already-running older sessions that were given the
         // previous workspace tool bundle before new threads stopped
-        // advertising it.
+        // advertising it. New threads should prefer host shell or Python for
+        // workspace inspection.
         "workspace_list_dir" => workspace_list_dir(arguments, resolved_cwd),
         "workspace_stat_path" => workspace_stat_path(arguments, resolved_cwd),
         "workspace_read_file" => workspace_read_file(arguments, resolved_cwd),

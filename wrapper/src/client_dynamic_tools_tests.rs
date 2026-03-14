@@ -76,3 +76,15 @@ fn workspace_tools_remain_executable_for_older_sessions_even_though_not_advertis
     assert!(text.contains("File: hello.txt"));
     assert!(text.contains("   2 | beta"));
 }
+
+#[test]
+fn legacy_workspace_tool_notice_is_limited_to_hidden_compatibility_tools() {
+    let notice = super::legacy_workspace_tool_notice("workspace_read_file")
+        .expect("legacy workspace notice");
+    assert!(notice.contains("workspace_read_file"));
+    assert!(notice.contains("hidden on new threads"));
+    assert!(notice.contains("older session"));
+
+    assert!(super::legacy_workspace_tool_notice("orchestration_status").is_none());
+    assert!(super::legacy_workspace_tool_notice("background_shell_start").is_none());
+}

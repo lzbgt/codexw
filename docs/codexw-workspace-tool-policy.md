@@ -164,6 +164,9 @@ The intended product posture is:
 
 - shell is the general-purpose execution substrate for workspace inspection
 - workspace dynamic tools are no longer advertised by default
+- already-running older threads may still trigger retained workspace helpers,
+  and `codexw` should label that as a legacy compatibility path in operator
+  stderr instead of making it look like normal current-state tool usage
 - wrapper-owned background shell tools exist because async shell control has
   product value and app-server does not expose equivalent public control of
   model-owned command sessions
