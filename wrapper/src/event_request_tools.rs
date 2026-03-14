@@ -87,8 +87,29 @@ pub(crate) fn handle_tool_request(
                             summarize_abandoned_backpressure_context(state, request)
                         })
                         .unwrap_or_default();
+                    let recovery_policy =
+                        crate::supervision_recovery::async_backpressure_recovery_policy_kind(state)
+                            .label();
+                    let recommended_action =
+                        crate::supervision_recovery::async_backpressure_recommended_action(state);
+                    let recovery_options =
+                        crate::supervision_recovery::async_backpressure_recovery_options(
+                            state,
+                            state.realtime_session_id.as_deref(),
+                            resolved_cwd,
+                        )
+                        .into_iter()
+                        .map(|option| {
+                            option
+                                .terminal_command
+                                .or(option.cli_command)
+                                .unwrap_or_else(|| option.kind.to_string())
+                        })
+                        .collect::<Vec<_>>()
+                        .join(",");
                     output.line_stderr(format!(
-                        "[self-supervision] refusing async tool while abandoned backlog is saturated ({backlog}): {}{}",
+                        "[self-supervision] refusing async tool while abandoned backlog is saturated ({backlog}) [{recovery_policy}|{recommended_action}|automation_ready=false] options={} : {}{}",
+                        crate::state::summarize_text(&recovery_options),
                         oldest_summary,
                         oldest_context
                     ))?;

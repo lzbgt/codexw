@@ -70,6 +70,10 @@ The implemented native-side product already has:
 - compact inline prompt recovery options for supervised async shell-tool work,
   currently surfacing next steps such as `:status`, `:interrupt`, and
   `resume`
+- compact inline prompt action/policy semantics for supervised and backlog-only
+  async shell-tool work, so the operator can see `observe_or_interrupt` /
+  `warn_only` versus `interrupt_or_exit_resume` /
+  `operator_interrupt_or_exit_resume` without leaving the prompt
 - first self-supervision classifications for async shell-tool stalls, currently
   `tool_slow` and `tool_wedged`, surfaced in prompt/status output with narrow
   recommended actions such as `observe_or_interrupt` and

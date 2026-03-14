@@ -71,6 +71,9 @@ drift casually:
 - compact backlog-only prompt/status guidance for abandoned async work, so the
   operator still sees those same next steps after the active worker has timed
   out into `async_tool_backpressure`
+- compact prompt-line action/policy semantics for active and backlog-only
+  async work, so the operator can see whether the current state is still
+  warn-only or already in the interrupt/exit-resume posture
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
   supported behavior does not include waiting forever for a wedged tool worker
 - dedicated wrapper worker threads for background-shell dynamic tools

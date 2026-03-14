@@ -133,6 +133,10 @@ or relay without inventing their own heuristics:
   options such as `:status`, `:interrupt`, and `resume` when a supervision
   class is active, instead of only an abstract hint like “observe or
   interrupt”
+- that same inline prompt/backlog status should keep compact action/policy semantics
+  such as `act observe_or_interrupt; pol warn_only` or
+  `act interrupt_or_exit_resume; pol operator_interrupt_or_exit_resume`, so
+  operators do not have to infer severity only from the option list
 - when active work has already timed out into the abandoned backlog, prompt
   and `:status` surfaces should still keep compact next-step guidance visible
   for that backlog state instead of dropping back to a pure stale-summary view

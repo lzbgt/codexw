@@ -99,6 +99,11 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             .filter(|options| !options.is_empty())
             .map(|options| format!("; opts {}", options.join("/")))
             .unwrap_or_default();
+        let recovery_summary = state
+            .oldest_async_tool_supervision_class()
+            .map(prompt_recovery_summary)
+            .map(|summary| format!("; {}", summary))
+            .unwrap_or_default();
         let observation_detail = match observation.observed_background_shell_job.as_ref() {
             Some(job) => {
                 let last_output = job
@@ -148,7 +153,7 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             summarize_inline(&async_tool.worker_thread_name)
         );
         let detail = format!(
-            "{detail} [{}; {}{}{}{}{}; next check {}{}]",
+            "{detail} [{}; {}{}{}{}{}; next check {}{}{}]",
             observation.owner_kind.prompt_label(),
             observation_detail,
             request_detail,
@@ -156,6 +161,7 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             worker_detail,
             target_detail,
             format_elapsed(Some(Instant::now() - async_tool.next_health_check_in())),
+            recovery_summary,
             recovery_options
         );
         return Some((
@@ -230,13 +236,13 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
     let recovery_options =
         crate::supervision_recovery::async_backpressure_recovery_options(state, None, &prompt_cwd)
             .into_iter()
-            .map(|option| match option.kind {
-                "observe_status" => ":status",
-                "interrupt_turn" => ":interrupt",
-                "exit_and_resume" => "resume",
-                _ => option.kind,
-            })
+            .map(prompt_recovery_token)
             .collect::<Vec<_>>();
+    let recovery_summary = format!(
+        "; act {}; pol {}",
+        crate::supervision_recovery::async_backpressure_recommended_action(state),
+        crate::supervision_recovery::async_backpressure_recovery_policy_kind(state).label()
+    );
     let recovery_detail = if recovery_options.is_empty() {
         String::new()
     } else {
@@ -245,7 +251,7 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
     Some((
         abandoned.timed_out_at,
         format!(
-            "{detail}{request_detail}{worker_detail}{source_detail}{target_detail}{observation_detail}{recovery_detail}"
+            "{detail}{request_detail}{worker_detail}{source_detail}{target_detail}{observation_detail}{recovery_summary}{recovery_detail}"
         ),
     ))
 }
@@ -293,13 +299,27 @@ fn prompt_recovery_options(
 ) -> Vec<&'static str> {
     crate::supervision_recovery::supervision_recovery_options(state, None, cwd, classification)
         .into_iter()
-        .map(|option| match option.kind {
-            "observe_status" => ":status",
-            "interrupt_turn" => ":interrupt",
-            "exit_and_resume" => "resume",
-            _ => option.kind,
-        })
+        .map(prompt_recovery_token)
         .collect()
+}
+
+fn prompt_recovery_summary(classification: crate::state::AsyncToolSupervisionClass) -> String {
+    format!(
+        "act {}; pol {}",
+        classification.recommended_action(),
+        classification.recovery_policy_kind().label()
+    )
+}
+
+fn prompt_recovery_token(
+    option: crate::supervision_recovery::SupervisionRecoveryOption,
+) -> &'static str {
+    match option.kind {
+        "observe_status" => ":status",
+        "interrupt_turn" => ":interrupt",
+        "exit_and_resume" => "resume",
+        _ => option.kind,
+    }
 }
 
 fn prompt_render_cwd() -> String {

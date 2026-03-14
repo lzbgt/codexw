@@ -91,6 +91,8 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
     assert!(rendered.contains("req 8"));
     assert!(rendered.contains("worker codexw-bgtool-background_shell_start-8"));
     assert!(rendered.contains("observe or interrupt"));
+    assert!(rendered.contains("act observe_or_interrupt"));
+    assert!(rendered.contains("pol warn_only"));
     assert!(rendered.contains("opts :status/:interrupt"));
 }
 
@@ -121,6 +123,8 @@ fn prompt_status_mentions_compact_recovery_options_when_wedged() {
 
     assert!(rendered.contains("tool_wedged"));
     assert!(rendered.contains("interrupt or exit"));
+    assert!(rendered.contains("act interrupt_or_exit_resume"));
+    assert!(rendered.contains("pol operator_interrupt_or_exit_resume"));
     assert!(rendered.contains("opts :interrupt/resume"));
 }
 
@@ -384,6 +388,8 @@ fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() 
     assert!(rendered.contains("job bg-1 running"));
     assert!(rendered.contains("cmd echo READY; sleep 20"));
     assert!(rendered.contains("READY"));
+    assert!(rendered.contains("act observe_or_interrupt"));
+    assert!(rendered.contains("pol warn_only"));
     assert!(rendered.contains("opts :status/:interrupt"));
 }
 
@@ -412,6 +418,8 @@ fn prompt_status_mentions_saturated_async_backlog() {
     assert!(rendered.contains("async backlog saturated"));
     assert!(rendered.contains("req 1"));
     assert!(rendered.contains("worker codexw-async-tool-worker-1"));
+    assert!(rendered.contains("act interrupt_or_exit_resume"));
+    assert!(rendered.contains("pol operator_interrupt_or_exit_resume"));
     assert!(rendered.contains("opts :status/:interrupt"));
 }
 
