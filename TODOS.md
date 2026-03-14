@@ -18,6 +18,7 @@ Primary source docs:
 - [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
+- [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
 - [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md)
 - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
 - [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
@@ -54,9 +55,16 @@ Concrete tasks:
     inspection model
 - make any remaining artifact-surface gaps explicit whenever broker/client docs
   claim that remote clients can examine host results
+- keep the current workflow-level host-examination read aligned across:
+  - architecture docs
+  - broker status/proof docs
+  - README
+- treat a future dedicated artifact inventory/fetch contract as a separate gap
+  from the already-supported shell/service/transcript remote-control surface
 
 Primary source:
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
+- [docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md)
 - [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md)
 - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)

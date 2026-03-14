@@ -16,6 +16,9 @@ must support:
 This document is the source-of-truth design note for that requirement. It sits
 above the narrower route, adapter, and proof docs.
 
+For the workflow-level read on what remote clients can already inspect today,
+see [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
+
 ## External Baseline
 
 The sibling `~/work/agent` workspace already documents the architecture shape

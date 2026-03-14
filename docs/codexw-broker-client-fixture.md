@@ -18,6 +18,10 @@ Can a real remote client consume the current connector surface coherently enough
 to create a session, drive turns, observe events, inspect orchestration, and
 control shells/services?
 
+In architecture terms, these fixtures also answer a narrower host-examination
+question: can a broker-facing client inspect the host through session,
+transcript, event, shell, and service surfaces without direct terminal access?
+
 These fixtures are the reference clients for that question.
 
 ## Scope
@@ -42,6 +46,10 @@ Supported operations include:
   - `contract`
   - `relabel`
 - capability list / detail
+
+For the workflow-level read on that host-examination question, including the
+remaining artifact-contract gap, see
+[codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
 
 ## Why It Exists
 

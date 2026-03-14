@@ -16,6 +16,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
+    let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
     let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
     let broker_client_arch = read_repo_file("docs/codexw-broker-client-architecture.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
@@ -34,6 +35,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-support-policy.md",
         "docs/codexw-native-hardening-catalog.md",
         "docs/codexw-broker-client-architecture.md",
+        "docs/codexw-broker-host-examination-matrix.md",
         "docs/codexw-workspace-tool-policy.md",
         "docs/codexw-support-claim-checklist.md",
     ] {
@@ -53,6 +55,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &readme,
         "docs/codexw-broker-client-architecture.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-broker-host-examination-matrix.md",
         "README.md",
     );
     assert_contains(
@@ -87,6 +94,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &todos,
         "docs/codexw-broker-client-architecture.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-broker-host-examination-matrix.md",
         "TODOS.md",
     );
     assert_contains(
@@ -209,6 +221,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_client_arch,
         "workspace dynamic tools",
         "docs/codexw-broker-client-architecture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "artifact catalog",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "shell-first",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "usable with caveat",
+        "docs/codexw-broker-host-examination-matrix.md",
     );
     assert_contains_case_insensitive(
         &workspace_policy,

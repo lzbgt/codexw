@@ -20,6 +20,7 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
+- [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
@@ -92,6 +93,13 @@ Status labels:
 | Unsupported broker/client surfaces are explicitly named | strong proof | [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md), explicit process-level rejection coverage in [wrapper/tests/connector_prototype_smoke/aliases/negative.rs](../wrapper/tests/connector_prototype_smoke/aliases/negative.rs) for out-of-scope broker-style `scene` routes, unsupported global broker routes, unknown broker aliases, and disallowed raw proxy / raw proxy SSE paths | No major gap on the currently claimed unsupported surface. |
 | Connector remains thin and local API remains canonical | strong proof | [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md), code organization under `wrapper/src/local_api/*` and `wrapper/src/bin/codexw_connector_prototype/*`, [codexw-broker-connector-mapping.md](codexw-broker-connector-mapping.md), and the negative-proof connector tests in [wrapper/tests/connector_prototype_smoke/aliases/negative.rs](../wrapper/tests/connector_prototype_smoke/aliases/negative.rs) | The remaining work is promotion judgment and long-term architecture choice, not a missing proof surface for the current thin-adapter claim. |
 
+### Client Workflow Coverage
+
+| Workflow | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Remote host examination through session/event/orchestration/shell/service surfaces | strong proof | Route and workflow proof across [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md), [wrapper/tests/connector_prototype_smoke/aliases/session.rs](../wrapper/tests/connector_prototype_smoke/aliases/session.rs), [wrapper/tests/connector_prototype_smoke/aliases/services.rs](../wrapper/tests/connector_prototype_smoke/aliases/services.rs), [wrapper/tests/connector_prototype_smoke/workflows/session.rs](../wrapper/tests/connector_prototype_smoke/workflows/session.rs), [wrapper/tests/connector_prototype_smoke/workflows/services.rs](../wrapper/tests/connector_prototype_smoke/workflows/services.rs), and [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md) | The current broker-visible shell/service/transcript/event surface is already a valid remote host-examination foundation. |
+| Artifact browsing via transcript/event/shell/service references | partial proof | Transcript, SSE, shell detail/poll, service attach/run, and fixture-driven workflows exercised in the same evidence set above, plus the workflow framing in [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md) | `codexw` still lacks a dedicated broker-visible artifact catalog or fetch/download contract; clients must currently assemble artifact understanding from transcript, shell, service, and event references. |
+
 ## Current Read
 
 The current broker/local-API stack already has broad route coverage and
@@ -111,4 +119,6 @@ in [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommend
 Further work is mostly about either reinforcing that recommendation with more
 adversarial stress coverage cataloged in
 [codexw-broker-hardening-catalog.md](codexw-broker-hardening-catalog.md), or
-revising it if contradictory evidence appears.
+revising it if contradictory evidence appears. For the current workflow-level
+host-examination read, including the remaining artifact-contract gap, see
+[codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).

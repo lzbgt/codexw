@@ -645,6 +645,9 @@ client/session/event contracts, and broker-mediated host tooling.
 For the top-level requirement behind that direction, including broker-exposed
 host shell and artifact examination, see
 [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md).
+For the workflow-level read on what remote clients can already inspect versus
+what still lacks a dedicated artifact contract, see
+[docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md).
 
 The dedicated design notes now live in [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md), including:
 

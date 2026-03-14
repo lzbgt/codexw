@@ -11,6 +11,7 @@ This document is the contract-oriented companion to:
 
 - [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
+- [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 
@@ -24,6 +25,8 @@ This contract covers:
 - the connector projection behavior for `client_id` and `lease_seconds`
 - the connector and local-API error expectations relevant to client policy
 - the event/replay guarantees the adapter currently exposes
+- the current remote host-examination foundation built from session, event,
+  shell, and service surfaces
 
 This contract does not claim:
 
@@ -31,6 +34,7 @@ This contract does not claim:
 - multi-daemon lease coordination
 - production deployment/auth semantics
 - compatibility with every future broker route family
+- a dedicated artifact catalog or artifact download API
 
 Those boundaries remain explicit in
 [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md).

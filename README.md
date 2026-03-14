@@ -28,6 +28,9 @@ For the source-of-truth architecture requirement behind that track, see
 `codexw` should support broker-exposed app/WebUI clients and should expose host
 shell examination through the broker-facing surface so those clients can inspect
 the host and resulting artifacts without direct terminal access.
+For the current workflow-level read on what remote clients can already examine
+versus what still lacks a dedicated artifact contract, see
+[docs/codexw-broker-host-examination-matrix.md](docs/codexw-broker-host-examination-matrix.md).
 For a small broker-style client fixture that drives the connector outside the
 test suite, see [docs/codexw-broker-client-fixture.md](docs/codexw-broker-client-fixture.md).
 For a concise implementation/proof snapshot of the broker/local-API adapter,

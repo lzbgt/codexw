@@ -153,6 +153,8 @@ That keeps the first implementation aligned with the existing wrapper architectu
 The broker/local-API design is now split across concrete implementation-facing
 documents:
 
+- [codexw-broker-client-architecture.md](codexw-broker-client-architecture.md)
+- [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
@@ -166,7 +168,6 @@ documents:
 - [codexw-broker-compatibility-target.md](codexw-broker-compatibility-target.md)
 - [codexw-broker-shared-assumptions.md](codexw-broker-shared-assumptions.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
-- [codexw-broker-client-architecture.md](codexw-broker-client-architecture.md)
 - [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)

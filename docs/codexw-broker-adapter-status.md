@@ -48,6 +48,9 @@ state at all. The remaining gap is whether the current broker-visible shell,
 transcript, and result surfaces are sufficient for rich client UX without
 direct terminal access, especially for artifact-heavy inspection workflows.
 
+For that workflow-level read, see
+[codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
+
 ## Implemented Local API Surface
 
 The current local API includes:
