@@ -16,6 +16,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
+    let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
 
     for file in [
@@ -31,6 +32,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-proof-matrix.md",
         "docs/codexw-native-support-policy.md",
         "docs/codexw-native-hardening-catalog.md",
+        "docs/codexw-workspace-tool-policy.md",
         "docs/codexw-support-claim-checklist.md",
     ] {
         let path = repo_root().join(file);
@@ -63,6 +65,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-hardening-catalog.md",
         "README.md",
     );
+    assert_contains(&readme, "bounded read-only fast path", "README.md");
     assert_contains(
         &readme,
         "docs/codexw-support-claim-checklist.md",
@@ -91,6 +94,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-hardening-catalog.md",
         "TODOS.md",
     );
+    assert_contains(&todos, "docs/codexw-workspace-tool-policy.md", "TODOS.md");
     assert_contains(&todos, "docs/codexw-support-claim-checklist.md", "TODOS.md");
 
     assert_contains(
@@ -178,6 +182,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &native_hardening,
         "not currently a blocker",
         "docs/codexw-native-hardening-catalog.md",
+    );
+    assert_contains_case_insensitive(
+        &workspace_policy,
+        "shell or python",
+        "docs/codexw-workspace-tool-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &workspace_policy,
+        "bounded read-only",
+        "docs/codexw-workspace-tool-policy.md",
     );
 
     assert_contains(

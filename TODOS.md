@@ -16,6 +16,7 @@ Primary source docs:
 - [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
 - [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
+- [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
 - [docs/codexw-broker-adapter-contract.md](docs/codexw-broker-adapter-contract.md)
 - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
 - [docs/codexw-broker-client-policy.md](docs/codexw-broker-client-policy.md)
