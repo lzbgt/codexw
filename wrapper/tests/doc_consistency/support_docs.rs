@@ -2740,6 +2740,26 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "scripts/codexw_broker_client_node.mjs",
         "docs/codexw-broker-client-fixture.md",
     );
+    assert_contains(
+        &broker_fixture,
+        "supervision_notice",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_fixture,
+        "`recommended_action`, `recovery_policy`, and `recovery_options`",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_fixture,
+        "oldest_request_id",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_status,
+        "connector-layer SSE framing proof",
+        "docs/codexw-broker-adapter-status.md",
+    );
 
     assert_contains(
         &broker_hardening,

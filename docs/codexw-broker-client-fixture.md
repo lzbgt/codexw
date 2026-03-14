@@ -193,6 +193,10 @@ read as a semantic supervision client, not a prompt scraper. The expected
 broker-visible shape is:
 
 - `status.updated` carries async-tool supervision state
+- the sticky `supervision_notice` object carries the same current request/thread,
+  owner-lane, source/target correlation, inspection facts, and explicit
+  `recommended_action`, `recovery_policy`, and `recovery_options` as the active
+  supervision slice
 - the owner lane is explicit, currently `wrapper_background_shell`
 - the source request is explicit through `source_call_id`
 - if the wrapper lane has already started a shell job, the payload carries a
@@ -200,6 +204,10 @@ broker-visible shape is:
   status, command, and recent output lines
 - worker/backlog inspection comes from `async_tool_workers` and
   `async_tool_backpressure`, not from inferring hidden background-task APIs
+- `async_tool_backpressure` carries explicit backlog `recommended_action`,
+  `recovery_policy`, and `recovery_options`, plus oldest-worker identity such as
+  `oldest_request_id` / `oldest_thread_name` and retained correlation facts such
+  as `oldest_source_call_id` and `oldest_target_background_shell_job_id`
 
 ## Example Workflows
 

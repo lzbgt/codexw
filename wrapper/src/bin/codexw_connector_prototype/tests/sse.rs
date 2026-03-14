@@ -36,12 +36,55 @@ fn wrap_event_payload_falls_back_to_string_for_non_json_data() {
 }
 
 #[test]
+fn wrap_event_payload_preserves_supervision_and_backpressure_contract_fields() {
+    let wrapped = wrap_event_payload(
+        vec![r#"{"session":{"supervision_notice":{"classification":"tool_wedged","recommended_action":"interrupt_or_exit_resume","recovery_policy":{"kind":"operator_interrupt_or_exit_resume","automation_ready":false},"recovery_options":[{"kind":"observe_status"},{"kind":"interrupt_turn"},{"kind":"exit_and_resume"}],"request_id":"7","thread_name":"codexw-async-7","owner":"wrapper_background_shell","source_call_id":"call-7","target_background_shell_reference":"dev.api","target_background_shell_job_id":"bg-1","observation_state":"recent_output_observed","output_state":"recent_output_observed","observed_background_shell_job":{"job_id":"bg-1","status":"running","command":"npm run dev"}},"async_tool_backpressure":{"abandoned_request_count":2,"saturated":true,"recommended_action":"interrupt_or_exit_resume","recovery_policy":{"kind":"operator_interrupt_or_exit_resume","automation_ready":false},"recovery_options":[{"kind":"observe_status"},{"kind":"interrupt_turn"},{"kind":"exit_and_resume"}],"oldest_request_id":"7","oldest_thread_name":"codexw-async-7","oldest_source_call_id":"call-7","oldest_target_background_shell_reference":"dev.api","oldest_target_background_shell_job_id":"bg-1","oldest_observation_state":"recent_output_observed","oldest_output_state":"recent_output_observed","oldest_observed_background_shell_job":{"job_id":"bg-1","status":"running","command":"npm run dev"}}}}"#.to_string()],
+        "codexw-lab",
+        "mac-mini-01",
+    );
+    let json: Value = serde_json::from_str(&wrapped).expect("valid json");
+
+    assert_eq!(
+        json["data"]["session"]["supervision_notice"]["recommended_action"],
+        "interrupt_or_exit_resume"
+    );
+    assert_eq!(
+        json["data"]["session"]["supervision_notice"]["recovery_policy"]["kind"],
+        "operator_interrupt_or_exit_resume"
+    );
+    assert_eq!(
+        json["data"]["session"]["supervision_notice"]["thread_name"],
+        "codexw-async-7"
+    );
+    assert_eq!(
+        json["data"]["session"]["async_tool_backpressure"]["recommended_action"],
+        "interrupt_or_exit_resume"
+    );
+    assert_eq!(
+        json["data"]["session"]["async_tool_backpressure"]["recovery_options"][2]["kind"],
+        "exit_and_resume"
+    );
+    assert_eq!(
+        json["data"]["session"]["async_tool_backpressure"]["oldest_request_id"],
+        "7"
+    );
+    assert_eq!(
+        json["data"]["session"]["async_tool_backpressure"]["oldest_observed_background_shell_job"]
+            ["job_id"],
+        "bg-1"
+    );
+}
+
+#[test]
 fn complete_sse_lines_preserves_fragmented_first_data_line_until_newline_arrives() {
     let mut pending = String::new();
 
-    let first = complete_sse_lines("data: {\"async_tool_back", &mut pending);
+    let first = complete_sse_lines(
+        "data: {\"async_tool_backpressure\":{\"abandoned_request_count\":1,\"recommended_action\":\"observe_or_in",
+        &mut pending,
+    );
     let second = complete_sse_lines(
-        "pressure\":{\"abandoned_request_count\":1}}\n\n",
+        "terrupt\",\"recovery_policy\":{\"kind\":\"warn_only\",\"automation_ready\":false},\"recovery_options\":[{\"kind\":\"observe_status\",\"local_api_path\":\"/sessions/sess_1/status\"}],\"oldest_request_id\":\"7\"}}\n\n",
         &mut pending,
     );
 
@@ -49,7 +92,7 @@ fn complete_sse_lines_preserves_fragmented_first_data_line_until_newline_arrives
     assert_eq!(
         second,
         vec![
-            "data: {\"async_tool_backpressure\":{\"abandoned_request_count\":1}}".to_string(),
+            "data: {\"async_tool_backpressure\":{\"abandoned_request_count\":1,\"recommended_action\":\"observe_or_interrupt\",\"recovery_policy\":{\"kind\":\"warn_only\",\"automation_ready\":false},\"recovery_options\":[{\"kind\":\"observe_status\",\"local_api_path\":\"/sessions/sess_1/status\"}],\"oldest_request_id\":\"7\"}}".to_string(),
             "".to_string()
         ]
     );

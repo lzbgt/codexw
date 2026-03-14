@@ -201,6 +201,10 @@ the real connector binary:
 - broker-visible recovery options such as `observe_status`, `interrupt_turn`,
   and `exit_and_resume`, including concrete local-API path or CLI command
   fields where available
+- connector-layer SSE framing proof that preserves structured
+  `supervision_notice` and `async_tool_backpressure` JSON, including backlog
+  `recommended_action`, `recovery_policy`, `recovery_options`, and
+  `oldest_request_id`, even when the first upstream `data:` line is fragmented
 - broker-visible `async_tool_backpressure` for abandoned async worker backlog
   count/saturation visibility, backlog-level `recommended_action` /
   `recovery_policy`, and refusal-context rendering
