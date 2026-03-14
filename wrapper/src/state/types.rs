@@ -247,6 +247,7 @@ pub(crate) struct AsyncToolHealthCheck {
     pub(crate) source_call_id: Option<String>,
     pub(crate) worker_thread_name: String,
     pub(crate) elapsed: Duration,
+    pub(crate) next_health_check_in: Duration,
     pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
     pub(crate) observation_state: AsyncToolObservationState,
     pub(crate) output_state: AsyncToolOutputState,

@@ -151,6 +151,16 @@ The same audit trail should keep the concrete tool summary or shell command
 visible in periodic inspection notices, so the operator is not left with only
 a generic background-tool label while the worker remains unresolved.
 
+Those live inspection notices should also keep the structured supervision facts
+visible in-line:
+
+- observation state
+- output state
+- source call id when available
+- next planned health check horizon
+- matched `bg-*` job id, status, command, line count, output age, and latest
+  output preview when available
+
 That slice should stay explicit about its limit: it is an inspection-ready
 worker-lifecycle report, not yet a proof that a blocking call inside the worker
 thread is still making forward progress.

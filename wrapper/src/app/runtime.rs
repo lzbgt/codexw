@@ -39,6 +39,7 @@ use crate::runtime_process::effective_cwd;
 use crate::runtime_process::shutdown_child;
 use crate::runtime_process::spawn_server;
 use crate::state::AppState;
+use crate::state::AsyncToolHealthCheck;
 use crate::state::SupervisionNoticeTransition;
 
 pub(crate) fn run(cli: Cli) -> Result<()> {
@@ -247,46 +248,7 @@ fn handle_supervision_tick(
         )?;
     }
     for check in state.collect_due_async_tool_health_checks() {
-        let inspection = match check.supervision_classification {
-            Some(classification) => format!(
-                "{}|{}",
-                classification.label(),
-                classification.recommended_action()
-            ),
-            None => "monitoring".to_string(),
-        };
-        let observation = match check.observed_background_shell_job.as_ref() {
-            Some(job) => {
-                let output = job
-                    .latest_output_preview()
-                    .map(|line| format!("; output {}", crate::state::summarize_text(line)))
-                    .unwrap_or_default();
-                format!(
-                    "{} {} via {} {} {}; command {}{}",
-                    check.observation_state.label(),
-                    check.owner_kind.label(),
-                    check.worker_thread_name,
-                    job.job_id,
-                    job.status,
-                    crate::state::summarize_text(&job.command),
-                    output
-                )
-            }
-            None => format!(
-                "{} {} via {}",
-                check.observation_state.label(),
-                check.owner_kind.label(),
-                check.worker_thread_name
-            ),
-        };
-        output.line_stderr(format!(
-            "[self-supervision] async worker check {}s [{}] {} for {}: {}",
-            check.elapsed.as_secs(),
-            inspection,
-            observation,
-            check.tool,
-            check.summary
-        ))?;
+        output.line_stderr(format_async_tool_health_check_line(&check))?;
     }
     match state.refresh_async_tool_supervision_notice() {
         Some(SupervisionNoticeTransition::Raised(notice)) => {
@@ -305,6 +267,65 @@ fn handle_supervision_tick(
         None => {}
     }
     Ok(())
+}
+
+fn format_async_tool_health_check_line(check: &AsyncToolHealthCheck) -> String {
+    let inspection = match check.supervision_classification {
+        Some(classification) => format!(
+            "{}|{}",
+            classification.label(),
+            classification.recommended_action()
+        ),
+        None => "monitoring".to_string(),
+    };
+    let call = check
+        .source_call_id
+        .as_deref()
+        .map(|value| format!(" call={value}"))
+        .unwrap_or_default();
+    let observation = match check.observed_background_shell_job.as_ref() {
+        Some(job) => {
+            let output_age = job
+                .last_output_age
+                .map(|age| format!(" output_age={}s", age.as_secs()))
+                .unwrap_or_default();
+            let output = job
+                .latest_output_preview()
+                .map(|line| format!(" output={}", crate::state::summarize_text(line)))
+                .unwrap_or_default();
+            format!(
+                "{}|{} {} via {}{} job={} {} lines={} command={}{}{}",
+                check.observation_state.label(),
+                check.output_state.label(),
+                check.owner_kind.label(),
+                check.worker_thread_name,
+                call,
+                job.job_id,
+                job.status,
+                job.total_lines,
+                crate::state::summarize_text(&job.command),
+                output_age,
+                output
+            )
+        }
+        None => format!(
+            "{}|{} {} via {}{}",
+            check.observation_state.label(),
+            check.output_state.label(),
+            check.owner_kind.label(),
+            check.worker_thread_name,
+            call
+        ),
+    };
+    format!(
+        "[self-supervision] async worker check {}s [{}] {} next={}s for {}: {}",
+        check.elapsed.as_secs(),
+        inspection,
+        observation,
+        check.next_health_check_in.as_secs(),
+        check.tool,
+        check.summary
+    )
 }
 
 fn handle_input_key(
@@ -427,6 +448,80 @@ mod tests {
         state.finish_async_tool_request(&RequestId::Integer(7));
         handle_supervision_tick(&mut state, &mut output, &mut writer).expect("clear notice");
         assert!(state.active_supervision_notice.is_none());
+    }
+
+    #[test]
+    fn format_async_tool_health_check_line_reports_started_silent_job_details() {
+        let line = format_async_tool_health_check_line(&AsyncToolHealthCheck {
+            request_id: "9".to_string(),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 20 tool=background_shell_start".to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: Some("call-999".to_string()),
+            worker_thread_name: "codexw-bgtool-background_shell_start-9".to_string(),
+            elapsed: std::time::Duration::from_secs(18),
+            next_health_check_in: std::time::Duration::from_secs(5),
+            supervision_classification: Some(crate::state::AsyncToolSupervisionClass::ToolSlow),
+            observation_state:
+                crate::state::AsyncToolObservationState::WrapperBackgroundShellStartedNoOutputYet,
+            output_state: crate::state::AsyncToolOutputState::NoOutputObservedYet,
+            observed_background_shell_job: Some(
+                crate::state::AsyncToolObservedBackgroundShellJob {
+                    job_id: "bg-9".to_string(),
+                    status: "running".to_string(),
+                    command: "sleep 20".to_string(),
+                    total_lines: 0,
+                    last_output_age: None,
+                    recent_lines: Vec::new(),
+                },
+            ),
+        });
+
+        assert!(line.contains("async worker check 18s"));
+        assert!(line.contains("[tool_slow|observe_or_interrupt]"));
+        assert!(
+            line.contains("wrapper_background_shell_started_no_output_yet|no_output_observed_yet")
+        );
+        assert!(line.contains("call=call-999"));
+        assert!(line.contains("job=bg-9 running"));
+        assert!(line.contains("lines=0"));
+        assert!(line.contains("command=sleep 20"));
+        assert!(line.contains("next=5s"));
+    }
+
+    #[test]
+    fn format_async_tool_health_check_line_reports_streaming_output_details() {
+        let line = format_async_tool_health_check_line(&AsyncToolHealthCheck {
+            request_id: "10".to_string(),
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=python stage2.py --quick tool=background_shell_start"
+                .to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: Some("call-1000".to_string()),
+            worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
+            elapsed: std::time::Duration::from_secs(24),
+            next_health_check_in: std::time::Duration::from_secs(9),
+            supervision_classification: Some(crate::state::AsyncToolSupervisionClass::ToolSlow),
+            observation_state:
+                crate::state::AsyncToolObservationState::WrapperBackgroundShellStreamingOutput,
+            output_state: crate::state::AsyncToolOutputState::RecentOutputObserved,
+            observed_background_shell_job: Some(
+                crate::state::AsyncToolObservedBackgroundShellJob {
+                    job_id: "bg-10".to_string(),
+                    status: "running".to_string(),
+                    command: "python stage2.py --quick".to_string(),
+                    total_lines: 3,
+                    last_output_age: Some(std::time::Duration::from_secs(2)),
+                    recent_lines: vec!["stage1 ok".to_string(), "READY".to_string()],
+                },
+            ),
+        });
+
+        assert!(line.contains("wrapper_background_shell_streaming_output|recent_output_observed"));
+        assert!(line.contains("output_age=2s"));
+        assert!(line.contains("output=READY"));
+        assert!(line.contains("next=9s"));
+        assert!(line.contains("job=bg-10 running"));
     }
 
     #[test]

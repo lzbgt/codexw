@@ -122,6 +122,10 @@ or relay without inventing their own heuristics:
 - periodic inspection notices should keep the concrete tool summary or shell
   command visible instead of collapsing the task to only a generic tool label
   fields instead of forcing prompt scraping
+- those live inspection notices should also expose the observation state,
+  output state, source call id when present, and the orchestrator's next check
+  horizon so the operator can see what will be re-evaluated next without
+  opening `:status`
 
 The first emitted recovery signal should also be sticky enough to notice:
 

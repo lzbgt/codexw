@@ -938,6 +938,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-product-status.md",
     );
     assert_contains_case_insensitive(
+        &native_status,
+        "source call id",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
+        "next-check",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
         &native_proof,
         "terminal-first",
         "docs/codexw-native-proof-matrix.md",
@@ -1086,6 +1096,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "last_output_age_seconds",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "source call id",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "next-check",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -1315,6 +1335,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
+        &self_supervision,
+        "source call id",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "next check",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
         &self_supervision_plan,
         "background-shell dynamic tools",
         "docs/codexw-self-supervision-implementation-plan.md",
@@ -1407,6 +1437,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &self_supervision_plan,
         "stale_output_observed",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "source call id",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "next planned health check horizon",
         "docs/codexw-self-supervision-implementation-plan.md",
     );
     assert_contains_case_insensitive(

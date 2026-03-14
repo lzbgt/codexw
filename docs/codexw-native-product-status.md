@@ -95,6 +95,9 @@ The implemented native-side product already has:
   observation state plus the orchestrator's next planned health check horizon
 - explicit output-freshness visibility for correlated wrapper shell work,
   including `output_state` and `last_output_age_seconds`
+- live self-supervision inspection notices that echo those facts directly in
+  the terminal, including source call id and next-check timing, rather than
+  leaving them only in `:status` or local-API snapshots
 - correlation from wrapper-owned `background_shell_start` requests to the
   observed `bg-*` shell job via source `callId`, so prompt/status/local-API
   surfaces can show job id, job status, command, and recent output preview

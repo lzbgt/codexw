@@ -331,6 +331,7 @@ impl AppState {
                     source_call_id: activity.source_call_id.clone(),
                     worker_thread_name: activity.worker_thread_name.clone(),
                     elapsed,
+                    next_health_check_in: next_interval,
                     supervision_classification:
                         super::AsyncToolActivity::supervision_class_at_elapsed(elapsed),
                     observation_state: observation.observation_state,

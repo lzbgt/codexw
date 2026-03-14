@@ -79,6 +79,9 @@ drift casually:
 - explicit async-worker output freshness through `output_state` and
   `last_output_age_seconds` when a correlated wrapper shell job has emitted
   output
+- live self-supervision inspection notices that include observation/output
+  state, source call id when present, and next-check timing in the terminal
+  stream
 - correlated wrapper-shell inspection facts, so a supervised
   `background_shell_start` can surface the matched `bg-*` job id, job status,
   command, and recent output preview when those facts exist
