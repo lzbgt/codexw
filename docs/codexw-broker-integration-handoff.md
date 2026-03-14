@@ -87,10 +87,15 @@ rely on broker-visible supervision facts rather than only a generic tool name:
 - narrow actions such as `observe_or_interrupt` and
   `interrupt_or_exit_resume`
 - explicit owner-lane facts such as `wrapper_background_shell`
+- explicit silent-started versus streaming output states such as
+  `wrapper_background_shell_started_no_output_yet`,
+  `wrapper_background_shell_streaming_output`, and matching output freshness
+  values such as `no_output_observed_yet`, `recent_output_observed`, and
+  `stale_output_observed`
 - source request correlation through `source_call_id`
 - matched `observed_background_shell_job` detail with `job_id`, `status`,
-  `command`, and recent output preview when the wrapper shell lane has already
-  started a `bg-*` job
+  `command`, `total_lines`, `last_output_age_seconds`, and recent output
+  preview when the wrapper shell lane has already started a `bg-*` job
 - abandoned-backlog visibility through `async_tool_backpressure`
 - dedicated worker inspection through `async_tool_workers`
 

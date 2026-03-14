@@ -308,6 +308,85 @@ fn status_snapshot_marks_correlated_background_shell_output_as_stale() {
 }
 
 #[test]
+fn status_snapshot_marks_correlated_background_shell_started_without_output_yet() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+    state.turn_running = true;
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(42),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 20 tool=background_shell_start".to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: Some("call-42".to_string()),
+            worker_thread_name: "codexw-bgtool-background_shell_start-42".to_string(),
+            started_at: std::time::Instant::now() - std::time::Duration::from_secs(25),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
+        },
+    );
+    let _ = state
+        .orchestration
+        .background_shells
+        .start_from_tool_with_context(
+            &serde_json::json!({
+                "command": "sleep 20",
+                "intent": "observation",
+            }),
+            "/tmp",
+            crate::background_shells::BackgroundShellOrigin {
+                source_thread_id: Some("thread-1".to_string()),
+                source_call_id: Some("call-42".to_string()),
+                source_tool: Some("background_shell_start".to_string()),
+            },
+        );
+    let observation = state.async_tool_observation(
+        state
+            .active_async_tool_requests
+            .get(&crate::rpc::RequestId::Integer(42))
+            .expect("active async tool"),
+    );
+    let cli = crate::runtime_process::normalize_cli(Cli {
+        codex_bin: "codex".to_string(),
+        config_overrides: Vec::new(),
+        enable_features: Vec::new(),
+        disable_features: Vec::new(),
+        resume: None,
+        resume_picker: false,
+        cwd: None,
+        model: None,
+        model_provider: None,
+        auto_continue: true,
+        verbose_events: false,
+        verbose_thinking: true,
+        raw_json: false,
+        no_experimental_api: false,
+        yolo: false,
+        local_api: false,
+        local_api_bind: "127.0.0.1:0".to_string(),
+        local_api_token: None,
+        prompt: Vec::new(),
+    });
+
+    let rendered = render_status_runtime(&cli, &state).join("\n");
+
+    assert_eq!(
+        observation.observation_state.label(),
+        "wrapper_background_shell_started_no_output_yet"
+    );
+    assert_eq!(observation.output_state.label(), "no_output_observed_yet");
+    assert!(rendered.contains("async obs       wrapper_background_shell_started_no_output_yet"));
+    assert!(rendered.contains("async out       no_output_observed_yet"));
+    assert!(rendered.contains("async job       bg-1 running"));
+    assert!(rendered.contains("async lines     0"));
+    assert!(rendered.contains("async worker ob wrapper_background_shell_started_no_output_yet"));
+    assert!(rendered.contains("async worker os no_output_observed_yet"));
+    assert!(observation.observed_background_shell_job.is_some());
+}
+
+#[test]
 fn status_snapshot_includes_abandoned_async_backpressure() {
     let mut state = crate::state::AppState::new(true, false);
     state.thread_id = Some("thread-1".to_string());

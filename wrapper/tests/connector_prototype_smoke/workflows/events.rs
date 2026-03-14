@@ -952,3 +952,271 @@ fn connector_broker_style_status_workflow_handles_supervision_event_resume() -> 
     fake_server.join().expect("fake server thread")?;
     Ok(())
 }
+
+#[test]
+fn connector_broker_style_status_workflow_proves_started_but_silent_shell_state() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..3 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/new");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "session": {
+                                "session_id": "sess_1",
+                                "attachment": {
+                                    "client_id": "remote-web",
+                                    "lease_seconds": 45
+                                },
+                                "async_tool_supervision": {
+                                    "classification": "tool_slow",
+                                    "recommended_action": "observe_or_interrupt",
+                                    "recovery_policy": {
+                                        "kind": "warn_only",
+                                        "automation_ready": false
+                                    },
+                                    "recovery_options": [
+                                        {
+                                            "kind": "observe_status",
+                                            "label": "Observe current session status",
+                                            "automation_ready": false,
+                                            "cli_command": null,
+                                            "local_api_method": "GET",
+                                            "local_api_path": "/api/v1/session/sess_1"
+                                        }
+                                    ],
+                                    "owner": "wrapper_background_shell",
+                                    "source_call_id": "call_999",
+                                    "tool": "background_shell_start",
+                                    "summary": "arguments= command=sleep 20 tool=background_shell_start",
+                                    "observation_state": "wrapper_background_shell_started_no_output_yet",
+                                    "output_state": "no_output_observed_yet",
+                                    "observed_background_shell_job": {
+                                        "job_id": "bg-9",
+                                        "status": "running",
+                                        "command": "sleep 20",
+                                        "total_lines": 0,
+                                        "last_output_age_seconds": null,
+                                        "recent_lines": []
+                                    },
+                                    "elapsed_seconds": 18,
+                                    "next_check_in_seconds": 5,
+                                    "active_request_count": 1
+                                },
+                                "async_tool_workers": [
+                                    {
+                                        "request_id": "9",
+                                        "lifecycle_state": "running",
+                                        "thread_name": "codexw-bgtool-background_shell_start-9",
+                                        "owner": "wrapper_background_shell",
+                                        "source_call_id": "call_999",
+                                        "tool": "background_shell_start",
+                                        "summary": "arguments= command=sleep 20 tool=background_shell_start",
+                                        "observation_state": "wrapper_background_shell_started_no_output_yet",
+                                        "output_state": "no_output_observed_yet",
+                                        "observed_background_shell_job": {
+                                            "job_id": "bg-9",
+                                            "status": "running",
+                                            "command": "sleep 20",
+                                            "total_lines": 0,
+                                            "last_output_age_seconds": null,
+                                            "recent_lines": []
+                                        },
+                                        "next_check_in_seconds": 5,
+                                        "runtime_elapsed_seconds": 18,
+                                        "state_elapsed_seconds": 18,
+                                        "hard_timeout_seconds": 120,
+                                        "supervision_classification": "tool_slow"
+                                    }
+                                ]
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/events");
+                    let payload = serde_json::to_string(&json!({
+                        "session_id": "sess_1",
+                        "thread_id": "thread_1",
+                        "turn_running": true,
+                        "async_tool_supervision": {
+                            "classification": "tool_slow",
+                            "recommended_action": "observe_or_interrupt",
+                            "recovery_policy": {
+                                "kind": "warn_only",
+                                "automation_ready": false
+                            },
+                            "recovery_options": [
+                                {
+                                    "kind": "observe_status",
+                                    "label": "Observe current session status",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "GET",
+                                    "local_api_path": "/api/v1/session/sess_1"
+                                }
+                            ],
+                            "owner": "wrapper_background_shell",
+                            "source_call_id": "call_999",
+                            "tool": "background_shell_start",
+                            "summary": "arguments= command=sleep 20 tool=background_shell_start",
+                            "observation_state": "wrapper_background_shell_started_no_output_yet",
+                            "output_state": "no_output_observed_yet",
+                            "observed_background_shell_job": {
+                                "job_id": "bg-9",
+                                "status": "running",
+                                "command": "sleep 20",
+                                "total_lines": 0,
+                                "last_output_age_seconds": Value::Null,
+                                "recent_lines": []
+                            },
+                            "elapsed_seconds": 18,
+                            "next_check_in_seconds": 5,
+                            "active_request_count": 1
+                        },
+                        "async_tool_workers": [
+                            {
+                                "request_id": "9",
+                                "lifecycle_state": "running",
+                                "thread_name": "codexw-bgtool-background_shell_start-9",
+                                "owner": "wrapper_background_shell",
+                                "source_call_id": "call_999",
+                                "tool": "background_shell_start",
+                                "summary": "arguments= command=sleep 20 tool=background_shell_start",
+                                "observation_state": "wrapper_background_shell_started_no_output_yet",
+                                "output_state": "no_output_observed_yet",
+                                "observed_background_shell_job": {
+                                    "job_id": "bg-9",
+                                    "status": "running",
+                                    "command": "sleep 20",
+                                    "total_lines": 0,
+                                    "last_output_age_seconds": Value::Null,
+                                    "recent_lines": []
+                                },
+                                "next_check_in_seconds": 5,
+                                "runtime_elapsed_seconds": 18,
+                                "state_elapsed_seconds": 18,
+                                "hard_timeout_seconds": 120,
+                                "supervision_classification": "tool_slow"
+                            }
+                        ]
+                    }))?;
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "text/event-stream")],
+                        format!(": heartbeat\nid: 50\nevent: status.updated\ndata: {payload}\n\n")
+                            .as_bytes(),
+                    )?;
+                }
+                2 => {
+                    assert_eq!(request.method, "GET");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/events");
+                    let payload = serde_json::to_string(&json!({
+                        "session_id": "sess_1",
+                        "thread_id": "thread_1",
+                        "turn_running": true,
+                        "async_tool_supervision": {
+                            "classification": "tool_slow",
+                            "recommended_action": "observe_or_interrupt",
+                            "recovery_policy": {
+                                "kind": "warn_only",
+                                "automation_ready": false
+                            },
+                            "recovery_options": [
+                                {
+                                    "kind": "observe_status",
+                                    "label": "Observe current session status",
+                                    "automation_ready": false,
+                                    "cli_command": Value::Null,
+                                    "local_api_method": "GET",
+                                    "local_api_path": "/api/v1/session/sess_1"
+                                }
+                            ],
+                            "owner": "wrapper_background_shell",
+                            "source_call_id": "call_999",
+                            "tool": "background_shell_start",
+                            "summary": "arguments= command=sleep 20 tool=background_shell_start",
+                            "observation_state": "wrapper_background_shell_streaming_output",
+                            "output_state": "recent_output_observed",
+                            "observed_background_shell_job": {
+                                "job_id": "bg-9",
+                                "status": "running",
+                                "command": "sleep 20",
+                                "total_lines": 1,
+                                "last_output_age_seconds": 1,
+                                "recent_lines": ["READY"]
+                            },
+                            "elapsed_seconds": 24,
+                            "next_check_in_seconds": 9,
+                            "active_request_count": 1
+                        }
+                    }))?;
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "text/event-stream")],
+                        format!(": heartbeat\nid: 51\nevent: status.updated\ndata: {payload}\n\n")
+                            .as_bytes(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let client = BrokerClient::new(connector_port, "codexw-lab");
+    let create_response = client.create_session(
+        "{\"thread_id\":\"thread_1\"}",
+        &[
+            ("Content-Type", "application/json"),
+            ("X-Codexw-Client-Id", "remote-web"),
+            ("X-Codexw-Lease-Seconds", "45"),
+        ],
+    )?;
+    assert!(create_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(create_response.contains("wrapper_background_shell_started_no_output_yet"));
+    assert!(create_response.contains("\"output_state\":\"no_output_observed_yet\""));
+    assert!(create_response.contains("\"job_id\":\"bg-9\""));
+    assert!(create_response.contains("\"total_lines\":0"));
+
+    let initial_events = client.session_request("GET", "sess_1", "/events", None, &[])?;
+    assert!(initial_events.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(initial_events.contains("event: status.updated\n"));
+    assert!(initial_events.contains("wrapper_background_shell_started_no_output_yet"));
+    assert!(initial_events.contains("\"output_state\":\"no_output_observed_yet\""));
+    assert!(initial_events.contains("\"last_output_age_seconds\":null"));
+    assert!(initial_events.contains("\"total_lines\":0"));
+
+    let resumed_events =
+        client.session_request("GET", "sess_1", "/events", None, &[("Last-Event-ID", "50")])?;
+    assert!(resumed_events.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(resumed_events.contains("event: status.updated\n"));
+    assert!(resumed_events.contains("wrapper_background_shell_streaming_output"));
+    assert!(resumed_events.contains("\"output_state\":\"recent_output_observed\""));
+    assert!(resumed_events.contains("\"last_output_age_seconds\":1"));
+    assert!(resumed_events.contains("\"total_lines\":1"));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}

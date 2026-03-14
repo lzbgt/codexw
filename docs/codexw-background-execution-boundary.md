@@ -112,10 +112,17 @@ worker as equally opaque.
 For wrapper-owned background shell work, it can distinguish at least:
 
 - no job or output observed yet
-- background shell job started but still silent
+- background shell job started but still silent, currently
+  `wrapper_background_shell_started_no_output_yet`
 - background shell job streaming output
 - background shell job reached a terminal state but the dynamic tool response
   still has not returned
+
+And it can report output freshness separately:
+
+- `no_output_observed_yet`
+- `recent_output_observed`
+- `stale_output_observed`
 
 That still is not a true forward-progress oracle for the worker thread itself.
 It is a stronger inspection lane:

@@ -633,7 +633,22 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_policy,
+        "wrapper_background_shell_started_no_output_yet",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "no_output_observed_yet",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
         "observed_background_shell_job",
+        "docs/codexw-broker-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_policy,
+        "last_output_age_seconds",
         "docs/codexw-broker-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -990,6 +1005,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &background_execution_boundary,
         "source call id",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "wrapper_background_shell_started_no_output_yet",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "no_output_observed_yet",
         "docs/codexw-background-execution-boundary.md",
     );
     assert_contains_case_insensitive(
@@ -1516,6 +1541,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_host_matrix,
+        "wrapper_background_shell_started_no_output_yet",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "no_output_observed_yet",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_host_matrix,
         "observed_background_shell_job",
         "docs/codexw-broker-host-examination-matrix.md",
     );
@@ -1556,7 +1591,22 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_handoff,
+        "wrapper_background_shell_started_no_output_yet",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "no_output_observed_yet",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
         "observed_background_shell_job",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "last_output_age_seconds",
         "docs/codexw-broker-integration-handoff.md",
     );
     assert_contains_case_insensitive(

@@ -149,6 +149,61 @@ fn prompt_status_mentions_correlated_background_job_output_when_observed() {
 }
 
 #[test]
+fn prompt_status_mentions_correlated_background_job_started_without_output_yet() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.turn_running = true;
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(19),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=sleep 20 tool=background_shell_start".to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: Some("call-19".to_string()),
+            worker_thread_name: "codexw-bgtool-background_shell_start-19".to_string(),
+            started_at: Instant::now() - Duration::from_secs(20),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
+        },
+    );
+    let _ = state
+        .orchestration
+        .background_shells
+        .start_from_tool_with_context(
+            &json!({
+                "command": "sleep 20",
+                "intent": "observation",
+            }),
+            "/tmp",
+            crate::background_shells::BackgroundShellOrigin {
+                source_thread_id: Some("thread-1".to_string()),
+                source_call_id: Some("call-19".to_string()),
+                source_tool: Some("background_shell_start".to_string()),
+            },
+        );
+
+    let observation = state.async_tool_observation(
+        state
+            .active_async_tool_requests
+            .get(&crate::rpc::RequestId::Integer(19))
+            .expect("active async tool"),
+    );
+
+    let rendered = render_prompt_status(&state);
+
+    assert_eq!(
+        observation.observation_state.label(),
+        "wrapper_background_shell_started_no_output_yet"
+    );
+    assert_eq!(observation.output_state.label(), "no_output_observed_yet");
+    assert!(rendered.contains("job started; awaiting output"));
+    assert!(rendered.contains("no output yet"));
+    assert!(rendered.contains("job bg-1 running"));
+    assert!(observation.observed_background_shell_job.is_some());
+}
+
+#[test]
 fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() {
     let mut state = crate::state::AppState::new(true, false);
     state.turn_running = true;

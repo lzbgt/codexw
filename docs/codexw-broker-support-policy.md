@@ -87,9 +87,15 @@ can depend on them:
   async-tool lane, including:
   - classifications such as `tool_slow` / `tool_wedged`
   - recommended-action and recovery-policy fields
+  - observation/output-state fields such as
+    `wrapper_background_shell_started_no_output_yet`,
+    `wrapper_background_shell_streaming_output`,
+    `no_output_observed_yet`, `recent_output_observed`, and
+    `stale_output_observed`
   - explicit owner-lane state such as `wrapper_background_shell`
   - correlation fields such as `source_call_id` and
     `observed_background_shell_job`
+  - output-age facts such as `last_output_age_seconds`
   - backlog and worker inspection slices such as `async_tool_backpressure` and
     `async_tool_workers`
 - explicit rejection of unsupported broker/client surfaces
