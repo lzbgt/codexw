@@ -158,6 +158,12 @@ That bug was enough to justify de-advertising the workspace tool surface. It
 also means the repo should be highly selective about adding more tools of the
 same class.
 
+The retained hidden compatibility helpers should also fail fast on wide
+workspace scans instead of trying to behave like exact repo-search tools. Tree
+walkers such as `workspace_find_files` and `workspace_search_text` should use a
+bounded compatibility scan budget and tell the operator to use shell or Python
+when that budget is exceeded.
+
 ## Product Posture
 
 The intended product posture is:

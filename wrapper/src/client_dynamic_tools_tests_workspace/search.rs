@@ -46,3 +46,32 @@ fn workspace_find_files_returns_relative_paths() {
     assert!(text.contains("File matches for `lib`:"));
     assert!(text.contains("src/lib.rs"));
 }
+
+#[test]
+fn workspace_search_text_fails_fast_when_legacy_scan_budget_is_exceeded() {
+    let workspace = tempfile::tempdir().expect("tempdir");
+    for index in 0..2_100 {
+        std::fs::write(
+            workspace.path().join(format!("file-{index:04}.txt")),
+            "alpha\nbeta\n",
+        )
+        .expect("write");
+    }
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "workspace_search_text",
+            "arguments": {"query": "needle"}
+        }),
+        workspace.path().to_str().expect("utf8 path"),
+        &BackgroundShellManager::default(),
+    );
+
+    assert_eq!(result["success"], false);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("text output");
+    assert!(text.contains("legacy workspace compatibility scan exceeded"));
+    assert!(text.contains("use shell or Python"));
+    assert!(text.contains("fresh thread"));
+}

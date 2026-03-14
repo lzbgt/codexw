@@ -7,6 +7,7 @@ use serde_json::Value;
 const MAX_FILE_BYTES: u64 = 256 * 1024;
 const DEFAULT_LIMIT: usize = 20;
 const MAX_RESULTS: usize = 100;
+const LEGACY_WORKSPACE_MAX_WALK_ENTRIES: usize = 2_000;
 const SKIP_DIRS: &[&str] = &[".git", "target", "node_modules", ".next", "dist", "build"];
 
 #[path = "workspace/io.rs"]
@@ -48,6 +49,7 @@ pub(super) fn walk_workspace(
     visit: &mut impl FnMut(&Path) -> bool,
 ) -> Result<(), String> {
     let mut stack = vec![root.to_path_buf()];
+    let mut visited_entries = 0usize;
     while let Some(dir) = stack.pop() {
         let entries = fs::read_dir(&dir)
             .map_err(|err| format!("failed to read directory `{}`: {err}", dir.display()))?;
@@ -59,6 +61,10 @@ pub(super) fn walk_workspace(
                 )
             })?;
             let path = entry.path();
+            visited_entries += 1;
+            if visited_entries > LEGACY_WORKSPACE_MAX_WALK_ENTRIES {
+                return Err(legacy_workspace_walk_budget_error());
+            }
             let file_type = entry
                 .file_type()
                 .map_err(|err| format!("failed to stat `{}`: {err}", path.display()))?;
@@ -75,6 +81,13 @@ pub(super) fn walk_workspace(
         }
     }
     Ok(())
+}
+
+fn legacy_workspace_walk_budget_error() -> String {
+    format!(
+        "legacy workspace compatibility scan exceeded {} entries; use shell or Python, or start a fresh thread without the hidden workspace tools",
+        LEGACY_WORKSPACE_MAX_WALK_ENTRIES
+    )
 }
 
 fn should_skip_dir(path: &Path) -> bool {
