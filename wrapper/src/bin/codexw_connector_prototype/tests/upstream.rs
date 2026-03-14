@@ -17,6 +17,22 @@ fn client_lease_injection_support_is_limited_to_mutating_routes() {
     ));
     assert!(supports_client_lease_injection(
         "POST",
+        "/api/v1/session/attach"
+    ));
+    assert!(supports_client_lease_injection(
+        "POST",
+        "/api/v1/session/client_event"
+    ));
+    assert!(supports_client_lease_injection(
+        "POST",
+        "/api/v1/turn/start"
+    ));
+    assert!(supports_client_lease_injection(
+        "POST",
+        "/api/v1/turn/interrupt"
+    ));
+    assert!(supports_client_lease_injection(
+        "POST",
         "/api/v1/session/sess_1/services/bg-1/run"
     ));
     assert!(!supports_client_lease_injection(

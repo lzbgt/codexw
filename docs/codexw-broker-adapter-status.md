@@ -160,7 +160,8 @@ the real connector binary:
   and mutating shell/service alias routes
 - shared route-shape classification for connector allowlist checks and
   client/lease header-to-body injection eligibility, including the supported
-  raw proxy turn-control routes
+  raw proxy turn-control routes plus top-level raw proxy session attach and
+  `client_event`
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation

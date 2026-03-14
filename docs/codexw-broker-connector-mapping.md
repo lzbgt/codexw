@@ -45,6 +45,7 @@ The connector should be a narrow translation layer, not a second runtime.
 | create remote session | `POST /api/v1/session/new` | native | connector can proxy almost directly |
 | attach to existing conversation | `POST /api/v1/session/attach` | native | preserves `session_id` + `thread_id` split |
 | inspect session | `GET /api/v1/session/{session_id}` | native | response may be passed through with light envelope cleanup |
+| publish client event with explicit session id | `POST /api/v1/session/client_event` | native | useful raw-proxy escape hatch when the client already has a concrete session id |
 
 ### Turn Lifecycle
 
@@ -200,6 +201,8 @@ The initial connector adapter should ship with a small compatibility table:
 | Broker-facing route | Local `codexw` route | Status |
 | --- | --- | --- |
 | `/v1/agents/{agent_id}/proxy/...` session create | `/api/v1/session/new` | works |
+| `/v1/agents/{agent_id}/proxy/...` session attach | `/api/v1/session/attach` | works with the same client/lease header projection policy as the session-scoped attach alias when the caller provides `session_id` in the body |
+| `/v1/agents/{agent_id}/proxy/...` top-level client event | `/api/v1/session/client_event` | works with the same client/lease header projection policy as the session-scoped client-event alias when the caller provides `session_id` in the body |
 | `/v1/agents/{agent_id}/proxy/...` turn start | `/api/v1/turn/start` | works with the same client/lease header projection policy as the session-scoped turn alias |
 | `/v1/agents/{agent_id}/proxy/...` turn interrupt | `/api/v1/turn/interrupt` | works with the same client header projection policy as the session-scoped interrupt alias |
 | `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works; non-`GET` methods are rejected as `method_not_allowed` |
