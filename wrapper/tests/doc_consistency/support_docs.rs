@@ -2756,8 +2756,23 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "docs/codexw-broker-client-fixture.md",
     );
     assert_contains(
+        &broker_fixture,
+        "Python-driven supervision workflow",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
+        &broker_fixture,
+        "Node-driven supervision workflow",
+        "docs/codexw-broker-client-fixture.md",
+    );
+    assert_contains(
         &broker_status,
         "connector-layer SSE framing proof",
+        "docs/codexw-broker-adapter-status.md",
+    );
+    assert_contains(
+        &broker_status,
+        "standalone Python and Node fixture workflows",
         "docs/codexw-broker-adapter-status.md",
     );
 

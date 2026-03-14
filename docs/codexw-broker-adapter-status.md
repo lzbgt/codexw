@@ -182,6 +182,10 @@ the real connector binary:
 - broker-style SSE resume through `Last-Event-ID`
 - broker-style `status.updated` supervision visibility and replay for
   `tool_slow` / `tool_wedged`
+- standalone Python and Node fixture workflows that consume enriched
+  `status.updated` payloads, preserve `supervision_notice`, and verify
+  `async_tool_backpressure` backlog `recommended_action` /
+  `recovery_policy` / `recovery_options` semantics across replay
 - broker-visible recommended-action hints such as `observe_or_interrupt` and
   `interrupt_or_exit_resume` in `status.updated`
 - broker-visible async-tool owner-lane and correlation facts such as

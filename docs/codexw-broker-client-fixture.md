@@ -114,12 +114,26 @@ fixture against the real connector binary for:
   - lease-owned `client-event` publish
   - event stream consumption
   - `Last-Event-ID` resume
+- one Python-driven supervision workflow that proves:
+  - session create
+  - semantic `status.updated` consumption through the standalone fixture
+  - sticky `supervision_notice` owner/correlation/recovery semantics
+  - `async_tool_backpressure` backlog `recommended_action` / `recovery_policy` /
+    `recovery_options` plus oldest-worker identity
+  - `Last-Event-ID` resume after the supervision payload escalates
 - one Node-driven attachment lifecycle workflow that proves:
   - session create
   - attachment renew
   - session snapshot verification of the renewed lease
   - attachment release
   - session snapshot verification of the released lease
+- one Node-driven supervision workflow that proves:
+  - session create
+  - semantic `status.updated` consumption through the standalone fixture
+  - sticky `supervision_notice` owner/correlation/recovery semantics
+  - `async_tool_backpressure` backlog `recommended_action` / `recovery_policy` /
+    `recovery_options` plus oldest-worker identity
+  - `Last-Event-ID` resume after the supervision payload escalates
 - one Node-driven lease-conflict workflow that proves:
   - leased session ownership by one client
   - conflicting rival service mutation
