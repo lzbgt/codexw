@@ -3,8 +3,10 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
+use super::LEGACY_WORKSPACE_MAX_SCAN_ENTRIES;
 use super::MAX_FILE_BYTES;
 use super::extract_limit;
+use super::legacy_workspace_scan_budget_error;
 use super::normalize_root_label;
 use super::rel_display;
 use super::resolve_workspace_path;
@@ -27,8 +29,7 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
         return Err(format!("`{}` is not a directory", target.display()));
     }
     let limit = extract_limit(object.get("limit"));
-    let (entries, has_more_entries) = collect_sorted_dir_entries(&target, limit)
-        .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?;
+    let (entries, has_more_entries) = collect_sorted_dir_entries(&target, limit)?;
 
     let relative = rel_display(&root, &target);
     let mut rendered = vec![format!("Directory: {}", normalize_root_label(&relative))];
@@ -56,23 +57,39 @@ pub(crate) fn workspace_list_dir(arguments: &Value, resolved_cwd: &str) -> Resul
 fn collect_sorted_dir_entries(
     target: &PathBuf,
     limit: usize,
-) -> Result<(Vec<PathBuf>, bool), std::io::Error> {
+) -> Result<(Vec<PathBuf>, bool), String> {
     let mut kept = Vec::with_capacity(limit);
     let mut has_more_entries = false;
-    for entry in fs::read_dir(target)? {
-        let entry = entry?;
-        if kept.len() >= limit {
-            has_more_entries = true;
-            break;
+    let mut scanned_entries = 0usize;
+    let entries = fs::read_dir(target)
+        .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?;
+    for entry in entries {
+        let entry = entry
+            .map_err(|err| format!("failed to read directory `{}`: {err}", target.display()))?;
+        scanned_entries += 1;
+        if scanned_entries > LEGACY_WORKSPACE_MAX_SCAN_ENTRIES {
+            return Err(legacy_workspace_scan_budget_error());
         }
-        kept.push(entry.path());
+        insert_sorted_dir_entry(&mut kept, entry.path());
+        if kept.len() > limit {
+            kept.pop();
+            has_more_entries = true;
+        }
     }
-    kept.sort_by(|left, right| {
-        left.file_name()
-            .cmp(&right.file_name())
-            .then_with(|| left.cmp(right))
-    });
     Ok((kept, has_more_entries))
+}
+
+fn insert_sorted_dir_entry(entries: &mut Vec<PathBuf>, candidate: PathBuf) {
+    let insertion_index = entries
+        .binary_search_by(|existing| compare_dir_entry_paths(existing, &candidate))
+        .unwrap_or_else(|index| index);
+    entries.insert(insertion_index, candidate);
+}
+
+fn compare_dir_entry_paths(left: &PathBuf, right: &PathBuf) -> std::cmp::Ordering {
+    left.file_name()
+        .cmp(&right.file_name())
+        .then_with(|| left.cmp(right))
 }
 
 pub(crate) fn workspace_stat_path(arguments: &Value, resolved_cwd: &str) -> Result<String, String> {

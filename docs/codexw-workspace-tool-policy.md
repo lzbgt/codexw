@@ -159,10 +159,10 @@ also means the repo should be highly selective about adding more tools of the
 same class.
 
 The retained hidden compatibility helpers should also fail fast on wide
-workspace scans instead of trying to behave like exact repo-search tools. Tree
-walkers such as `workspace_find_files` and `workspace_search_text` should use a
-bounded compatibility scan budget and tell the operator to use shell or Python
-when that budget is exceeded.
+workspace scans instead of trying to behave like exact repo-search tools.
+Directory peeks and tree walkers such as `workspace_list_dir`,
+`workspace_find_files`, and `workspace_search_text` should use a bounded compatibility scan budget
+and tell the operator to use shell or Python when that budget is exceeded.
 
 ## Product Posture
 
@@ -174,6 +174,10 @@ The intended product posture is:
   and `codexw` should label that with a `[tool] legacy workspace compatibility path`
   operator stderr line instead of making it look like normal current-state
   tool usage
+- when one of those hidden helpers fails, `codexw` should also emit a
+  `[tool] legacy workspace compatibility failure` stderr line with the
+  concrete failure reason instead of collapsing everything into a generic tool
+  failure message
 - wrapper-owned background shell tools exist because async shell control has
   product value and app-server does not expose equivalent public control of
   model-owned command sessions

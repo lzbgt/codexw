@@ -88,3 +88,26 @@ fn legacy_workspace_tool_notice_is_limited_to_hidden_compatibility_tools() {
     assert!(super::legacy_workspace_tool_notice("orchestration_status").is_none());
     assert!(super::legacy_workspace_tool_notice("background_shell_start").is_none());
 }
+
+#[test]
+fn legacy_workspace_tool_failure_notice_includes_failure_text_only_for_hidden_tools() {
+    let result = json!({
+        "success": false,
+        "contentItems": [{"type": "inputText", "text": "legacy workspace compatibility scan exceeded 2000 entries"}]
+    });
+
+    let notice = super::legacy_workspace_tool_failure_notice("workspace_search_text", &result)
+        .expect("legacy workspace failure notice");
+    assert!(notice.contains("workspace_search_text"));
+    assert!(notice.contains("legacy workspace compatibility failure"));
+    assert!(notice.contains("scan exceeded 2000 entries"));
+
+    assert!(super::legacy_workspace_tool_failure_notice("orchestration_status", &result).is_none());
+    assert!(
+        super::legacy_workspace_tool_failure_notice(
+            "workspace_search_text",
+            &json!({"success": true, "contentItems": [{"type": "inputText", "text": "ok"}]})
+        )
+        .is_none()
+    );
+}

@@ -52,6 +52,8 @@ fn workspace_list_dir_limits_output_without_losing_sorted_order() {
     let lines = text.lines().collect::<Vec<_>>();
     assert_eq!(lines[0], "Directory: .");
     assert_eq!(lines.len(), 4);
+    assert!(lines[1].contains("a-first.txt"));
+    assert!(lines[2].contains("b-second.txt"));
     assert_eq!(lines[3], "... more entries omitted");
 }
 
@@ -145,4 +147,33 @@ fn workspace_read_file_rejects_escape_outside_workspace() {
         .as_str()
         .expect("text output");
     assert!(text.contains("outside the current workspace"));
+}
+
+#[test]
+fn workspace_list_dir_fails_fast_when_legacy_scan_budget_is_exceeded() {
+    let workspace = tempfile::tempdir().expect("tempdir");
+    for index in 0..2_100 {
+        std::fs::write(
+            workspace.path().join(format!("entry-{index:04}.txt")),
+            "alpha",
+        )
+        .expect("write");
+    }
+
+    let result = execute_dynamic_tool_call(
+        &json!({
+            "tool": "workspace_list_dir",
+            "arguments": {"path": ".", "limit": 5}
+        }),
+        workspace.path().to_str().expect("utf8 path"),
+        &BackgroundShellManager::default(),
+    );
+
+    assert_eq!(result["success"], false);
+    let text = result["contentItems"][0]["text"]
+        .as_str()
+        .expect("text output");
+    assert!(text.contains("legacy workspace compatibility scan exceeded"));
+    assert!(text.contains("use shell or Python"));
+    assert!(text.contains("fresh thread"));
 }

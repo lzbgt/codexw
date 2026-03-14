@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::process::ChildStdin;
 
 use crate::client_dynamic_tools::execute_dynamic_tool_call_with_state;
+use crate::client_dynamic_tools::legacy_workspace_tool_failure_notice;
 use crate::client_dynamic_tools::legacy_workspace_tool_notice;
 use crate::output::Output;
 use crate::requests::send_json;
@@ -66,6 +67,9 @@ pub(crate) fn handle_tool_request(
                 .and_then(serde_json::Value::as_bool)
                 .unwrap_or(false);
             if let Some(notice) = legacy_workspace_tool_notice(tool) {
+                output.line_stderr(notice)?;
+            }
+            if let Some(notice) = legacy_workspace_tool_failure_notice(tool, &result) {
                 output.line_stderr(notice)?;
             }
             output.line_stderr(format!(

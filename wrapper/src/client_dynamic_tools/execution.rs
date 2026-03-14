@@ -43,6 +43,20 @@ pub(crate) fn legacy_workspace_tool_notice(tool: &str) -> Option<String> {
     }
 }
 
+pub(crate) fn legacy_workspace_tool_failure_notice(tool: &str, result: &Value) -> Option<String> {
+    let failure_text = result
+        .get("success")
+        .and_then(Value::as_bool)
+        .filter(|success| !success)
+        .and_then(|_| result.get("contentItems"))
+        .and_then(Value::as_array)
+        .and_then(|items| items.first())
+        .and_then(|item| item.get("text"))
+        .and_then(Value::as_str)?;
+    legacy_workspace_tool_notice(tool)
+        .map(|_| format!("[tool] legacy workspace compatibility failure: {tool}: {failure_text}"))
+}
+
 pub(crate) fn execute_dynamic_tool_call_with_state(
     params: &Value,
     resolved_cwd: &str,
