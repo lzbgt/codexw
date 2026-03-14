@@ -14,6 +14,9 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
     let broker_mapping = read_repo_file("docs/codexw-broker-connector-mapping.md");
+    let broker_compat_target = read_repo_file("docs/codexw-broker-compatibility-target.md");
+    let broker_adapter_plan = read_repo_file("docs/codexw-broker-connector-adapter-plan.md");
+    let broker_shared_assumptions = read_repo_file("docs/codexw-broker-shared-assumptions.md");
     let native_boundaries = read_repo_file("docs/codexw-native-support-boundaries.md");
     let native_status = read_repo_file("docs/codexw-native-product-status.md");
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
@@ -34,6 +37,9 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-proof-matrix.md",
         "docs/codexw-broker-support-policy.md",
         "docs/codexw-broker-hardening-catalog.md",
+        "docs/codexw-broker-compatibility-target.md",
+        "docs/codexw-broker-connector-adapter-plan.md",
+        "docs/codexw-broker-shared-assumptions.md",
         "docs/codexw-native-support-boundaries.md",
         "docs/codexw-native-product-status.md",
         "docs/codexw-native-proof-matrix.md",
@@ -217,6 +223,46 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &broker_mapping,
         "any artifact index/detail/content route",
         "docs/codexw-broker-connector-mapping.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_compat_target,
+        "app/webui",
+        "docs/codexw-broker-compatibility-target.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_compat_target,
+        "host shell examination",
+        "docs/codexw-broker-compatibility-target.md",
+    );
+    assert_contains(
+        &broker_compat_target,
+        "codexw-broker-artifact-contract-sketch.md",
+        "docs/codexw-broker-compatibility-target.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_adapter_plan,
+        "host examination shell-first",
+        "docs/codexw-broker-connector-adapter-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_adapter_plan,
+        "artifact index/detail/content",
+        "docs/codexw-broker-connector-adapter-plan.md",
+    );
+    assert_contains(
+        &broker_adapter_plan,
+        "codexw-broker-artifact-implementation-plan.md",
+        "docs/codexw-broker-connector-adapter-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_shared_assumptions,
+        "broker-backed app/webui clients",
+        "docs/codexw-broker-shared-assumptions.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_shared_assumptions,
+        "dedicated artifact catalog",
+        "docs/codexw-broker-shared-assumptions.md",
     );
 
     assert_contains_case_insensitive(

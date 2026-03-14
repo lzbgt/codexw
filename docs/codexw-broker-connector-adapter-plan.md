@@ -10,6 +10,9 @@ see [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md).
 
 The goal is not full production broker support. The goal is to validate that a
 thin connector can expose `codexw` remotely without distorting the local API.
+That remote surface is now expected to be consumable by broker-backed
+app/WebUI-style clients and to expose broker-visible host shell examination
+without requiring direct terminal access.
 
 The repo now also includes a small broker-style client fixture:
 
@@ -82,6 +85,9 @@ Define an adapter that:
 - exposes selected routes/events through a broker-facing surface
 - proves that `codexw` can be remotely driven by browser/mobile/terminal clients
   without making the daemon core broker-native
+- keeps host examination shell-first through shell/service control, transcript,
+  and event/result references rather than reintroducing a separate remote
+  filesystem-browsing surface
 
 ## Prerequisite
 
@@ -103,6 +109,8 @@ This adapter depends on the local API being complete enough to provide:
 - HTTP proxying for selected routes
 - SSE bridging for selected event streams
 - deployment metadata injection
+- remote host shell/service control sufficient for broker-backed clients to
+  inspect runtime state and resulting host-side outputs
 
 ### Out Of Scope
 
@@ -111,6 +119,10 @@ This adapter depends on the local API being complete enough to provide:
 - audio/video parity
 - cross-deployment fanout
 - multi-connector coordination
+- a dedicated artifact index/detail/content route family until the local API
+  artifact layer is implemented and proven:
+  - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+  - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
 ## Minimal Route Set
 
@@ -128,12 +140,14 @@ The first useful connector should support:
 - orchestration status
 - orchestration workers
 - orchestration dependencies
+- shell list/detail/start/poll/send/terminate
+- services list/detail/control
+- capabilities list/detail
 
 Nice-to-have in the same validation slice if cheap:
 
-- shell list/poll/send/terminate
-- services list
-- capabilities list
+- richer broker-visible host-result/artifact references once the dedicated
+  artifact track has a concrete implemented surface
 
 ## Minimal Event Set
 
@@ -192,7 +206,12 @@ The adapter validation is successful if:
 2. a remote client can start a turn and observe resulting events
 3. the connector can relay semantic SSE without dropping identity fields
 4. orchestration state can be inspected remotely
-5. no connector logic needs to parse terminal-rendered output
+5. broker-backed clients can inspect host shell/service state without direct
+   terminal access
+6. no connector logic needs to parse terminal-rendered output
+7. the docs remain explicit that a dedicated artifact index/detail/content
+   contract is still separate from the currently supported shell/service/
+   transcript surface
 
 ## Failure Signals
 

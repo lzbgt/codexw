@@ -90,8 +90,14 @@ With this interpretation:
 - `codexw` local API is the canonical runtime contract
 - `~/work/agent` compatibility is pursued through a connector/adapter layer
 - payload vocabulary reuse is encouraged where it helps
+- broker-backed app/WebUI clients and broker-visible host shell examination are
+  part of the intended compatibility target
 - full drop-in protocol equivalence is explicitly not required for the current
   supported adapter scope
+- a dedicated artifact index/detail/content contract remains a separate tracked
+  design lane rather than part of the current supported adapter claim:
+  - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
+  - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
 ## Why Level 2 Is Correct
 
@@ -115,6 +121,7 @@ The following areas are good candidates for direct or near-direct compatibility:
 - machine-readable transcript/event streaming
 - compact status summaries
 - interrupt/stop semantics
+- remote broker-backed client attachment and control semantics
 
 ## Adapter-Only Compatibility Scope
 
@@ -123,6 +130,7 @@ contracts:
 
 - orchestration graph views
 - background shell/service controls
+- broker-visible host shell examination flows for app/WebUI clients
 - capability registry views
 - service mutation operations
 - any route that depends on `bg-*`, alias, or `@capability` reference rules
@@ -136,6 +144,8 @@ compatibility claim:
 - general scene/entity APIs
 - full broker deployment management
 - perfect transport parity for every websocket/broker lifecycle detail
+- any artifact index/detail/content route until it is explicitly implemented,
+  mapped, and proven through the separate artifact-contract track
 
 ## Implementation Rule
 
