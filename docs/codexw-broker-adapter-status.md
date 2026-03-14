@@ -130,6 +130,8 @@ the real connector binary:
 - capability list / detail
 - explicit rejection of unsupported broker-style aliases and out-of-allowlist
   raw proxy / raw proxy SSE routes
+- explicit `method_not_allowed` rejection for non-`GET` broker-style and raw
+  proxy SSE event routes
 - explicit rejection of malformed percent-encoded broker alias path segments
 - broker-style SSE consumption
 - broker-style SSE resume through `Last-Event-ID`

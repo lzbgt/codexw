@@ -165,3 +165,55 @@ fn connector_rejects_raw_proxy_sse_route_outside_allowed_surface() -> Result<()>
 
     Ok(())
 }
+
+#[test]
+fn connector_rejects_non_get_methods_for_alias_sse_route() -> Result<()> {
+    let local_api_port = reserve_port()?;
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_api_port)?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let response = send_raw_request(
+        connector_port,
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/events HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "Content-Length: 2\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+    )?;
+    assert!(response.starts_with("HTTP/1.1 405 Method Not Allowed\r\n"));
+    assert!(response.contains("\"code\":\"method_not_allowed\""));
+    assert!(response.contains("unsupported method for SSE route"));
+
+    Ok(())
+}
+
+#[test]
+fn connector_rejects_non_get_methods_for_raw_proxy_sse_route() -> Result<()> {
+    let local_api_port = reserve_port()?;
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_api_port)?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let response = send_raw_request(
+        connector_port,
+        concat!(
+            "POST /v1/agents/codexw-lab/proxy_sse/api/v1/session/sess_1/events HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "Content-Length: 2\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+    )?;
+    assert!(response.starts_with("HTTP/1.1 405 Method Not Allowed\r\n"));
+    assert!(response.contains("\"code\":\"method_not_allowed\""));
+    assert!(response.contains("unsupported method for SSE route"));
+
+    Ok(())
+}

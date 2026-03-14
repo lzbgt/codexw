@@ -201,13 +201,13 @@ The initial connector adapter should ship with a small compatibility table:
 | --- | --- | --- |
 | `/v1/agents/{agent_id}/proxy/...` session create | `/api/v1/session/new` | works |
 | `/v1/agents/{agent_id}/proxy/...` turn start | `/api/v1/turn/start` | works |
-| `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works |
+| `/v1/agents/{agent_id}/proxy_sse/...` events | `/api/v1/session/{session_id}/events` | works; non-`GET` methods are rejected as `method_not_allowed` |
 | `/v1/agents/{agent_id}/sessions` | `/api/v1/session` and `/api/v1/session/new` | works as alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attach` | `/api/v1/session/attach` | works with `session_id` body injection when missing |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attachment/renew` | `/api/v1/session/{session_id}/attachment/renew` | works as alias surface with client/lease header projection |
 | `/v1/agents/{agent_id}/sessions/{session_id}/attachment/release` | `/api/v1/session/{session_id}/attachment/release` | works as alias surface with client header projection |
 | `/v1/agents/{agent_id}/sessions/{session_id}/turns` | `/api/v1/session/{session_id}/turn/start` | works as alias surface |
-| `/v1/agents/{agent_id}/sessions/{session_id}/events` | `/api/v1/session/{session_id}/events` | works as alias SSE surface |
+| `/v1/agents/{agent_id}/sessions/{session_id}/events` | `/api/v1/session/{session_id}/events` | works as alias SSE surface; non-`GET` methods are rejected as `method_not_allowed` |
 | `/v1/agents/{agent_id}/sessions/{session_id}/shells` | `/api/v1/session/{session_id}/shells` and `/shells/start` | works as method-sensitive alias surface |
 | `/v1/agents/{agent_id}/sessions/{session_id}/shells/{job_ref}` | `/api/v1/session/{session_id}/shells/{job_ref}` | works as alias surface with percent-decoded path segments on both detail and action routes |
 | `/v1/agents/{agent_id}/sessions/{session_id}/services` | `/api/v1/session/{session_id}/services` | works as alias surface |

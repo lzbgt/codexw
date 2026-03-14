@@ -161,6 +161,20 @@ fn handle_connection(mut stream: TcpStream, cli: &Cli) -> Result<()> {
         return Ok(());
     };
 
+    if target.is_sse && request.method != "GET" {
+        write_response(
+            &mut stream,
+            &json_error_response(
+                405,
+                "method_not_allowed",
+                "unsupported method for SSE route",
+                None,
+            ),
+        )?;
+        let _ = stream.shutdown(Shutdown::Both);
+        return Ok(());
+    }
+
     if !is_allowed_local_proxy_target(&request.method, &target.local_path, target.is_sse) {
         write_response(
             &mut stream,
