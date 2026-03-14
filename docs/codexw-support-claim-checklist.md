@@ -186,6 +186,7 @@ If the broker contract changes, also confirm:
 
 When native-side wording changes, review:
 
+- [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
 - [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)
 - [codexw-native-support-policy.md](codexw-native-support-policy.md)
 - [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
@@ -193,6 +194,10 @@ When native-side wording changes, review:
 - [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
 - [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 
 Confirm all of the following:
 
@@ -207,6 +212,12 @@ Confirm all of the following:
   they became active blockers
 - status docs do not casually imply that unsupported parity work is an active
   shipping commitment
+- native source docs still describe the same shell-first host-examination
+  support boundary as the downstream status/policy/proof docs, rather than
+  leaving recommendation, boundaries, or gap-assessment text behind
+- workspace and local-API source docs still describe shell-first remote host
+  examination as the current supported surface and do not imply that a
+  broker-visible artifact list/detail/content API already exists
 
 ## README / Backlog Checklist
 

@@ -3030,6 +3030,36 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &checklist,
+        "codexw-native-gap-assessment.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-native-product-recommendation.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-workspace-tool-policy.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-local-api-sketch.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-local-api-implementation-plan.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
+        "codexw-local-api-route-matrix.md",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &checklist,
         "codexw-native-product-status.md",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -3293,6 +3323,16 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     assert_contains_case_insensitive(
         &checklist,
         "artifact routes remain outside that boundary",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "native source docs still describe the same shell-first host-examination",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "workspace and local-api source docs still describe shell-first remote host",
         "docs/codexw-support-claim-checklist.md",
     );
     assert_contains_case_insensitive(&todos, "supported experimental adapter ends", "TODOS.md");
