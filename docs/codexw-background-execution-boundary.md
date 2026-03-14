@@ -13,6 +13,11 @@ That distinction matters because recent hang bugs were wrapper-runtime defects
 in `codexw`'s async dynamic-tool lane, not a protocol race where both sides
 were trying to drive one shell process.
 
+This boundary also sits inside the current supported experimental adapter: the
+already-supported broker-facing surface is shell-first host examination.
+Wrapper-owned background execution and supervision semantics should not be read
+as proof that a broker artifact index/detail/content API already exists.
+
 ## Ownership Model
 
 There are two different background-execution surfaces.

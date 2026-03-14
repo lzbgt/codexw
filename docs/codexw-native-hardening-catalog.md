@@ -9,6 +9,11 @@ It is the native-side analogue to
 The purpose is to keep optional improvements visible without letting them blur
 the current support boundary or backlog.
 
+That current support boundary still sits inside the shell-first
+host-examination surface. Optional native-side hardening should not be
+described as if it quietly promotes a broker artifact index/detail/content
+lane into the supported adapter.
+
 Related docs:
 
 - [codexw-native-product-recommendation.md](codexw-native-product-recommendation.md)

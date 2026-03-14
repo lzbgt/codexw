@@ -40,6 +40,12 @@ The supported non-broker product surface is:
 That means the native-side support claim is about the product that already
 exists, not about hypothetical upstream parity.
 
+It also stays aligned with the broader support boundary: the current supported
+experimental adapter still stops at the shell-first host-examination surface.
+Native-side supervision, plugin delivery, and recovery hooks do not imply that
+artifact index/detail/content routes are already part of that supported
+surface.
+
 ## Stability Expectations
 
 ### Stable Enough To Rely On

@@ -36,6 +36,11 @@ The current non-broker product shape is:
 Those are not fallback behaviors. They are the supported shape of the product
 today.
 
+For the broader cross-surface boundary, the current supported experimental
+adapter still stops at the shell-first host-examination surface. Native-side
+status, supervision, and plugin growth should not be read as proof that a
+broker-visible artifact index/detail/content API already exists.
+
 ## What Is Already Decided
 
 The repo has already made these native-side decisions explicit:

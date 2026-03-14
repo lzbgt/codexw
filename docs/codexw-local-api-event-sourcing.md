@@ -16,6 +16,11 @@ and expose those through a stable event bus that can feed:
 - the current broker connector adapter
 - local WebUI/mobile clients
 
+This event-sourcing lane still stays inside the current supported experimental
+adapter boundary. Semantic local events can describe shell/service/transcript/
+supervision truth without implying that a broker-visible artifact
+index/detail/content event family already exists.
+
 ## Core Principle
 
 The local API must emit events from runtime mutation points, not from rendered

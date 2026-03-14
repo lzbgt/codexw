@@ -33,6 +33,11 @@ The statuses are:
 - `boundary`: intentionally unsupported; the proof is explicit wording rather
   than positive implementation
 
+This matrix also inherits the broader support boundary used across the repo:
+the current supported experimental adapter still stops at the shell-first
+host-examination surface. Native-side proof for supervision or plugin lanes is
+not proof of a broker-visible artifact index/detail/content API.
+
 ## Matrix
 
 ### 1. Terminal-first, scrollback-first product shape

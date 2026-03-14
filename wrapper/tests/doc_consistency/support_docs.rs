@@ -1277,6 +1277,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-proof-matrix.md",
     );
     assert_contains_case_insensitive(
+        &native_proof,
+        "supported experimental adapter",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "host-examination surface",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &native_proof,
+        "artifact index/detail/content api",
+        "docs/codexw-native-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &native_policy,
         "terminal-first",
         "docs/codexw-native-support-policy.md",
@@ -1284,6 +1299,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "scrollback-first",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "experimental adapter still stops",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "shell-first host-examination surface",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "artifact index/detail/content routes",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -1394,6 +1424,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &background_execution_boundary,
         "wrapper_background_shell_started_no_output_yet",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "supported experimental adapter",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "shell-first host examination",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "artifact index/detail/content api",
         "docs/codexw-background-execution-boundary.md",
     );
     assert_contains_case_insensitive(
@@ -1630,6 +1675,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_hardening,
         "not currently a blocker",
+        "docs/codexw-native-hardening-catalog.md",
+    );
+    assert_contains_case_insensitive(
+        &native_hardening,
+        "host-examination surface",
+        "docs/codexw-native-hardening-catalog.md",
+    );
+    assert_contains_case_insensitive(
+        &native_hardening,
+        "artifact index/detail/content",
         "docs/codexw-native-hardening-catalog.md",
     );
     assert_contains_case_insensitive(
@@ -2211,6 +2266,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &local_api_event_sourcing,
         "oldest_target_background_shell_reference",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "current supported experimental",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "broker-visible artifact",
         "docs/codexw-local-api-event-sourcing.md",
     );
     assert_contains_case_insensitive(
