@@ -101,6 +101,18 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         events[2].data["async_tool_backpressure"]["oldest_hard_timeout_seconds"],
         15
     );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_source_call_id"],
+        "call_2"
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[2].data["async_tool_backpressure"]["oldest_target_background_shell_job_id"],
+        "bg-1"
+    );
     assert_eq!(events[2].data["async_tool_workers"][0]["request_id"], "7");
     assert_eq!(
         events[2].data["async_tool_workers"][0]["lifecycle_state"],
@@ -141,6 +153,18 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     assert_eq!(
         events[2].data["async_tool_workers"][1]["lifecycle_state"],
         "abandoned_after_timeout"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][1]["source_call_id"],
+        "call_2"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][1]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][1]["target_background_shell_job_id"],
+        "bg-1"
     );
     assert_eq!(
         events[2].data["supervision_notice"]["recommended_action"],
@@ -283,6 +307,9 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             saturated: true,
             oldest_tool: "background_shell_start".to_string(),
             oldest_summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            oldest_source_call_id: Some("call_2".to_string()),
+            oldest_target_background_shell_reference: Some("dev.api".to_string()),
+            oldest_target_background_shell_job_id: Some("bg-1".to_string()),
             oldest_elapsed_before_timeout_seconds: 75,
             oldest_hard_timeout_seconds: 30,
             oldest_elapsed_seconds: 30,
@@ -323,9 +350,9 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             lifecycle_state: "abandoned_after_timeout".to_string(),
             thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
             owner: "wrapper_background_shell".to_string(),
-            source_call_id: None,
-            target_background_shell_reference: None,
-            target_background_shell_job_id: None,
+            source_call_id: Some("call_2".to_string()),
+            target_background_shell_reference: Some("dev.api".to_string()),
+            target_background_shell_job_id: Some("bg-1".to_string()),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             observation_state: None,

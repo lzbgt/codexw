@@ -74,6 +74,9 @@ pub(crate) struct LocalApiAsyncToolBackpressure {
     pub(crate) saturated: bool,
     pub(crate) oldest_tool: String,
     pub(crate) oldest_summary: String,
+    pub(crate) oldest_source_call_id: Option<String>,
+    pub(crate) oldest_target_background_shell_reference: Option<String>,
+    pub(crate) oldest_target_background_shell_job_id: Option<String>,
     pub(crate) oldest_elapsed_before_timeout_seconds: u64,
     pub(crate) oldest_hard_timeout_seconds: u64,
     pub(crate) oldest_elapsed_seconds: u64,
@@ -402,6 +405,11 @@ fn async_tool_backpressure_snapshot(state: &AppState) -> Option<LocalApiAsyncToo
         saturated: state.async_tool_backpressure_active(),
         oldest_tool: abandoned.tool.clone(),
         oldest_summary: abandoned.summary.clone(),
+        oldest_source_call_id: abandoned.source_call_id.clone(),
+        oldest_target_background_shell_reference: abandoned
+            .target_background_shell_reference
+            .clone(),
+        oldest_target_background_shell_job_id: abandoned.target_background_shell_job_id.clone(),
         oldest_elapsed_before_timeout_seconds: abandoned.elapsed_before_timeout.as_secs(),
         oldest_hard_timeout_seconds: abandoned.hard_timeout.as_secs(),
         oldest_elapsed_seconds: abandoned.timed_out_elapsed().as_secs(),

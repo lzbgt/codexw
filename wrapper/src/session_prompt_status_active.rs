@@ -151,7 +151,26 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
             abandoned.summary
         )
     };
-    Some((abandoned.timed_out_at, detail))
+    let source_detail = abandoned
+        .source_call_id
+        .as_deref()
+        .map(|call_id| format!("; call {}", summarize_inline(call_id)))
+        .unwrap_or_default();
+    let target_detail = match (
+        abandoned.target_background_shell_reference.as_deref(),
+        abandoned.target_background_shell_job_id.as_deref(),
+    ) {
+        (Some(reference), Some(job_id)) if reference != job_id => {
+            format!("; target {}->{}", summarize_inline(reference), job_id)
+        }
+        (Some(reference), _) => format!("; target {}", summarize_inline(reference)),
+        (None, Some(job_id)) => format!("; target {job_id}"),
+        (None, None) => String::new(),
+    };
+    Some((
+        abandoned.timed_out_at,
+        format!("{detail}{source_detail}{target_detail}"),
+    ))
 }
 
 fn format_output_state_detail(

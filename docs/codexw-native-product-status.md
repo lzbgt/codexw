@@ -81,6 +81,11 @@ The implemented native-side product already has:
   work
 - abandoned async backlog tracking plus `async_tool_backpressure`, so timed-out
   worker threads remain visible instead of silently leaking out of view
+- retained source/target correlation on abandoned async backlog entries, so a
+  timed-out worker still shows which `callId` or `jobId|alias|@capability`
+  target it belonged to through fields such as `oldest_source_call_id`,
+  `oldest_target_background_shell_reference`, and
+  `oldest_target_background_shell_job_id`
 - `async_tool_workers` inspection visibility for dedicated async worker thread
   names and lifecycle states such as `running` and
   `abandoned_after_timeout`

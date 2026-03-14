@@ -94,6 +94,9 @@ drift casually:
 - that reuse-target correlation is part of the machine-readable support
   surface through `target_background_shell_reference` and
   `target_background_shell_job_id`
+- abandoned async backlog summaries also retain that same correlation through
+  `oldest_source_call_id`, `oldest_target_background_shell_reference`, and
+  `oldest_target_background_shell_job_id`
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - single-pass resume-history hydration for resumed-thread state seeding and

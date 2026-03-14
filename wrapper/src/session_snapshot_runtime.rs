@@ -175,6 +175,15 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             "async stale tm  {}",
             format_elapsed(Some(abandoned.timed_out_at))
         ));
+        if let Some(source_call_id) = abandoned.source_call_id.as_deref() {
+            lines.push(format!("async stale cl  {source_call_id}"));
+        }
+        if let Some(target_reference) = abandoned.target_background_shell_reference.as_deref() {
+            lines.push(format!("async stale tr  {target_reference}"));
+        }
+        if let Some(target_job_id) = abandoned.target_background_shell_job_id.as_deref() {
+            lines.push(format!("async stale tj  {target_job_id}"));
+        }
         lines.push(format!(
             "async guard     {}",
             if state.async_tool_backpressure_active() {

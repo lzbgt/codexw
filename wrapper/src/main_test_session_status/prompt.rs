@@ -285,14 +285,17 @@ fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() 
     state.turn_running = true;
     state.record_async_tool_request_with_timeout(
         crate::rpc::RequestId::Integer(11),
-        "background_shell_start".to_string(),
-        "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        "background_shell_wait_ready".to_string(),
+        "arguments= jobId=dev.api timeoutMs=60000 tool=background_shell_wait_ready".to_string(),
         Duration::from_secs(1),
     );
     if let Some(activity) = state
         .active_async_tool_requests
         .get_mut(&crate::rpc::RequestId::Integer(11))
     {
+        activity.source_call_id = Some("call-11".to_string());
+        activity.target_background_shell_reference = Some("dev.api".to_string());
+        activity.target_background_shell_job_id = Some("bg-1".to_string());
         activity.started_at = Instant::now() - Duration::from_secs(90);
     }
     let _expired = state.expire_timed_out_async_tool_requests();
@@ -300,7 +303,9 @@ fn prompt_status_mentions_abandoned_async_backlog_when_no_active_tool_remains() 
     let rendered = render_prompt_status(&state);
 
     assert!(rendered.contains("async backlog 1"));
-    assert!(rendered.contains("background_shell_start"));
+    assert!(rendered.contains("background_shell_wait_ready"));
+    assert!(rendered.contains("call call-11"));
+    assert!(rendered.contains("target dev.api->bg-1"));
 }
 
 #[test]

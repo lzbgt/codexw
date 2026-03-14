@@ -194,7 +194,10 @@ At:
 - async-tool supervision recommendation changes such as
   `observe_or_interrupt` to `interrupt_or_exit_resume`
 - abandoned async backlog changes through `async_tool_backpressure`, including
-  count, saturation, and oldest timed-out worker summary
+  count, saturation, oldest timed-out worker summary, and retained source /
+  target facts such as `oldest_source_call_id`,
+  `oldest_target_background_shell_reference`, and
+  `oldest_target_background_shell_job_id`
 - dedicated worker inspection changes through `async_tool_workers`, including
   worker thread names and lifecycle states such as `running` and
   `abandoned_after_timeout`
@@ -224,7 +227,10 @@ Likely emission owners:
 - snapshot diff publication in `wrapper/src/local_api/events.rs` for the
   current supervision-classification, `async_tool_backpressure`,
   `async_tool_workers`, `target_background_shell_reference` /
-  `target_background_shell_job_id`, `output_state` / `last_output_age_seconds`,
+  `target_background_shell_job_id`, `oldest_source_call_id` /
+  `oldest_target_background_shell_reference` /
+  `oldest_target_background_shell_job_id`, `output_state` /
+  `last_output_age_seconds`,
   and `supervision_notice` slice
 
 ### Emit `orchestration.updated`

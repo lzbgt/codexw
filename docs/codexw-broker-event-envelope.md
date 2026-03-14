@@ -305,7 +305,9 @@ machine-readable recovery-policy object such as `warn_only` or
 explicit `recovery_options` such as `observe_status`, `interrupt_turn`, and
 `exit_and_resume`, plus `async_tool_backpressure` so remote clients can see the
 abandoned async worker backlog and whether new background-shell async requests
-should currently be refused, plus `async_tool_workers` so a remote agent
+should currently be refused, including retained timeout-correlation facts such
+as `oldest_source_call_id`, `oldest_target_background_shell_reference`, and
+`oldest_target_background_shell_job_id`, plus `async_tool_workers` so a remote agent
 backend can inspect dedicated worker thread names and lifecycle states such as
 `running` and `abandoned_after_timeout` without scraping prompt text, plus
 explicit owner-lane state such as `wrapper_background_shell`, source `callId`,

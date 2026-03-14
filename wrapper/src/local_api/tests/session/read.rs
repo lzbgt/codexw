@@ -137,6 +137,18 @@ fn session_snapshot_is_returned_with_valid_token() {
         body["async_tool_backpressure"]["oldest_hard_timeout_seconds"],
         15
     );
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_source_call_id"],
+        "call_2"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        body["async_tool_backpressure"]["oldest_target_background_shell_job_id"],
+        "bg-1"
+    );
     assert_eq!(body["async_tool_workers"][0]["request_id"], "7");
     assert_eq!(body["async_tool_workers"][0]["lifecycle_state"], "running");
     assert_eq!(
@@ -176,6 +188,15 @@ fn session_snapshot_is_returned_with_valid_token() {
     assert_eq!(
         body["async_tool_workers"][1]["lifecycle_state"],
         "abandoned_after_timeout"
+    );
+    assert_eq!(body["async_tool_workers"][1]["source_call_id"], "call_2");
+    assert_eq!(
+        body["async_tool_workers"][1]["target_background_shell_reference"],
+        "dev.api"
+    );
+    assert_eq!(
+        body["async_tool_workers"][1]["target_background_shell_job_id"],
+        "bg-1"
     );
     assert_eq!(body["async_tool_backpressure"]["saturated"], false);
     assert_eq!(body["supervision_notice"]["classification"], "tool_slow");

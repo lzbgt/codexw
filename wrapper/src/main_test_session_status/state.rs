@@ -509,6 +509,9 @@ fn status_snapshot_includes_abandoned_async_backpressure() {
         .active_async_tool_requests
         .get_mut(&crate::rpc::RequestId::Integer(21))
     {
+        activity.source_call_id = Some("call-21".to_string());
+        activity.target_background_shell_reference = Some("dev.api".to_string());
+        activity.target_background_shell_job_id = Some("bg-1".to_string());
         activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(90);
     }
     let _expired = state.expire_timed_out_async_tool_requests();
@@ -538,8 +541,14 @@ fn status_snapshot_includes_abandoned_async_backpressure() {
     assert!(
         rendered.contains("async stale     arguments= command=sleep 5 tool=background_shell_start")
     );
+    assert!(rendered.contains("async stale cl  call-21"));
+    assert!(rendered.contains("async stale tr  dev.api"));
+    assert!(rendered.contains("async stale tj  bg-1"));
     assert!(rendered.contains("async worker    abandoned_after_timeout"));
     assert!(rendered.contains("async worker id 21"));
+    assert!(rendered.contains("async worker cl call-21"));
+    assert!(rendered.contains("async worker tr dev.api"));
+    assert!(rendered.contains("async worker tj bg-1"));
     assert!(rendered.contains("async guard     monitoring"));
 }
 
@@ -625,6 +634,9 @@ fn expiring_async_tool_requests_moves_them_into_abandoned_backlog() {
         .active_async_tool_requests
         .get_mut(&crate::rpc::RequestId::Integer(15))
     {
+        activity.source_call_id = Some("call-15".to_string());
+        activity.target_background_shell_reference = Some("dev.api".to_string());
+        activity.target_background_shell_job_id = Some("bg-1".to_string());
         activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(80);
     }
 
@@ -644,6 +656,24 @@ fn expiring_async_tool_requests_moves_them_into_abandoned_backlog() {
             .oldest_abandoned_async_tool_request()
             .map(|request| request.worker_thread_name.as_str()),
         Some("codexw-async-tool-worker-15")
+    );
+    assert_eq!(
+        state
+            .oldest_abandoned_async_tool_request()
+            .and_then(|request| request.source_call_id.as_deref()),
+        Some("call-15")
+    );
+    assert_eq!(
+        state
+            .oldest_abandoned_async_tool_request()
+            .and_then(|request| request.target_background_shell_reference.as_deref()),
+        Some("dev.api")
+    );
+    assert_eq!(
+        state
+            .oldest_abandoned_async_tool_request()
+            .and_then(|request| request.target_background_shell_job_id.as_deref()),
+        Some("bg-1")
     );
     assert!(!state.async_tool_backpressure_active());
 }
@@ -675,6 +705,9 @@ fn async_tool_worker_statuses_expose_running_and_abandoned_workers() {
         .active_async_tool_requests
         .get_mut(&crate::rpc::RequestId::Integer(8))
     {
+        activity.source_call_id = Some("call-8".to_string());
+        activity.target_background_shell_reference = Some("dev.api".to_string());
+        activity.target_background_shell_job_id = Some("bg-1".to_string());
         activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(80);
     }
     let _expired = state.expire_timed_out_async_tool_requests();
@@ -721,6 +754,15 @@ fn async_tool_worker_statuses_expose_running_and_abandoned_workers() {
     assert_eq!(workers[1].supervision_classification, None);
     assert_eq!(workers[1].observation_state, None);
     assert_eq!(workers[1].output_state, None);
+    assert_eq!(workers[1].source_call_id.as_deref(), Some("call-8"));
+    assert_eq!(
+        workers[1].target_background_shell_reference.as_deref(),
+        Some("dev.api")
+    );
+    assert_eq!(
+        workers[1].target_background_shell_job_id.as_deref(),
+        Some("bg-1")
+    );
     assert_eq!(workers[1].next_health_check_in, None);
 }
 

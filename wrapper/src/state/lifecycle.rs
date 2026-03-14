@@ -290,9 +290,13 @@ impl AppState {
                         tool: request.tool.clone(),
                         summary: request.summary.clone(),
                         owner_kind: super::AsyncToolOwnerKind::WrapperBackgroundShell,
-                        source_call_id: None,
-                        target_background_shell_reference: None,
-                        target_background_shell_job_id: None,
+                        source_call_id: request.source_call_id.clone(),
+                        target_background_shell_reference: request
+                            .target_background_shell_reference
+                            .clone(),
+                        target_background_shell_job_id: request
+                            .target_background_shell_job_id
+                            .clone(),
                         worker_thread_name: request.worker_thread_name.clone(),
                         runtime_elapsed: request.elapsed_before_timeout,
                         state_elapsed: request.timed_out_elapsed(),
@@ -380,6 +384,13 @@ impl AppState {
                     AbandonedAsyncToolRequest {
                         tool: activity.tool.clone(),
                         summary: activity.summary.clone(),
+                        source_call_id: activity.source_call_id.clone(),
+                        target_background_shell_reference: activity
+                            .target_background_shell_reference
+                            .clone(),
+                        target_background_shell_job_id: activity
+                            .target_background_shell_job_id
+                            .clone(),
                         worker_thread_name: activity.worker_thread_name.clone(),
                         timed_out_at: std::time::Instant::now(),
                         elapsed_before_timeout: elapsed,

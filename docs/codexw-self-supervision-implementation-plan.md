@@ -143,6 +143,10 @@ backend can inspect the dedicated worker-thread lane directly:
 - next planned orchestrator health check horizon in seconds
 - explicit owner lane such as `wrapper_background_shell`
 - source call id when available
+- if a worker times out, the abandoned backlog should retain that same source
+  call id plus any resolved target fields such as
+  `target_background_shell_reference` and
+  `target_background_shell_job_id`
 - when the owner is the wrapper background-shell lane, the matched `bg-*` job
   snapshot facts needed for operator inspection:
   job id, status, command, line count, output age, and recent output preview

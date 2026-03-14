@@ -532,6 +532,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-proof-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_proof,
+        "oldest_source_call_id",
+        "docs/codexw-broker-proof-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &broker_event_envelope,
         "observe_or_interrupt",
         "docs/codexw-broker-event-envelope.md",
@@ -604,6 +609,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_event_envelope,
         "async_tool_backpressure",
+        "docs/codexw-broker-event-envelope.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_event_envelope,
+        "oldest_source_call_id",
         "docs/codexw-broker-event-envelope.md",
     );
     assert_contains_case_insensitive(
@@ -979,6 +989,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &native_status,
+        "oldest_source_call_id",
+        "docs/codexw-native-product-status.md",
+    );
+    assert_contains_case_insensitive(
+        &native_status,
         "next-check",
         "docs/codexw-native-product-status.md",
     );
@@ -1181,6 +1196,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &native_policy,
         "target_background_shell_reference",
+        "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &native_policy,
+        "oldest_source_call_id",
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
@@ -1421,6 +1441,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision,
+        "abandoned backlog",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
         "next check",
         "docs/codexw-self-supervision.md",
     );
@@ -1526,6 +1551,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision_plan,
+        "abandoned backlog",
+        "docs/codexw-self-supervision-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
         "next planned health check horizon",
         "docs/codexw-self-supervision-implementation-plan.md",
     );
@@ -1592,6 +1622,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &local_api_event_sourcing,
         "target_background_shell_reference",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "oldest_source_call_id",
+        "docs/codexw-local-api-event-sourcing.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_event_sourcing,
+        "oldest_target_background_shell_reference",
         "docs/codexw-local-api-event-sourcing.md",
     );
     assert_contains_case_insensitive(
