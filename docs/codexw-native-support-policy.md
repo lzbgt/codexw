@@ -69,10 +69,15 @@ drift casually:
 - explicit dedicated worker inspection visibility through `async_tool_workers`,
   including lifecycle states such as `running` and
   `abandoned_after_timeout`
+- orchestrator-owned periodic async-worker inspection notices that keep the
+  concrete tool summary or shell command visible and say when no
+  completion/output has been observed yet
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - single-pass resume-history hydration for resumed-thread state seeding and
   latest-message preview extraction
+- a local recent-thread cache that can render last-known numbered sessions
+  before live `thread/list` refresh completes
 - the direction that stalled tool/runtime paths should be recoverable through
   self-supervision rather than left as indefinite hangs
 - the direction that optional capabilities should prefer plugin delivery when

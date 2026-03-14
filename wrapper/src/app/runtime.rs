@@ -246,6 +246,24 @@ fn handle_supervision_tick(
             },
         )?;
     }
+    for check in state.collect_due_async_tool_health_checks() {
+        let inspection = match check.supervision_classification {
+            Some(classification) => format!(
+                "{}|{}",
+                classification.label(),
+                classification.recommended_action()
+            ),
+            None => "monitoring".to_string(),
+        };
+        output.line_stderr(format!(
+            "[self-supervision] async worker check {}s [{}] no completion/output observed yet on {} for {}: {}",
+            check.elapsed.as_secs(),
+            inspection,
+            check.worker_thread_name,
+            check.tool,
+            check.summary
+        ))?;
+    }
     match state.refresh_async_tool_supervision_notice() {
         Some(SupervisionNoticeTransition::Raised(notice)) => {
             output.line_stderr(format!(

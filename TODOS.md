@@ -178,6 +178,12 @@ Concrete tasks:
   - the agent backend should be able to inspect dedicated async worker thread
     names and lifecycle states through `async_tool_workers`, while keeping it
     explicit that this is not yet a proof of in-worker forward progress
+  - keep the main orchestrator responsible for deciding when to inspect an
+    active async worker again based on the task scale it can actually observe
+    locally, rather than treating health checks as a single fixed interval
+  - keep the visible async-worker status explicit about whether completion or
+    output has been observed yet, instead of leaving the operator with only a
+    generic tool-name spinner
   - the runtime should decide whether to warn, interrupt, hand off, or replace
     itself rather than staying stuck indefinitely
 - keep resume list/load latency bounded:
@@ -185,6 +191,9 @@ Concrete tasks:
     preview/state seeding work
   - thread-list rendering should avoid repeated sort/clone work once a
     response is already in memory
+  - startup `resume`, plain `/resume`, and `/threads` should keep showing the
+    last local recent-thread cache immediately while live `thread/list`
+    refreshes remain in flight
 - keep the plugin-first expansion rule explicit:
   - optional capabilities such as voice reminder or live IM reporting should
     land through the plugin system when core runtime contracts do not need to

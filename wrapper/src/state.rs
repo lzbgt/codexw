@@ -13,6 +13,7 @@ pub(crate) use crate::state_helpers::thread_id;
 pub(crate) use types::AbandonedAsyncToolRequest;
 pub(crate) use types::AppState;
 pub(crate) use types::AsyncToolActivity;
+pub(crate) use types::AsyncToolHealthCheck;
 pub(crate) use types::AsyncToolSupervisionClass;
 pub(crate) use types::AsyncToolWorkerLifecycleState;
 pub(crate) use types::AsyncToolWorkerStatus;

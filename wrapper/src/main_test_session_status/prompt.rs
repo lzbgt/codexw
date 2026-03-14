@@ -71,6 +71,9 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
             worker_thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
             started_at: Instant::now() - Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
         },
     );
     let rendered = render_prompt_status(&state);

@@ -199,6 +199,9 @@ impl AppState {
                 worker_thread_name,
                 started_at: std::time::Instant::now(),
                 hard_timeout,
+                next_health_check_after: super::AsyncToolActivity::initial_health_check_interval(
+                    hard_timeout,
+                ),
             },
         );
     }
@@ -278,6 +281,40 @@ impl AppState {
                 .then_with(|| left.request_id.cmp(&right.request_id))
         });
         workers
+    }
+
+    pub(crate) fn collect_due_async_tool_health_checks(
+        &mut self,
+    ) -> Vec<super::AsyncToolHealthCheck> {
+        let now = std::time::Instant::now();
+        let mut checks = self
+            .active_async_tool_requests
+            .iter_mut()
+            .filter_map(|(id, activity)| {
+                let elapsed = now.saturating_duration_since(activity.started_at);
+                if elapsed < activity.next_health_check_after {
+                    return None;
+                }
+                let next_interval = activity.orchestrator_health_check_interval(elapsed);
+                activity.next_health_check_after = elapsed.saturating_add(next_interval);
+                Some(super::AsyncToolHealthCheck {
+                    request_id: request_id_label(id),
+                    tool: activity.tool.clone(),
+                    summary: activity.summary.clone(),
+                    worker_thread_name: activity.worker_thread_name.clone(),
+                    elapsed,
+                    supervision_classification:
+                        super::AsyncToolActivity::supervision_class_at_elapsed(elapsed),
+                })
+            })
+            .collect::<Vec<_>>();
+        checks.sort_by(|left, right| {
+            right
+                .elapsed
+                .cmp(&left.elapsed)
+                .then_with(|| left.request_id.cmp(&right.request_id))
+        });
+        checks
     }
 
     pub(crate) fn async_tool_backpressure_active(&self) -> bool {

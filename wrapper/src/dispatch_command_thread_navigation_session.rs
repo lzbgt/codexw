@@ -6,6 +6,7 @@ use crate::Cli;
 use crate::dispatch_command_thread_common::require_idle_turn;
 use crate::dispatch_command_thread_common::resolve_cached_thread_reference;
 use crate::output::Output;
+use crate::recent_thread_cache::show_cached_recent_threads;
 use crate::requests::send_list_threads;
 use crate::requests::send_thread_resume;
 use crate::requests::send_thread_start;
@@ -49,6 +50,7 @@ pub(crate) fn try_handle_thread_session_navigation(
                 output.line_stderr(
                     "[session] loading recent threads; use /resume <n> or /resume <thread-id>",
                 )?;
+                let _ = show_cached_recent_threads(state, output)?;
                 send_list_threads(writer, state, Some(resolved_cwd), None)?;
             }
             true
@@ -62,6 +64,9 @@ pub(crate) fn try_handle_thread_session_navigation(
                 Some(search_term.to_string())
             };
             output.line_stderr("[session] loading recent threads")?;
+            if search_term.is_none() {
+                let _ = show_cached_recent_threads(state, output)?;
+            }
             send_list_threads(writer, state, Some(resolved_cwd), search_term)?;
             true
         }

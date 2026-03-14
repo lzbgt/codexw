@@ -101,7 +101,14 @@ pub(crate) fn handle_bootstrap_response_success(
                     send_list_threads(writer, state, None, search_term.clone())?;
                 }
             } else {
-                handle_threads_listed(result, search_term.as_deref(), *view, state, output)?;
+                handle_threads_listed(
+                    result,
+                    search_term.as_deref(),
+                    *view,
+                    matches!(view, ThreadListView::Threads) && search_term.is_none(),
+                    state,
+                    output,
+                )?;
             }
         }
         PendingRequest::FuzzyFileSearch { query } => {

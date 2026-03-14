@@ -92,6 +92,9 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
             worker_thread_name: "codexw-bgtool-background_shell_start-13".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
         },
     );
     let cli = crate::runtime_process::normalize_cli(Cli {
@@ -377,6 +380,9 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
         },
     );
     assert_eq!(
@@ -406,6 +412,9 @@ fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(65),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
         },
     );
     assert_eq!(
@@ -439,6 +448,9 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
         },
     );
 
@@ -470,6 +482,9 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
             worker_thread_name: "codexw-bgtool-background_shell_start-10".to_string(),
             started_at: std::time::Instant::now() - std::time::Duration::from_secs(75),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
         },
     );
     let escalated = state.refresh_async_tool_supervision_notice();
@@ -499,4 +514,73 @@ fn async_tool_supervision_notice_tracks_raise_escalation_and_clear() {
         Some(crate::state::SupervisionNoticeTransition::Cleared)
     );
     assert!(state.active_supervision_notice.is_none());
+}
+
+#[test]
+fn async_tool_health_checks_are_scheduled_by_orchestrator_policy() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.record_async_tool_request_with_timeout_and_worker(
+        crate::rpc::RequestId::Integer(77),
+        "background_shell_start".to_string(),
+        "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+        std::time::Duration::from_secs(15),
+        "codexw-bgtool-background_shell_start-77".to_string(),
+    );
+    let activity = state
+        .active_async_tool_requests
+        .get_mut(&crate::rpc::RequestId::Integer(77))
+        .expect("activity");
+    assert_eq!(activity.next_health_check_after.as_secs(), 5);
+
+    activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(6);
+    let checks = state.collect_due_async_tool_health_checks();
+    assert_eq!(checks.len(), 1);
+    assert_eq!(checks[0].request_id, "77");
+    assert_eq!(checks[0].tool, "background_shell_start");
+    assert!(checks[0].summary.contains("command=sleep 5"));
+    assert_eq!(checks[0].supervision_classification, None);
+
+    let activity = state
+        .active_async_tool_requests
+        .get(&crate::rpc::RequestId::Integer(77))
+        .expect("activity");
+    assert_eq!(activity.next_health_check_after.as_secs(), 11);
+}
+
+#[test]
+fn async_tool_health_checks_escalate_when_worker_becomes_slow() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.record_async_tool_request_with_timeout_and_worker(
+        crate::rpc::RequestId::Integer(78),
+        "background_shell_wait_ready".to_string(),
+        "jobId=bg-1 timeoutMs=60000".to_string(),
+        std::time::Duration::from_secs(65),
+        "codexw-bgtool-background_shell_wait_ready-78".to_string(),
+    );
+    if let Some(activity) = state
+        .active_async_tool_requests
+        .get_mut(&crate::rpc::RequestId::Integer(78))
+    {
+        activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(20);
+        activity.next_health_check_after = std::time::Duration::from_secs(15);
+    }
+
+    let checks = state.collect_due_async_tool_health_checks();
+
+    assert_eq!(checks.len(), 1);
+    assert_eq!(
+        checks[0]
+            .supervision_classification
+            .map(|classification| classification.label()),
+        Some("tool_slow")
+    );
+    assert_eq!(
+        state
+            .active_async_tool_requests
+            .get(&crate::rpc::RequestId::Integer(78))
+            .expect("activity")
+            .next_health_check_after
+            .as_secs(),
+        35
+    );
 }

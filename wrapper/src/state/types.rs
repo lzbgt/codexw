@@ -166,19 +166,33 @@ pub(crate) struct AsyncToolActivity {
     pub(crate) worker_thread_name: String,
     pub(crate) started_at: Instant,
     pub(crate) hard_timeout: Duration,
+    pub(crate) next_health_check_after: Duration,
 }
 
 impl AsyncToolActivity {
+    pub(crate) fn initial_health_check_interval(hard_timeout: Duration) -> Duration {
+        (hard_timeout / 3)
+            .max(Duration::from_secs(3))
+            .min(Duration::from_secs(15))
+    }
+
+    pub(crate) fn orchestrator_health_check_interval(&self, elapsed: Duration) -> Duration {
+        if elapsed >= ASYNC_TOOL_WEDGED_THRESHOLD {
+            Duration::from_secs(30)
+        } else if elapsed >= ASYNC_TOOL_SLOW_THRESHOLD {
+            Duration::from_secs(15)
+        } else {
+            Self::initial_health_check_interval(self.hard_timeout)
+        }
+    }
+
     pub(crate) fn elapsed(&self) -> Duration {
         Instant::now().saturating_duration_since(self.started_at)
     }
 
-    pub(crate) fn timed_out(&self) -> bool {
-        self.elapsed() >= self.hard_timeout
-    }
-
-    pub(crate) fn supervision_class(&self) -> Option<AsyncToolSupervisionClass> {
-        let elapsed = self.elapsed();
+    pub(crate) fn supervision_class_at_elapsed(
+        elapsed: Duration,
+    ) -> Option<AsyncToolSupervisionClass> {
         if elapsed >= ASYNC_TOOL_WEDGED_THRESHOLD {
             Some(AsyncToolSupervisionClass::ToolWedged)
         } else if elapsed >= ASYNC_TOOL_SLOW_THRESHOLD {
@@ -187,6 +201,24 @@ impl AsyncToolActivity {
             None
         }
     }
+
+    pub(crate) fn timed_out(&self) -> bool {
+        self.elapsed() >= self.hard_timeout
+    }
+
+    pub(crate) fn supervision_class(&self) -> Option<AsyncToolSupervisionClass> {
+        Self::supervision_class_at_elapsed(self.elapsed())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AsyncToolHealthCheck {
+    pub(crate) request_id: String,
+    pub(crate) tool: String,
+    pub(crate) summary: String,
+    pub(crate) worker_thread_name: String,
+    pub(crate) elapsed: Duration,
+    pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
 }
 
 #[derive(Debug, Clone)]

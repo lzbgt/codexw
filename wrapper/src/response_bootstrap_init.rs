@@ -7,6 +7,7 @@ use crate::Cli;
 use crate::collaboration_apply::CollaborationModeAction;
 use crate::model_personality_actions::ModelsAction;
 use crate::output::Output;
+use crate::recent_thread_cache::show_cached_recent_threads;
 use crate::requests::send_initialized;
 use crate::requests::send_list_threads;
 use crate::requests::send_load_account;
@@ -50,6 +51,7 @@ pub(crate) fn handle_initialize_success(
                 output.line_stderr(
                     "[session] enter a listed number or thread id to resume, or use /new for a fresh thread",
                 )?;
+                let _ = show_cached_recent_threads(state, output)?;
                 send_list_threads(writer, state, Some(resolved_cwd), None)?
             }
             StartupThreadAction::Create => {

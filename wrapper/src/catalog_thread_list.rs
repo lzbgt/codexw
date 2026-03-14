@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::orchestration_view::CachedAgentThreadSummary;
@@ -6,7 +7,7 @@ use crate::requests::ThreadListView;
 use crate::state::get_string;
 use crate::state::summarize_text;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ThreadListEntry {
     pub(crate) id: String,
     pub(crate) preview: String,
@@ -14,13 +15,13 @@ pub(crate) struct ThreadListEntry {
     pub(crate) updated_at: Option<i64>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(crate) struct ThreadListSnapshot {
     entries: Vec<ThreadListEntry>,
 }
 
 pub(crate) fn thread_list_snapshot(result: &Value) -> ThreadListSnapshot {
-    let mut entries = result
+    let entries = result
         .get("data")
         .and_then(Value::as_array)
         .into_iter()
@@ -37,19 +38,27 @@ pub(crate) fn thread_list_snapshot(result: &Value) -> ThreadListSnapshot {
             })
         })
         .collect::<Vec<_>>();
-    entries.sort_by(|left, right| {
-        right
-            .updated_at
-            .unwrap_or(i64::MIN)
-            .cmp(&left.updated_at.unwrap_or(i64::MIN))
-            .then_with(|| left.id.cmp(&right.id))
-    });
-    ThreadListSnapshot { entries }
+    ThreadListSnapshot::from_entries(entries)
 }
 
 impl ThreadListSnapshot {
+    pub(crate) fn from_entries(mut entries: Vec<ThreadListEntry>) -> Self {
+        entries.sort_by(|left, right| {
+            right
+                .updated_at
+                .unwrap_or(i64::MIN)
+                .cmp(&left.updated_at.unwrap_or(i64::MIN))
+                .then_with(|| left.id.cmp(&right.id))
+        });
+        Self { entries }
+    }
+
     pub(crate) fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    pub(crate) fn entries(&self) -> &[ThreadListEntry] {
+        &self.entries
     }
 
     pub(crate) fn thread_ids(&self) -> Vec<String> {

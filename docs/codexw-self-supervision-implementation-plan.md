@@ -59,6 +59,12 @@ Emit machine- and operator-readable classifications such as:
 The first concrete emitted slice should classify long-running async shell-tool
 work at least as `tool_slow` and `tool_wedged` in prompt/runtime status.
 
+The inspection cadence for that slice should remain an orchestrator policy
+decision, not a single hardcoded interval. The runtime should choose the next
+inspection point from the scale signals it actually has locally, such as tool
+kind, timeout budget, elapsed runtime, and whether completion or output has
+been observed.
+
 That slice should also expose a small machine-readable recommendation field so
 clients do not need to invent recovery guidance from the class label alone:
 
@@ -128,6 +134,10 @@ backend can inspect the dedicated worker-thread lane directly:
 - lifecycle state such as `running` or `abandoned_after_timeout`
 - runtime/state elapsed seconds and hard timeout
 - current per-worker supervision classification when one exists
+
+The same audit trail should keep the concrete tool summary or shell command
+visible in periodic inspection notices, so the operator is not left with only
+a generic background-tool label while the worker remains unresolved.
 
 That slice should stay explicit about its limit: it is an inspection-ready
 worker-lifecycle report, not yet a proof that a blocking call inside the worker

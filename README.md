@@ -201,6 +201,10 @@ If you omit the thread id, `codexw` now opens a startup resume picker for the cu
 Global flags such as `--cwd` can be placed either before or after the startup `resume` token. For example, `codexw resume --cwd /path/to/repo` and `codexw --cwd /path/to/repo resume` now both open the cwd-scoped resume picker when no thread id is provided.
 
 Because the app-server `thread/list` `cwd` filter is an exact match, `codexw` now automatically falls back to an all-workspaces recent-thread list when the cwd-scoped lookup is empty, instead of leaving the startup resume picker without selectable sessions.
+While that live `thread/list` request is still in flight, startup `resume`,
+plain `/resume`, and `/threads` now show the last local recent-thread snapshot
+immediately when one exists under `CODEX_HOME`; the cache is only a latency
+aid, and the live server response still replaces it when it arrives.
 On resume, `codexw` now renders the latest 10 conversation messages from the stored thread so you get immediate context before entering a new prompt, without replaying the full internal reasoning/tool trace.
 Resume startup is also faster now: `codexw` sends the thread create or resume request before non-critical catalog and account lookups, and it only scans the minimum recent conversation history needed for the preview and continuation state.
 

@@ -71,6 +71,7 @@ mod prompt;
 mod prompt_file_completions_search;
 mod prompt_file_completions_token;
 mod prompt_state;
+mod recent_thread_cache;
 mod render_ansi;
 mod render_block_common;
 mod render_block_markdown;

@@ -7,6 +7,7 @@ use crate::catalog_file_search::extract_file_search_paths;
 use crate::catalog_file_search::render_fuzzy_file_search_results;
 use crate::catalog_thread_list::thread_list_snapshot;
 use crate::output::Output;
+use crate::recent_thread_cache::persist_recent_thread_snapshot;
 use crate::requests::ThreadListView;
 use crate::state::AppState;
 use crate::status_config::render_config_snapshot;
@@ -33,6 +34,7 @@ pub(crate) fn handle_threads_listed(
     result: &Value,
     search_term: Option<&str>,
     view: ThreadListView,
+    cache_recent_threads: bool,
     state: &mut AppState,
     output: &mut Output,
 ) -> Result<()> {
@@ -40,6 +42,9 @@ pub(crate) fn handle_threads_listed(
     state.last_listed_thread_ids = snapshot.thread_ids();
     if matches!(view, ThreadListView::Agents) {
         state.orchestration.cached_agent_threads = snapshot.agent_thread_summaries();
+    }
+    if cache_recent_threads {
+        let _ = persist_recent_thread_snapshot(state.codex_home_override.as_deref(), &snapshot);
     }
     let title = match view {
         ThreadListView::Threads => "Threads",

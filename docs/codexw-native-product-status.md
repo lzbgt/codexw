@@ -86,9 +86,15 @@ The implemented native-side product already has:
   `abandoned_after_timeout`
 - local refusal of new background-shell async requests when the abandoned async
   backlog is saturated
+- orchestrator-owned periodic inspection of active async shell-tool workers,
+  including explicit notices when no completion or output has been observed yet
+  for the visible tool summary / shell command
 - single-pass resume-history hydration, so loading a large resumed thread does
   not walk the full turn history multiple times just to seed state and render
   the latest conversation preview
+- a local recent-thread cache for startup `resume`, plain `/resume`, and
+  `/threads`, so the operator can see the last known numbered sessions
+  immediately while live `thread/list` refresh is still loading
 - orchestration views over agents, shells, services, capabilities, and
   terminals
 - a new self-supervision design lane for stalled tool/runtime recovery

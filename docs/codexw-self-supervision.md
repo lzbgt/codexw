@@ -74,6 +74,11 @@ hidden inside internal timers.
 The first emitted native runtime slice should at least expose `tool_slow` and
 `tool_wedged` for long-running async shell-tool work.
 
+That supervision lane should remain orchestrator-owned. The main runtime loop
+should decide when to inspect an active async worker again based on the scale
+it can actually observe locally, such as tool kind, declared timeout budget,
+elapsed runtime, and whether completion or output has been observed yet.
+
 The first recommended actions should stay narrow and operator-safe:
 
 - `tool_slow` -> `observe_or_interrupt`
@@ -94,6 +99,8 @@ or relay without inventing their own heuristics:
 - `tool_wedged` should expose `interrupt_turn` and, when a thread is attached,
   `exit_and_resume`
 - options should carry concrete local-API method/path or CLI resume command
+- periodic inspection notices should keep the concrete tool summary or shell
+  command visible instead of collapsing the task to only a generic tool label
   fields instead of forcing prompt scraping
 
 The first emitted recovery signal should also be sticky enough to notice:
