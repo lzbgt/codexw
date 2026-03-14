@@ -119,6 +119,9 @@ or relay without inventing their own heuristics:
 - `tool_wedged` should expose `interrupt_turn` and, when a thread is attached,
   `exit_and_resume`
 - options should carry concrete local-API method/path or CLI resume command
+- human-readable supervision surfaces should enumerate those same next-step
+  options explicitly, and keep `automation_ready=false` visible, instead of
+  collapsing the operator-facing view to only a policy name or action summary
 - periodic inspection notices should keep the concrete tool summary or shell
   command visible instead of collapsing the task to only a generic tool label
   fields instead of forcing prompt scraping

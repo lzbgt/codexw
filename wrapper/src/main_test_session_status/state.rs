@@ -146,11 +146,14 @@ fn status_snapshot_includes_async_tool_supervision_classification() {
     assert!(rendered.contains("supervision req 13"));
     assert!(rendered.contains("supervision th  codexw-bgtool-background_shell_start-13"));
     assert!(rendered.contains("supervision ow  wrapper_background_shell"));
+    assert!(rendered.contains("supervision auto false"));
     assert!(
         rendered.contains("supervision sum arguments= command=sleep 5 tool=background_shell_start")
     );
     assert!(rendered.contains("supervision ob  no_job_or_output_observed_yet"));
     assert!(rendered.contains("supervision os  no_output_observed_yet"));
+    assert!(rendered.contains("supervision opt interrupt_turn :interrupt"));
+    assert!(rendered.contains("supervision opt exit_and_resume"));
 }
 
 #[test]
@@ -289,6 +292,7 @@ fn status_snapshot_includes_correlated_background_shell_job_details() {
     assert!(rendered.contains("async worker oa"));
     assert!(rendered.contains("supervision req 31"));
     assert!(rendered.contains("supervision ow  wrapper_background_shell"));
+    assert!(rendered.contains("supervision auto false"));
     assert!(rendered.contains("supervision cl  call-31"));
     assert!(rendered.contains("supervision ob  wrapper_background_shell_streaming_output"));
     assert!(rendered.contains("supervision os  recent_output_observed"));
@@ -297,6 +301,8 @@ fn status_snapshot_includes_correlated_background_shell_job_details() {
     assert!(rendered.contains("supervision ln  1"));
     assert!(rendered.contains("supervision oa"));
     assert!(rendered.contains("supervision ot  READY"));
+    assert!(rendered.contains("supervision opt observe_status :status"));
+    assert!(rendered.contains("supervision opt interrupt_turn :interrupt"));
     assert!(observation.observed_background_shell_job.is_some());
 }
 

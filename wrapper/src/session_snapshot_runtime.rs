@@ -10,7 +10,8 @@ use crate::status_account::render_account_summary;
 use crate::status_rate_windows::render_rate_limit_lines;
 use crate::status_token_usage::render_token_usage_summary;
 
-pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String> {
+pub(crate) fn render_status_runtime(cli: &Cli, state: &AppState) -> Vec<String> {
+    let status_cwd = status_render_cwd(cli);
     let mut lines = Vec::new();
 
     if state.realtime_active || state.realtime_session_id.is_some() {
@@ -233,7 +234,11 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         .clone()
         .or_else(|| state.current_async_tool_supervision_notice())
     {
-        lines.extend(render_supervision_notice_runtime_lines(&notice));
+        lines.extend(render_supervision_notice_runtime_lines(
+            &notice,
+            state,
+            &status_cwd,
+        ));
     }
     lines.extend(render_rate_limit_lines(state.rate_limits.as_ref()));
     if let Some(token_usage) = render_token_usage_summary(state.last_token_usage.as_ref()) {
@@ -254,6 +259,8 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
 
 fn render_supervision_notice_runtime_lines(
     notice: &crate::state::SupervisionNotice,
+    state: &AppState,
+    cwd: &str,
 ) -> Vec<String> {
     let mut lines = vec![
         format!(
@@ -263,6 +270,7 @@ fn render_supervision_notice_runtime_lines(
         ),
         format!("supervision pol {}", notice.recovery_policy_kind().label()),
         format!("supervision act {}", notice.recommended_action()),
+        format!("supervision auto {}", notice.automation_ready()),
         format!("supervision req {}", notice.request_id),
         format!(
             "supervision th  {}",
@@ -296,5 +304,29 @@ fn render_supervision_notice_runtime_lines(
             lines.push(format!("supervision ot  {}", summarize_text(output)));
         }
     }
+    for option in crate::supervision_recovery::supervision_recovery_options(
+        state,
+        None,
+        cwd,
+        notice.classification,
+    ) {
+        let command = option
+            .terminal_command
+            .or(option.cli_command)
+            .unwrap_or_else(|| option.label.to_string());
+        lines.push(format!(
+            "supervision opt {} {}",
+            option.kind,
+            summarize_text(&command)
+        ));
+    }
     lines
+}
+
+fn status_render_cwd(cli: &Cli) -> String {
+    cli.cwd.clone().unwrap_or_else(|| {
+        std::env::current_dir()
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|_| ".".to_string())
+    })
 }

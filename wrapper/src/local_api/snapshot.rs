@@ -6,8 +6,6 @@ use std::time::UNIX_EPOCH;
 
 use serde::Serialize;
 
-use crate::app::build_resume_command;
-use crate::app::current_program_name;
 use crate::background_shells::BackgroundShellCapabilityIssueClass;
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellJobSnapshot;
@@ -529,56 +527,22 @@ fn recovery_options_snapshot(
     state: &AppState,
     classification: crate::state::AsyncToolSupervisionClass,
 ) -> Vec<LocalApiRecoveryOption> {
-    let mut options = Vec::new();
-    match classification {
-        crate::state::AsyncToolSupervisionClass::ToolSlow => {
-            options.push(LocalApiRecoveryOption {
-                kind: "observe_status".to_string(),
-                label: "Observe current session status".to_string(),
-                automation_ready: false,
-                cli_command: None,
-                local_api_method: Some("GET".to_string()),
-                local_api_path: Some(format!("/api/v1/session/{session_id}")),
-            });
-            if state.turn_running || state.active_turn_id.is_some() {
-                options.push(LocalApiRecoveryOption {
-                    kind: "interrupt_turn".to_string(),
-                    label: "Interrupt the active turn".to_string(),
-                    automation_ready: false,
-                    cli_command: None,
-                    local_api_method: Some("POST".to_string()),
-                    local_api_path: Some(format!("/api/v1/session/{session_id}/turn/interrupt")),
-                });
-            }
-        }
-        crate::state::AsyncToolSupervisionClass::ToolWedged => {
-            if state.turn_running || state.active_turn_id.is_some() {
-                options.push(LocalApiRecoveryOption {
-                    kind: "interrupt_turn".to_string(),
-                    label: "Interrupt the active turn".to_string(),
-                    automation_ready: false,
-                    cli_command: None,
-                    local_api_method: Some("POST".to_string()),
-                    local_api_path: Some(format!("/api/v1/session/{session_id}/turn/interrupt")),
-                });
-            }
-            if let Some(thread_id) = state.thread_id.as_deref() {
-                options.push(LocalApiRecoveryOption {
-                    kind: "exit_and_resume".to_string(),
-                    label: "Exit and resume the thread in a newer client".to_string(),
-                    automation_ready: false,
-                    cli_command: Some(build_resume_command(
-                        &current_program_name(),
-                        cwd,
-                        thread_id,
-                    )),
-                    local_api_method: None,
-                    local_api_path: None,
-                });
-            }
-        }
-    }
-    options
+    crate::supervision_recovery::supervision_recovery_options(
+        state,
+        Some(session_id),
+        cwd,
+        classification,
+    )
+    .into_iter()
+    .map(|option| LocalApiRecoveryOption {
+        kind: option.kind.to_string(),
+        label: option.label.to_string(),
+        automation_ready: option.automation_ready,
+        cli_command: option.cli_command,
+        local_api_method: option.local_api_method,
+        local_api_path: option.local_api_path,
+    })
+    .collect()
 }
 
 fn orchestration_status_snapshot(state: &AppState) -> LocalApiOrchestrationStatus {

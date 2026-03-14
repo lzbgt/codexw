@@ -219,6 +219,9 @@ fn handle_supervision_tick(
     output: &mut Output,
     writer: &mut std::process::ChildStdin,
 ) -> Result<()> {
+    let resolved_cwd = std::env::current_dir()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|_| ".".to_string());
     for expired in state.expire_timed_out_async_tool_requests() {
         let backlog = state.abandoned_async_tool_request_count();
         output.line_stderr(format!(
@@ -252,7 +255,11 @@ fn handle_supervision_tick(
     }
     match state.refresh_async_tool_supervision_notice() {
         Some(SupervisionNoticeTransition::Raised(notice)) => {
-            output.line_stderr(format_supervision_notice_line(&notice))?;
+            output.line_stderr(format_supervision_notice_line(
+                &notice,
+                state,
+                &resolved_cwd,
+            ))?;
         }
         Some(SupervisionNoticeTransition::Cleared) => {
             output.line_stderr("[self-supervision] async tool supervision cleared")?;
@@ -262,7 +269,11 @@ fn handle_supervision_tick(
     Ok(())
 }
 
-fn format_supervision_notice_line(notice: &crate::state::SupervisionNotice) -> String {
+fn format_supervision_notice_line(
+    notice: &crate::state::SupervisionNotice,
+    state: &AppState,
+    cwd: &str,
+) -> String {
     let call = notice
         .source_call_id
         .as_deref()
@@ -296,8 +307,23 @@ fn format_supervision_notice_line(notice: &crate::state::SupervisionNotice) -> S
             notice.output_state.label()
         ),
     };
+    let options = crate::supervision_recovery::supervision_recovery_options(
+        state,
+        None,
+        cwd,
+        notice.classification,
+    )
+    .into_iter()
+    .map(|option| {
+        option
+            .terminal_command
+            .or(option.cli_command)
+            .unwrap_or_else(|| option.kind.to_string())
+    })
+    .collect::<Vec<_>>()
+    .join(",");
     format!(
-        "[self-supervision] {} {} request={} worker={} owner={}{}{}{} [{}|{}] {}",
+        "[self-supervision] {} {} request={} worker={} owner={}{}{}{} [{}|{}|automation_ready={}] options={} {}",
         notice.classification.label(),
         notice.tool,
         notice.request_id,
@@ -308,6 +334,8 @@ fn format_supervision_notice_line(notice: &crate::state::SupervisionNotice) -> S
         observation,
         notice.recovery_policy_kind().label(),
         notice.recommended_action(),
+        notice.automation_ready(),
+        crate::state::summarize_text(&options),
         notice.summary
     )
 }
@@ -511,30 +539,37 @@ mod tests {
 
     #[test]
     fn format_supervision_notice_line_reports_owner_target_and_observation_details() {
-        let line = format_supervision_notice_line(&crate::state::SupervisionNotice {
-            classification: crate::state::AsyncToolSupervisionClass::ToolSlow,
-            request_id: "7".to_string(),
-            worker_thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
-            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
-            source_call_id: Some("call-7".to_string()),
-            target_background_shell_reference: Some("dev.api".to_string()),
-            target_background_shell_job_id: Some("bg-7".to_string()),
-            tool: "background_shell_start".to_string(),
-            summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
-            observation_state:
-                crate::state::AsyncToolObservationState::WrapperBackgroundShellStreamingOutput,
-            output_state: crate::state::AsyncToolOutputState::RecentOutputObserved,
-            observed_background_shell_job: Some(
-                crate::state::AsyncToolObservedBackgroundShellJob {
-                    job_id: "bg-7".to_string(),
-                    status: "running".to_string(),
-                    command: "sleep 5".to_string(),
-                    total_lines: 1,
-                    last_output_age: Some(std::time::Duration::from_secs(2)),
-                    recent_lines: vec!["READY".to_string()],
-                },
-            ),
-        });
+        let mut state = crate::state::AppState::new(true, false);
+        state.thread_id = Some("thread-7".to_string());
+        state.turn_running = true;
+        let line = format_supervision_notice_line(
+            &crate::state::SupervisionNotice {
+                classification: crate::state::AsyncToolSupervisionClass::ToolSlow,
+                request_id: "7".to_string(),
+                worker_thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
+                owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+                source_call_id: Some("call-7".to_string()),
+                target_background_shell_reference: Some("dev.api".to_string()),
+                target_background_shell_job_id: Some("bg-7".to_string()),
+                tool: "background_shell_start".to_string(),
+                summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+                observation_state:
+                    crate::state::AsyncToolObservationState::WrapperBackgroundShellStreamingOutput,
+                output_state: crate::state::AsyncToolOutputState::RecentOutputObserved,
+                observed_background_shell_job: Some(
+                    crate::state::AsyncToolObservedBackgroundShellJob {
+                        job_id: "bg-7".to_string(),
+                        status: "running".to_string(),
+                        command: "sleep 5".to_string(),
+                        total_lines: 1,
+                        last_output_age: Some(std::time::Duration::from_secs(2)),
+                        recent_lines: vec!["READY".to_string()],
+                    },
+                ),
+            },
+            &state,
+            "/tmp/repo",
+        );
 
         assert!(line.contains("[self-supervision] tool_slow background_shell_start"));
         assert!(line.contains("request=7"));
@@ -545,7 +580,8 @@ mod tests {
         assert!(line.contains("resolved=bg-7"));
         assert!(line.contains("wrapper_background_shell_streaming_output|recent_output_observed"));
         assert!(line.contains("job=bg-7 running"));
-        assert!(line.contains("[warn_only|observe_or_interrupt]"));
+        assert!(line.contains("[warn_only|observe_or_interrupt|automation_ready=false]"));
+        assert!(line.contains("options=:status,:interrupt"));
     }
 
     #[test]

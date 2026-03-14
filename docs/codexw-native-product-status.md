@@ -77,6 +77,9 @@ The implemented native-side product already has:
   `warn_only` versus `operator_interrupt_or_exit_resume`
 - explicit recovery options such as `observe_status`, `interrupt_turn`, and
   `exit_and_resume`
+- human-readable supervision surfaces that now enumerate those recovery
+  options directly in `:status` and raised stderr notices, while keeping
+  `automation_ready=false` explicit
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
   a stuck dynamic tool no longer keeps the turn open forever
 - dedicated wrapper worker threads for background-shell dynamic tools, so the
