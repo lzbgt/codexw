@@ -48,7 +48,7 @@ Status labels:
 | Publish client collaboration events back into the session | strong | `client_event` publish plus replay/resume and lease-policy proof | No major gap on the currently claimed collaboration/event-ingest surface. |
 | Examine host command output after remote shell execution | usable with caveat | Shell detail/poll snapshots, transcript snapshots, and semantic event stream | There is no separate broker-visible artifact/result catalog yet; clients currently assemble this from shell snapshots and transcript/event history. |
 | Examine artifact references produced by the runtime | usable with caveat | Transcript items, semantic events, service attachment metadata, and shell output can all carry paths, endpoints, labels, and other result hints | The runtime exposes result references, but it does not yet define a dedicated broker-facing artifact inventory or artifact fetch/download contract. |
-| Build a richer app/WebUI artifact browser over broker routes | gap | Indirectly possible only by scraping or interpreting transcript, shell, and service/result references | `codexw` currently lacks a first-class broker-visible artifact catalog with stable listing/fetch semantics. |
+| Build a richer app/WebUI artifact browser over broker routes | gap | Indirectly possible only by scraping or interpreting transcript, shell, and service/result references | `codexw` currently lacks a first-class broker-visible artifact catalog with stable listing/fetch semantics, and artifact list/detail/content routes are not part of the current supported experimental adapter until they are implemented and proven explicitly. |
 
 ## Current Reality
 
@@ -89,6 +89,11 @@ as:
 That means the current remote host-examination story is shell-first and
 transcript/event-first rather than artifact-catalog-first.
 
+Those missing routes are outside the current supported experimental adapter
+claim. The supported shell-first host-examination foundation is real today, but
+the artifact browser lane remains a separate design/implementation track until
+route, proof, and policy updates land together.
+
 For the concrete design sketch of that missing contract, see
 [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md).
 
@@ -116,3 +121,6 @@ When evaluating broker-facing changes, use this sequence:
 3. If the remaining need is stable artifact browsing or download semantics,
    track it as an artifact-contract gap instead of inventing another ad hoc
    shell or transcript route.
+4. Do not describe artifact routes as part of the supported broker adapter
+   until the contract, proof, and support-policy docs are updated in the same
+   batch.

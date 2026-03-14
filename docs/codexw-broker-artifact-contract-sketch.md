@@ -21,6 +21,8 @@ Companion docs:
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
+- [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 
 ## Problem Statement
 
@@ -67,6 +69,23 @@ Today, artifact-like information appears through:
 
 Any future artifact contract should normalize information that already exists in
 those producers instead of scraping rendered terminal text later.
+
+## Relationship To The Current Supported Adapter
+
+The current supported experimental adapter already covers a real remote
+host-examination surface through session, transcript, event, shell, service,
+and capability routes.
+
+This artifact sketch is intentionally design-only until all of the following
+exist together:
+
+- local API routes for artifact index/detail/content where appropriate
+- explicit connector mapping or explicit connector rejection policy
+- process-level proof through broker-facing routes
+- support/promotion/proof docs updated in the same batch
+
+Until then, artifact list/detail/content should not be described as an
+implicit extension of the current supported adapter.
 
 ## What Counts As An Artifact Here
 
@@ -203,6 +222,9 @@ When a broker/client request mentions artifacts, ask:
 3. If yes, it belongs in the artifact-contract track.
 4. If the request is really open-ended host inspection, keep it on the
    shell-first track instead.
+5. If the route would change support-level wording, update the support-policy,
+   promotion, and proof docs in the same batch instead of treating the
+   artifact lane as silently supported.
 
 ## Status
 

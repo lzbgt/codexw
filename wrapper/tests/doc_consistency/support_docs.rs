@@ -2190,8 +2190,18 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-host-examination-matrix.md",
     );
     assert_contains_case_insensitive(
+        &broker_host_matrix,
+        "not part of the current supported experimental adapter",
+        "docs/codexw-broker-host-examination-matrix.md",
+    );
+    assert_contains_case_insensitive(
         &broker_handoff,
         "sibling `~/work/agent` workspace",
+        "docs/codexw-broker-integration-handoff.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_handoff,
+        "supported for documented experimental use",
         "docs/codexw-broker-integration-handoff.md",
     );
     assert_contains_case_insensitive(
@@ -2495,6 +2505,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-artifact-contract-sketch.md",
     );
     assert_contains_case_insensitive(
+        &broker_artifact_sketch,
+        "supported experimental adapter",
+        "docs/codexw-broker-artifact-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_artifact_sketch,
+        "design-only",
+        "docs/codexw-broker-artifact-contract-sketch.md",
+    );
+    assert_contains_case_insensitive(
         &broker_artifact_plan,
         "artifact index route",
         "docs/codexw-broker-artifact-implementation-plan.md",
@@ -2507,6 +2527,16 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_artifact_plan,
         "do not implement the content route",
+        "docs/codexw-broker-artifact-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_artifact_plan,
+        "support-level gate",
+        "docs/codexw-broker-artifact-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_artifact_plan,
+        "standalone fixture proof",
         "docs/codexw-broker-artifact-implementation-plan.md",
     );
     assert_contains_case_insensitive(
@@ -2633,6 +2663,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &checklist,
         "fixture docs still describe shell-first host examination",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "artifact sketch/plan/host-examination docs still say",
         "docs/codexw-support-claim-checklist.md",
     );
     assert_contains_case_insensitive(

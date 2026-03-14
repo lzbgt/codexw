@@ -128,6 +128,10 @@ Those missing pieces are not vague future work. They are explicit boundaries.
 In particular, external clients should not assume a stable artifact
 list/detail/content API exists yet.
 
+That missing artifact route family is outside the current supported
+experimental adapter claim, even though the shell-first host-examination
+surface itself is already supported for documented experimental use.
+
 Boundary references:
 
 - [codexw-broker-out-of-scope.md](codexw-broker-out-of-scope.md)
@@ -148,6 +152,9 @@ That means:
   passthrough behavior
 - do not reintroduce workspace dynamic tools as the answer for broker-visible
   artifact browsing
+- do not treat artifact list/detail/content routes as implicitly available just
+  because the current shell/transcript/service/event surface already supports
+  real remote host examination
 
 Artifact-track references:
 

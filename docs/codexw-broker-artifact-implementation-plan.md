@@ -19,6 +19,8 @@ Companion docs:
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 - [codexw-broker-endpoint-audit.md](codexw-broker-endpoint-audit.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
+- [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
+- [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 
 ## Implementation Goal
 
@@ -67,6 +69,22 @@ Recommended rule:
   clear, bounded, and non-ambiguous content backing
 
 That means the index/detail routes can land before content fetch if needed.
+
+## Support-Level Gate
+
+Artifact routes should not be treated as part of the current supported
+experimental adapter merely because they exist locally.
+
+To move any artifact route into the supported broker-facing adapter surface,
+the same batch should do all of the following:
+
+- define the route shape in the local API contract docs
+- decide whether the connector maps or explicitly rejects the route
+- add process-level broker proof, preferably including standalone fixture proof
+- update broker status, support-policy, promotion, and proof docs together
+
+Until that gate is met, the artifact lane remains adjacent to the supported
+shell-first host-examination surface, not part of it.
 
 ## Derivation Sources
 
@@ -217,3 +235,5 @@ The first artifact track is complete when:
    - implemented and supported
    - implemented but out of the current supported adapter
    - still design-only
+5. the support-policy and promotion docs still make the shell-first
+   host-examination foundation versus artifact-route support boundary explicit

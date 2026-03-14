@@ -148,6 +148,10 @@ Confirm all of the following:
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch
+- artifact sketch/plan/host-examination docs still say the supported
+  experimental adapter ends at the current shell-first host-examination
+  surface, with artifact routes remaining design-only until contract, proof,
+  and policy updates land together
 - the current supported claim also clearly excludes the design-only
   project-assignment and dependency-edge route family unless those routes were
   explicitly implemented and proven in the same batch
