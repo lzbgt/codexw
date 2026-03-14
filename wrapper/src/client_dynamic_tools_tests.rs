@@ -55,7 +55,9 @@ fn workspace_tools_remain_executable_for_older_sessions_even_though_not_advertis
         .iter()
         .filter_map(|tool| tool.get("name").and_then(serde_json::Value::as_str))
         .collect::<Vec<_>>();
-    assert!(!names.contains(&"workspace_read_file"));
+    for legacy_tool in super::legacy_workspace_tool_names() {
+        assert!(!names.contains(legacy_tool));
+    }
 
     let workspace = tempfile::tempdir().expect("tempdir");
     std::fs::write(workspace.path().join("hello.txt"), "alpha\nbeta\n").expect("write");
@@ -75,6 +77,20 @@ fn workspace_tools_remain_executable_for_older_sessions_even_though_not_advertis
         .expect("text output");
     assert!(text.contains("File: hello.txt"));
     assert!(text.contains("   2 | beta"));
+}
+
+#[test]
+fn legacy_workspace_tool_names_match_the_hidden_compatibility_surface() {
+    assert_eq!(
+        super::legacy_workspace_tool_names(),
+        &[
+            "workspace_list_dir",
+            "workspace_stat_path",
+            "workspace_read_file",
+            "workspace_find_files",
+            "workspace_search_text",
+        ]
+    );
 }
 
 #[test]
