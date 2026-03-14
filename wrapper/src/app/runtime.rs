@@ -255,11 +255,35 @@ fn handle_supervision_tick(
             ),
             None => "monitoring".to_string(),
         };
+        let observation = match check.observed_background_shell_job.as_ref() {
+            Some(job) => {
+                let output = job
+                    .latest_output_preview()
+                    .map(|line| format!("; output {}", crate::state::summarize_text(line)))
+                    .unwrap_or_default();
+                format!(
+                    "{} {} via {} {} {}; command {}{}",
+                    check.observation_state.label(),
+                    check.owner_kind.label(),
+                    check.worker_thread_name,
+                    job.job_id,
+                    job.status,
+                    crate::state::summarize_text(&job.command),
+                    output
+                )
+            }
+            None => format!(
+                "{} {} via {}",
+                check.observation_state.label(),
+                check.owner_kind.label(),
+                check.worker_thread_name
+            ),
+        };
         output.line_stderr(format!(
-            "[self-supervision] async worker check {}s [{}] no completion/output observed yet on {} for {}: {}",
+            "[self-supervision] async worker check {}s [{}] {} for {}: {}",
             check.elapsed.as_secs(),
             inspection,
-            check.worker_thread_name,
+            observation,
             check.tool,
             check.summary
         ))?;

@@ -73,6 +73,7 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
 
 fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
     if let Some(async_tool) = state.oldest_async_tool_activity() {
+        let observation = state.async_tool_observation(async_tool);
         let detail = if state.active_async_tool_requests.len() > 1 {
             format!(
                 "async tools {}: {}",
@@ -91,9 +92,26 @@ fn render_async_tool_status(state: &AppState) -> Option<(Instant, String)> {
         } else {
             detail
         };
+        let observation_detail = match observation.observed_background_shell_job.as_ref() {
+            Some(job) => {
+                let last_output = job
+                    .latest_output_preview()
+                    .map(|line| format!("; out {}", summarize_inline(line)))
+                    .unwrap_or_default();
+                format!(
+                    "{}; job {} {}{}",
+                    observation.observation_state.prompt_label(),
+                    job.job_id,
+                    job.status,
+                    last_output
+                )
+            }
+            None => observation.observation_state.prompt_label().to_string(),
+        };
         let detail = format!(
-            "{detail} [{}; next check {}]",
-            async_tool.observation_state().prompt_label(),
+            "{detail} [{}; {}; next check {}]",
+            observation.owner_kind.prompt_label(),
+            observation_detail,
             format_elapsed(Some(Instant::now() - async_tool.next_health_check_in()))
         );
         return Some((
@@ -136,4 +154,15 @@ pub(crate) fn render_realtime_status(state: &AppState) -> String {
         spinner_frame(state.realtime_started_at),
         format_elapsed(state.realtime_started_at)
     )
+}
+
+fn summarize_inline(text: &str) -> String {
+    const MAX_CHARS: usize = 48;
+    let mut chars = text.chars();
+    let summary = chars.by_ref().take(MAX_CHARS).collect::<String>();
+    if chars.next().is_some() {
+        format!("{summary}...")
+    } else {
+        summary
+    }
 }

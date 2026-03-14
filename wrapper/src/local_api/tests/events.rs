@@ -62,8 +62,16 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
         "observe_or_interrupt"
     );
     assert_eq!(
+        events[2].data["async_tool_supervision"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
         events[2].data["async_tool_supervision"]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        events[2].data["async_tool_supervision"]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(
         events[2].data["async_tool_supervision"]["next_check_in_seconds"],
@@ -84,7 +92,15 @@ fn publish_snapshot_change_events_emits_replayable_semantic_events() {
     );
     assert_eq!(
         events[2].data["async_tool_workers"][0]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][0]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
+        events[2].data["async_tool_workers"][0]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(
         events[2].data["async_tool_workers"][0]["next_check_in_seconds"],
@@ -205,9 +221,21 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
                     local_api_path: None,
                 },
             ],
+            owner: "wrapper_background_shell".to_string(),
+            source_call_id: Some("call_1".to_string()),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
-            observation_state: "no_completion_or_output_observed_yet".to_string(),
+            observation_state: "wrapper_background_shell_terminal_without_tool_response"
+                .to_string(),
+            observed_background_shell_job: Some(
+                crate::local_api::snapshot::LocalApiObservedBackgroundShellJob {
+                    job_id: "bg-1".to_string(),
+                    status: "failed".to_string(),
+                    command: "npm run dev".to_string(),
+                    total_lines: 3,
+                    recent_lines: vec!["boom".to_string()],
+                },
+            ),
             next_check_in_seconds: 30,
             elapsed_seconds: 75,
             active_request_count: 1,
@@ -228,9 +256,22 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             request_id: "7".to_string(),
             lifecycle_state: "running".to_string(),
             thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
+            owner: "wrapper_background_shell".to_string(),
+            source_call_id: Some("call_1".to_string()),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
-            observation_state: Some("no_completion_or_output_observed_yet".to_string()),
+            observation_state: Some(
+                "wrapper_background_shell_terminal_without_tool_response".to_string(),
+            ),
+            observed_background_shell_job: Some(
+                crate::local_api::snapshot::LocalApiObservedBackgroundShellJob {
+                    job_id: "bg-1".to_string(),
+                    status: "failed".to_string(),
+                    command: "npm run dev".to_string(),
+                    total_lines: 3,
+                    recent_lines: vec!["boom".to_string()],
+                },
+            ),
             next_check_in_seconds: Some(30),
             runtime_elapsed_seconds: 75,
             state_elapsed_seconds: 75,
@@ -241,9 +282,12 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
             request_id: "8".to_string(),
             lifecycle_state: "abandoned_after_timeout".to_string(),
             thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
+            owner: "wrapper_background_shell".to_string(),
+            source_call_id: None,
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
             observation_state: None,
+            observed_background_shell_job: None,
             next_check_in_seconds: None,
             runtime_elapsed_seconds: 30,
             state_elapsed_seconds: 30,
@@ -316,8 +360,16 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
         "interrupt_or_exit_resume"
     );
     assert_eq!(
+        events[1].data["async_tool_supervision"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
         events[1].data["async_tool_supervision"]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_terminal_without_tool_response"
+    );
+    assert_eq!(
+        events[1].data["async_tool_supervision"]["observed_background_shell_job"]["status"],
+        "failed"
     );
     assert_eq!(
         events[1].data["async_tool_supervision"]["next_check_in_seconds"],
@@ -329,7 +381,11 @@ fn publish_snapshot_change_events_emits_status_update_when_supervision_changes()
     );
     assert_eq!(
         events[1].data["async_tool_workers"][0]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_terminal_without_tool_response"
+    );
+    assert_eq!(
+        events[1].data["async_tool_workers"][0]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(
         events[1].data["async_tool_workers"][1]["lifecycle_state"],

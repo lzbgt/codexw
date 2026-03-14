@@ -80,6 +80,11 @@ fn session_snapshot_is_returned_with_valid_token() {
         "observe_or_interrupt"
     );
     assert_eq!(
+        body["async_tool_supervision"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(body["async_tool_supervision"]["source_call_id"], "call_1");
+    assert_eq!(
         body["async_tool_supervision"]["recovery_policy"]["kind"],
         "warn_only"
     );
@@ -93,7 +98,15 @@ fn session_snapshot_is_returned_with_valid_token() {
     );
     assert_eq!(
         body["async_tool_supervision"]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["async_tool_supervision"]["observed_background_shell_job"]["job_id"],
+        "bg-1"
+    );
+    assert_eq!(
+        body["async_tool_supervision"]["observed_background_shell_job"]["command"],
+        "npm run dev"
     );
     assert_eq!(body["async_tool_supervision"]["next_check_in_seconds"], 9);
     assert_eq!(
@@ -116,7 +129,16 @@ fn session_snapshot_is_returned_with_valid_token() {
     );
     assert_eq!(
         body["async_tool_workers"][0]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["async_tool_workers"][0]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(body["async_tool_workers"][0]["source_call_id"], "call_1");
+    assert_eq!(
+        body["async_tool_workers"][0]["observed_background_shell_job"]["job_id"],
+        "bg-1"
     );
     assert_eq!(body["async_tool_workers"][0]["next_check_in_seconds"], 9);
     assert_eq!(
@@ -139,7 +161,11 @@ fn session_snapshot_is_returned_with_valid_token() {
     );
     assert_eq!(
         body["session"]["async_tool_workers"][0]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_streaming_output"
+    );
+    assert_eq!(
+        body["session"]["async_tool_workers"][0]["owner"],
+        "wrapper_background_shell"
     );
     assert_eq!(
         body["session"]["async_tool_workers"][1]["supervision_classification"],
@@ -191,8 +217,12 @@ fn session_id_route_reuses_same_snapshot_payload() {
         "observe_or_interrupt"
     );
     assert_eq!(
+        body["session"]["async_tool_supervision"]["owner"],
+        "wrapper_background_shell"
+    );
+    assert_eq!(
         body["session"]["async_tool_supervision"]["observation_state"],
-        "no_completion_or_output_observed_yet"
+        "wrapper_background_shell_streaming_output"
     );
     assert_eq!(
         body["session"]["async_tool_supervision"]["recovery_policy"]["kind"],

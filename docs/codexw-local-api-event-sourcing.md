@@ -201,6 +201,12 @@ At:
 - active-worker observation-state or next-check-horizon changes, so clients can
   tell whether the orchestrator is still awaiting any completion/output and
   when it plans to inspect that worker again
+- owner-lane changes for active async supervision, so clients can tell that the
+  unresolved work belongs to the wrapper-owned `background_shell_*` lane rather
+  than inventing a generic background-task model
+- correlated wrapper-shell inspection changes, including source `callId` and
+  matched `bg-*` shell job facts such as job id, status, command, line count,
+  and recent output preview
 - recovery-policy changes such as `warn_only` to
   `operator_interrupt_or_exit_resume`
 - recovery-option changes such as `observe_status` yielding to

@@ -26,6 +26,7 @@ Primary source docs:
 - [docs/codexw-self-evolution-implementation-plan.md](docs/codexw-self-evolution-implementation-plan.md)
 - [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
 - [docs/codexw-self-supervision-implementation-plan.md](docs/codexw-self-supervision-implementation-plan.md)
+- [docs/codexw-background-execution-boundary.md](docs/codexw-background-execution-boundary.md)
 - [docs/codexw-plugin-system.md](docs/codexw-plugin-system.md)
 - [docs/codexw-plugin-system-implementation-plan.md](docs/codexw-plugin-system-implementation-plan.md)
 - [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)
@@ -184,6 +185,12 @@ Concrete tasks:
   - keep the visible async-worker status explicit about whether completion or
     output has been observed yet, instead of leaving the operator with only a
     generic tool-name spinner
+  - keep the ownership boundary explicit:
+    - wrapper-owned `background_shell_*` async work is a `codexw` lane
+    - app-server-owned `command/exec` and server-observed background terminals
+      are a different lane
+    - supervision and operator status should say which lane owns the current
+      work instead of collapsing them into one generic “background task”
   - the runtime should decide whether to warn, interrupt, hand off, or replace
     itself rather than staying stuck indefinitely
 - keep resume list/load latency bounded:
@@ -215,6 +222,7 @@ Primary source:
 - [docs/codexw-self-evolution-implementation-plan.md](docs/codexw-self-evolution-implementation-plan.md)
 - [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
 - [docs/codexw-self-supervision-implementation-plan.md](docs/codexw-self-supervision-implementation-plan.md)
+- [docs/codexw-background-execution-boundary.md](docs/codexw-background-execution-boundary.md)
 - [docs/codexw-plugin-system.md](docs/codexw-plugin-system.md)
 - [docs/codexw-plugin-system-implementation-plan.md](docs/codexw-plugin-system-implementation-plan.md)
 

@@ -57,7 +57,7 @@ fn prompt_status_mentions_async_tool_activity_when_present() {
     let rendered = render_prompt_status(&state);
     assert!(rendered.contains("async tool background_shell_start"));
     assert!(rendered.contains("background_shell_start"));
-    assert!(rendered.contains("awaiting completion/output"));
+    assert!(rendered.contains("awaiting shell start/output"));
     assert!(rendered.contains("next check"));
 }
 
@@ -70,6 +70,8 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
         crate::state::AsyncToolActivity {
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: None,
             worker_thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
             started_at: Instant::now() - Duration::from_secs(20),
             hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
@@ -82,6 +84,66 @@ fn prompt_status_mentions_async_tool_supervision_class_when_slow() {
     assert!(rendered.contains("tool_slow"));
     assert!(rendered.contains("async tool background_shell_start"));
     assert!(rendered.contains("observe or interrupt"));
+}
+
+#[test]
+fn prompt_status_mentions_correlated_background_job_output_when_observed() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.turn_running = true;
+    state.active_async_tool_requests.insert(
+        crate::rpc::RequestId::Integer(18),
+        crate::state::AsyncToolActivity {
+            tool: "background_shell_start".to_string(),
+            summary: "arguments= command=printf READY tool=background_shell_start".to_string(),
+            owner_kind: crate::state::AsyncToolOwnerKind::WrapperBackgroundShell,
+            source_call_id: Some("call-18".to_string()),
+            worker_thread_name: "codexw-bgtool-background_shell_start-18".to_string(),
+            started_at: Instant::now() - Duration::from_secs(20),
+            hard_timeout: crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            next_health_check_after: crate::state::AsyncToolActivity::initial_health_check_interval(
+                crate::state::DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT,
+            ),
+        },
+    );
+    let _ = state
+        .orchestration
+        .background_shells
+        .start_from_tool_with_context(
+            &json!({
+                "command": "printf 'READY\\n'; sleep 2",
+                "intent": "observation",
+            }),
+            "/tmp",
+            crate::background_shells::BackgroundShellOrigin {
+                source_thread_id: Some("thread-1".to_string()),
+                source_call_id: Some("call-18".to_string()),
+                source_tool: Some("background_shell_start".to_string()),
+            },
+        );
+    for _ in 0..20 {
+        let rendered = state
+            .orchestration
+            .background_shells
+            .poll_job("bg-1", 0, 20)
+            .unwrap_or_default();
+        if rendered.contains("READY") {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    let observation = state.async_tool_observation(
+        state
+            .active_async_tool_requests
+            .get(&crate::rpc::RequestId::Integer(18))
+            .expect("active async tool"),
+    );
+
+    let rendered = render_prompt_status(&state);
+
+    assert!(rendered.contains("wrapper bg shell"));
+    assert!(rendered.contains("job bg-1"));
+    assert!(rendered.contains("READY"));
+    assert!(observation.observed_background_shell_job.is_some());
 }
 
 #[test]

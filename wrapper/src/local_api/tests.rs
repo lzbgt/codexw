@@ -36,6 +36,7 @@ use super::snapshot::LocalApiCapabilityEntry;
 use super::snapshot::LocalApiCapabilityProvider;
 use super::snapshot::LocalApiDependencyEdge;
 use super::snapshot::LocalApiLiveAgentTask;
+use super::snapshot::LocalApiObservedBackgroundShellJob;
 use super::snapshot::LocalApiOrchestrationStatus;
 use super::snapshot::LocalApiRecoveryOption;
 use super::snapshot::LocalApiRecoveryPolicy;
@@ -83,9 +84,18 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
                     local_api_path: Some("/api/v1/session/sess_test/turn/interrupt".to_string()),
                 },
             ],
+            owner: "wrapper_background_shell".to_string(),
+            source_call_id: Some("call_1".to_string()),
             tool: "background_shell_start".to_string(),
             summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
-            observation_state: "no_completion_or_output_observed_yet".to_string(),
+            observation_state: "wrapper_background_shell_streaming_output".to_string(),
+            observed_background_shell_job: Some(LocalApiObservedBackgroundShellJob {
+                job_id: "bg-1".to_string(),
+                status: "running".to_string(),
+                command: "npm run dev".to_string(),
+                total_lines: 1,
+                recent_lines: vec!["READY".to_string()],
+            }),
             next_check_in_seconds: 9,
             elapsed_seconds: 21,
             active_request_count: 1,
@@ -105,9 +115,18 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
                 request_id: "7".to_string(),
                 lifecycle_state: "running".to_string(),
                 thread_name: "codexw-bgtool-background_shell_start-7".to_string(),
+                owner: "wrapper_background_shell".to_string(),
+                source_call_id: Some("call_1".to_string()),
                 tool: "background_shell_start".to_string(),
                 summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
-                observation_state: Some("no_completion_or_output_observed_yet".to_string()),
+                observation_state: Some("wrapper_background_shell_streaming_output".to_string()),
+                observed_background_shell_job: Some(LocalApiObservedBackgroundShellJob {
+                    job_id: "bg-1".to_string(),
+                    status: "running".to_string(),
+                    command: "npm run dev".to_string(),
+                    total_lines: 1,
+                    recent_lines: vec!["READY".to_string()],
+                }),
                 next_check_in_seconds: Some(9),
                 runtime_elapsed_seconds: 21,
                 state_elapsed_seconds: 21,
@@ -118,9 +137,12 @@ pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
                 request_id: "8".to_string(),
                 lifecycle_state: "abandoned_after_timeout".to_string(),
                 thread_name: "codexw-bgtool-background_shell_start-8".to_string(),
+                owner: "wrapper_background_shell".to_string(),
+                source_call_id: None,
                 tool: "background_shell_start".to_string(),
                 summary: "arguments= command=sleep 5 tool=background_shell_start".to_string(),
                 observation_state: None,
+                observed_background_shell_job: None,
                 next_check_in_seconds: None,
                 runtime_elapsed_seconds: 21,
                 state_elapsed_seconds: 6,

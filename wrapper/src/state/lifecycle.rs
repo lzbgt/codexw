@@ -5,6 +5,9 @@ use crate::rpc::RequestId;
 
 use super::AbandonedAsyncToolRequest;
 use super::AppState;
+use super::AsyncToolObservation;
+use super::AsyncToolObservationState;
+use super::AsyncToolObservedBackgroundShellJob;
 use super::AsyncToolWorkerLifecycleState;
 use super::AsyncToolWorkerStatus;
 use super::ConversationMessage;
@@ -196,6 +199,8 @@ impl AppState {
             super::AsyncToolActivity {
                 tool,
                 summary,
+                owner_kind: super::AsyncToolOwnerKind::WrapperBackgroundShell,
+                source_call_id: None,
                 worker_thread_name,
                 started_at: std::time::Instant::now(),
                 hard_timeout,
@@ -244,21 +249,29 @@ impl AppState {
     }
 
     pub(crate) fn async_tool_worker_statuses(&self) -> Vec<AsyncToolWorkerStatus> {
+        let background_shell_snapshots = self.orchestration.background_shells.snapshots();
         let mut workers = self
             .active_async_tool_requests
             .iter()
-            .map(|(id, activity)| AsyncToolWorkerStatus {
-                request_id: request_id_label(id),
-                lifecycle_state: AsyncToolWorkerLifecycleState::Running,
-                tool: activity.tool.clone(),
-                summary: activity.summary.clone(),
-                worker_thread_name: activity.worker_thread_name.clone(),
-                runtime_elapsed: activity.elapsed(),
-                state_elapsed: activity.elapsed(),
-                hard_timeout: activity.hard_timeout,
-                supervision_classification: activity.supervision_class(),
-                observation_state: Some(activity.observation_state()),
-                next_health_check_in: Some(activity.next_health_check_in()),
+            .map(|(id, activity)| {
+                let observation =
+                    async_tool_observation_from_snapshots(activity, &background_shell_snapshots);
+                AsyncToolWorkerStatus {
+                    request_id: request_id_label(id),
+                    lifecycle_state: AsyncToolWorkerLifecycleState::Running,
+                    tool: activity.tool.clone(),
+                    summary: activity.summary.clone(),
+                    owner_kind: activity.owner_kind,
+                    source_call_id: activity.source_call_id.clone(),
+                    worker_thread_name: activity.worker_thread_name.clone(),
+                    runtime_elapsed: activity.elapsed(),
+                    state_elapsed: activity.elapsed(),
+                    hard_timeout: activity.hard_timeout,
+                    supervision_classification: activity.supervision_class(),
+                    observation_state: Some(observation.observation_state),
+                    observed_background_shell_job: observation.observed_background_shell_job,
+                    next_health_check_in: Some(activity.next_health_check_in()),
+                }
             })
             .chain(
                 self.abandoned_async_tool_requests
@@ -268,12 +281,15 @@ impl AppState {
                         lifecycle_state: AsyncToolWorkerLifecycleState::AbandonedAfterTimeout,
                         tool: request.tool.clone(),
                         summary: request.summary.clone(),
+                        owner_kind: super::AsyncToolOwnerKind::WrapperBackgroundShell,
+                        source_call_id: None,
                         worker_thread_name: request.worker_thread_name.clone(),
                         runtime_elapsed: request.elapsed_before_timeout,
                         state_elapsed: request.timed_out_elapsed(),
                         hard_timeout: request.hard_timeout,
                         supervision_classification: None,
                         observation_state: None,
+                        observed_background_shell_job: None,
                         next_health_check_in: None,
                     }),
             )
@@ -291,6 +307,7 @@ impl AppState {
         &mut self,
     ) -> Vec<super::AsyncToolHealthCheck> {
         let now = std::time::Instant::now();
+        let background_shell_snapshots = self.orchestration.background_shells.snapshots();
         let mut checks = self
             .active_async_tool_requests
             .iter_mut()
@@ -301,14 +318,20 @@ impl AppState {
                 }
                 let next_interval = activity.orchestrator_health_check_interval(elapsed);
                 activity.next_health_check_after = elapsed.saturating_add(next_interval);
+                let observation =
+                    async_tool_observation_from_snapshots(activity, &background_shell_snapshots);
                 Some(super::AsyncToolHealthCheck {
                     request_id: request_id_label(id),
                     tool: activity.tool.clone(),
                     summary: activity.summary.clone(),
+                    owner_kind: activity.owner_kind,
+                    source_call_id: activity.source_call_id.clone(),
                     worker_thread_name: activity.worker_thread_name.clone(),
                     elapsed,
                     supervision_classification:
                         super::AsyncToolActivity::supervision_class_at_elapsed(elapsed),
+                    observation_state: observation.observation_state,
+                    observed_background_shell_job: observation.observed_background_shell_job,
                 })
             })
             .collect::<Vec<_>>();
@@ -381,6 +404,58 @@ impl AppState {
             None => Some(super::SupervisionNoticeTransition::Cleared),
         }
     }
+}
+
+impl AppState {
+    pub(crate) fn async_tool_observation(
+        &self,
+        activity: &super::AsyncToolActivity,
+    ) -> AsyncToolObservation {
+        let background_shell_snapshots = self.orchestration.background_shells.snapshots();
+        async_tool_observation_from_snapshots(activity, &background_shell_snapshots)
+    }
+}
+
+fn async_tool_observation_from_snapshots(
+    activity: &super::AsyncToolActivity,
+    background_shell_snapshots: &[crate::background_shells::BackgroundShellJobSnapshot],
+) -> AsyncToolObservation {
+    let observed_background_shell_job = observed_background_shell_job_from_snapshots(
+        activity.source_call_id.as_deref(),
+        background_shell_snapshots,
+    )
+    .map(AsyncToolObservedBackgroundShellJob::from_snapshot);
+    let observation_state = match observed_background_shell_job.as_ref() {
+        Some(job) if job.status != "running" => {
+            AsyncToolObservationState::WrapperBackgroundShellTerminalWithoutToolResponse
+        }
+        Some(job) if job.total_lines > 0 => {
+            AsyncToolObservationState::WrapperBackgroundShellStreamingOutput
+        }
+        Some(_) => AsyncToolObservationState::WrapperBackgroundShellStartedNoOutputYet,
+        None => AsyncToolObservationState::NoJobOrOutputObservedYet,
+    };
+    AsyncToolObservation {
+        owner_kind: activity.owner_kind,
+        observation_state,
+        observed_background_shell_job,
+    }
+}
+
+fn observed_background_shell_job_from_snapshots(
+    source_call_id: Option<&str>,
+    background_shell_snapshots: &[crate::background_shells::BackgroundShellJobSnapshot],
+) -> Option<crate::background_shells::BackgroundShellJobSnapshot> {
+    let source_call_id = source_call_id?;
+    background_shell_snapshots
+        .iter()
+        .filter(|snapshot| snapshot.origin.source_call_id.as_deref() == Some(source_call_id))
+        .max_by(|left, right| {
+            left.total_lines
+                .cmp(&right.total_lines)
+                .then_with(|| left.id.cmp(&right.id))
+        })
+        .cloned()
 }
 
 impl Default for AppState {

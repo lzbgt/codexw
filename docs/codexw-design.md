@@ -29,6 +29,9 @@ and runtime states and decides whether to warn, interrupt, hand off, or
 replace itself, see [codexw-self-supervision.md](codexw-self-supervision.md)
 and
 [codexw-self-supervision-implementation-plan.md](codexw-self-supervision-implementation-plan.md).
+For the explicit ownership split between wrapper-owned background shells and
+app-server-owned exec/background-terminal work, see
+[codexw-background-execution-boundary.md](codexw-background-execution-boundary.md).
 For the plugin architecture that should carry optional capabilities without
 forcing a full core replacement, see
 [codexw-plugin-system.md](codexw-plugin-system.md) and

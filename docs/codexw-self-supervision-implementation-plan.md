@@ -7,6 +7,7 @@ This document turns self-supervision into an implementation-facing sequence.
 It sits below:
 
 - [codexw-self-supervision.md](codexw-self-supervision.md)
+- [codexw-background-execution-boundary.md](codexw-background-execution-boundary.md)
 - [codexw-self-evolution.md](codexw-self-evolution.md)
 - [codexw-plugin-system.md](codexw-plugin-system.md)
 
@@ -135,8 +136,14 @@ backend can inspect the dedicated worker-thread lane directly:
 - runtime/state elapsed seconds and hard timeout
 - current per-worker supervision classification when one exists
 - current observation state such as
-  `no_completion_or_output_observed_yet`
+  `no_job_or_output_observed_yet` or
+  `wrapper_background_shell_streaming_output`
 - next planned orchestrator health check horizon in seconds
+- explicit owner lane such as `wrapper_background_shell`
+- source call id when available
+- when the owner is the wrapper background-shell lane, the matched `bg-*` job
+  snapshot facts needed for operator inspection:
+  job id, status, command, line count, and recent output preview
 
 The same audit trail should keep the concrete tool summary or shell command
 visible in periodic inspection notices, so the operator is not left with only
@@ -145,6 +152,14 @@ a generic background-tool label while the worker remains unresolved.
 That slice should stay explicit about its limit: it is an inspection-ready
 worker-lifecycle report, not yet a proof that a blocking call inside the worker
 thread is still making forward progress.
+
+The current wrapper lane should also stay explicit in the implementation:
+
+- `background_shell_*` async workers are `codexw`-owned
+- app-server `command/exec` and server-observed background terminals are a
+  separate ownership model
+- recent hang fixes in this track are wrapper-runtime fixes, not claims that
+  both layers were co-owning one background task
 
 The current self-heal floor should be explicit: if an async shell-tool worker
 does not return before its bounded runtime limit, `codexw` should emit a failed

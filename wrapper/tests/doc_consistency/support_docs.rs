@@ -30,6 +30,8 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let self_supervision = read_repo_file("docs/codexw-self-supervision.md");
     let self_supervision_plan =
         read_repo_file("docs/codexw-self-supervision-implementation-plan.md");
+    let background_execution_boundary =
+        read_repo_file("docs/codexw-background-execution-boundary.md");
     let plugin_system = read_repo_file("docs/codexw-plugin-system.md");
     let plugin_system_plan = read_repo_file("docs/codexw-plugin-system-implementation-plan.md");
     let local_api_sketch = read_repo_file("docs/codexw-local-api-sketch.md");
@@ -79,6 +81,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-evolution-implementation-plan.md",
         "docs/codexw-self-supervision.md",
         "docs/codexw-self-supervision-implementation-plan.md",
+        "docs/codexw-background-execution-boundary.md",
         "docs/codexw-plugin-system.md",
         "docs/codexw-plugin-system-implementation-plan.md",
         "docs/codexw-local-api-sketch.md",
@@ -197,6 +200,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision-implementation-plan.md",
         "README.md",
     );
+    assert_contains(
+        &readme,
+        "docs/codexw-background-execution-boundary.md",
+        "README.md",
+    );
     assert_contains(&readme, "docs/codexw-plugin-system.md", "README.md");
     assert_contains(
         &readme,
@@ -297,6 +305,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains(
         &todos,
         "docs/codexw-self-supervision-implementation-plan.md",
+        "TODOS.md",
+    );
+    assert_contains(
+        &todos,
+        "docs/codexw-background-execution-boundary.md",
         "TODOS.md",
     );
     assert_contains(&todos, "docs/codexw-plugin-system.md", "TODOS.md");
@@ -863,6 +876,32 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &native_policy,
         "interrupt_or_exit_resume",
         "docs/codexw-native-support-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "wrapper-owned",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "command/exec",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &background_execution_boundary,
+        "source call id",
+        "docs/codexw-background-execution-boundary.md",
+    );
+    assert_contains_case_insensitive(
+        &self_supervision,
+        "wrapper_background_shell_streaming_output",
+        "docs/codexw-self-supervision.md",
+    );
+    assert_contains_case_insensitive(&self_supervision, "bg-*", "docs/codexw-self-supervision.md");
+    assert_contains_case_insensitive(
+        &self_supervision_plan,
+        "wrapper_background_shell_streaming_output",
+        "docs/codexw-self-supervision-implementation-plan.md",
     );
     assert_contains_case_insensitive(
         &native_policy,

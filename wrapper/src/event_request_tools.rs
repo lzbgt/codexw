@@ -110,6 +110,12 @@ pub(crate) fn handle_tool_request(
                     async_background_shell_timeout(tool, &params),
                     worker_name.clone(),
                 );
+                if let Some(activity) = state.active_async_tool_requests.get_mut(&request_id) {
+                    activity.source_call_id = params
+                        .get("callId")
+                        .and_then(serde_json::Value::as_str)
+                        .map(ToOwned::to_owned);
+                }
                 let resolved_cwd = resolved_cwd.to_string();
                 let tx = tx.clone();
                 let background_shells = state.orchestration.background_shells.clone();

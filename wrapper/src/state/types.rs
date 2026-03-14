@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::time::Instant;
 
+use crate::background_shells::BackgroundShellJobSnapshot;
 use crate::background_shells::BackgroundShellManager;
 use crate::background_terminals::BackgroundTerminalSummary;
 use crate::collaboration_preset::CollaborationModePreset;
@@ -60,6 +61,25 @@ pub(crate) struct ConversationMessage {
 pub(crate) enum AsyncToolSupervisionClass {
     ToolSlow,
     ToolWedged,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AsyncToolOwnerKind {
+    WrapperBackgroundShell,
+}
+
+impl AsyncToolOwnerKind {
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Self::WrapperBackgroundShell => "wrapper_background_shell",
+        }
+    }
+
+    pub(crate) fn prompt_label(self) -> &'static str {
+        match self {
+            Self::WrapperBackgroundShell => "wrapper bg shell",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -163,6 +183,8 @@ pub(crate) const DEFAULT_ASYNC_TOOL_REQUEST_TIMEOUT: Duration = Duration::from_s
 pub(crate) struct AsyncToolActivity {
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) owner_kind: AsyncToolOwnerKind,
+    pub(crate) source_call_id: Option<String>,
     pub(crate) worker_thread_name: String,
     pub(crate) started_at: Instant,
     pub(crate) hard_timeout: Duration,
@@ -210,10 +232,6 @@ impl AsyncToolActivity {
         Self::supervision_class_at_elapsed(self.elapsed())
     }
 
-    pub(crate) fn observation_state(&self) -> AsyncToolObservationState {
-        AsyncToolObservationState::NoCompletionOrOutputObservedYet
-    }
-
     pub(crate) fn next_health_check_in(&self) -> Duration {
         self.next_health_check_after.saturating_sub(self.elapsed())
     }
@@ -224,28 +242,85 @@ pub(crate) struct AsyncToolHealthCheck {
     pub(crate) request_id: String,
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) owner_kind: AsyncToolOwnerKind,
+    pub(crate) source_call_id: Option<String>,
     pub(crate) worker_thread_name: String,
     pub(crate) elapsed: Duration,
     pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
+    pub(crate) observation_state: AsyncToolObservationState,
+    pub(crate) observed_background_shell_job: Option<AsyncToolObservedBackgroundShellJob>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum AsyncToolObservationState {
-    NoCompletionOrOutputObservedYet,
+    NoJobOrOutputObservedYet,
+    WrapperBackgroundShellStartedNoOutputYet,
+    WrapperBackgroundShellStreamingOutput,
+    WrapperBackgroundShellTerminalWithoutToolResponse,
 }
 
 impl AsyncToolObservationState {
     pub(crate) fn label(self) -> &'static str {
         match self {
-            Self::NoCompletionOrOutputObservedYet => "no_completion_or_output_observed_yet",
+            Self::NoJobOrOutputObservedYet => "no_job_or_output_observed_yet",
+            Self::WrapperBackgroundShellStartedNoOutputYet => {
+                "wrapper_background_shell_started_no_output_yet"
+            }
+            Self::WrapperBackgroundShellStreamingOutput => {
+                "wrapper_background_shell_streaming_output"
+            }
+            Self::WrapperBackgroundShellTerminalWithoutToolResponse => {
+                "wrapper_background_shell_terminal_without_tool_response"
+            }
         }
     }
 
     pub(crate) fn prompt_label(self) -> &'static str {
         match self {
-            Self::NoCompletionOrOutputObservedYet => "awaiting completion/output",
+            Self::NoJobOrOutputObservedYet => "awaiting shell start/output",
+            Self::WrapperBackgroundShellStartedNoOutputYet => "job started; awaiting output",
+            Self::WrapperBackgroundShellStreamingOutput => "job streaming output",
+            Self::WrapperBackgroundShellTerminalWithoutToolResponse => {
+                "job ended; awaiting tool response"
+            }
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AsyncToolObservedBackgroundShellJob {
+    pub(crate) job_id: String,
+    pub(crate) status: String,
+    pub(crate) command: String,
+    pub(crate) total_lines: u64,
+    pub(crate) recent_lines: Vec<String>,
+}
+
+impl AsyncToolObservedBackgroundShellJob {
+    pub(crate) fn from_snapshot(snapshot: BackgroundShellJobSnapshot) -> Self {
+        Self {
+            job_id: snapshot.id,
+            status: snapshot.status,
+            command: snapshot.command,
+            total_lines: snapshot.total_lines,
+            recent_lines: snapshot.recent_lines,
+        }
+    }
+
+    pub(crate) fn latest_output_preview(&self) -> Option<&str> {
+        self.recent_lines
+            .iter()
+            .rev()
+            .find(|line| !line.trim().is_empty())
+            .map(String::as_str)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct AsyncToolObservation {
+    pub(crate) owner_kind: AsyncToolOwnerKind,
+    pub(crate) observation_state: AsyncToolObservationState,
+    pub(crate) observed_background_shell_job: Option<AsyncToolObservedBackgroundShellJob>,
 }
 
 #[derive(Debug, Clone)]
@@ -279,12 +354,15 @@ pub(crate) struct AsyncToolWorkerStatus {
     pub(crate) lifecycle_state: AsyncToolWorkerLifecycleState,
     pub(crate) tool: String,
     pub(crate) summary: String,
+    pub(crate) owner_kind: AsyncToolOwnerKind,
+    pub(crate) source_call_id: Option<String>,
     pub(crate) worker_thread_name: String,
     pub(crate) runtime_elapsed: Duration,
     pub(crate) state_elapsed: Duration,
     pub(crate) hard_timeout: Duration,
     pub(crate) supervision_classification: Option<AsyncToolSupervisionClass>,
     pub(crate) observation_state: Option<AsyncToolObservationState>,
+    pub(crate) observed_background_shell_job: Option<AsyncToolObservedBackgroundShellJob>,
     pub(crate) next_health_check_in: Option<Duration>,
 }
 

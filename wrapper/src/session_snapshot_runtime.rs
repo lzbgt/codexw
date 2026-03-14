@@ -57,6 +57,7 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
         ));
     }
     if let Some(async_tool) = state.oldest_async_tool_activity() {
+        let observation = state.async_tool_observation(async_tool);
         lines.push(format!(
             "async tools     {}",
             state.active_async_tool_requests.len()
@@ -73,9 +74,24 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             summarize_text(&async_tool.summary)
         ));
         lines.push(format!(
-            "async obs       {}",
-            async_tool.observation_state().label()
+            "async owner     {}",
+            observation.owner_kind.label()
         ));
+        if let Some(source_call_id) = async_tool.source_call_id.as_deref() {
+            lines.push(format!("async call      {source_call_id}"));
+        }
+        lines.push(format!(
+            "async obs       {}",
+            observation.observation_state.label()
+        ));
+        if let Some(job) = observation.observed_background_shell_job.as_ref() {
+            lines.push(format!("async job       {} {}", job.job_id, job.status));
+            lines.push(format!("async cmd       {}", summarize_text(&job.command)));
+            lines.push(format!("async lines     {}", job.total_lines));
+            if let Some(output) = job.latest_output_preview() {
+                lines.push(format!("async output    {}", summarize_text(output)));
+            }
+        }
         lines.push(format!(
             "async chk in    {}",
             format_elapsed(Some(
@@ -94,8 +110,19 @@ pub(crate) fn render_status_runtime(_cli: &Cli, state: &AppState) -> Vec<String>
             summarize_text(&worker.worker_thread_name)
         ));
         lines.push(format!("async worker id {}", worker.request_id));
+        lines.push(format!("async worker ow {}", worker.owner_kind.label()));
+        if let Some(source_call_id) = worker.source_call_id.as_deref() {
+            lines.push(format!("async worker cl {source_call_id}"));
+        }
         if let Some(observation_state) = worker.observation_state {
             lines.push(format!("async worker ob {}", observation_state.label()));
+        }
+        if let Some(job) = worker.observed_background_shell_job.as_ref() {
+            lines.push(format!("async worker jb {} {}", job.job_id, job.status));
+            lines.push(format!("async worker ln {}", job.total_lines));
+            if let Some(output) = job.latest_output_preview() {
+                lines.push(format!("async worker ot {}", summarize_text(output)));
+            }
         }
         if let Some(next_health_check_in) = worker.next_health_check_in {
             lines.push(format!(

@@ -34,6 +34,10 @@ Self-supervision should be:
 Broker participation may matter later, but the first supervision lane must work
 for a standalone local instance.
 
+The ownership boundary for the supervised background-execution lanes is tracked
+separately in
+[codexw-background-execution-boundary.md](codexw-background-execution-boundary.md).
+
 ## What Must Be Supervised
 
 The first supervision lane should watch at least:
@@ -82,9 +86,15 @@ elapsed runtime, and whether completion or output has been observed yet.
 That same slice should expose two more explicit inspection facts:
 
 - the current observation state, for example
-  `no_completion_or_output_observed_yet`
+  `no_job_or_output_observed_yet` or
+  `wrapper_background_shell_streaming_output`
 - the orchestrator's next planned inspection horizon rather than leaving the
   operator to guess when the worker will be re-evaluated
+- the owner lane, so operators and downstream clients can tell whether the
+  unresolved work is wrapper-owned `background_shell_*` work or something else
+- when the owner is the wrapper background-shell lane, the matched `bg-*` job
+  id, job status, command, and recent output preview whenever those facts are
+  available
 
 The first recommended actions should stay narrow and operator-safe:
 
@@ -146,6 +156,10 @@ first-class safety issue:
 - the backend inspection lane should expose `async_tool_workers` with each
   worker's request id, dedicated thread name, and lifecycle state such as
   `running` or `abandoned_after_timeout`
+- that same inspection lane should correlate wrapper-owned
+  `background_shell_start` requests to the started `bg-*` shell job via origin
+  `callId` so the runtime can report real job/output facts instead of only a
+  generic spinner
 - a timed-out detached worker may still return later, but its late response
   must be ignored for protocol correctness
 - the runtime should keep counting that abandoned async worker until the late

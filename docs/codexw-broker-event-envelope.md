@@ -77,9 +77,18 @@ Candidate envelope:
           "local_api_path": "/api/v1/session/sess_01HX.../turn/interrupt"
         }
       ],
+      "owner": "wrapper_background_shell",
+      "source_call_id": "call_123",
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
-      "observation_state": "no_completion_or_output_observed_yet",
+      "observation_state": "wrapper_background_shell_streaming_output",
+      "observed_background_shell_job": {
+        "job_id": "bg-1",
+        "status": "running",
+        "command": "npm run dev",
+        "total_lines": 1,
+        "recent_lines": ["READY"]
+      },
       "next_check_in_seconds": 9,
       "elapsed_seconds": 21,
       "active_request_count": 1
@@ -258,9 +267,18 @@ Optional means “present only when semantically relevant,” not “randomly om
           "local_api_path": null
         }
       ],
+      "owner": "wrapper_background_shell",
+      "source_call_id": "call_123",
       "tool": "background_shell_start",
       "summary": "arguments= command=sleep 5 tool=background_shell_start",
-      "observation_state": "no_completion_or_output_observed_yet",
+      "observation_state": "wrapper_background_shell_terminal_without_tool_response",
+      "observed_background_shell_job": {
+        "job_id": "bg-1",
+        "status": "failed",
+        "command": "npm run dev",
+        "total_lines": 3,
+        "recent_lines": ["boom"]
+      },
       "next_check_in_seconds": 30,
       "elapsed_seconds": 75,
       "active_request_count": 1
@@ -281,7 +299,10 @@ explicit `recovery_options` such as `observe_status`, `interrupt_turn`, and
 abandoned async worker backlog and whether new background-shell async requests
 should currently be refused, plus `async_tool_workers` so a remote agent
 backend can inspect dedicated worker thread names and lifecycle states such as
-`running` and `abandoned_after_timeout` without scraping prompt text.
+`running` and `abandoned_after_timeout` without scraping prompt text, plus
+explicit owner-lane state such as `wrapper_background_shell`, source `callId`,
+and correlated `bg-*` job facts when a wrapper-owned
+`background_shell_start` request has already produced a shell job.
 
 ## Exclusions
 

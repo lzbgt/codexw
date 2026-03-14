@@ -84,6 +84,8 @@ The implemented native-side product already has:
 - `async_tool_workers` inspection visibility for dedicated async worker thread
   names and lifecycle states such as `running` and
   `abandoned_after_timeout`
+- explicit owner-lane visibility for that async work, currently
+  `wrapper_background_shell`
 - local refusal of new background-shell async requests when the abandoned async
   backlog is saturated
 - orchestrator-owned periodic inspection of active async shell-tool workers,
@@ -91,6 +93,9 @@ The implemented native-side product already has:
   for the visible tool summary / shell command
 - structured inspection visibility for that active async work, including
   observation state plus the orchestrator's next planned health check horizon
+- correlation from wrapper-owned `background_shell_start` requests to the
+  observed `bg-*` shell job via source `callId`, so prompt/status/local-API
+  surfaces can show job id, job status, command, and recent output preview
 - single-pass resume-history hydration, so loading a large resumed thread does
   not walk the full turn history multiple times just to seed state and render
   the latest conversation preview

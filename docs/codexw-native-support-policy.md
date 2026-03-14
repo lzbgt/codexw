@@ -69,11 +69,16 @@ drift casually:
 - explicit dedicated worker inspection visibility through `async_tool_workers`,
   including lifecycle states such as `running` and
   `abandoned_after_timeout`
+- explicit owner-lane visibility for that async work, currently
+  `wrapper_background_shell`
 - orchestrator-owned periodic async-worker inspection notices that keep the
   concrete tool summary or shell command visible and say when no
   completion/output has been observed yet
 - structured async-worker inspection fields that expose the current
   observation state and the orchestrator's next planned health check horizon
+- correlated wrapper-shell inspection facts, so a supervised
+  `background_shell_start` can surface the matched `bg-*` job id, job status,
+  command, and recent output preview when those facts exist
 - local refusal of new background-shell async requests when that backlog is
   saturated
 - single-pass resume-history hydration for resumed-thread state seeding and

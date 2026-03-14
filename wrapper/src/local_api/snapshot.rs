@@ -53,9 +53,12 @@ pub(crate) struct LocalApiAsyncToolSupervision {
     pub(crate) recommended_action: String,
     pub(crate) recovery_policy: LocalApiRecoveryPolicy,
     pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
+    pub(crate) owner: String,
+    pub(crate) source_call_id: Option<String>,
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) observation_state: String,
+    pub(crate) observed_background_shell_job: Option<LocalApiObservedBackgroundShellJob>,
     pub(crate) next_check_in_seconds: u64,
     pub(crate) elapsed_seconds: u64,
     pub(crate) active_request_count: usize,
@@ -78,9 +81,12 @@ pub(crate) struct LocalApiAsyncToolWorker {
     pub(crate) request_id: String,
     pub(crate) lifecycle_state: String,
     pub(crate) thread_name: String,
+    pub(crate) owner: String,
+    pub(crate) source_call_id: Option<String>,
     pub(crate) tool: String,
     pub(crate) summary: String,
     pub(crate) observation_state: Option<String>,
+    pub(crate) observed_background_shell_job: Option<LocalApiObservedBackgroundShellJob>,
     pub(crate) next_check_in_seconds: Option<u64>,
     pub(crate) runtime_elapsed_seconds: u64,
     pub(crate) state_elapsed_seconds: u64,
@@ -96,6 +102,15 @@ pub(crate) struct LocalApiSupervisionNotice {
     pub(crate) recovery_options: Vec<LocalApiRecoveryOption>,
     pub(crate) tool: String,
     pub(crate) summary: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct LocalApiObservedBackgroundShellJob {
+    pub(crate) job_id: String,
+    pub(crate) status: String,
+    pub(crate) command: String,
+    pub(crate) total_lines: u64,
+    pub(crate) recent_lines: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -345,6 +360,7 @@ fn async_tool_supervision_snapshot(
 ) -> Option<LocalApiAsyncToolSupervision> {
     let activity = state.oldest_async_tool_activity()?;
     let classification = activity.supervision_class()?;
+    let observation = state.async_tool_observation(activity);
     Some(LocalApiAsyncToolSupervision {
         classification: classification.label().to_string(),
         recommended_action: classification.recommended_action().to_string(),
@@ -353,9 +369,14 @@ fn async_tool_supervision_snapshot(
             automation_ready: classification.automation_ready(),
         },
         recovery_options: recovery_options_snapshot(session_id, cwd, state, classification),
+        owner: observation.owner_kind.label().to_string(),
+        source_call_id: activity.source_call_id.clone(),
         tool: activity.tool.clone(),
         summary: activity.summary.clone(),
-        observation_state: activity.observation_state().label().to_string(),
+        observation_state: observation.observation_state.label().to_string(),
+        observed_background_shell_job: observation
+            .observed_background_shell_job
+            .map(local_api_observed_background_shell_job),
         next_check_in_seconds: activity.next_health_check_in().as_secs(),
         elapsed_seconds: activity.elapsed().as_secs(),
         active_request_count: state.active_async_tool_requests.len(),
@@ -384,11 +405,16 @@ fn async_tool_workers_snapshot(state: &AppState) -> Vec<LocalApiAsyncToolWorker>
             request_id: worker.request_id,
             lifecycle_state: worker.lifecycle_state.label().to_string(),
             thread_name: worker.worker_thread_name,
+            owner: worker.owner_kind.label().to_string(),
+            source_call_id: worker.source_call_id,
             tool: worker.tool,
             summary: worker.summary,
             observation_state: worker
                 .observation_state
                 .map(|observation_state| observation_state.label().to_string()),
+            observed_background_shell_job: worker
+                .observed_background_shell_job
+                .map(local_api_observed_background_shell_job),
             next_check_in_seconds: worker.next_health_check_in.map(|value| value.as_secs()),
             runtime_elapsed_seconds: worker.runtime_elapsed.as_secs(),
             state_elapsed_seconds: worker.state_elapsed.as_secs(),
@@ -420,6 +446,18 @@ fn supervision_notice_snapshot(
         tool: notice.tool.clone(),
         summary: notice.summary.clone(),
     })
+}
+
+fn local_api_observed_background_shell_job(
+    job: crate::state::AsyncToolObservedBackgroundShellJob,
+) -> LocalApiObservedBackgroundShellJob {
+    LocalApiObservedBackgroundShellJob {
+        job_id: job.job_id,
+        status: job.status,
+        command: job.command,
+        total_lines: job.total_lines,
+        recent_lines: job.recent_lines,
+    }
 }
 
 fn recovery_options_snapshot(
