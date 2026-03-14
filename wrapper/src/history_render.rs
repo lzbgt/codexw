@@ -7,8 +7,8 @@ use crate::output::Output;
 use crate::state::AppState;
 use crate::state::get_string;
 
-use crate::history_state::latest_conversation_history_items;
-use crate::history_state::seed_resumed_state_from_turns;
+use crate::history_state::collect_resumed_history_snapshot;
+use crate::history_state::seed_resumed_state_from_snapshot;
 
 pub(crate) fn render_resumed_history(
     result: &Value,
@@ -26,14 +26,14 @@ pub(crate) fn render_resumed_history(
         return Ok(());
     }
 
-    seed_resumed_state_from_turns(turns, state);
-    let conversation_items = latest_conversation_history_items(turns, 10);
-    if conversation_items.is_empty() {
+    let snapshot = collect_resumed_history_snapshot(turns, 10, 50);
+    seed_resumed_state_from_snapshot(&snapshot, state);
+    if snapshot.conversation_items.is_empty() {
         return Ok(());
     }
 
     output.line_stderr("[history] showing latest 10 conversation messages from resumed thread")?;
-    for item in conversation_items {
+    for item in snapshot.conversation_items {
         render_history_item(item, state, output)?;
     }
     Ok(())

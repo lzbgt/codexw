@@ -6,32 +6,109 @@ use crate::requests::ThreadListView;
 use crate::state::get_string;
 use crate::state::summarize_text;
 
-fn sorted_threads(result: &Value) -> Vec<Value> {
-    let mut threads = result
+#[derive(Debug, Clone)]
+pub(crate) struct ThreadListEntry {
+    pub(crate) id: String,
+    pub(crate) preview: String,
+    pub(crate) status: String,
+    pub(crate) updated_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ThreadListSnapshot {
+    entries: Vec<ThreadListEntry>,
+}
+
+pub(crate) fn thread_list_snapshot(result: &Value) -> ThreadListSnapshot {
+    let mut entries = result
         .get("data")
         .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default();
-    threads.sort_by(|left, right| {
-        let left_updated = left
-            .get("updatedAt")
-            .and_then(Value::as_i64)
-            .unwrap_or(i64::MIN);
-        let right_updated = right
-            .get("updatedAt")
-            .and_then(Value::as_i64)
-            .unwrap_or(i64::MIN);
-        right_updated.cmp(&left_updated).then_with(|| {
-            get_string(left, &["id"])
-                .unwrap_or("")
-                .cmp(get_string(right, &["id"]).unwrap_or(""))
+        .into_iter()
+        .flatten()
+        .filter_map(|thread| {
+            let id = get_string(thread, &["id"])?;
+            Some(ThreadListEntry {
+                id: id.to_string(),
+                preview: get_string(thread, &["preview"]).unwrap_or("-").to_string(),
+                status: get_string(thread, &["status", "type"])
+                    .unwrap_or("unknown")
+                    .to_string(),
+                updated_at: thread.get("updatedAt").and_then(Value::as_i64),
+            })
         })
+        .collect::<Vec<_>>();
+    entries.sort_by(|left, right| {
+        right
+            .updated_at
+            .unwrap_or(i64::MIN)
+            .cmp(&left.updated_at.unwrap_or(i64::MIN))
+            .then_with(|| left.id.cmp(&right.id))
     });
-    threads
+    ThreadListSnapshot { entries }
+}
+
+impl ThreadListSnapshot {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    pub(crate) fn thread_ids(&self) -> Vec<String> {
+        self.entries.iter().map(|entry| entry.id.clone()).collect()
+    }
+
+    pub(crate) fn agent_thread_summaries(&self) -> Vec<CachedAgentThreadSummary> {
+        self.entries
+            .iter()
+            .map(|thread| CachedAgentThreadSummary {
+                id: thread.id.clone(),
+                status: thread.status.clone(),
+                preview: summarize_agent_preview(&thread.preview),
+                updated_at: thread.updated_at,
+            })
+            .collect()
+    }
+
+    pub(crate) fn render(&self, search_term: Option<&str>, view: ThreadListView) -> String {
+        if self.entries.is_empty() {
+            return match (view, search_term) {
+                (ThreadListView::Agents, _) => "No agents available yet.".to_string(),
+                (ThreadListView::Threads, Some(search_term)) => {
+                    format!("No threads matched \"{search_term}\".")
+                }
+                (ThreadListView::Threads, None) => {
+                    "No threads found for the current workspace.".to_string()
+                }
+            };
+        }
+        let mut lines = Vec::new();
+        if let Some(search_term) = search_term {
+            lines.push(format!("Search: {search_term}"));
+        }
+        lines.extend(self.entries.iter().enumerate().map(|(index, thread)| {
+            let updated_at = thread
+                .updated_at
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "-".to_string());
+            format!(
+                "{:>2}. {}  [{}]  [updated {}]  {}",
+                index + 1,
+                thread.id,
+                thread.status,
+                updated_at,
+                summarize_text(&thread.preview)
+            )
+        }));
+        let footer = match view {
+            ThreadListView::Threads => "Use /resume <n> to resume one of these threads.",
+            ThreadListView::Agents => "Use /resume <n> to switch to one of these agent threads.",
+        };
+        lines.push(footer.to_string());
+        lines.join("\n")
+    }
 }
 
 pub(crate) fn thread_list_is_empty(result: &Value) -> bool {
-    sorted_threads(result).is_empty()
+    thread_list_snapshot(result).is_empty()
 }
 
 pub(crate) fn should_fallback_to_all_workspaces(
@@ -42,72 +119,23 @@ pub(crate) fn should_fallback_to_all_workspaces(
     cwd_filter.is_some() && search_term.is_none() && thread_list_is_empty(result)
 }
 
+#[cfg(test)]
 pub(crate) fn render_thread_list(
     result: &Value,
     search_term: Option<&str>,
     view: ThreadListView,
 ) -> String {
-    let threads = sorted_threads(result);
-    if threads.is_empty() {
-        return match (view, search_term) {
-            (ThreadListView::Agents, _) => "No agents available yet.".to_string(),
-            (ThreadListView::Threads, Some(search_term)) => {
-                format!("No threads matched \"{search_term}\".")
-            }
-            (ThreadListView::Threads, None) => {
-                "No threads found for the current workspace.".to_string()
-            }
-        };
-    }
-    let mut lines = Vec::new();
-    if let Some(search_term) = search_term {
-        lines.push(format!("Search: {search_term}"));
-    }
-    lines.extend(threads.iter().enumerate().map(|(index, thread)| {
-        let id = get_string(thread, &["id"]).unwrap_or("?");
-        let preview = get_string(thread, &["preview"]).unwrap_or("-");
-        let status = get_string(thread, &["status", "type"]).unwrap_or("unknown");
-        let updated_at = thread
-            .get("updatedAt")
-            .and_then(Value::as_i64)
-            .map(|value| value.to_string())
-            .unwrap_or_else(|| "-".to_string());
-        format!(
-            "{:>2}. {id}  [{status}]  [updated {updated_at}]  {}",
-            index + 1,
-            summarize_text(preview)
-        )
-    }));
-    let footer = match view {
-        ThreadListView::Threads => "Use /resume <n> to resume one of these threads.",
-        ThreadListView::Agents => "Use /resume <n> to switch to one of these agent threads.",
-    };
-    lines.push(footer.to_string());
-    lines.join("\n")
+    thread_list_snapshot(result).render(search_term, view)
 }
 
+#[cfg(test)]
 pub(crate) fn extract_thread_ids(result: &Value) -> Vec<String> {
-    sorted_threads(result)
-        .iter()
-        .filter_map(|thread| get_string(thread, &["id"]).map(ToOwned::to_owned))
-        .collect()
+    thread_list_snapshot(result).thread_ids()
 }
 
+#[cfg(test)]
 pub(crate) fn extract_agent_thread_summaries(result: &Value) -> Vec<CachedAgentThreadSummary> {
-    sorted_threads(result)
-        .iter()
-        .filter_map(|thread| {
-            let id = get_string(thread, &["id"])?;
-            Some(CachedAgentThreadSummary {
-                id: id.to_string(),
-                status: get_string(thread, &["status", "type"])
-                    .unwrap_or("unknown")
-                    .to_string(),
-                preview: summarize_agent_preview(get_string(thread, &["preview"]).unwrap_or("-")),
-                updated_at: thread.get("updatedAt").and_then(Value::as_i64),
-            })
-        })
-        .collect()
+    thread_list_snapshot(result).agent_thread_summaries()
 }
 
 #[cfg(test)]

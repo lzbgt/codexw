@@ -180,6 +180,11 @@ Concrete tasks:
     explicit that this is not yet a proof of in-worker forward progress
   - the runtime should decide whether to warn, interrupt, hand off, or replace
     itself rather than staying stuck indefinitely
+- keep resume list/load latency bounded:
+  - resume-history hydration should stay single-pass over turns for latest
+    preview/state seeding work
+  - thread-list rendering should avoid repeated sort/clone work once a
+    response is already in memory
 - keep the plugin-first expansion rule explicit:
   - optional capabilities such as voice reminder or live IM reporting should
     land through the plugin system when core runtime contracts do not need to

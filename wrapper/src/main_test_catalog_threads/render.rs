@@ -4,6 +4,7 @@ use crate::catalog_thread_list::extract_thread_ids;
 use crate::catalog_thread_list::render_thread_list;
 use crate::catalog_thread_list::should_fallback_to_all_workspaces;
 use crate::catalog_thread_list::thread_list_is_empty;
+use crate::catalog_thread_list::thread_list_snapshot;
 use crate::requests::ThreadListView;
 use crate::requests::thread_list_params;
 use serde_json::json;
@@ -27,10 +28,12 @@ fn thread_list_is_numbered_and_extractable() {
         ]
     });
     let rendered = render_thread_list(&result, None, ThreadListView::Threads);
+    let snapshot = thread_list_snapshot(&result);
     assert!(rendered.contains(" 1. thr_newer"));
     assert!(rendered.contains(" 2. thr_older"));
     assert!(rendered.contains("Use /resume <n>"));
     assert_eq!(extract_thread_ids(&result), vec!["thr_newer", "thr_older"]);
+    assert_eq!(snapshot.thread_ids(), vec!["thr_newer", "thr_older"]);
     assert!(!thread_list_is_empty(&result));
 }
 

@@ -1,3 +1,4 @@
+use crate::history_state::collect_resumed_history_snapshot;
 use crate::history_state::latest_conversation_history_items;
 use crate::history_state::seed_resumed_state_from_turns;
 use crate::state::AppState;
@@ -37,6 +38,17 @@ fn resume_helpers_only_keep_recent_conversation_context() {
     assert_eq!(
         recent_items[1].get("type").and_then(Value::as_str),
         Some("agentMessage")
+    );
+
+    let snapshot = collect_resumed_history_snapshot(&turns, 2, 50);
+    assert_eq!(snapshot.conversation_history.len(), 4);
+    assert_eq!(
+        snapshot.latest_user_message.as_deref(),
+        Some("latest request")
+    );
+    assert_eq!(
+        snapshot.latest_agent_message.as_deref(),
+        Some("latest reply")
     );
 }
 

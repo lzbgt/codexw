@@ -71,6 +71,8 @@ drift casually:
   `abandoned_after_timeout`
 - local refusal of new background-shell async requests when that backlog is
   saturated
+- single-pass resume-history hydration for resumed-thread state seeding and
+  latest-message preview extraction
 - the direction that stalled tool/runtime paths should be recoverable through
   self-supervision rather than left as indefinite hangs
 - the direction that optional capabilities should prefer plugin delivery when
