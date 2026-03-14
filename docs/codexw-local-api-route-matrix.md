@@ -200,8 +200,8 @@ planning boundary. The artifact surface is not implemented yet, but it is no
 longer an unnamed future bucket.
 
 Until that track is implemented, local-API consumers should still read the
-current remote host-examination model as shell-first rather than as an implied
-artifact list/detail/content API.
+current remote host-examination model as the shell-first foundation of the
+current supported experimental adapter rather than as an implied artifact list/detail/content API.
 
 If the artifact track moves into implementation, the first candidate route
 family should be:

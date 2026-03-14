@@ -2459,6 +2459,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "shell-first",
         "docs/codexw-local-api-sketch.md",
     );
+    assert_contains_case_insensitive(
+        &local_api_sketch,
+        "supported experimental adapter",
+        "docs/codexw-local-api-sketch.md",
+    );
     assert_contains(
         &local_api_plan,
         "docs/codexw-broker-integration-handoff.md",
@@ -2467,6 +2472,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &local_api_plan,
         "shell-first",
+        "docs/codexw-local-api-implementation-plan.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_plan,
+        "supported experimental adapter",
         "docs/codexw-local-api-implementation-plan.md",
     );
     assert_contains(
@@ -2481,6 +2491,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &local_api_route_matrix,
+        "supported experimental adapter",
+        "docs/codexw-local-api-route-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &local_api_route_matrix,
         "future project/dependency collaboration track",
         "docs/codexw-local-api-route-matrix.md",
     );
@@ -2488,6 +2503,21 @@ fn support_claim_source_docs_exist_and_are_linked() {
         &local_api_route_matrix,
         "codexw-cross-project-dependency-contract-sketch.md",
         "docs/codexw-local-api-route-matrix.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_arch,
+        "shell-first",
+        "docs/codexw-broker-client-architecture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_arch,
+        "supported experimental adapter",
+        "docs/codexw-broker-client-architecture.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_shared_assumptions,
+        "supported experimental adapter",
+        "docs/codexw-broker-shared-assumptions.md",
     );
     assert_contains_case_insensitive(
         &broker_artifact_sketch,

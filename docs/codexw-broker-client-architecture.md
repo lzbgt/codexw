@@ -147,6 +147,11 @@ The remaining product question is whether the exposed broker-facing surface is
 complete enough for app/WebUI clients to examine the host and artifacts without
 falling back to direct terminal access.
 
+For the current supported experimental adapter, that host-examination surface
+should still be read as shell-first plus transcript/event inspection and
+explicit artifact references, not as an already-supported artifact
+list/detail/content API.
+
 ## Current Gaps To Keep Explicit
 
 The following gaps should remain explicit while this architecture is being
@@ -155,7 +160,9 @@ carried forward:
 - app/WebUI clients live in the sibling `~/work/agent` workspace rather than in
   this repo
 - `codexw` does not yet define a richer broker-visible artifact catalog
-  separate from transcript, shell output, and existing file/path references
+  separate from transcript, shell output, and existing file/path references,
+  and that richer artifact route family is not part of the current supported
+  experimental adapter
 - auth, identity, and deployment routing still depend on the external broker
   layer rather than being fully modeled inside `codexw`
 

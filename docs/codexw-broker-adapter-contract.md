@@ -55,6 +55,11 @@ For the short external-consumer read that the sibling `~/work/agent` workspace
 should build against, see
 [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
+For host examination specifically, the current supported experimental adapter
+should still be read as a shell-first foundation built from session, event,
+shell, and service surfaces rather than as an implicit artifact
+list/detail/content contract.
+
 ## Authority Model
 
 The current adapter stack has one canonical authority:

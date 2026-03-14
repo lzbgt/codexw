@@ -116,9 +116,10 @@ projection, not whether the local API can carry client/lease intent at all.
 - scene/entity APIs
 - deployment routing
 
-The current local-API posture for remote host examination therefore remains
-shell-first, with any richer artifact list/detail/content API tracked
-separately rather than implied by the implemented route baseline.
+The current local-API posture for remote host examination therefore remains the
+shell-first foundation of the current supported experimental adapter, with any
+richer artifact list/detail/content API tracked separately rather than implied
+by the implemented route baseline.
 
 ## Proposed Runtime Shape
 

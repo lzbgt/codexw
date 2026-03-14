@@ -357,8 +357,9 @@ of scope for the first local-API/connector phase:
 - general scene/entity APIs
 
 That means local-API consumers should still treat remote host examination as
-shell-first, with any stable artifact list/detail/content API remaining a
-separate track rather than an implied part of the current route surface.
+the shell-first foundation of the current supported experimental adapter, with
+any stable artifact list/detail/content API remaining a separate track rather
+than an implied part of the current route surface.
 
 ## Initial-Slice Success Criteria
 
