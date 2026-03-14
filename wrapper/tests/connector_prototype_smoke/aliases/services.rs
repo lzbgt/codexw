@@ -242,6 +242,98 @@ fn connector_alias_shell_service_and_capability_detail_routes_map_cleanly() -> R
 }
 
 #[test]
+fn connector_alias_action_routes_decode_percent_encoded_job_refs() -> Result<()> {
+    let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
+    let local_addr = local_listener.local_addr().context("local api addr")?;
+
+    let fake_server = thread::spawn(move || -> Result<()> {
+        for expected in 0..2 {
+            let (mut stream, _) = local_listener.accept().context("accept fake local api")?;
+            let request = read_http_request(&mut stream)?;
+            match expected {
+                0 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(request.path, "/api/v1/session/sess_1/shells/@api.http/poll");
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "shell": { "job_id": "bg-1", "alias": "dev.api" },
+                            "poll": { "stdout": "", "done": false }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                1 => {
+                    assert_eq!(request.method, "POST");
+                    assert_eq!(
+                        request.path,
+                        "/api/v1/session/sess_1/services/@frontend.dev/attach"
+                    );
+                    write_http_response(
+                        &mut stream,
+                        200,
+                        "OK",
+                        &[("Content-Type", "application/json")],
+                        serde_json::to_vec(&json!({
+                            "ok": true,
+                            "service": {
+                                "job_id": "bg-2",
+                                "capabilities": ["@frontend.dev"]
+                            }
+                        }))?
+                        .as_slice(),
+                    )?;
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(())
+    });
+
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_addr.port())?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let shell_poll_response = send_raw_request(
+        connector_port,
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/shells/%40api.http/poll HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "Content-Length: 2\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+    )?;
+    assert!(shell_poll_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(shell_poll_response.contains("\"job_id\":\"bg-1\""));
+
+    let service_attach_response = send_raw_request(
+        connector_port,
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/services/%40frontend.dev/attach HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "Content-Length: 2\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+    )?;
+    assert!(service_attach_response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(service_attach_response.contains("\"job_id\":\"bg-2\""));
+    assert!(service_attach_response.contains("\"@frontend.dev\""));
+
+    fake_server.join().expect("fake server thread")?;
+    Ok(())
+}
+
+#[test]
 fn connector_alias_turn_and_service_routes_propagate_attachment_conflict() -> Result<()> {
     let local_listener = TcpListener::bind("127.0.0.1:0").context("bind fake local api")?;
     let local_addr = local_listener.local_addr().context("local api addr")?;

@@ -155,6 +155,13 @@ const BROKER_ALIAS_ROUTES: &[AliasRouteCase] = &[
     },
     AliasRouteCase {
         method: "POST",
+        path: "/v1/agents/codexw-lab/sessions/sess_1/shells/%40api.http/poll",
+        local_path: "/api/v1/session/sess_1/shells/@api.http/poll",
+        is_sse: false,
+        session_id_hint: None,
+    },
+    AliasRouteCase {
+        method: "POST",
         path: "/v1/agents/codexw-lab/sessions/sess_1/shells/bg-2/send",
         local_path: "/api/v1/session/sess_1/shells/bg-2/send",
         is_sse: false,
@@ -213,6 +220,13 @@ const BROKER_ALIAS_ROUTES: &[AliasRouteCase] = &[
         method: "POST",
         path: "/v1/agents/codexw-lab/sessions/sess_1/services/dev.api/attach",
         local_path: "/api/v1/session/sess_1/services/dev.api/attach",
+        is_sse: false,
+        session_id_hint: None,
+    },
+    AliasRouteCase {
+        method: "POST",
+        path: "/v1/agents/codexw-lab/sessions/sess_1/services/%40frontend.dev/attach",
+        local_path: "/api/v1/session/sess_1/services/@frontend.dev/attach",
         is_sse: false,
         session_id_hint: None,
     },
@@ -406,4 +420,28 @@ fn resolve_proxy_target_rejects_wrong_agent_for_alias_routes() {
     assert!(
         resolve_proxy_target("GET", "/v1/agents/other/sessions/sess_1", "codexw-lab").is_none()
     );
+}
+
+#[test]
+fn resolve_proxy_target_rejects_invalid_percent_encoded_alias_segments() {
+    for (method, path) in [
+        ("GET", "/v1/agents/codexw-lab/sessions/sess_1/shells/%ZZ"),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/shells/%ZZ/poll",
+        ),
+        (
+            "GET",
+            "/v1/agents/codexw-lab/sessions/sess_1/capabilities/%ZZ",
+        ),
+        (
+            "POST",
+            "/v1/agents/codexw-lab/sessions/sess_1/services/%ZZ/attach",
+        ),
+    ] {
+        assert!(
+            resolve_proxy_target(method, path, "codexw-lab").is_none(),
+            "expected invalid percent-encoded alias segment to be rejected for {method} {path}"
+        );
+    }
 }

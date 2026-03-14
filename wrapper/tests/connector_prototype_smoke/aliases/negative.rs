@@ -89,6 +89,32 @@ fn connector_returns_not_found_for_out_of_scope_global_broker_route() -> Result<
 }
 
 #[test]
+fn connector_returns_not_found_for_invalid_percent_encoded_alias_segment() -> Result<()> {
+    let local_api_port = reserve_port()?;
+    let connector_port = reserve_port()?;
+    let mut connector = spawn_connector(connector_port, local_api_port)?;
+    wait_for_healthz(&mut connector, connector_port)?;
+
+    let response = send_raw_request(
+        connector_port,
+        concat!(
+            "POST /v1/agents/codexw-lab/sessions/sess_1/services/%ZZ/attach HTTP/1.1\r\n",
+            "Host: localhost\r\n",
+            "Content-Type: application/json\r\n",
+            "Content-Length: 2\r\n",
+            "Connection: close\r\n",
+            "\r\n",
+            "{}"
+        ),
+    )?;
+    assert!(response.starts_with("HTTP/1.1 404 Not Found\r\n"));
+    assert!(response.contains("\"code\":\"not_found\""));
+    assert!(response.contains("unknown connector route"));
+
+    Ok(())
+}
+
+#[test]
 fn connector_rejects_raw_proxy_route_outside_allowed_surface() -> Result<()> {
     let local_api_port = reserve_port()?;
     let connector_port = reserve_port()?;

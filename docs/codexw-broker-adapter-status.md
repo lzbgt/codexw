@@ -130,6 +130,7 @@ the real connector binary:
 - capability list / detail
 - explicit rejection of unsupported broker-style aliases and out-of-allowlist
   raw proxy / raw proxy SSE routes
+- explicit rejection of malformed percent-encoded broker alias path segments
 - broker-style SSE consumption
 - broker-style SSE resume through `Last-Event-ID`
 - structured lease-conflict propagation
@@ -145,6 +146,8 @@ the real connector binary:
 - explicit route-by-route connector allowlist and broker-alias mapping,
   including an invariant that every claimed broker-style alias resolves only to
   a local target the connector allowlist still permits
+- percent-decoded `job_ref`/capability path handling across both detail reads
+  and mutating shell/service alias routes
 - one combined leased workflow that mixes:
   - initial event consumption
   - lease-owned service mutation

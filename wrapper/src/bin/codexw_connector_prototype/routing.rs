@@ -29,6 +29,31 @@ fn percent_decode_path_segment(value: &str) -> Option<String> {
     String::from_utf8(decoded).ok()
 }
 
+fn local_session_path(session_id: &str, suffix: &str) -> String {
+    format!("/api/v1/session/{session_id}/{suffix}")
+}
+
+fn decoded_session_ref_path(session_id: &str, category: &str, reference: &str) -> Option<String> {
+    let reference = percent_decode_path_segment(reference)?;
+    Some(local_session_path(
+        session_id,
+        &format!("{category}/{reference}"),
+    ))
+}
+
+fn decoded_session_ref_action_path(
+    session_id: &str,
+    category: &str,
+    reference: &str,
+    action: &str,
+) -> Option<String> {
+    let reference = percent_decode_path_segment(reference)?;
+    Some(local_session_path(
+        session_id,
+        &format!("{category}/{reference}/{action}"),
+    ))
+}
+
 pub(super) fn resolve_proxy_target(
     method: &str,
     path: &str,
@@ -73,147 +98,186 @@ pub(super) fn resolve_proxy_target(
                     session_id_hint: Some(session_id),
                 }),
                 ["attachment", "renew"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/attachment/renew"),
+                    local_path: local_session_path(&session_id, "attachment/renew"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["attachment", "release"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/attachment/release"),
+                    local_path: local_session_path(&session_id, "attachment/release"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["client-events"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/client_event"),
+                    local_path: local_session_path(&session_id, "client_event"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["turns"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/turn/start"),
+                    local_path: local_session_path(&session_id, "turn/start"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["interrupt"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/turn/interrupt"),
+                    local_path: local_session_path(&session_id, "turn/interrupt"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["transcript"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/transcript"),
+                    local_path: local_session_path(&session_id, "transcript"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["shells"] => Some(ProxyTarget {
                     local_path: if method == "GET" {
-                        format!("/api/v1/session/{session_id}/shells")
+                        local_session_path(&session_id, "shells")
                     } else {
-                        format!("/api/v1/session/{session_id}/shells/start")
+                        local_session_path(&session_id, "shells/start")
                     },
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["shells", job_ref] if method == "GET" => {
-                    let job_ref = percent_decode_path_segment(job_ref)?;
-                    Some(ProxyTarget {
-                        local_path: format!("/api/v1/session/{session_id}/shells/{job_ref}"),
-                        is_sse: false,
-                        session_id_hint: None,
-                    })
-                }
+                ["shells", job_ref] if method == "GET" => Some(ProxyTarget {
+                    local_path: decoded_session_ref_path(&session_id, "shells", job_ref)?,
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
                 ["shells", job_ref, "poll"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/shells/{job_ref}/poll"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "shells",
+                        job_ref,
+                        "poll",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["shells", job_ref, "send"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/shells/{job_ref}/send"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "shells",
+                        job_ref,
+                        "send",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["shells", job_ref, "terminate"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/shells/{job_ref}/terminate"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "shells",
+                        job_ref,
+                        "terminate",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["services"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services"),
+                    local_path: local_session_path(&session_id, "services"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["services", job_ref] if method == "GET" => {
-                    let job_ref = percent_decode_path_segment(job_ref)?;
-                    Some(ProxyTarget {
-                        local_path: format!("/api/v1/session/{session_id}/services/{job_ref}"),
-                        is_sse: false,
-                        session_id_hint: None,
-                    })
-                }
+                ["services", job_ref] if method == "GET" => Some(ProxyTarget {
+                    local_path: decoded_session_ref_path(&session_id, "services", job_ref)?,
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
                 ["capabilities"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/capabilities"),
+                    local_path: local_session_path(&session_id, "capabilities"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
-                ["capabilities", capability] if method == "GET" => {
-                    let capability = percent_decode_path_segment(capability)?;
-                    Some(ProxyTarget {
-                        local_path: format!(
-                            "/api/v1/session/{session_id}/capabilities/{capability}"
-                        ),
-                        is_sse: false,
-                        session_id_hint: None,
-                    })
-                }
+                ["capabilities", capability] if method == "GET" => Some(ProxyTarget {
+                    local_path: decoded_session_ref_path(&session_id, "capabilities", capability)?,
+                    is_sse: false,
+                    session_id_hint: None,
+                }),
                 ["services", job_ref, "provide"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/provide"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "services",
+                        job_ref,
+                        "provide",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["services", job_ref, "depend"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/depend"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "services",
+                        job_ref,
+                        "depend",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["services", job_ref, "contract"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/contract"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "services",
+                        job_ref,
+                        "contract",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["services", job_ref, "relabel"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/relabel"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "services",
+                        job_ref,
+                        "relabel",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["services", job_ref, "attach"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/attach"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "services",
+                        job_ref,
+                        "attach",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["services", job_ref, "wait"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/wait"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "services",
+                        job_ref,
+                        "wait",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["services", job_ref, "run"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/services/{job_ref}/run"),
+                    local_path: decoded_session_ref_action_path(
+                        &session_id,
+                        "services",
+                        job_ref,
+                        "run",
+                    )?,
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["events"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/events"),
+                    local_path: local_session_path(&session_id, "events"),
                     is_sse: true,
                     session_id_hint: None,
                 }),
                 ["orchestration", "status"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/orchestration/status"),
+                    local_path: local_session_path(&session_id, "orchestration/status"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["orchestration", "workers"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/orchestration/workers"),
+                    local_path: local_session_path(&session_id, "orchestration/workers"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
                 ["orchestration", "dependencies"] => Some(ProxyTarget {
-                    local_path: format!("/api/v1/session/{session_id}/orchestration/dependencies"),
+                    local_path: local_session_path(&session_id, "orchestration/dependencies"),
                     is_sse: false,
                     session_id_hint: None,
                 }),
