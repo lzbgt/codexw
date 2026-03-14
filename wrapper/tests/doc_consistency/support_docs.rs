@@ -855,6 +855,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "artifact index/detail/content",
         "docs/codexw-broker-connector-decision.md",
     );
+    assert_contains_case_insensitive(
+        &broker_decision,
+        "supported experimental adapter",
+        "docs/codexw-broker-connector-decision.md",
+    );
     assert_contains(
         &broker_promotion,
         "codexw-broker-artifact-contract-sketch.md",
@@ -873,6 +878,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_promotion,
         "project-assignment and dependency-edge routes",
+        "docs/codexw-broker-adapter-promotion.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_promotion,
+        "shell-first host examination",
         "docs/codexw-broker-adapter-promotion.md",
     );
     assert_contains(
@@ -946,6 +956,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-connector-adapter-plan.md",
     );
     assert_contains_case_insensitive(
+        &broker_adapter_plan,
+        "supported experimental adapter",
+        "docs/codexw-broker-connector-adapter-plan.md",
+    );
+    assert_contains_case_insensitive(
         &broker_shared_assumptions,
         "broker-backed app/webui clients",
         "docs/codexw-broker-shared-assumptions.md",
@@ -978,6 +993,11 @@ fn support_claim_source_docs_exist_and_are_linked() {
     assert_contains_case_insensitive(
         &broker_client_policy,
         "project-assignment or dependency-edge collaboration surface exists",
+        "docs/codexw-broker-client-policy.md",
+    );
+    assert_contains_case_insensitive(
+        &broker_client_policy,
+        "supported experimental adapter",
         "docs/codexw-broker-client-policy.md",
     );
 

@@ -215,3 +215,9 @@ The current contract is:
 - read paths remain broadly observable
 - broker-backed app/WebUI clients can participate in the same owner/observer/
   rival model for shell-first host examination
+
+For support-level language, that means the current supported experimental adapter
+covers shell-first host examination through the current
+session/transcript/orchestration/shell/service surfaces. It does not imply that
+a separate artifact index/detail/content surface exists before the local API,
+connector mapping, proof, and support docs explicitly add one.

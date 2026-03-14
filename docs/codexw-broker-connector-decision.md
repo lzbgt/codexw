@@ -25,8 +25,11 @@ The answer now has to be read against the current architecture requirement:
   consumers
 - those clients should be able to examine the host through broker-visible
   shell/service/transcript surfaces without direct terminal access
+- the current supported experimental adapter should still be read as that
+  shell-first host-examination surface
 - a richer artifact index/detail/content layer is still a separate tracked lane,
-  not part of the historical connector decision itself:
+  not part of the current supported experimental adapter or the historical
+  connector decision itself:
   - [docs/codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
   - [docs/codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 

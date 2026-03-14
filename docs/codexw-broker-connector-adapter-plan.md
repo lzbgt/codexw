@@ -120,7 +120,9 @@ This adapter depends on the local API being complete enough to provide:
 - cross-deployment fanout
 - multi-connector coordination
 - a dedicated artifact index/detail/content route family until the local API
-  artifact layer is implemented and proven:
+  artifact layer is implemented and proven; the current supported experimental
+  adapter should still be read as shell-first host examination built from the
+  shell/service/transcript surface:
   - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
   - [codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
@@ -147,7 +149,8 @@ The first useful connector should support:
 Nice-to-have in the same validation slice if cheap:
 
 - richer broker-visible host-result/artifact references once the dedicated
-  artifact track has a concrete implemented surface
+  artifact track has a concrete implemented surface and is explicitly added to
+  the supported experimental adapter contract
 
 ## Minimal Event Set
 

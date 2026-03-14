@@ -148,7 +148,9 @@ Promotion requires a stable statement of what is intentionally unsupported:
 - audio/video expectations
 - parity assumptions `codexw` does not intend to honor
 - artifact index/detail/content routes until they are explicitly implemented,
-  mapped, and proven
+  mapped, and proven; until then the supported experimental adapter should
+  still be read as shell-first host examination rather than as a stable
+  artifact browser
 - project-assignment and dependency-edge routes until they are explicitly
   implemented, mapped, and proven
 
