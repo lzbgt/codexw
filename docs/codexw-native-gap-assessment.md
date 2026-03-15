@@ -26,6 +26,14 @@ Related docs:
 - [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
 
+For the native-side source docs that define the shell-first remote/workspace
+surface behind those native support claims, see
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+and [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md).
+
 ## Current State
 
 `codexw` already has:

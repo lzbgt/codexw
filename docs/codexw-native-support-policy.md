@@ -23,6 +23,14 @@ Related docs:
 - [codexw-plugin-system.md](codexw-plugin-system.md)
 - [../TODOS.md](../TODOS.md)
 
+For the native-side source docs that define the shell-first remote/workspace
+surface behind those native support claims, see
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+and [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md).
+
 ## Supported Native Product Surface
 
 The supported non-broker product surface is:

@@ -23,6 +23,14 @@ Related docs:
 - [../TODOS.md](../TODOS.md)
 - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
 
+For the native-side source docs that define the shell-first remote/workspace
+surface behind those native support claims, see
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+and [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md).
+
 ## Current Supported Shape
 
 The current non-broker product shape is:

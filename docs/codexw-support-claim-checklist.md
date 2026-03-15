@@ -216,6 +216,10 @@ Confirm all of the following:
 - native source docs still describe the same shell-first host-examination
   support boundary as the downstream status/policy/proof docs, rather than
   leaving recommendation, boundaries, or gap-assessment text behind
+- native recommendation/boundary/status/policy/proof docs still point to the
+  native source docs and workspace/local-API source docs that define that
+  shell-first remote/workspace surface, rather than only pointing at summary
+  or downstream policy docs
 - workspace and local-API source docs still describe shell-first remote host
   examination as the current supported surface and do not imply that a
   broker-visible artifact list/detail/content API already exists
