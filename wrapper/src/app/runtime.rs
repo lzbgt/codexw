@@ -7,6 +7,7 @@ mod supervision;
 mod tests;
 
 use std::sync::mpsc;
+use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -31,6 +32,7 @@ use crate::render_markdown_code::set_theme;
 use crate::requests::send_initialize;
 use crate::runtime_event_sources::AppEvent;
 use crate::runtime_event_sources::RawModeGuard;
+use crate::runtime_event_sources::start_stderr_thread;
 use crate::runtime_event_sources::start_stdin_thread;
 use crate::runtime_event_sources::start_stdout_thread;
 use crate::runtime_event_sources::start_tick_thread;
@@ -43,6 +45,13 @@ use crate::state::AppState;
 use self::input::handle_input_key;
 use self::supervision::handle_async_tool_response;
 use self::supervision::handle_supervision_tick;
+
+const CONTROL_EVENT_POLL_INTERVAL: Duration = Duration::from_millis(50);
+
+enum RuntimeEvent {
+    Control(AppEvent),
+    ServerLine(String),
+}
 
 pub(crate) fn run(cli: Cli) -> Result<()> {
     let initial_prompt = join_prompt(&cli.prompt);
@@ -58,9 +67,15 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
         .stdout
         .take()
         .context("codex app-server stdout unavailable")?;
+    let stderr = child
+        .stderr
+        .take()
+        .context("codex app-server stderr unavailable")?;
 
+    let (server_tx, server_rx) = mpsc::channel::<String>();
     let (tx, rx) = mpsc::channel::<AppEvent>();
-    start_stdout_thread(stdout, tx.clone());
+    start_stdout_thread(stdout, server_tx, tx.clone());
+    start_stderr_thread(stderr);
     start_stdin_thread(tx.clone());
     start_tick_thread(tx.clone());
 
@@ -106,8 +121,8 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
 
     loop {
         update_prompt(&mut output, &state, &editor)?;
-        match rx.recv() {
-            Ok(AppEvent::ServerLine(line)) => {
+        match recv_next_runtime_event(&rx, &server_rx) {
+            Some(RuntimeEvent::ServerLine(line)) => {
                 process_server_line(
                     line,
                     &cli,
@@ -119,7 +134,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                     &mut start_after_initialize,
                 )?;
             }
-            Ok(AppEvent::InputKey(key)) => {
+            Some(RuntimeEvent::Control(AppEvent::InputKey(key))) => {
                 if !handle_input_key(
                     key,
                     &cli,
@@ -132,21 +147,21 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                     break;
                 }
             }
-            Ok(AppEvent::Tick) => {
+            Some(RuntimeEvent::Control(AppEvent::Tick)) => {
                 handle_supervision_tick(&mut state, &mut output, &mut writer)?;
             }
-            Ok(AppEvent::AsyncToolResponseReady(tool_response)) => {
+            Some(RuntimeEvent::Control(AppEvent::AsyncToolResponseReady(tool_response))) => {
                 handle_async_tool_response(tool_response, &mut state, &mut output, &mut writer)?;
             }
-            Ok(AppEvent::StdinClosed) => {
+            Some(RuntimeEvent::Control(AppEvent::StdinClosed)) => {
                 output.line_stderr("[session] stdin closed; exiting")?;
                 break;
             }
-            Ok(AppEvent::ServerClosed) => {
+            Some(RuntimeEvent::Control(AppEvent::ServerClosed)) => {
                 output.line_stderr("[session] codex app-server exited")?;
                 break;
             }
-            Err(_) => break,
+            None => break,
         }
         process_local_api_commands(
             &cli,
@@ -172,4 +187,25 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     }
     shutdown_child(writer, child)?;
     Ok(())
+}
+
+fn recv_next_runtime_event(
+    control_rx: &mpsc::Receiver<AppEvent>,
+    server_rx: &mpsc::Receiver<String>,
+) -> Option<RuntimeEvent> {
+    if let Ok(event) = control_rx.try_recv() {
+        return Some(RuntimeEvent::Control(event));
+    }
+    if let Ok(line) = server_rx.try_recv() {
+        return Some(RuntimeEvent::ServerLine(line));
+    }
+    match control_rx.recv_timeout(CONTROL_EVENT_POLL_INTERVAL) {
+        Ok(event) => Some(RuntimeEvent::Control(event)),
+        Err(mpsc::RecvTimeoutError::Timeout) => {
+            server_rx.try_recv().ok().map(RuntimeEvent::ServerLine)
+        }
+        Err(mpsc::RecvTimeoutError::Disconnected) => {
+            server_rx.try_recv().ok().map(RuntimeEvent::ServerLine)
+        }
+    }
 }

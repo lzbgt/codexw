@@ -60,7 +60,7 @@ The current design optimizes for:
 The runtime has thirteen main layers.
 
 1. Backend process management
-   `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/input/decode.rs`, `runtime_event_sources/input/thread.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs` start `codex app-server`, wire stdio, forward key environment such as proxy variables, own raw-mode lifecycle, and manage stdin/stdout/tick event sources. Callers now import the process/input helpers directly from `runtime_event_sources.rs` and `runtime_keys.rs` instead of routing through an extra facade.
+   `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/input/decode.rs`, `runtime_event_sources/input/thread.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs` start `codex app-server`, wire stdio, forward key environment such as proxy variables, own raw-mode lifecycle, and manage stdin/stdout/stderr/tick event sources. The stdout JSON-RPC reader now feeds a dedicated line channel, while stderr is filtered separately so repeated rollout-recorder queue-closed errors collapse into one visible notice plus a suppressed-count summary instead of flooding the terminal. Callers now import the process/input helpers directly from `runtime_event_sources.rs` and `runtime_keys.rs` instead of routing through an extra facade.
 
 2. JSON-RPC transport
    `rpc.rs` defines the wire-level request, response, notification, and request-id types, plus JSON parsing for inbound lines.
@@ -105,7 +105,7 @@ Resume-preview helpers live across `history_render.rs`, `history_state.rs`, and 
 Catalog display helpers are split across `catalog_connector_views.rs`, `catalog_feature_views.rs`, `catalog_backend_views.rs`, `catalog_thread_list.rs`, and `catalog_file_search.rs`, and callers now import those concrete app/skill/experimental/thread/search helpers directly.
 Status display helpers are split across `status_value.rs`, `status_config.rs`, `status_account.rs`, `status_rate_windows.rs`, `status_rate_credits.rs`, and `status_token_usage.rs`, with rate-limit and token-usage callers importing the concrete helpers directly.
 Transcript display helpers now live directly across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, without an extra transcript compatibility layer in the runtime path.
-Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/input/decode.rs`, `runtime_event_sources/input/thread.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, event-source threads, and bracketed-paste decoding now imported directly from those concrete modules.
+Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/input/decode.rs`, `runtime_event_sources/input/thread.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, split stdout/stderr event-source threads, stderr rollout-spam suppression, and bracketed-paste decoding now imported directly from those concrete modules.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
 Shared state helpers now live across `state.rs`, `state/types.rs`, `state/types/core.rs`, `state/types/async_tools.rs`, `state/types/app.rs`, `state/lifecycle.rs`, and `state_helpers.rs`, with `state.rs` remaining the shared namespace root while the concrete type, lifecycle, and helper implementations live in those focused modules.
 Orchestration registry helpers are split across `orchestration_registry.rs`, `orchestration_registry/graph.rs`, `orchestration_registry/graph/edges.rs`, `orchestration_registry/graph/scheduler.rs`, and `orchestration_registry/tracking.rs`, with `orchestration_registry.rs` kept as the shared type/root module, `orchestration_registry/graph.rs` acting as the graph namespace root, `orchestration_registry/graph/edges.rs` owning dependency-edge derivation, `orchestration_registry/graph/scheduler.rs` owning wait/sidecar/runtime count helpers plus main-agent scheduler state, and `orchestration_registry/tracking.rs` owning live collab-task parsing plus cached-agent-thread updates.
@@ -127,20 +127,21 @@ At startup, `codexw`:
 1. resolves the effective working directory
 2. spawns `codex app-server`
 3. enters terminal raw mode
-4. starts three event sources:
+4. starts four event sources:
    - server stdout reader
+   - server stderr reader
    - keyboard input reader
    - periodic tick timer
 5. runs one main event loop that consumes all app, backend, and user events
 
-The main event enum is `AppEvent` in `runtime_event_sources.rs` and is consumed by the top-level loop in `app.rs`. It merges:
+The main control event enum is `AppEvent` in `runtime_event_sources.rs` and is consumed by the top-level loop in `app.rs`. It now carries:
 
-- server JSON-RPC lines
 - normalized keyboard events
-- periodic ticks for spinner and elapsed-time updates
+- periodic ticks for spinner, elapsed-time updates, and async-tool supervision
+- async-tool completion notifications
 - backend or stdin closure notifications
 
-This keeps all user-visible state transitions serialized through one place.
+Raw server JSON-RPC stdout lines travel on a dedicated line channel, and the runtime loop always checks control events before consuming more stdout. That prevents heavy backend output from starving dynamic-tool completion or timeout handling while still keeping backend line processing serialized through the same top-level runtime loop.
 
 ## Core State
 
@@ -1293,7 +1294,7 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/app.rs`
   App runtime namespace root.
 - `wrapper/src/app/runtime.rs`
-  App runtime namespace root and top-level runtime loop.
+  App runtime namespace root, top-level runtime loop, and prioritized control-vs-server-line event dispatch.
 - `wrapper/src/app/runtime/input.rs`
   App runtime input routing for prompt-control and editing key handling.
 - `wrapper/src/app/runtime/supervision.rs`
@@ -1309,9 +1310,9 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/policy.rs`
   Approval/sandbox/reasoning policy helpers and approval decision preferences.
 - `wrapper/src/runtime_process.rs`
-  Backend process startup and child shutdown lifecycle.
+  Backend process startup plus piped app-server stderr and child shutdown lifecycle.
 - `wrapper/src/runtime_event_sources.rs`
-  `AppEvent` enum plus stdout/tick event-source namespace root.
+  `AppEvent` enum plus split stdout/stderr/tick event-source namespace root and rollout-stderr suppression filter.
 - `wrapper/src/runtime_event_sources/input.rs`
   Keyboard-input namespace root.
 - `wrapper/src/runtime_event_sources/input/decode.rs`

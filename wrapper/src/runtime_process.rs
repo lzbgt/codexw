@@ -78,7 +78,7 @@ pub(crate) fn spawn_server(cli: &Cli, resolved_cwd: &str) -> Result<Child> {
         .current_dir(resolved_cwd)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::inherit());
+        .stderr(Stdio::piped());
     inherit_proxy_env(&mut cmd);
     cmd.spawn()
         .with_context(|| format!("failed to start `{}` app-server", cli.codex_bin))

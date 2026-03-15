@@ -1,9 +1,12 @@
 use crate::output::Output;
 use crate::rpc::RequestId;
+use crate::runtime_event_sources::AppEvent;
 use crate::runtime_event_sources::AsyncToolResponse;
 use crate::state::AppState;
 use crate::state::AsyncToolHealthCheck;
 
+use super::RuntimeEvent;
+use super::recv_next_runtime_event;
 use super::supervision::format_async_tool_health_check_line;
 use super::supervision::format_supervision_notice_line;
 use super::supervision::handle_async_tool_response;
@@ -12,6 +15,7 @@ use super::supervision::handle_supervision_tick;
 use serde_json::json;
 use std::process::Command;
 use std::process::Stdio;
+use std::sync::mpsc;
 
 fn spawn_sink_stdin() -> std::process::ChildStdin {
     Command::new("sh")
@@ -286,4 +290,29 @@ fn late_async_tool_response_clears_abandoned_request_after_timeout_cleanup() {
     assert!(state.active_async_tool_requests.is_empty());
     assert_eq!(state.abandoned_async_tool_request_count(), 0);
     assert!(state.active_supervision_notice.is_none());
+}
+
+#[test]
+fn recv_next_runtime_event_prioritizes_control_events_over_server_lines() {
+    let (control_tx, control_rx) = mpsc::channel();
+    let (server_tx, server_rx) = mpsc::channel();
+    server_tx
+        .send("{\"jsonrpc\":\"2.0\"}".to_string())
+        .expect("queue server line");
+    control_tx.send(AppEvent::Tick).expect("queue tick");
+
+    let event = recv_next_runtime_event(&control_rx, &server_rx).expect("runtime event");
+    assert!(matches!(event, RuntimeEvent::Control(AppEvent::Tick)));
+}
+
+#[test]
+fn recv_next_runtime_event_returns_server_line_when_no_control_event_is_pending() {
+    let (_control_tx, control_rx) = mpsc::channel();
+    let (server_tx, server_rx) = mpsc::channel();
+    server_tx
+        .send("{\"jsonrpc\":\"2.0\"}".to_string())
+        .expect("queue server line");
+
+    let event = recv_next_runtime_event(&control_rx, &server_rx).expect("runtime event");
+    assert!(matches!(event, RuntimeEvent::ServerLine(line) if line == "{\"jsonrpc\":\"2.0\"}"));
 }
