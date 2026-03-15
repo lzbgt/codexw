@@ -1012,7 +1012,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/main_test_session_status/state.rs`
   State-status regression namespace root.
 - `wrapper/src/main_test_session_status/state/snapshot.rs`
-  Realtime status snapshot, async-tool correlation, and backpressure rendering regression tests.
+  State-status snapshot regression namespace root.
+- `wrapper/src/main_test_session_status/state/snapshot/overview.rs`
+  Realtime and top-level status snapshot rendering regression tests.
+- `wrapper/src/main_test_session_status/state/snapshot/async_tools.rs`
+  Async-tool status snapshot, supervision classification, and deterministic oldest-request regression tests.
+- `wrapper/src/main_test_session_status/state/snapshot/background_shells.rs`
+  Background-shell correlation, output-state, wait-ready, and abandoned-backpressure status snapshot regression tests.
 - `wrapper/src/main_test_session_status/state/lifecycle.rs`
   State reset, async-tool expiry, abandoned-backlog, and worker-status lifecycle regression tests.
 - `wrapper/src/main_test_session_status/state/supervision.rs`
