@@ -37,7 +37,11 @@ pub(crate) fn handle_ctrl_c(
     output: &mut Output,
     writer: &mut ChildStdin,
     resolved_cwd: &str,
+    prompt_accepts_input: bool,
 ) -> Result<Option<bool>> {
+    if prompt_accepts_input && matches!(editor.ctrl_c(), EditorEvent::Noop) {
+        return Ok(None);
+    }
     if state.turn_running {
         return interrupt_or_escalate_turn(state, output, writer, Some(resolved_cwd));
     } else if let Some(process_id) = state.active_exec_process_id.clone() {

@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn ctrl_c_preserves_draft_while_interrupting_active_turn() {
+fn ctrl_c_clears_visible_draft_before_interrupting_active_turn() {
     let mut state = AppState::new(true, false);
     state.thread_id = Some("thread-1".to_string());
     state.turn_running = true;
@@ -12,10 +12,18 @@ fn ctrl_c_preserves_draft_while_interrupting_active_turn() {
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
 
-    let result =
-        handle_ctrl_c(&mut state, &mut editor, &mut output, &mut writer, "/tmp").expect("ctrl-c");
+    let result = handle_ctrl_c(
+        &mut state,
+        &mut editor,
+        &mut output,
+        &mut writer,
+        "/tmp",
+        true,
+    )
+    .expect("ctrl-c");
     assert!(result.is_none());
-    assert_eq!(editor.buffer(), "first\nsecond");
+    assert_eq!(editor.buffer(), "");
+    assert!(state.pending.is_empty());
 }
 
 #[test]
@@ -48,7 +56,6 @@ fn repeated_ctrl_c_exits_when_turn_interrupt_is_already_pending() {
         .insert(request_id, PendingRequest::InterruptTurn);
 
     let mut editor = LineEditor::default();
-    editor.insert_str("first\nsecond");
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
 
@@ -58,11 +65,12 @@ fn repeated_ctrl_c_exits_when_turn_interrupt_is_already_pending() {
         &mut output,
         &mut writer,
         "/tmp/project",
+        true,
     )
     .expect("ctrl-c");
 
     assert_eq!(result, Some(false));
-    assert_eq!(editor.buffer(), "first\nsecond");
+    assert_eq!(editor.buffer(), "");
     assert!(state.resume_exit_hint_emitted);
 }
 
@@ -104,11 +112,37 @@ fn idle_ctrl_c_exit_marks_resume_hint_as_emitted_when_thread_exists() {
         &mut output,
         &mut writer,
         "/tmp/project",
+        true,
     )
     .expect("ctrl-c");
 
     assert_eq!(result, Some(false));
     assert!(state.resume_exit_hint_emitted);
+}
+
+#[test]
+fn idle_ctrl_c_clears_visible_draft_without_exiting() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-1".to_string());
+
+    let mut editor = LineEditor::default();
+    editor.insert_str("draft text");
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    let result = handle_ctrl_c(
+        &mut state,
+        &mut editor,
+        &mut output,
+        &mut writer,
+        "/tmp/project",
+        true,
+    )
+    .expect("ctrl-c");
+
+    assert!(result.is_none());
+    assert_eq!(editor.buffer(), "");
+    assert!(!state.resume_exit_hint_emitted);
 }
 
 #[test]

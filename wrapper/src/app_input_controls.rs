@@ -23,7 +23,9 @@ pub(crate) fn handle_control_key(
 ) -> Result<Option<bool>> {
     match key {
         InputKey::Esc => handle_escape(state, editor, output, writer, accepts_input),
-        InputKey::CtrlC => handle_ctrl_c(state, editor, output, writer, resolved_cwd),
+        InputKey::CtrlC => {
+            handle_ctrl_c(state, editor, output, writer, resolved_cwd, accepts_input)
+        }
         InputKey::Enter => {
             if accepts_input {
                 let continue_running =

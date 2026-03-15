@@ -29,6 +29,7 @@ If that skill is not installed, follow the continuation policy in this prompt di
     prompt.push_str("- Keep documentation and implementation in sync.\n");
     prompt.push_str("- Avoid repeatedly partial work on the same theme across many turns; batch related cleanup or refactor work together and finish a meaningful slice before ending.\n");
     prompt.push_str("- If you start a cleanup or refactor batch, do not stop mid-batch while obvious adjacent removals or rewires remain and can be completed safely in the same turn.\n");
+    prompt.push_str("- If the worktree is dirty, inspect the dirty files first and explicitly decide whether each belongs in your batch; commit the relevant ones and leave unrelated dirt untouched.\n");
     prompt.push_str("- Run appropriate verification for the changes you make.\n");
     prompt.push_str("- If you change code or docs, show `git diff --stat`, commit, and push when the repo has a writable remote and pushing is permitted.\n");
     prompt.push_str("- Default to continuing unless the project goal is achieved and no concrete task remains.\n\n");
@@ -64,6 +65,7 @@ mod tests {
         assert!(prompt.contains("If that skill is not installed"));
         assert!(prompt.contains("Avoid repeatedly partial work on the same theme"));
         assert!(prompt.contains("do not stop mid-batch"));
+        assert!(prompt.contains("If the worktree is dirty"));
         assert!(prompt.contains("AUTO_MODE_NEXT=continue"));
         assert!(prompt.contains("AUTO_MODE_NEXT=stop"));
     }

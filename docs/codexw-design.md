@@ -477,7 +477,7 @@ Auto-continue is explicit and cooperative.
 - The next prompt is synthesized from:
   - the stored session objective
   - the latest assistant response
-  - a continuation policy that prioritizes explicit user requests, TODOs, concrete remaining tasks, and verification
+  - a continuation policy that prioritizes explicit user requests, TODOs, concrete remaining tasks, dirty-worktree triage, and verification
 
 The companion skill in `skills/session-autopilot/` provides the model-side policy for this behavior when available, while `codexw` provides the runtime-side turn detection and resubmission. The runtime prompt remains self-sufficient so portability does not depend on the skill being installed.
 
@@ -496,7 +496,7 @@ the broker status docs, see [../TODOS.md](../TODOS.md).
 - multiline drafting via `Ctrl-J`
 - `Ctrl-A`, `Ctrl-E`, `Ctrl-U`, `Ctrl-W`
 - `Esc` to clear draft
-- `Ctrl-C` to clear draft when idle, or interrupt active work without discarding the draft
+- `Ctrl-C` to clear a visible draft before any interrupt or exit behavior, then interrupt active work or exit only when no visible draft remains
 
 The editor and prompt renderer now operate on grapheme boundaries and display width rather than raw Unicode scalar counts. That makes cursor movement, backspace, delete, and prompt cursor placement behave correctly for CJK text, emoji, and combining characters.
 
