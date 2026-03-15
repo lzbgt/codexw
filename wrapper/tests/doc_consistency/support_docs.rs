@@ -3189,6 +3189,7 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
 fn broker_docs_preserve_fixture_diversity_claims() {
     let readme = read_repo_file("README.md");
     let todos = read_repo_file("TODOS.md");
+    let design = read_repo_file("docs/codexw-design.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
@@ -3313,6 +3314,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     );
     assert_contains(
         &readme,
+        "docs/codexw-local-api-event-sourcing.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
         "docs/codexw-local-api-route-matrix.md",
         "README.md",
     );
@@ -3362,6 +3368,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "docs/codexw-local-api-implementation-plan.md",
         "TODOS.md",
     );
+    assert_contains(
+        &todos,
+        "docs/codexw-local-api-event-sourcing.md",
+        "TODOS.md",
+    );
     assert_contains(&todos, "docs/codexw-local-api-route-matrix.md", "TODOS.md");
     assert_contains_case_insensitive(
         &todos,
@@ -3377,6 +3388,41 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         &checklist,
         "primary source material for the active support-boundary work",
         "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "design docs still point to the same native source docs and workspace/local-api",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains(
+        &design,
+        "codexw-workspace-tool-policy.md",
+        "docs/codexw-design.md",
+    );
+    assert_contains(
+        &design,
+        "codexw-local-api-sketch.md",
+        "docs/codexw-design.md",
+    );
+    assert_contains(
+        &design,
+        "codexw-local-api-implementation-plan.md",
+        "docs/codexw-design.md",
+    );
+    assert_contains(
+        &design,
+        "codexw-local-api-event-sourcing.md",
+        "docs/codexw-design.md",
+    );
+    assert_contains(
+        &design,
+        "codexw-local-api-route-matrix.md",
+        "docs/codexw-design.md",
+    );
+    assert_contains_case_insensitive(
+        &design,
+        "remote/workspace surface behind those support claims",
+        "docs/codexw-design.md",
     );
 }
 

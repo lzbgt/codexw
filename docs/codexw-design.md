@@ -20,6 +20,13 @@ For the concise native-side product decision and evidence summary, see
 For native-side support semantics and optional hardening work, see
 [codexw-native-support-policy.md](codexw-native-support-policy.md) and
 [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md).
+For the native-side source docs that define the current shell-first
+remote/workspace surface behind those support claims, see
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+and [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md).
 For the separate self-evolution lane, where a running older `codexw` instance
 safely hands off to a newer binary instead of waiting for manual restart, see
 [codexw-self-evolution.md](codexw-self-evolution.md) and

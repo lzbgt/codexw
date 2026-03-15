@@ -197,6 +197,7 @@ When native-side wording changes, review:
 - [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 
 Confirm all of the following:
@@ -239,6 +240,9 @@ Confirm all of the following:
   docs as primary source material for the active support-boundary work, rather
   than only listing downstream status or policy summaries
 - design docs do not contradict the current recommendation/status docs
+- design docs still point to the same native source docs and workspace/local-API
+  source docs that define the shell-first remote/workspace support boundary,
+  instead of only pointing at downstream status/policy summaries
 
 ## Release Note / Change Summary Checklist
 

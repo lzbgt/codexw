@@ -19,6 +19,7 @@ surface behind those support claims, see
 [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md),
 [docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md),
 [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md),
+[docs/codexw-local-api-event-sourcing.md](docs/codexw-local-api-event-sourcing.md),
 and
 [docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md).
 For the operational meaning of native-side "supported", see

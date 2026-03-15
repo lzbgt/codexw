@@ -19,6 +19,7 @@ Primary source docs:
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
 - [docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md)
 - [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
+- [docs/codexw-local-api-event-sourcing.md](docs/codexw-local-api-event-sourcing.md)
 - [docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md)
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
