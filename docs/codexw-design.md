@@ -751,7 +751,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/sse/proxy.rs`
   Connector SSE proxying, upstream stream setup, and bridged response streaming.
 - `wrapper/src/bin/codexw_connector_prototype/sse/framing.rs`
-  Connector SSE line accumulation, event flushing, and broker metadata payload wrapping.
+  Connector SSE framing namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/sse/framing/lines.rs`
+  Connector SSE line accumulation, fragmented-line carryover, and event field extraction helpers.
+- `wrapper/src/bin/codexw_connector_prototype/sse/framing/payload.rs`
+  Connector SSE event flushing and broker metadata payload wrapping.
 - `wrapper/src/bin/codexw_connector_prototype/upstream.rs`
   Connector upstream namespace root for request forwarding and response parsing.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request.rs`
@@ -801,7 +805,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/sse.rs`
   Connector SSE regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/sse/framing.rs`
-  Connector SSE framing and broker-wrapped event payload regression tests.
+  Connector SSE framing regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/sse/framing/lines.rs`
+  Connector SSE line accumulation and fragmented-line carryover regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/sse/framing/payload.rs`
+  Connector SSE broker-wrapped event payload regression tests.
 - `wrapper/src/main_test_approvals.rs`
   Approval-decision and auto-approval regression tests.
 - `wrapper/src/main_test_catalog.rs`
