@@ -755,7 +755,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/upstream.rs`
   Connector upstream namespace root for request forwarding and response parsing.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request.rs`
-  Connector upstream request shaping, lease/session injection, local-path composition, and forwarding.
+  Connector upstream request namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/upstream/request/body.rs`
+  Connector upstream body shaping, lease/session injection, and validation helpers.
+- `wrapper/src/bin/codexw_connector_prototype/upstream/request/transport.rs`
+  Connector upstream connection setup, local-path composition, and raw request write helpers.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/response.rs`
   Connector upstream response head/body parsing helpers.
 - `wrapper/src/bin/codexw_connector_prototype/tests.rs`
@@ -787,7 +791,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream.rs`
   Connector upstream regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request.rs`
-  Connector upstream request-shaping and injection regression tests.
+  Connector upstream request regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/body.rs`
+  Connector upstream request body injection and validation regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/transport.rs`
+  Connector upstream request path-composition regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/response.rs`
   Connector upstream response parsing regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/sse.rs`
