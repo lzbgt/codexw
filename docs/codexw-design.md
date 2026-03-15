@@ -868,6 +868,12 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Local API route/event test namespace root.
 - `wrapper/src/local_api/routes/services.rs`
   Local API service-route namespace root.
+- `wrapper/src/local_api/routes/session.rs`
+  Local API session-route namespace root.
+- `wrapper/src/local_api/routes/session/lifecycle.rs`
+  Local API session creation and thread-attach route handlers.
+- `wrapper/src/local_api/routes/session/attachment.rs`
+  Local API attachment lease renew/release route handlers.
 - `wrapper/src/local_api/routes/services/read.rs`
   Local API service and capability read/detail route handlers.
 - `wrapper/src/local_api/routes/services/interact.rs`
@@ -886,6 +892,12 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Shared Local API snapshot, request, event-log, and service-manager test fixtures.
 - `wrapper/src/local_api/tests/service_routes.rs`
   Local API service-route regression namespace root.
+- `wrapper/src/local_api/tests/session.rs`
+  Local API session-route regression namespace root.
+- `wrapper/src/local_api/tests/session/lifecycle.rs`
+  Local API session creation, attach, and session lifecycle contract regression tests.
+- `wrapper/src/local_api/tests/session/attachment.rs`
+  Local API attachment conflict, renew, release, and lease-ownership regression tests.
 - `wrapper/src/local_api/tests/service_routes/read.rs`
   Local API service and capability read/detail regression tests.
 - `wrapper/src/local_api/tests/service_routes/interact.rs`
