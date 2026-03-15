@@ -719,7 +719,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/main_cli.rs`
   CLI flag definitions plus resume-startup argument rewrite and parse helpers.
 - `wrapper/src/bin/codexw-connector-prototype.rs`
-  Connector prototype entrypoint, listener setup, and broker-facing proxy request loop.
+  Connector prototype entrypoint and module wiring.
+- `wrapper/src/bin/codexw_connector_prototype/server.rs`
+  Connector listener setup, nonblocking accept loop, and shutdown handling.
+- `wrapper/src/bin/codexw_connector_prototype/dispatch.rs`
+  Connector per-request dispatch, auth checks, route validation, and upstream/SSE handoff.
 - `wrapper/src/bin/codexw_connector_prototype/http.rs`
   Connector HTTP namespace root for request parsing and response shaping.
 - `wrapper/src/bin/codexw_connector_prototype/http/request.rs`
@@ -746,6 +750,8 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Connector upstream response head/body parsing helpers.
 - `wrapper/src/bin/codexw_connector_prototype/tests.rs`
   Connector prototype regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/dispatch.rs`
+  Connector entrypoint dispatch regression tests for health, auth, and route rejection.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http.rs`
   Connector HTTP regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http/request.rs`

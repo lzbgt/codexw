@@ -1,3 +1,5 @@
+#[path = "tests/dispatch.rs"]
+mod dispatch;
 #[path = "tests/http.rs"]
 mod http;
 #[path = "tests/routing.rs"]
