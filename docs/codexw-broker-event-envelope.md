@@ -14,6 +14,15 @@ shell-first host-examination surface. It does not imply that `codexw` already
 exposes a separate artifact index/detail/content event family before the
 dedicated artifact-contract track is implemented and proven.
 
+For the source docs that define that current shell-first remote
+host-examination surface, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Core Envelope
 
 Candidate envelope:

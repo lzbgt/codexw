@@ -10,6 +10,15 @@ the connectivity, compatibility, and endpoint-audit docs.
 The currently named out-of-scope broker surfaces are also backed by explicit
 connector rejection proof in the process-level smoke suite, not only by prose.
 
+For the source docs that define the current shell-first remote
+host-examination surface which this out-of-scope matrix bounds, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Scope Classes
 
 This document uses three scope labels.

@@ -3205,7 +3205,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let broker_endpoint_audit = read_repo_file("docs/codexw-broker-endpoint-audit.md");
     let broker_session_identity = read_repo_file("docs/codexw-broker-session-identity.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
+    let broker_out_of_scope = read_repo_file("docs/codexw-broker-out-of-scope.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
+    let broker_event_envelope = read_repo_file("docs/codexw-broker-event-envelope.md");
+    let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
+    let broker_handoff = read_repo_file("docs/codexw-broker-integration-handoff.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
     let broker_client_policy = read_repo_file("docs/codexw-broker-client-policy.md");
     let broker_support_policy = read_repo_file("docs/codexw-broker-support-policy.md");
@@ -3377,6 +3381,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     );
     assert_contains_case_insensitive(
         &checklist,
+        "broker out-of-scope/hardening/host-examination/handoff/event-envelope/",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
         "native source docs still describe the same shell-first host-examination",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -3512,6 +3521,27 @@ fn broker_docs_preserve_fixture_diversity_claims() {
             "docs/codexw-broker-session-identity.md",
             &broker_session_identity,
         ),
+    ] {
+        assert_contains_case_insensitive(contents, "shell-first remote", name);
+        assert_contains(contents, "codexw-local-api-sketch.md", name);
+        assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
+        assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
+        assert_contains(contents, "codexw-local-api-route-matrix.md", name);
+        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+    }
+    for (name, contents) in [
+        ("docs/codexw-broker-out-of-scope.md", &broker_out_of_scope),
+        ("docs/codexw-broker-hardening-catalog.md", &broker_hardening),
+        (
+            "docs/codexw-broker-host-examination-matrix.md",
+            &broker_host_matrix,
+        ),
+        ("docs/codexw-broker-integration-handoff.md", &broker_handoff),
+        (
+            "docs/codexw-broker-event-envelope.md",
+            &broker_event_envelope,
+        ),
+        ("docs/codexw-broker-client-fixture.md", &broker_fixture),
     ] {
         assert_contains_case_insensitive(contents, "shell-first remote", name);
         assert_contains(contents, "codexw-local-api-sketch.md", name);

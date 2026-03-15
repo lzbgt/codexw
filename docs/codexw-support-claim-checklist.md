@@ -155,6 +155,10 @@ Confirm all of the following:
 - older broker decision/compatibility/mapping/identity/audit docs still point
   to the same local-API and workspace-policy source docs, rather than leaving
   those historical/reference layers on summary-only wording
+- broker out-of-scope/hardening/host-examination/handoff/event-envelope/
+  fixture docs still point to the same local-API and workspace-policy source
+  docs, rather than describing the shell-first boundary only as operational or
+  historical summary text
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch

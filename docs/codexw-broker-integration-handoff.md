@@ -24,6 +24,15 @@ Use this document when working in:
 This is not the contract source of truth by itself. It is the short handoff
 that points implementers at the right contract docs.
 
+For the source docs that define the current shell-first remote
+host-examination surface behind that handoff, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Current Product Direction
 
 `codexw` is now intentionally aligned around this model:

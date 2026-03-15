@@ -23,6 +23,15 @@ Companion docs:
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
 
+For the source docs that define the current shell-first remote
+host-examination surface summarized by this matrix, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Reading This Matrix
 
 Status labels:

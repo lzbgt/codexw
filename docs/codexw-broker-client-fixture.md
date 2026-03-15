@@ -27,6 +27,15 @@ For the short external-consumer summary aimed at the sibling `~/work/agent`
 workspace, see
 [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
+For the source docs that define the current shell-first remote
+host-examination surface consumed by those fixtures, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Scope
 
 The fixture intentionally targets the current connector alias surface rather
