@@ -8,6 +8,7 @@ use std::sync::mpsc;
 use crate::output::Output;
 use crate::rpc::RpcRequest;
 use crate::runtime_event_sources::AppEvent;
+#[cfg(test)]
 use crate::state::AbandonedAsyncToolRequest;
 use crate::state::AppState;
 
@@ -36,6 +37,7 @@ pub(super) fn handle_background_shell_tool_request(
     )
 }
 
+#[cfg(test)]
 pub(super) fn background_shell_backpressure_failure(
     tool: &str,
     backlog: usize,
@@ -52,6 +54,7 @@ pub(super) fn background_shell_backpressure_failure(
     )
 }
 
+#[cfg(test)]
 pub(super) fn background_shell_backpressure_details(
     resolved_cwd: &str,
     state: &AppState,
@@ -60,6 +63,7 @@ pub(super) fn background_shell_backpressure_details(
     backpressure::background_shell_backpressure_details(resolved_cwd, state, request)
 }
 
+#[cfg(test)]
 pub(super) fn summarize_abandoned_backpressure_context(
     state: &AppState,
     request: &AbandonedAsyncToolRequest,
