@@ -729,7 +729,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/routing/policy.rs`
   Local proxy allowlist and client-lease injection eligibility policy.
 - `wrapper/src/bin/codexw_connector_prototype/sse.rs`
-  Connector SSE bridging for session event streams.
+  Connector SSE namespace root for stream bridging and event framing.
+- `wrapper/src/bin/codexw_connector_prototype/sse/proxy.rs`
+  Connector SSE proxying, upstream stream setup, and bridged response streaming.
+- `wrapper/src/bin/codexw_connector_prototype/sse/framing.rs`
+  Connector SSE line accumulation, event flushing, and broker metadata payload wrapping.
 - `wrapper/src/bin/codexw_connector_prototype/upstream.rs`
   Connector upstream namespace root for request forwarding and response parsing.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request.rs`
@@ -750,6 +754,10 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Connector upstream request-shaping and injection regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/response.rs`
   Connector upstream response parsing regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/sse.rs`
+  Connector SSE regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/sse/framing.rs`
+  Connector SSE framing and broker-wrapped event payload regression tests.
 - `wrapper/src/main_test_approvals.rs`
   Approval-decision and auto-approval regression tests.
 - `wrapper/src/main_test_catalog.rs`
