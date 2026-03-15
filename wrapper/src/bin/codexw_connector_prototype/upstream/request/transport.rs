@@ -1,7 +1,10 @@
-use std::net::TcpStream;
-use std::time::Duration;
+#[path = "transport/path.rs"]
+mod path;
+#[path = "transport/wire.rs"]
+mod wire;
 
-use anyhow::Context;
+use std::net::TcpStream;
+
 use url::Url;
 
 use super::super::super::Cli;
@@ -19,29 +22,10 @@ pub(super) fn forward_request(
 ) -> std::result::Result<UpstreamResponse, ForwardRequestError> {
     let (content_type, body) = prepare_upstream_body(request, target)?;
 
-    let base = Url::parse(&cli.local_api_base)
-        .context("parse local API base URL")
-        .map_err(ForwardRequestError::Transport)?;
-    let host = base
-        .host_str()
-        .context("local API base URL missing host")
-        .map_err(ForwardRequestError::Transport)?
-        .to_string();
-    let port = base
-        .port_or_known_default()
-        .context("local API base URL missing port")
-        .map_err(ForwardRequestError::Transport)?;
-    let mut stream = TcpStream::connect((host.as_str(), port))
-        .with_context(|| format!("connect to local API {}:{}", host, port))
-        .map_err(ForwardRequestError::Transport)?;
-    stream
-        .set_read_timeout(Some(Duration::from_secs(5)))
-        .context("set upstream read timeout")
-        .map_err(ForwardRequestError::Transport)?;
-    stream
-        .set_write_timeout(Some(Duration::from_secs(5)))
-        .context("set upstream write timeout")
-        .map_err(ForwardRequestError::Transport)?;
+    let base =
+        wire::parse_local_api_base(&cli.local_api_base).map_err(ForwardRequestError::Transport)?;
+    let mut stream =
+        wire::connect_upstream_stream(&base).map_err(ForwardRequestError::Transport)?;
 
     let path = compose_local_path(&base, &target.local_path);
     write_upstream_request(
@@ -59,11 +43,7 @@ pub(super) fn forward_request(
 }
 
 pub(super) fn compose_local_path(base: &Url, local_path: &str) -> String {
-    let mut prefix = base.path().trim_end_matches('/').to_string();
-    if prefix == "/" {
-        prefix.clear();
-    }
-    format!("{prefix}{local_path}")
+    path::compose_local_path(base, local_path)
 }
 
 pub(super) fn write_upstream_request(
@@ -75,29 +55,13 @@ pub(super) fn write_upstream_request(
     body: &[u8],
     last_event_id: Option<&str>,
 ) -> anyhow::Result<()> {
-    use std::io::Write;
-
-    let mut request = format!(
-        "{method} {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nContent-Length: {}\r\n",
-        body.len()
-    );
-    if let Some(content_type) = content_type {
-        request.push_str(&format!("Content-Type: {content_type}\r\n"));
-    }
-    if let Some(auth_token) = auth_token {
-        request.push_str(&format!("Authorization: Bearer {auth_token}\r\n"));
-    }
-    if let Some(last_event_id) = last_event_id {
-        request.push_str(&format!("Last-Event-ID: {last_event_id}\r\n"));
-    }
-    request.push_str("\r\n");
-    stream
-        .write_all(request.as_bytes())
-        .context("write upstream request head")?;
-    if !body.is_empty() {
-        stream
-            .write_all(body)
-            .context("write upstream request body")?;
-    }
-    Ok(())
+    wire::write_upstream_request(
+        stream,
+        method,
+        path,
+        content_type,
+        auth_token,
+        body,
+        last_event_id,
+    )
 }

@@ -747,7 +747,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/http/response/adapt.rs`
   Connector upstream response adaptation into connector HTTP responses with broker and local API headers.
 - `wrapper/src/bin/codexw_connector_prototype/http/response/payload.rs`
-  Connector JSON response helpers and raw HTTP response serialization.
+  Connector HTTP response payload namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/http/response/payload/json.rs`
+  Connector JSON ok/error response helpers and broker adapter metadata injection.
+- `wrapper/src/bin/codexw_connector_prototype/http/response/payload/wire.rs`
+  Connector raw HTTP response serialization to the client socket.
 - `wrapper/src/bin/codexw_connector_prototype/routing.rs`
   Connector routing namespace root for broker alias/proxy translation and local-surface policy.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias.rs`
@@ -807,7 +811,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request/body/json.rs`
   Connector upstream JSON object parsing, validation, and injected field application.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request/transport.rs`
-  Connector upstream connection setup, local-path composition, and raw request write helpers.
+  Connector upstream request transport namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/upstream/request/transport/path.rs`
+  Connector local API path composition that preserves configured base-path prefixes.
+- `wrapper/src/bin/codexw_connector_prototype/upstream/request/transport/wire.rs`
+  Connector upstream base parsing, TCP connection setup, timeout configuration, and raw HTTP request write helpers.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/response.rs`
   Connector upstream response namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/response/head.rs`
@@ -833,13 +841,17 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http.rs`
   Connector HTTP regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http/request.rs`
-  Connector HTTP request parsing and response serialization regression tests.
+  Connector HTTP request parsing regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http/response.rs`
   Connector HTTP response regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http/response/adapt.rs`
   Connector upstream-header adaptation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http/response/payload.rs`
+  Connector HTTP response payload regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/http/response/payload/json.rs`
   Connector JSON response helper regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/http/response/payload/wire.rs`
+  Connector raw HTTP response serialization regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing.rs`
   Connector routing regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias.rs`
@@ -885,7 +897,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/body/json.rs`
   Connector upstream JSON injection and validation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/transport.rs`
+  Connector upstream request transport regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/transport/path.rs`
   Connector upstream request path-composition regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/transport/wire.rs`
+  Connector raw upstream request serialization regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/response.rs`
   Connector upstream response regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/response/head.rs`
