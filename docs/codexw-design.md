@@ -799,7 +799,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/main_test_session_status/prompt.rs`
   Thread-status and prompt-status regression tests.
 - `wrapper/src/main_test_session_status/state.rs`
-  Realtime status snapshot and state-reset regression tests.
+  State-status regression namespace root.
+- `wrapper/src/main_test_session_status/state/snapshot.rs`
+  Realtime status snapshot, async-tool correlation, and backpressure rendering regression tests.
+- `wrapper/src/main_test_session_status/state/lifecycle.rs`
+  State reset, async-tool expiry, abandoned-backlog, and worker-status lifecycle regression tests.
+- `wrapper/src/main_test_session_status/state/supervision.rs`
+  Async-tool supervision classification, notice, and orchestrator health-check regression tests.
 - `wrapper/src/main_test_session_status/runtime.rs`
   Generic status-runtime test namespace root.
 - `wrapper/src/main_test_session_status/runtime/status.rs`
