@@ -1,20 +1,10 @@
-use std::collections::HashMap;
-use std::io::Read;
-use std::io::Write;
-use std::net::TcpStream;
-use std::time::Duration;
-
-use anyhow::Context;
-use anyhow::Result;
 use serde_json::Value;
-use serde_json::json;
-use url::Url;
+use std::collections::HashMap;
 
-use super::Cli;
-use super::MAX_REQUEST_BYTES;
-use super::http::HttpRequest;
-use super::routing::ProxyTarget;
-use super::routing::supports_client_lease_injection;
+#[path = "upstream/request.rs"]
+mod request;
+#[path = "upstream/response.rs"]
+mod response;
 
 #[derive(Debug, Clone)]
 pub(super) struct UpstreamResponse {
@@ -34,7 +24,7 @@ pub(super) enum ForwardRequestError {
 }
 
 impl ForwardRequestError {
-    fn validation(message: impl Into<String>, details: Option<Value>) -> Self {
+    pub(super) fn validation(message: impl Into<String>, details: Option<Value>) -> Self {
         Self::Validation {
             message: message.into(),
             details,
@@ -43,207 +33,49 @@ impl ForwardRequestError {
 }
 
 pub(super) fn forward_request(
-    request: &HttpRequest,
-    cli: &Cli,
-    target: &ProxyTarget,
+    request: &super::http::HttpRequest,
+    cli: &super::Cli,
+    target: &super::routing::ProxyTarget,
 ) -> std::result::Result<UpstreamResponse, ForwardRequestError> {
-    let (content_type, body) = prepare_upstream_body(request, target)?;
-
-    let base = Url::parse(&cli.local_api_base)
-        .context("parse local API base URL")
-        .map_err(ForwardRequestError::Transport)?;
-    let host = base
-        .host_str()
-        .context("local API base URL missing host")
-        .map_err(ForwardRequestError::Transport)?
-        .to_string();
-    let port = base
-        .port_or_known_default()
-        .context("local API base URL missing port")
-        .map_err(ForwardRequestError::Transport)?;
-    let mut stream = TcpStream::connect((host.as_str(), port))
-        .with_context(|| format!("connect to local API {}:{}", host, port))
-        .map_err(ForwardRequestError::Transport)?;
-    stream
-        .set_read_timeout(Some(Duration::from_secs(5)))
-        .context("set upstream read timeout")
-        .map_err(ForwardRequestError::Transport)?;
-    stream
-        .set_write_timeout(Some(Duration::from_secs(5)))
-        .context("set upstream write timeout")
-        .map_err(ForwardRequestError::Transport)?;
-
-    let path = compose_local_path(&base, &target.local_path);
-    write_upstream_request(
-        &mut stream,
-        &request.method,
-        &path,
-        content_type.as_deref(),
-        cli.local_api_token.as_deref(),
-        body.as_slice(),
-        request.headers.get("last-event-id").map(String::as_str),
-    )
-    .map_err(ForwardRequestError::Transport)?;
-
-    read_upstream_response(stream).map_err(ForwardRequestError::Transport)
+    request::forward_request(request, cli, target)
 }
 
+#[cfg(test)]
 pub(super) fn prepare_upstream_body(
-    request: &HttpRequest,
-    target: &ProxyTarget,
+    request: &super::http::HttpRequest,
+    target: &super::routing::ProxyTarget,
 ) -> std::result::Result<(Option<String>, Vec<u8>), ForwardRequestError> {
-    let requested_client_id = request
-        .headers
-        .get("x-codexw-client-id")
-        .map(|value| value.trim())
-        .filter(|value| !value.is_empty())
-        .map(str::to_string);
-    let requested_lease_seconds = request
-        .headers
-        .get("x-codexw-lease-seconds")
-        .map(|value| value.trim())
-        .filter(|value| !value.is_empty());
-
-    let requires_object_body = target.session_id_hint.is_some()
-        || supports_client_lease_injection(&request.method, &target.local_path);
-    if request.method != "POST" || !requires_object_body {
-        return Ok((
-            request.headers.get("content-type").cloned(),
-            request.body.clone(),
-        ));
-    }
-
-    if requested_client_id.is_none()
-        && requested_lease_seconds.is_none()
-        && target.session_id_hint.is_none()
-    {
-        return Ok((
-            request.headers.get("content-type").cloned(),
-            request.body.clone(),
-        ));
-    }
-
-    let mut object = if request.body.is_empty() {
-        serde_json::Map::new()
-    } else {
-        let value: Value = serde_json::from_slice(&request.body).map_err(|_| {
-            ForwardRequestError::validation(
-                "connector JSON injection requires a JSON object body",
-                Some(json!({
-                    "field": "body",
-                    "expected": "json object",
-                })),
-            )
-        })?;
-        let Some(object) = value.as_object() else {
-            return Err(ForwardRequestError::validation(
-                "connector JSON injection requires a JSON object body",
-                Some(json!({
-                    "field": "body",
-                    "expected": "json object",
-                })),
-            ));
-        };
-        object.clone()
-    };
-
-    if let Some(session_id) = &target.session_id_hint {
-        object
-            .entry("session_id".to_string())
-            .or_insert(Value::String(session_id.clone()));
-    }
-
-    if let Some(client_id) = requested_client_id {
-        object
-            .entry("client_id".to_string())
-            .or_insert(Value::String(client_id));
-    }
-    if let Some(lease_seconds) = requested_lease_seconds {
-        let parsed = lease_seconds.parse::<u64>().map_err(|_| {
-            ForwardRequestError::validation(
-                "x-codexw-lease-seconds must be a positive integer header",
-                Some(json!({
-                    "field": "x-codexw-lease-seconds",
-                    "expected": "positive integer header",
-                })),
-            )
-        })?;
-        object
-            .entry("lease_seconds".to_string())
-            .or_insert(Value::Number(parsed.into()));
-    }
-
-    Ok((
-        Some("application/json".to_string()),
-        serde_json::to_vec(&Value::Object(object))
-            .context("serialize injected connector body")
-            .map_err(ForwardRequestError::Transport)?,
-    ))
+    request::prepare_upstream_body(request, target)
 }
 
-pub(super) fn compose_local_path(base: &Url, local_path: &str) -> String {
-    let mut prefix = base.path().trim_end_matches('/').to_string();
-    if prefix == "/" {
-        prefix.clear();
-    }
-    format!("{prefix}{local_path}")
+pub(super) fn compose_local_path(base: &url::Url, local_path: &str) -> String {
+    request::compose_local_path(base, local_path)
 }
 
 pub(super) fn write_upstream_request(
-    stream: &mut TcpStream,
+    stream: &mut std::net::TcpStream,
     method: &str,
     path: &str,
     content_type: Option<&str>,
     auth_token: Option<&str>,
     body: &[u8],
     last_event_id: Option<&str>,
-) -> Result<()> {
-    let mut request = format!(
-        "{method} {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nContent-Length: {}\r\n",
-        body.len()
-    );
-    if let Some(content_type) = content_type {
-        request.push_str(&format!("Content-Type: {content_type}\r\n"));
-    }
-    if let Some(auth_token) = auth_token {
-        request.push_str(&format!("Authorization: Bearer {auth_token}\r\n"));
-    }
-    if let Some(last_event_id) = last_event_id {
-        request.push_str(&format!("Last-Event-ID: {last_event_id}\r\n"));
-    }
-    request.push_str("\r\n");
-    stream
-        .write_all(request.as_bytes())
-        .context("write upstream request head")?;
-    if !body.is_empty() {
-        stream
-            .write_all(body)
-            .context("write upstream request body")?;
-    }
-    Ok(())
+) -> anyhow::Result<()> {
+    request::write_upstream_request(
+        stream,
+        method,
+        path,
+        content_type,
+        auth_token,
+        body,
+        last_event_id,
+    )
 }
 
-pub(super) fn read_upstream_response(mut stream: TcpStream) -> Result<UpstreamResponse> {
-    let (status, reason, headers, remainder) = read_upstream_head(&mut stream)?;
-    let content_length = headers
-        .get("content-length")
-        .and_then(|value| value.parse::<usize>().ok())
-        .unwrap_or(0);
-    let mut body = remainder;
-    let mut buffer = [0_u8; 4096];
-    while body.len() < content_length {
-        let read = stream.read(&mut buffer).context("read upstream body")?;
-        if read == 0 {
-            break;
-        }
-        body.extend_from_slice(&buffer[..read]);
-    }
-    Ok(UpstreamResponse {
-        status,
-        reason,
-        headers,
-        body,
-    })
+pub(super) fn read_upstream_response(
+    stream: std::net::TcpStream,
+) -> anyhow::Result<UpstreamResponse> {
+    response::read_upstream_response(stream)
 }
 
 pub(super) fn read_error_body(
@@ -251,76 +83,13 @@ pub(super) fn read_error_body(
     reason: String,
     headers: HashMap<String, String>,
     remainder: Vec<u8>,
-    mut stream: TcpStream,
-) -> Result<UpstreamResponse> {
-    let content_length = headers
-        .get("content-length")
-        .and_then(|value| value.parse::<usize>().ok())
-        .unwrap_or(remainder.len());
-    let mut body = remainder;
-    let mut buffer = [0_u8; 4096];
-    while body.len() < content_length {
-        let read = stream
-            .read(&mut buffer)
-            .context("read upstream error body")?;
-        if read == 0 {
-            break;
-        }
-        body.extend_from_slice(&buffer[..read]);
-    }
-    Ok(UpstreamResponse {
-        status,
-        reason,
-        headers,
-        body,
-    })
+    stream: std::net::TcpStream,
+) -> anyhow::Result<UpstreamResponse> {
+    response::read_error_body(status, reason, headers, remainder, stream)
 }
 
 pub(super) fn read_upstream_head(
-    stream: &mut TcpStream,
-) -> Result<(u16, String, HashMap<String, String>, Vec<u8>)> {
-    let mut buffer = [0_u8; 1024];
-    let mut response_bytes = Vec::new();
-    let header_end = loop {
-        let read = stream.read(&mut buffer).context("read upstream response")?;
-        if read == 0 {
-            anyhow::bail!("upstream closed before headers");
-        }
-        response_bytes.extend_from_slice(&buffer[..read]);
-        if let Some(index) = response_bytes
-            .windows(4)
-            .position(|window| window == b"\r\n\r\n")
-        {
-            break index + 4;
-        }
-        if response_bytes.len() >= MAX_REQUEST_BYTES {
-            anyhow::bail!("upstream response headers too large");
-        }
-    };
-    let header_text = String::from_utf8_lossy(&response_bytes[..header_end]);
-    let mut lines = header_text.split("\r\n");
-    let status_line = lines.next().context("missing upstream status line")?;
-    let mut status_parts = status_line.splitn(3, ' ');
-    let _http_version = status_parts.next().context("missing upstream version")?;
-    let status = status_parts
-        .next()
-        .context("missing upstream status code")?
-        .parse::<u16>()
-        .context("parse upstream status code")?;
-    let reason = status_parts.next().unwrap_or("").to_string();
-    let mut headers = HashMap::new();
-    for line in lines {
-        if line.is_empty() {
-            break;
-        }
-        if let Some((name, value)) = line.split_once(':') {
-            headers.insert(name.trim().to_ascii_lowercase(), value.trim().to_string());
-        }
-    }
-    Ok((
-        status,
-        reason,
-        headers,
-        response_bytes[header_end..].to_vec(),
-    ))
+    stream: &mut std::net::TcpStream,
+) -> anyhow::Result<(u16, String, HashMap<String, String>, Vec<u8>)> {
+    response::read_upstream_head(stream)
 }
