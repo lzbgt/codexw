@@ -718,6 +718,28 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Thin entrypoint, module wiring, and `main()`.
 - `wrapper/src/main_cli.rs`
   CLI flag definitions plus resume-startup argument rewrite and parse helpers.
+- `wrapper/src/bin/codexw-connector-prototype.rs`
+  Connector prototype entrypoint, listener setup, and broker-facing proxy request loop.
+- `wrapper/src/bin/codexw_connector_prototype/http.rs`
+  Connector HTTP request/response parsing, upstream header shaping, and JSON response helpers.
+- `wrapper/src/bin/codexw_connector_prototype/routing.rs`
+  Connector routing namespace root for broker alias/proxy translation and local-surface policy.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias.rs`
+  Broker alias/proxy path decoding and local API target translation.
+- `wrapper/src/bin/codexw_connector_prototype/routing/policy.rs`
+  Local proxy allowlist and client-lease injection eligibility policy.
+- `wrapper/src/bin/codexw_connector_prototype/sse.rs`
+  Connector SSE bridging for session event streams.
+- `wrapper/src/bin/codexw_connector_prototype/upstream.rs`
+  Connector upstream request forwarding, lease injection, and transport/validation error mapping.
+- `wrapper/src/bin/codexw_connector_prototype/tests.rs`
+  Connector prototype regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing.rs`
+  Connector routing regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias.rs`
+  Connector alias/proxy path translation regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/policy.rs`
+  Connector allowlist and lease-injection policy regression tests.
 - `wrapper/src/main_test_approvals.rs`
   Approval-decision and auto-approval regression tests.
 - `wrapper/src/main_test_catalog.rs`
