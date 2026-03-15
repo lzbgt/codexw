@@ -866,8 +866,24 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   `/ps` stdin and parameterized recipe invocation regression tests.
 - `wrapper/src/local_api/tests.rs`
   Local API route/event test namespace root.
+- `wrapper/src/local_api/control.rs`
+  Local API command-control namespace root.
+- `wrapper/src/local_api/control/queue.rs`
+  Local API queued session, turn, shell, service, dependency, and attachment command definitions and queue helpers.
+- `wrapper/src/local_api/control/process.rs`
+  Local API command-drain processing for queued session, turn, shell, service, dependency, and attachment actions.
+- `wrapper/src/local_api/control/attachment.rs`
+  Local API attachment lease metadata update and expiry helpers for the shared snapshot.
+- `wrapper/src/local_api/routes/dispatch.rs`
+  Local API top-level request dispatcher namespace root.
+- `wrapper/src/local_api/routes/dispatch/auth.rs`
+  Local API health and bearer-token authorization gate for inbound routes.
 - `wrapper/src/local_api/routes/services.rs`
   Local API service-route namespace root.
+- `wrapper/src/local_api/routes/dispatch/scoped_get.rs`
+  Local API session-scoped read-route dispatcher for transcript, orchestration, shell, service, and capability paths.
+- `wrapper/src/local_api/routes/dispatch/scoped_post.rs`
+  Local API session-scoped mutation-route dispatcher for turn, attachment, shell, service, dependency, and client-event paths.
 - `wrapper/src/local_api/routes/session.rs`
   Local API session-route namespace root.
 - `wrapper/src/local_api/routes/session/lifecycle.rs`
