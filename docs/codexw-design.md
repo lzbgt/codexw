@@ -1021,7 +1021,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/app.rs`
   App runtime namespace root.
 - `wrapper/src/app/runtime.rs`
-  Top-level runtime loop, backend startup, event handling, and input routing.
+  App runtime namespace root and top-level runtime loop.
+- `wrapper/src/app/runtime/input.rs`
+  App runtime input routing for prompt-control and editing key handling.
+- `wrapper/src/app/runtime/supervision.rs`
+  App runtime async-tool response handling, supervision ticks, and supervision log formatting.
+- `wrapper/src/app/runtime/tests.rs`
+  App runtime supervision and async-tool lifecycle regression tests.
 - `wrapper/src/app/resume.rs`
   Resume-hint command construction and exit-hint emission helpers.
 - `wrapper/src/app_input_editing.rs`
