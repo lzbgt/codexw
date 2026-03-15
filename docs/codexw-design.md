@@ -1740,7 +1740,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/state/lifecycle/core.rs`
   State constructors, request-id generation, turn/thread reset helpers, conversation history, and attachment transfer behavior.
 - `wrapper/src/state/lifecycle/async_tools.rs`
-  Async-tool request tracking, timeout/backpressure lifecycle, worker status, and supervision-notice state helpers.
+  Async-tool lifecycle namespace root.
+- `wrapper/src/state/lifecycle/async_tools/tracking.rs`
+  Async-tool request bookkeeping, oldest-request selection, and abandoned-request tracking helpers.
+- `wrapper/src/state/lifecycle/async_tools/workers.rs`
+  Async-tool worker-status snapshots and due health-check collection helpers.
+- `wrapper/src/state/lifecycle/async_tools/supervision.rs`
+  Async-tool timeout expiration, backlog saturation, and supervision-notice lifecycle helpers.
 - `wrapper/src/state/lifecycle/observation.rs`
   Async-tool observation and background-shell correlation helpers.
 - `wrapper/src/state_helpers.rs`
