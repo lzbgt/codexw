@@ -866,6 +866,14 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   `/ps` stdin and parameterized recipe invocation regression tests.
 - `wrapper/src/local_api/tests.rs`
   Local API route/event test namespace root.
+- `wrapper/src/local_api/routes/services.rs`
+  Local API service-route namespace root.
+- `wrapper/src/local_api/routes/services/read.rs`
+  Local API service and capability read/detail route handlers.
+- `wrapper/src/local_api/routes/services/interact.rs`
+  Local API service attach, readiness-wait, and recipe-run interaction route handlers.
+- `wrapper/src/local_api/routes/services/mutate.rs`
+  Local API service metadata, dependency, contract, and relabel mutation route handlers.
 - `wrapper/src/local_api/snapshot.rs`
   Local API snapshot namespace root for process-session, supervision, orchestration, worker, capability, and transcript payload assembly.
 - `wrapper/src/local_api/snapshot/async_tools.rs`
@@ -876,6 +884,14 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Local API worker, service-shell, capability, and transcript snapshot builders.
 - `wrapper/src/local_api/tests/fixture.rs`
   Shared Local API snapshot, request, event-log, and service-manager test fixtures.
+- `wrapper/src/local_api/tests/service_routes.rs`
+  Local API service-route regression namespace root.
+- `wrapper/src/local_api/tests/service_routes/read.rs`
+  Local API service and capability read/detail regression tests.
+- `wrapper/src/local_api/tests/service_routes/interact.rs`
+  Local API service attach, wait, and recipe-run regression tests.
+- `wrapper/src/local_api/tests/service_routes/mutate.rs`
+  Local API service/dependency mutation and validation regression tests.
 - `wrapper/src/local_api/tests/events.rs`
   Local API event test namespace root.
 - `wrapper/src/local_api/tests/events/replay.rs`
