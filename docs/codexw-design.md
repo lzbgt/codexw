@@ -737,7 +737,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/proxy.rs`
   Connector raw proxy and proxy_sse path decoding into local passthrough targets.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session.rs`
-  Connector broker-style session alias decoding into local session, shell, service, event, and orchestration targets.
+  Connector broker-style session alias namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/lifecycle.rs`
+  Connector session lifecycle alias decoding for session roots, attach/lease mutation, turn, and transcript routes.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/workers.rs`
+  Connector shell, service, and capability alias decoding, including percent-decoded worker references and actions.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/observation.rs`
+  Connector session event and orchestration-read alias decoding.
 - `wrapper/src/bin/codexw_connector_prototype/routing/policy.rs`
   Local proxy allowlist and client-lease injection eligibility policy.
 - `wrapper/src/bin/codexw_connector_prototype/sse.rs`
@@ -769,7 +775,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/proxy.rs`
   Connector raw proxy and proxy_sse route translation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session.rs`
-  Connector broker-style session alias translation and method-validation regression tests.
+  Connector broker-style session alias regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/lifecycle.rs`
+  Connector session lifecycle alias translation and method-validation regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/workers.rs`
+  Connector shell, service, and capability alias translation plus percent-decoding regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/observation.rs`
+  Connector event and orchestration alias translation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/policy.rs`
   Connector allowlist and lease-injection policy regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream.rs`
