@@ -2,13 +2,10 @@
 mod alias;
 #[path = "routing/policy.rs"]
 mod policy;
+#[path = "routing/target.rs"]
+mod target;
 
-#[derive(Debug, Clone)]
-pub(super) struct ProxyTarget {
-    pub(super) local_path: String,
-    pub(super) is_sse: bool,
-    pub(super) session_id_hint: Option<String>,
-}
+pub(crate) use target::ProxyTarget;
 
 pub(super) fn resolve_proxy_target(
     method: &str,

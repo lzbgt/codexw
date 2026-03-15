@@ -740,11 +740,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/dispatch/proxy/upstream.rs`
   Connector upstream HTTP proxy handoff and connector-facing validation or transport error mapping.
 - `wrapper/src/bin/codexw_connector_prototype/http.rs`
-  Connector HTTP namespace root for request parsing and response shaping.
+  Connector HTTP namespace root for request parsing, response shaping, and shared HTTP transport types.
 - `wrapper/src/bin/codexw_connector_prototype/http/request.rs`
   Connector HTTP request parsing from the raw socket reader.
 - `wrapper/src/bin/codexw_connector_prototype/http/response.rs`
   Connector HTTP response namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/http/types.rs`
+  Connector shared HTTP request and response structs used across dispatch, routing, and response serialization.
 - `wrapper/src/bin/codexw_connector_prototype/http/response/adapt.rs`
   Connector upstream response adaptation into connector HTTP responses with broker and local API headers.
 - `wrapper/src/bin/codexw_connector_prototype/http/response/payload.rs`
@@ -754,9 +756,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/http/response/payload/wire.rs`
   Connector raw HTTP response serialization to the client socket.
 - `wrapper/src/bin/codexw_connector_prototype/routing.rs`
-  Connector routing namespace root for broker alias/proxy translation and local-surface policy.
+  Connector routing namespace root for broker alias/proxy translation, local-surface policy, and shared proxy target typing.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias.rs`
   Connector alias-routing namespace root for raw proxy forwarding and broker-style session alias translation.
+- `wrapper/src/bin/codexw_connector_prototype/routing/target.rs`
+  Connector shared proxy target struct used by alias resolution, request gating, and proxy dispatch.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/proxy.rs`
   Connector raw proxy alias namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/proxy/http.rs`
@@ -802,9 +806,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/sse/framing/payload.rs`
   Connector SSE event flushing and broker metadata payload wrapping.
 - `wrapper/src/bin/codexw_connector_prototype/upstream.rs`
-  Connector upstream namespace root for request forwarding and response parsing.
+  Connector upstream namespace root for request forwarding, response parsing, and shared upstream response or error types.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request.rs`
   Connector upstream request namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/upstream/types.rs`
+  Connector shared upstream response struct and forward-request error enum used by dispatch, HTTP adaptation, and response parsing.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request/body.rs`
   Connector upstream request body namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request/body/policy.rs`

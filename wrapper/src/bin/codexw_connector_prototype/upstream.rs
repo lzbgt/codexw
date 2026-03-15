@@ -1,36 +1,12 @@
-use serde_json::Value;
-use std::collections::HashMap;
-
 #[path = "upstream/request.rs"]
 mod request;
 #[path = "upstream/response.rs"]
 mod response;
+#[path = "upstream/types.rs"]
+mod types;
 
-#[derive(Debug, Clone)]
-pub(super) struct UpstreamResponse {
-    pub(super) status: u16,
-    pub(super) reason: String,
-    pub(super) headers: HashMap<String, String>,
-    pub(super) body: Vec<u8>,
-}
-
-#[derive(Debug)]
-pub(super) enum ForwardRequestError {
-    Validation {
-        message: String,
-        details: Option<Value>,
-    },
-    Transport(anyhow::Error),
-}
-
-impl ForwardRequestError {
-    pub(super) fn validation(message: impl Into<String>, details: Option<Value>) -> Self {
-        Self::Validation {
-            message: message.into(),
-            details,
-        }
-    }
-}
+pub(crate) use types::ForwardRequestError;
+pub(crate) use types::UpstreamResponse;
 
 pub(super) fn forward_request(
     request: &super::http::HttpRequest,
@@ -81,7 +57,7 @@ pub(super) fn read_upstream_response(
 pub(super) fn read_error_body(
     status: u16,
     reason: String,
-    headers: HashMap<String, String>,
+    headers: std::collections::HashMap<String, String>,
     remainder: Vec<u8>,
     stream: std::net::TcpStream,
 ) -> anyhow::Result<UpstreamResponse> {
@@ -90,6 +66,11 @@ pub(super) fn read_error_body(
 
 pub(super) fn read_upstream_head(
     stream: &mut std::net::TcpStream,
-) -> anyhow::Result<(u16, String, HashMap<String, String>, Vec<u8>)> {
+) -> anyhow::Result<(
+    u16,
+    String,
+    std::collections::HashMap<String, String>,
+    Vec<u8>,
+)> {
     response::read_upstream_head(stream)
 }

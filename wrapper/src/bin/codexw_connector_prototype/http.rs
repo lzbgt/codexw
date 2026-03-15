@@ -2,24 +2,11 @@
 mod request;
 #[path = "http/response.rs"]
 mod response;
+#[path = "http/types.rs"]
+mod types;
 
-use std::collections::HashMap;
-
-#[derive(Debug, Clone)]
-pub(super) struct HttpRequest {
-    pub(super) method: String,
-    pub(super) path: String,
-    pub(super) headers: HashMap<String, String>,
-    pub(super) body: Vec<u8>,
-}
-
-#[derive(Debug, Clone)]
-pub(super) struct HttpResponse {
-    pub(super) status: u16,
-    pub(super) reason: &'static str,
-    pub(super) headers: Vec<(String, String)>,
-    pub(super) body: Vec<u8>,
-}
+pub(crate) use types::HttpRequest;
+pub(crate) use types::HttpResponse;
 
 pub(super) fn from_upstream_response(
     upstream: super::upstream::UpstreamResponse,
