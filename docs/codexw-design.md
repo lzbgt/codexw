@@ -743,7 +743,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias.rs`
   Connector alias-routing namespace root for raw proxy forwarding and broker-style session alias translation.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/proxy.rs`
-  Connector raw proxy and proxy_sse path decoding into local passthrough targets.
+  Connector raw proxy alias namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/proxy/http.rs`
+  Connector raw HTTP proxy path decoding into local passthrough targets.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/proxy/sse.rs`
+  Connector raw SSE proxy path decoding into local passthrough targets.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session.rs`
   Connector broker-style session alias namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/path.rs`
@@ -823,7 +827,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias.rs`
   Connector alias-routing regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/proxy.rs`
-  Connector raw proxy and proxy_sse route translation regression tests.
+  Connector raw proxy alias regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/proxy/http.rs`
+  Connector raw HTTP proxy route translation regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/proxy/sse.rs`
+  Connector raw SSE proxy route translation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session.rs`
   Connector broker-style session alias regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/path.rs`

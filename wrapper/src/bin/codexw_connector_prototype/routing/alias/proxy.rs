@@ -1,23 +1,18 @@
+#[path = "proxy/http.rs"]
+mod http;
+#[path = "proxy/sse.rs"]
+mod sse;
+
 use crate::routing::ProxyTarget;
 
 pub(super) fn resolve_proxy_target(path: &str, agent_id: &str) -> Option<ProxyTarget> {
-    let proxy_prefix = format!("/v1/agents/{agent_id}/proxy/");
-    if let Some(stripped) = path.strip_prefix(&proxy_prefix) {
-        return Some(ProxyTarget {
-            local_path: format!("/{}", stripped.trim_start_matches('/')),
-            is_sse: false,
-            session_id_hint: None,
-        });
-    }
+    http::resolve_proxy_target(path, agent_id).or_else(|| sse::resolve_proxy_target(path, agent_id))
+}
 
-    let proxy_sse_prefix = format!("/v1/agents/{agent_id}/proxy_sse/");
-    if let Some(stripped) = path.strip_prefix(&proxy_sse_prefix) {
-        return Some(ProxyTarget {
-            local_path: format!("/{}", stripped.trim_start_matches('/')),
-            is_sse: true,
-            session_id_hint: None,
-        });
+fn passthrough_proxy_target(stripped: &str, is_sse: bool) -> ProxyTarget {
+    ProxyTarget {
+        local_path: format!("/{}", stripped.trim_start_matches('/')),
+        is_sse,
+        session_id_hint: None,
     }
-
-    None
 }
