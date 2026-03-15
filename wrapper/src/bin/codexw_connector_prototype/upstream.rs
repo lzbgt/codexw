@@ -41,7 +41,6 @@ pub(super) fn forward_request(
 }
 
 #[cfg(test)]
-#[cfg(test)]
 pub(super) fn prepare_upstream_body(
     request: &super::http::HttpRequest,
     target: &super::routing::ProxyTarget,

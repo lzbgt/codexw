@@ -130,7 +130,7 @@ fn connector_rejects_raw_proxy_route_outside_allowed_surface() -> Result<()> {
             "\r\n"
         ),
     )?;
-    assert!(response.starts_with("HTTP/1.1 403 Error\r\n"));
+    assert!(response.starts_with("HTTP/1.1 403 Forbidden\r\n"));
     assert!(response.contains("\"code\":\"route_not_allowed\""));
     assert!(
         response
@@ -158,7 +158,7 @@ fn connector_rejects_raw_proxy_sse_route_outside_allowed_surface() -> Result<()>
             "\r\n"
         ),
     )?;
-    assert!(response.starts_with("HTTP/1.1 403 Error\r\n"));
+    assert!(response.starts_with("HTTP/1.1 403 Forbidden\r\n"));
     assert!(response.contains("\"code\":\"route_not_allowed\""));
     assert!(response.contains("\"local_path\":\"/api/v1/session/sess_1/transcript\""));
     assert!(response.contains("\"is_sse\":true"));
