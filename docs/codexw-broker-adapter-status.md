@@ -5,7 +5,11 @@ design set:
 
 - [../TODOS.md](../TODOS.md)
 - [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
 - [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
@@ -24,6 +28,14 @@ Its goal is simple:
 - record what is actually implemented now
 - distinguish route availability from process-level proof
 - make the remaining gaps explicit
+
+For the source docs that define the current shell-first remote
+host-examination surface behind this broker summary, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
 
 ## Current Status
 

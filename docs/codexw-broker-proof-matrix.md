@@ -18,6 +18,9 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
 - [codexw-broker-adapter-promotion.md](codexw-broker-adapter-promotion.md)
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
@@ -29,6 +32,13 @@ It does not redefine the broker design. It answers a narrower question:
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-support-claim-checklist.md](codexw-support-claim-checklist.md)
+
+For the source docs that define the current shell-first remote
+host-examination surface behind this proof read, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
 
 ## Reading This Matrix
 

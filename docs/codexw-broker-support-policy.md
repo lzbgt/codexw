@@ -6,6 +6,9 @@ broker-facing `codexw` adapter surface.
 It is the operational-policy companion to:
 
 - [codexw-broker-adapter-contract.md](codexw-broker-adapter-contract.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-broker-proof-matrix.md](codexw-broker-proof-matrix.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 - [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md)
@@ -16,6 +19,13 @@ It does not redefine the adapter contract. It answers a narrower question:
 - which parts are expected to remain stable
 - what kinds of changes are still allowed
 - what documentation and proof must accompany changes
+
+For the source docs that define the current shell-first remote
+host-examination surface behind this support claim, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
 
 ## Scope
 

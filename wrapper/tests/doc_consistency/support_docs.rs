@@ -3196,10 +3196,12 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let native_recommendation = read_repo_file("docs/codexw-native-product-recommendation.md");
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
+    let broker_contract = read_repo_file("docs/codexw-broker-adapter-contract.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
     let broker_support_policy = read_repo_file("docs/codexw-broker-support-policy.md");
+    let broker_proof = read_repo_file("docs/codexw-broker-proof-matrix.md");
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
 
@@ -3352,6 +3354,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     );
     assert_contains_case_insensitive(
         &checklist,
+        "broker contract/status/support/proof docs still point to the local-api and",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
         "native source docs still describe the same shell-first host-examination",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -3435,6 +3442,21 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "remote/workspace surface behind those support claims",
         "docs/codexw-design.md",
     );
+    for (name, contents) in [
+        ("docs/codexw-broker-adapter-status.md", &broker_status),
+        ("docs/codexw-broker-adapter-contract.md", &broker_contract),
+        (
+            "docs/codexw-broker-support-policy.md",
+            &broker_support_policy,
+        ),
+        ("docs/codexw-broker-proof-matrix.md", &broker_proof),
+    ] {
+        assert_contains_case_insensitive(contents, "shell-first remote", name);
+        assert_contains(contents, "codexw-local-api-sketch.md", name);
+        assert_contains(contents, "codexw-local-api-route-matrix.md", name);
+        assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
+        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+    }
     for (name, contents) in [
         (
             "docs/codexw-native-gap-assessment.md",

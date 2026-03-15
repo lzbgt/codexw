@@ -145,6 +145,10 @@ Confirm all of the following:
   blockers
 - the proof matrix still matches the strongest verified route / error / event /
   lease claims
+- broker contract/status/support/proof docs still point to the local-API and
+  workspace-policy source docs that define the shell-first remote
+  host-examination surface, rather than only pointing at downstream summary or
+  promotion docs
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch

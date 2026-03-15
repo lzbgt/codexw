@@ -10,6 +10,9 @@ remote broker-style client may rely on today if it builds against the
 This document is the contract-oriented companion to:
 
 - [codexw-broker-connectivity.md](codexw-broker-connectivity.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-broker-client-policy.md](codexw-broker-client-policy.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
@@ -59,6 +62,11 @@ For host examination specifically, the current supported experimental adapter
 should still be read as a shell-first foundation built from session, event,
 shell, and service surfaces rather than as an implicit artifact
 list/detail/content contract.
+The source docs for that shell-first remote host-examination foundation remain
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
 
 ## Authority Model
 
