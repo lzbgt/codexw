@@ -25,3 +25,11 @@ pub(super) fn wrap_event_payload(
 pub(super) fn complete_sse_lines(text: &str, pending_line_fragment: &mut String) -> Vec<String> {
     framing::complete_sse_lines(text, pending_line_fragment)
 }
+
+#[cfg(test)]
+pub(super) fn connector_sse_response_head(
+    cli: &super::Cli,
+    local_api_version: Option<&str>,
+) -> String {
+    proxy::connector_sse_response_head(cli, local_api_version)
+}

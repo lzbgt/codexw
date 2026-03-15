@@ -749,7 +749,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/sse.rs`
   Connector SSE namespace root for stream bridging and event framing.
 - `wrapper/src/bin/codexw_connector_prototype/sse/proxy.rs`
-  Connector SSE proxying, upstream stream setup, and bridged response streaming.
+  Connector SSE proxy namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/sse/proxy/upstream.rs`
+  Connector SSE upstream connection setup, local target request write, and non-success response read helpers.
+- `wrapper/src/bin/codexw_connector_prototype/sse/proxy/stream.rs`
+  Connector SSE client response-head projection and bridged event stream forwarding.
 - `wrapper/src/bin/codexw_connector_prototype/sse/framing.rs`
   Connector SSE framing namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/sse/framing/lines.rs`
@@ -810,6 +814,8 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Connector SSE line accumulation and fragmented-line carryover regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/sse/framing/payload.rs`
   Connector SSE broker-wrapped event payload regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/sse/proxy.rs`
+  Connector SSE response-head projection regression tests.
 - `wrapper/src/main_test_approvals.rs`
   Approval-decision and auto-approval regression tests.
 - `wrapper/src/main_test_catalog.rs`
