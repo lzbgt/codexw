@@ -3210,6 +3210,19 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let broker_event_envelope = read_repo_file("docs/codexw-broker-event-envelope.md");
     let broker_host_matrix = read_repo_file("docs/codexw-broker-host-examination-matrix.md");
     let broker_handoff = read_repo_file("docs/codexw-broker-integration-handoff.md");
+    let broker_artifact_sketch = read_repo_file("docs/codexw-broker-artifact-contract-sketch.md");
+    let broker_artifact_plan = read_repo_file("docs/codexw-broker-artifact-implementation-plan.md");
+    let cross_deployment = read_repo_file("docs/codexw-cross-deployment-collaboration.md");
+    let cross_project_dependency =
+        read_repo_file("docs/codexw-cross-project-dependency-collaboration.md");
+    let cross_project_contract =
+        read_repo_file("docs/codexw-cross-project-dependency-contract-sketch.md");
+    let cross_project_plan =
+        read_repo_file("docs/codexw-cross-project-dependency-implementation-plan.md");
+    let cross_deployment_contract =
+        read_repo_file("docs/codexw-cross-deployment-handoff-contract-sketch.md");
+    let cross_deployment_plan =
+        read_repo_file("docs/codexw-cross-deployment-handoff-implementation-plan.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
     let broker_client_policy = read_repo_file("docs/codexw-broker-client-policy.md");
     let broker_support_policy = read_repo_file("docs/codexw-broker-support-policy.md");
@@ -3386,6 +3399,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     );
     assert_contains_case_insensitive(
         &checklist,
+        "artifact sketch/plan and cross-deployment/project-dependency design docs",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
         "native source docs still describe the same shell-first host-examination",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -3542,6 +3560,47 @@ fn broker_docs_preserve_fixture_diversity_claims() {
             &broker_event_envelope,
         ),
         ("docs/codexw-broker-client-fixture.md", &broker_fixture),
+    ] {
+        assert_contains_case_insensitive(contents, "shell-first remote", name);
+        assert_contains(contents, "codexw-local-api-sketch.md", name);
+        assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
+        assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
+        assert_contains(contents, "codexw-local-api-route-matrix.md", name);
+        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+    }
+    for (name, contents) in [
+        (
+            "docs/codexw-broker-artifact-contract-sketch.md",
+            &broker_artifact_sketch,
+        ),
+        (
+            "docs/codexw-broker-artifact-implementation-plan.md",
+            &broker_artifact_plan,
+        ),
+        (
+            "docs/codexw-cross-deployment-collaboration.md",
+            &cross_deployment,
+        ),
+        (
+            "docs/codexw-cross-project-dependency-collaboration.md",
+            &cross_project_dependency,
+        ),
+        (
+            "docs/codexw-cross-project-dependency-contract-sketch.md",
+            &cross_project_contract,
+        ),
+        (
+            "docs/codexw-cross-project-dependency-implementation-plan.md",
+            &cross_project_plan,
+        ),
+        (
+            "docs/codexw-cross-deployment-handoff-contract-sketch.md",
+            &cross_deployment_contract,
+        ),
+        (
+            "docs/codexw-cross-deployment-handoff-implementation-plan.md",
+            &cross_deployment_plan,
+        ),
     ] {
         assert_contains_case_insensitive(contents, "shell-first remote", name);
         assert_contains(contents, "codexw-local-api-sketch.md", name);

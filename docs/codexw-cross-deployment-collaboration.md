@@ -22,6 +22,16 @@ For the more specific case where multiple deployments each work on different
 projects with dependency edges between them, see
 [codexw-cross-project-dependency-collaboration.md](codexw-cross-project-dependency-collaboration.md).
 
+For the source docs that define the current shell-first remote
+host-examination surface that this cross-deployment collaboration track builds
+on, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Why This Requirement Exists
 
 The repo already treats these statements as required architecture:

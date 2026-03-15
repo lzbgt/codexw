@@ -22,6 +22,15 @@ Companion docs:
 - [codexw-broker-support-policy.md](codexw-broker-support-policy.md)
 - [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md)
 
+For the source docs that define the current shell-first remote
+host-examination surface that this artifact delivery plan extends, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Implementation Goal
 
 Deliver the smallest artifact surface that materially improves broker-backed

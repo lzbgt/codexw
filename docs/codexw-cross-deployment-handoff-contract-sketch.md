@@ -14,6 +14,15 @@ should reference, see
 
 This is still a design sketch, not an implemented claim.
 
+For the source docs that define the current shell-first remote
+host-examination surface that this handoff contract would extend, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Goal
 
 Deliver the smallest collaboration contract that lets one `codexw` deployment

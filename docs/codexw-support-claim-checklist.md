@@ -159,6 +159,9 @@ Confirm all of the following:
   fixture docs still point to the same local-API and workspace-policy source
   docs, rather than describing the shell-first boundary only as operational or
   historical summary text
+- artifact sketch/plan and cross-deployment/project-dependency design docs
+  still point to the same local-API and workspace-policy source docs, rather
+  than leaving those design tracks anchored only by downstream summary docs
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch

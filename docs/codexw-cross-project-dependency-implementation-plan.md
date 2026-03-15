@@ -10,6 +10,16 @@ It sits below:
 - [codexw-cross-project-dependency-collaboration.md](codexw-cross-project-dependency-collaboration.md)
 - [codexw-cross-project-dependency-contract-sketch.md](codexw-cross-project-dependency-contract-sketch.md)
 
+For the source docs that define the current shell-first remote
+host-examination surface that this project/dependency delivery plan builds on,
+see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Goal
 
 Deliver the smallest end-to-end slice that lets broker-facing clients see:
