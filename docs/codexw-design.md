@@ -866,6 +866,14 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   `/ps` stdin and parameterized recipe invocation regression tests.
 - `wrapper/src/local_api/tests.rs`
   Local API route/event test namespace root.
+- `wrapper/src/local_api/snapshot.rs`
+  Local API snapshot namespace root for process-session, supervision, orchestration, worker, capability, and transcript payload assembly.
+- `wrapper/src/local_api/snapshot/async_tools.rs`
+  Local API async-tool supervision, backpressure, recovery-option, and worker snapshot builders.
+- `wrapper/src/local_api/snapshot/orchestration.rs`
+  Local API orchestration status and dependency-edge snapshot builders.
+- `wrapper/src/local_api/snapshot/workers.rs`
+  Local API worker, service-shell, capability, and transcript snapshot builders.
 - `wrapper/src/local_api/tests/fixture.rs`
   Shared Local API snapshot, request, event-log, and service-manager test fixtures.
 - `wrapper/src/local_api/tests/events.rs`
@@ -876,6 +884,14 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Supervision/backpressure status-delta event regression tests.
 - `wrapper/src/local_api/tests/events/client.rs`
   Client-event publication and route regression tests.
+- `wrapper/src/local_api/tests/session/read.rs`
+  Local API session-read route regression namespace root.
+- `wrapper/src/local_api/tests/session/read/auth.rs`
+  Local API health and auth-gating regression tests for session-read routes.
+- `wrapper/src/local_api/tests/session/read/snapshot.rs`
+  Local API session snapshot payload regression tests.
+- `wrapper/src/local_api/tests/session/read/contract.rs`
+  Local API session-read contract and not-found regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration.rs`
   Orchestration dynamic-tool test namespace root.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/core.rs`
