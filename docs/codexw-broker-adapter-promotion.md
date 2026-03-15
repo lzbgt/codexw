@@ -16,6 +16,14 @@ question:
 - what policy choices must be explicit
 - what unsupported boundary must remain clear
 
+For the source docs that define the current shell-first remote
+host-examination surface behind this promotion gate, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+
 ## Purpose
 
 Use this document when checking whether the current supported experimental

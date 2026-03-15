@@ -13,6 +13,14 @@ resulting references without direct terminal access. This policy therefore needs
 to stay aligned with the shell-first host-examination posture rather than
 assuming a terminal-only consumer.
 
+For the source docs that define that current shell-first remote
+host-examination surface, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+
 ## Purpose
 
 This document defines the current explicit policy contract for:

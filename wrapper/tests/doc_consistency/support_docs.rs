@@ -3197,9 +3197,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let native_policy = read_repo_file("docs/codexw-native-support-policy.md");
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let broker_contract = read_repo_file("docs/codexw-broker-adapter-contract.md");
+    let broker_adapter_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
+    let broker_client_policy = read_repo_file("docs/codexw-broker-client-policy.md");
     let broker_support_policy = read_repo_file("docs/codexw-broker-support-policy.md");
     let broker_proof = read_repo_file("docs/codexw-broker-proof-matrix.md");
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
@@ -3359,6 +3361,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     );
     assert_contains_case_insensitive(
         &checklist,
+        "broker recommendation/promotion/client-policy docs still point to the same",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
         "native source docs still describe the same shell-first host-examination",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -3455,6 +3462,24 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         assert_contains(contents, "codexw-local-api-sketch.md", name);
         assert_contains(contents, "codexw-local-api-route-matrix.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
+        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+    }
+    for (name, contents) in [
+        (
+            "docs/codexw-broker-promotion-recommendation.md",
+            &broker_promotion,
+        ),
+        (
+            "docs/codexw-broker-adapter-promotion.md",
+            &broker_adapter_promotion,
+        ),
+        ("docs/codexw-broker-client-policy.md", &broker_client_policy),
+    ] {
+        assert_contains_case_insensitive(contents, "shell-first", name);
+        assert_contains(contents, "codexw-local-api-sketch.md", name);
+        assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
+        assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
+        assert_contains(contents, "codexw-local-api-route-matrix.md", name);
         assert_contains(contents, "codexw-workspace-tool-policy.md", name);
     }
     for (name, contents) in [

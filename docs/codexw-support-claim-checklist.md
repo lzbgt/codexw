@@ -149,6 +149,9 @@ Confirm all of the following:
   workspace-policy source docs that define the shell-first remote
   host-examination surface, rather than only pointing at downstream summary or
   promotion docs
+- broker recommendation/promotion/client-policy docs still point to the same
+  local-API and workspace-policy source docs, rather than only repeating the
+  shell-first boundary as summary text
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch

@@ -45,6 +45,14 @@ The operational meaning of that support level now lives in
 document no longer has to carry implicit support/stability assumptions by
 itself.
 
+For the source docs that define the current shell-first remote
+host-examination surface behind this recommendation, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+
 ## Why Promotion Is Now Justified
 
 This recommendation is based on facts already present in the repo.
