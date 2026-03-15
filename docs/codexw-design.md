@@ -884,12 +884,36 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Local API session-scoped read-route dispatcher for transcript, orchestration, shell, service, and capability paths.
 - `wrapper/src/local_api/routes/dispatch/scoped_post.rs`
   Local API session-scoped mutation-route dispatcher for turn, attachment, shell, service, dependency, and client-event paths.
+- `wrapper/src/local_api/routes/shared.rs`
+  Local API shared route-helper namespace root.
+- `wrapper/src/local_api/routes/shared/request.rs`
+  Local API request-body and optional client-id parsing helpers.
+- `wrapper/src/local_api/routes/shared/shell_refs.rs`
+  Local API shell-reference and live shell-value resolution helpers.
+- `wrapper/src/local_api/routes/shared/payload.rs`
+  Local API session and attachment payload builders.
+- `wrapper/src/local_api/routes/shared/attachment.rs`
+  Local API attachment lease ownership and lease-time helpers.
+- `wrapper/src/local_api/routes/shared/response.rs`
+  Local API JSON success/error response builders with version headers.
 - `wrapper/src/local_api/routes/session.rs`
   Local API session-route namespace root.
 - `wrapper/src/local_api/routes/session/lifecycle.rs`
   Local API session creation and thread-attach route handlers.
 - `wrapper/src/local_api/routes/session/attachment.rs`
   Local API attachment lease renew/release route handlers.
+- `wrapper/src/local_api/routes/shells.rs`
+  Local API shell-route namespace root.
+- `wrapper/src/local_api/routes/shells/read.rs`
+  Local API shell list, detail, and poll read-route handlers.
+- `wrapper/src/local_api/routes/shells/mutate.rs`
+  Local API shell start, stdin-send, and terminate mutation route handlers.
+- `wrapper/src/local_api/routes/turn.rs`
+  Local API turn-route namespace root.
+- `wrapper/src/local_api/routes/turn/start.rs`
+  Local API queued turn-start route handlers and prompt validation helpers.
+- `wrapper/src/local_api/routes/turn/interrupt.rs`
+  Local API queued turn-interrupt route handlers.
 - `wrapper/src/local_api/routes/services/read.rs`
   Local API service and capability read/detail route handlers.
 - `wrapper/src/local_api/routes/services/interact.rs`
