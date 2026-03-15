@@ -138,7 +138,19 @@ impl BackgroundShellManager {
                 Err(err) => BackgroundShellJobStatus::Failed(err.to_string()),
             };
             let mut state = job.lock().expect("background shell job lock");
-            state.status = status;
+            state.status = match (&state.status, status) {
+                (BackgroundShellJobStatus::Terminated(existing_code), terminal_status) => {
+                    let exit_code = match terminal_status {
+                        BackgroundShellJobStatus::Completed(code) => Some(code),
+                        BackgroundShellJobStatus::Terminated(code) => code,
+                        BackgroundShellJobStatus::Failed(_) | BackgroundShellJobStatus::Running => {
+                            None
+                        }
+                    };
+                    BackgroundShellJobStatus::Terminated(existing_code.or(exit_code))
+                }
+                (_, terminal_status) => terminal_status,
+            };
             state.stdin = None;
         });
 

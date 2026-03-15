@@ -259,3 +259,29 @@ fn background_shell_manager_can_terminate_only_selected_intent() {
     );
     let _ = manager.terminate_all_running();
 }
+
+#[test]
+fn background_shell_termination_preserves_terminated_status_after_wait_thread_completes() {
+    let manager = BackgroundShellManager::default();
+    manager
+        .start_from_tool(&json!({"command": "sleep 0.4"}), "/tmp")
+        .expect("start background shell");
+
+    manager
+        .terminate_job("bg-1")
+        .expect("terminate background shell");
+
+    let mut rendered = String::new();
+    for _ in 0..40 {
+        rendered = manager
+            .poll_from_tool(&json!({"jobId": "bg-1"}))
+            .expect("poll terminated background shell");
+        if rendered.contains("Status: terminated") {
+            break;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+
+    assert!(rendered.contains("Status: terminated"));
+    assert!(rendered.contains("Terminal state: terminated"));
+}

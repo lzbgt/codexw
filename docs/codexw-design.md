@@ -797,7 +797,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/main_test_session_status.rs`
   Shared status test harness helpers and namespace root.
 - `wrapper/src/main_test_session_status/prompt.rs`
-  Thread-status and prompt-status regression tests.
+  Thread-status prompt regression namespace root.
+- `wrapper/src/main_test_session_status/prompt/overview.rs`
+  Thread-status summary, spinner, realtime, startup, and ready-prompt regression tests.
+- `wrapper/src/main_test_session_status/prompt/async_tools.rs`
+  Async-tool and background-shell prompt-status regression tests.
 - `wrapper/src/main_test_session_status/state.rs`
   State-status regression namespace root.
 - `wrapper/src/main_test_session_status/state/snapshot.rs`
