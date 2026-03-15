@@ -1,5 +1,3 @@
-use super::*;
-
 #[test]
 fn async_tool_supervision_classifies_slow_and_wedged_elapsed_time() {
     let mut state = crate::state::AppState::new(true, false);

@@ -9,16 +9,19 @@ mod lifecycle;
 mod refs;
 
 #[cfg(unix)]
-fn interactive_echo_command() -> &'static str {
+#[allow(dead_code)]
+pub(super) fn interactive_echo_command() -> &'static str {
     "cat"
 }
 
 #[cfg(windows)]
-fn interactive_echo_command() -> &'static str {
+#[allow(dead_code)]
+pub(super) fn interactive_echo_command() -> &'static str {
     "more"
 }
 
-fn spawn_test_http_server(
+#[allow(dead_code)]
+pub(super) fn spawn_test_http_server(
     expected_method: &'static str,
     expected_path: &'static str,
     response_body: &'static str,
@@ -48,7 +51,8 @@ fn spawn_test_http_server(
     format!("http://{addr}")
 }
 
-fn spawn_test_http_server_with_assertions(
+#[allow(dead_code)]
+pub(super) fn spawn_test_http_server_with_assertions(
     assert_request: impl FnOnce(&str) + Send + 'static,
     response: &'static str,
 ) -> String {
