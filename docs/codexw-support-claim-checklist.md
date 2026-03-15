@@ -231,7 +231,13 @@ Confirm all of the following:
 
 - README points to the current source-of-truth docs instead of stale summary
   wording
+- README still points to the native source docs and workspace/local-API source
+  docs that define the shell-first host-examination support boundary behind the
+  current support claim
 - `TODOS.md` distinguishes active support-level work from optional hardening
+- `TODOS.md` still lists the native source docs and workspace/local-API source
+  docs as primary source material for the active support-boundary work, rather
+  than only listing downstream status or policy summaries
 - design docs do not contradict the current recommendation/status docs
 
 ## Release Note / Change Summary Checklist

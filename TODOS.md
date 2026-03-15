@@ -17,6 +17,9 @@ Primary source docs:
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
 - [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
 - [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
+- [docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md)
+- [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
+- [docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md)
 - [docs/codexw-broker-client-architecture.md](docs/codexw-broker-client-architecture.md)
 - [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md)
 - [docs/codexw-cross-project-dependency-collaboration.md](docs/codexw-cross-project-dependency-collaboration.md)
@@ -161,10 +164,15 @@ Concrete tasks:
 - keep the terminal-first recommendation and support boundary explicit across:
   - README
   - native gap docs
+  - native source docs
   - native status/proof docs
   - native support policy docs
   - design docs
   - repo backlog
+- keep workspace-tool and local-API source docs aligned with that same
+  shell-first host-examination boundary so top-level repo summaries do not
+  drift away from the source docs that describe the current supported remote
+  workspace surface
 - only reopen alternate-screen/native TUI work if a concrete workflow is
   blocked by the current scrollback-first model
 - only reopen audio/realtime expansion if a concrete supported target is chosen
@@ -247,6 +255,9 @@ Concrete tasks:
 
 Concrete tasks:
 - keep the top-level docs synchronized so the same status does not have to be inferred from multiple long design files
+- keep README and `TODOS.md` pointing at the same native source docs and
+  workspace/local-API source docs that the support-claim checklist now treats
+  as required review inputs
 - prefer adding or updating source-of-truth docs over copying large overlapping sections into multiple files
 - keep this file updated when major broker or local-API milestones land
 - use [docs/codexw-support-claim-checklist.md](docs/codexw-support-claim-checklist.md)

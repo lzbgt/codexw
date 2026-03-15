@@ -3304,6 +3304,19 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "artifact index/detail/content routes stay",
         "README.md",
     );
+    assert_contains(&readme, "docs/codexw-workspace-tool-policy.md", "README.md");
+    assert_contains(&readme, "docs/codexw-local-api-sketch.md", "README.md");
+    assert_contains(
+        &readme,
+        "docs/codexw-local-api-implementation-plan.md",
+        "README.md",
+    );
+    assert_contains(
+        &readme,
+        "docs/codexw-local-api-route-matrix.md",
+        "README.md",
+    );
+    assert_contains_case_insensitive(&readme, "shell-first remote/workspace", "README.md");
 
     assert_contains(
         &broker_hardening,
@@ -3342,6 +3355,28 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         &todos,
         "artifact track is implemented and proven",
         "TODOS.md",
+    );
+    assert_contains(&todos, "docs/codexw-local-api-sketch.md", "TODOS.md");
+    assert_contains(
+        &todos,
+        "docs/codexw-local-api-implementation-plan.md",
+        "TODOS.md",
+    );
+    assert_contains(&todos, "docs/codexw-local-api-route-matrix.md", "TODOS.md");
+    assert_contains_case_insensitive(
+        &todos,
+        "workspace-tool and local-api source docs aligned",
+        "TODOS.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "workspace/local-api",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "primary source material for the active support-boundary work",
+        "docs/codexw-support-claim-checklist.md",
     );
 }
 

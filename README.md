@@ -14,6 +14,13 @@ For the current native-side product recommendation and support boundaries, see
 [docs/codexw-native-product-recommendation.md](docs/codexw-native-product-recommendation.md)
 and
 [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md).
+For the native-side source docs that define the shell-first remote/workspace
+surface behind those support claims, see
+[docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md),
+[docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md),
+[docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md),
+and
+[docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md).
 For the operational meaning of native-side "supported", see
 [docs/codexw-native-support-policy.md](docs/codexw-native-support-policy.md).
 For a concise native-side status snapshot and evidence map, see
@@ -75,6 +82,9 @@ The current supported experimental adapter therefore stops at the existing
 shell-first host-examination surface; artifact index/detail/content routes stay
 outside that support boundary until the separate artifact track is implemented
 and proven.
+That repo-level support boundary is summarized not only by the broker/native
+status and policy docs, but also by the source docs for shell-first workspace
+inspection and local API host examination listed above.
 For the short implementer-facing handoff for the sibling `~/work/agent`
 workspace, see
 [docs/codexw-broker-integration-handoff.md](docs/codexw-broker-integration-handoff.md).
