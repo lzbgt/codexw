@@ -725,9 +725,19 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/dispatch.rs`
   Connector per-request dispatch namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/dispatch/gate.rs`
-  Connector request read-time gating for healthz, bearer auth, route resolution, and allowlist enforcement.
+  Connector request-gating namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/dispatch/gate/health.rs`
+  Connector healthz short-circuit response handling during request gating.
+- `wrapper/src/bin/codexw_connector_prototype/dispatch/gate/auth.rs`
+  Connector bearer-token gating for authenticated connector routes.
+- `wrapper/src/bin/codexw_connector_prototype/dispatch/gate/route.rs`
+  Connector route resolution, SSE method gating, and local-surface allowlist enforcement.
 - `wrapper/src/bin/codexw_connector_prototype/dispatch/proxy.rs`
-  Connector upstream and SSE proxy handoff plus connector-facing error mapping.
+  Connector proxy-handoff namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/dispatch/proxy/sse.rs`
+  Connector SSE proxy handoff from prepared connector requests.
+- `wrapper/src/bin/codexw_connector_prototype/dispatch/proxy/upstream.rs`
+  Connector upstream HTTP proxy handoff and connector-facing validation or transport error mapping.
 - `wrapper/src/bin/codexw_connector_prototype/http.rs`
   Connector HTTP namespace root for request parsing and response shaping.
 - `wrapper/src/bin/codexw_connector_prototype/http/request.rs`
@@ -809,9 +819,17 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/dispatch.rs`
   Connector entrypoint dispatch regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/dispatch/gate.rs`
-  Connector request-gating regression tests for health, auth, route lookup, and allowlist rejection.
+  Connector request-gating regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/dispatch/gate/health.rs`
+  Connector healthz dispatch regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/dispatch/gate/auth.rs`
+  Connector bearer-auth dispatch regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/dispatch/gate/route.rs`
+  Connector route lookup, SSE method gating, and allowlist rejection regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/dispatch/proxy.rs`
-  Connector proxy-handoff regression tests for SSE method gating.
+  Connector proxy-handoff regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/dispatch/proxy/upstream.rs`
+  Connector upstream proxy regression tests for connector-facing validation and transport error mapping.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http.rs`
   Connector HTTP regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/http/request.rs`

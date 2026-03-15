@@ -1,20 +1,24 @@
+#[path = "gate/auth.rs"]
+mod auth;
+#[path = "gate/health.rs"]
+mod health;
+#[path = "gate/route.rs"]
+mod route;
+
 use std::net::TcpStream;
 
 use anyhow::Context;
 use anyhow::Result;
-use serde_json::json;
 
 use super::super::Cli;
 use super::super::READ_TIMEOUT;
 use super::super::http;
-use super::super::routing;
+
+pub(crate) use route::ProxyRequest;
 
 pub(super) enum ConnectionAction {
     Respond(http::HttpResponse),
-    Proxy {
-        request: http::HttpRequest,
-        target: routing::ProxyTarget,
-    },
+    Proxy(route::ProxyRequest),
 }
 
 pub(super) fn prepare_request(stream: &mut TcpStream, cli: &Cli) -> Result<ConnectionAction> {
@@ -33,59 +37,16 @@ pub(super) fn prepare_request(stream: &mut TcpStream, cli: &Cli) -> Result<Conne
         }
     };
 
-    if request.method == "GET" && request.path == "/healthz" {
-        return Ok(ConnectionAction::Respond(http::json_ok_response(json!({
-            "ok": true,
-            "agent_id": cli.agent_id,
-            "deployment_id": cli.deployment_id,
-        }))));
+    if let Some(response) = health::health_response(&request, cli) {
+        return Ok(ConnectionAction::Respond(response));
     }
 
-    if let Some(expected_token) = &cli.connector_token {
-        match request.headers.get("authorization") {
-            Some(value) if value == &format!("Bearer {expected_token}") => {}
-            _ => {
-                return Ok(ConnectionAction::Respond(http::json_error_response(
-                    401,
-                    "unauthorized",
-                    "missing or invalid connector bearer token",
-                    None,
-                )));
-            }
-        }
+    if let Some(response) = auth::auth_error(&request, cli) {
+        return Ok(ConnectionAction::Respond(response));
     }
 
-    let Some(target) = routing::resolve_proxy_target(&request.method, &request.path, &cli.agent_id)
-    else {
-        return Ok(ConnectionAction::Respond(http::json_error_response(
-            404,
-            "not_found",
-            "unknown connector route",
-            None,
-        )));
-    };
-
-    if target.is_sse && request.method != "GET" {
-        return Ok(ConnectionAction::Respond(http::json_error_response(
-            405,
-            "method_not_allowed",
-            "unsupported method for SSE route",
-            None,
-        )));
+    match route::resolve_proxy_request(request, cli) {
+        Ok(proxy_request) => Ok(ConnectionAction::Proxy(proxy_request)),
+        Err(response) => Ok(ConnectionAction::Respond(response)),
     }
-
-    if !routing::is_allowed_local_proxy_target(&request.method, &target.local_path, target.is_sse) {
-        return Ok(ConnectionAction::Respond(http::json_error_response(
-            403,
-            "route_not_allowed",
-            "connector route is outside the allowed local API surface",
-            Some(json!({
-                "method": request.method,
-                "local_path": target.local_path,
-                "is_sse": target.is_sse,
-            })),
-        )));
-    }
-
-    Ok(ConnectionAction::Proxy { request, target })
 }
