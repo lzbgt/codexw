@@ -3198,6 +3198,12 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let broker_contract = read_repo_file("docs/codexw-broker-adapter-contract.md");
     let broker_adapter_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
+    let broker_decision = read_repo_file("docs/codexw-broker-connector-decision.md");
+    let broker_compat_target = read_repo_file("docs/codexw-broker-compatibility-target.md");
+    let broker_mapping = read_repo_file("docs/codexw-broker-connector-mapping.md");
+    let broker_shared_assumptions = read_repo_file("docs/codexw-broker-shared-assumptions.md");
+    let broker_endpoint_audit = read_repo_file("docs/codexw-broker-endpoint-audit.md");
+    let broker_session_identity = read_repo_file("docs/codexw-broker-session-identity.md");
     let broker_status = read_repo_file("docs/codexw-broker-adapter-status.md");
     let broker_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
     let broker_promotion = read_repo_file("docs/codexw-broker-promotion-recommendation.md");
@@ -3366,6 +3372,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     );
     assert_contains_case_insensitive(
         &checklist,
+        "older broker decision/compatibility/mapping/identity/audit docs still point",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
         "native source docs still describe the same shell-first host-examination",
         "docs/codexw-support-claim-checklist.md",
     );
@@ -3476,6 +3487,33 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         ("docs/codexw-broker-client-policy.md", &broker_client_policy),
     ] {
         assert_contains_case_insensitive(contents, "shell-first", name);
+        assert_contains(contents, "codexw-local-api-sketch.md", name);
+        assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
+        assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
+        assert_contains(contents, "codexw-local-api-route-matrix.md", name);
+        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+    }
+    for (name, contents) in [
+        ("docs/codexw-broker-connector-decision.md", &broker_decision),
+        (
+            "docs/codexw-broker-compatibility-target.md",
+            &broker_compat_target,
+        ),
+        ("docs/codexw-broker-connector-mapping.md", &broker_mapping),
+        (
+            "docs/codexw-broker-shared-assumptions.md",
+            &broker_shared_assumptions,
+        ),
+        (
+            "docs/codexw-broker-endpoint-audit.md",
+            &broker_endpoint_audit,
+        ),
+        (
+            "docs/codexw-broker-session-identity.md",
+            &broker_session_identity,
+        ),
+    ] {
+        assert_contains_case_insensitive(contents, "shell-first remote", name);
         assert_contains(contents, "codexw-local-api-sketch.md", name);
         assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);

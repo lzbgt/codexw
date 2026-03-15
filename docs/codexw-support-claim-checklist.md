@@ -152,6 +152,9 @@ Confirm all of the following:
 - broker recommendation/promotion/client-policy docs still point to the same
   local-API and workspace-policy source docs, rather than only repeating the
   shell-first boundary as summary text
+- older broker decision/compatibility/mapping/identity/audit docs still point
+  to the same local-API and workspace-policy source docs, rather than leaving
+  those historical/reference layers on summary-only wording
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch

@@ -8,6 +8,14 @@ This document records the broker compatibility target decision:
 The answer should be explicit, because “compatibility” can mean very different
 things.
 
+For the source docs that define the current shell-first remote
+host-examination surface behind this compatibility target, see
+[docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md),
+[docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md),
+[docs/codexw-local-api-event-sourcing.md](docs/codexw-local-api-event-sourcing.md),
+[docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md), and
+[docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md).
+
 ## Candidate Levels
 
 ### Level 1: Payload Vocabulary Reuse

@@ -14,6 +14,14 @@ For the shorter implementer-facing summary of what the sibling `~/work/agent`
 workspace should assume today, see
 [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md).
 
+For the source docs that define the current shell-first remote
+host-examination surface behind this audit, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+
 ## Classification Meanings
 
 - `direct fit`

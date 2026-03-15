@@ -16,6 +16,14 @@ The assessment is based on these project docs:
 - `/Users/zongbaolu/work/agent/docs/PROTOCOL.md`
 - `/Users/zongbaolu/work/agent/docs/CLIENT.md`
 
+For the source docs that define the current shell-first remote
+host-examination surface on the `codexw` side of this matrix, see
+[codexw-local-api-sketch.md](codexw-local-api-sketch.md),
+[codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
+[codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
+[codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
+[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+
 ## Classification Meanings
 
 - `shared directly`

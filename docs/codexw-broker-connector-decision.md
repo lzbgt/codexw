@@ -33,6 +33,14 @@ The answer now has to be read against the current architecture requirement:
   - [docs/codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
   - [docs/codexw-broker-artifact-implementation-plan.md](codexw-broker-artifact-implementation-plan.md)
 
+For the source docs that define that current shell-first remote
+host-examination surface, see
+[docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md),
+[docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md),
+[docs/codexw-local-api-event-sourcing.md](docs/codexw-local-api-event-sourcing.md),
+[docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md), and
+[docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md).
+
 ## Options
 
 ### Option A: Local API First

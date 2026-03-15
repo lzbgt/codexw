@@ -18,6 +18,14 @@ The connector exists to translate between:
 
 The connector should be a narrow translation layer, not a second runtime.
 
+For the source docs that define the current shell-first remote
+host-examination surface behind this mapping, see
+[docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md),
+[docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md),
+[docs/codexw-local-api-event-sourcing.md](docs/codexw-local-api-event-sourcing.md),
+[docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md), and
+[docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md).
+
 ## Mapping Principles
 
 1. `codexw` local API remains the canonical runtime contract
