@@ -1682,7 +1682,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/state/types.rs`
   `AppState`, `OrchestrationState`, `ProcessOutputBuffer`, session override types, and deref wiring.
 - `wrapper/src/state/lifecycle.rs`
-  State constructors, request-id generation, turn/thread reset helpers, and attachment transfer behavior.
+  State lifecycle namespace root.
+- `wrapper/src/state/lifecycle/core.rs`
+  State constructors, request-id generation, turn/thread reset helpers, conversation history, and attachment transfer behavior.
+- `wrapper/src/state/lifecycle/async_tools.rs`
+  Async-tool request tracking, timeout/backpressure lifecycle, worker status, and supervision-notice state helpers.
+- `wrapper/src/state/lifecycle/observation.rs`
+  Async-tool observation and background-shell correlation helpers.
 - `wrapper/src/state_helpers.rs`
   Shared state helper namespace root.
 - `wrapper/src/state_helpers/json.rs`
