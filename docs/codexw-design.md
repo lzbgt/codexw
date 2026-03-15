@@ -864,6 +864,18 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   `/ps` HTTP recipe invocation regression tests.
 - `wrapper/src/main_test_session_status_ps_recipes/stdin.rs`
   `/ps` stdin and parameterized recipe invocation regression tests.
+- `wrapper/src/local_api/tests.rs`
+  Local API route/event test namespace root.
+- `wrapper/src/local_api/tests/fixture.rs`
+  Shared Local API snapshot, request, event-log, and service-manager test fixtures.
+- `wrapper/src/local_api/tests/events.rs`
+  Local API event test namespace root.
+- `wrapper/src/local_api/tests/events/replay.rs`
+  Replayable snapshot-event and SSE replay regression tests.
+- `wrapper/src/local_api/tests/events/status.rs`
+  Supervision/backpressure status-delta event regression tests.
+- `wrapper/src/local_api/tests/events/client.rs`
+  Client-event publication and route regression tests.
 - `wrapper/src/client_dynamic_tools_tests_orchestration.rs`
   Orchestration dynamic-tool test namespace root.
 - `wrapper/src/client_dynamic_tools_tests_orchestration/core.rs`
