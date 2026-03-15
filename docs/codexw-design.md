@@ -753,7 +753,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/observation.rs`
   Connector session event and orchestration-read alias decoding.
 - `wrapper/src/bin/codexw_connector_prototype/routing/policy.rs`
-  Local proxy allowlist and client-lease injection eligibility policy.
+  Connector routing policy namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/routing/policy/allowlist.rs`
+  Connector local API allowlist rules for HTTP and SSE proxy targets.
+- `wrapper/src/bin/codexw_connector_prototype/routing/policy/injection.rs`
+  Connector client and lease injection eligibility policy for mutating local routes.
 - `wrapper/src/bin/codexw_connector_prototype/sse.rs`
   Connector SSE namespace root for stream bridging and event framing.
 - `wrapper/src/bin/codexw_connector_prototype/sse/proxy.rs`
@@ -773,7 +777,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request.rs`
   Connector upstream request namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request/body.rs`
-  Connector upstream body shaping, lease/session injection, and validation helpers.
+  Connector upstream request body namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/upstream/request/body/policy.rs`
+  Connector upstream body passthrough vs JSON-injection planning based on route policy and request headers.
+- `wrapper/src/bin/codexw_connector_prototype/upstream/request/body/json.rs`
+  Connector upstream JSON object parsing, validation, and injected field application.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/request/transport.rs`
   Connector upstream connection setup, local-path composition, and raw request write helpers.
 - `wrapper/src/bin/codexw_connector_prototype/upstream/response.rs`
@@ -815,13 +823,21 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/observation.rs`
   Connector event and orchestration alias translation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/policy.rs`
-  Connector allowlist and lease-injection policy regression tests.
+  Connector routing policy regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/policy/allowlist.rs`
+  Connector allowlist regression tests for HTTP/SSE targets and resolved broker alias routes.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/policy/injection.rs`
+  Connector client/lease injection eligibility regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream.rs`
   Connector upstream regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request.rs`
   Connector upstream request regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/body.rs`
-  Connector upstream request body injection and validation regression tests.
+  Connector upstream request body regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/body/policy.rs`
+  Connector upstream body passthrough policy regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/body/json.rs`
+  Connector upstream JSON injection and validation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/request/transport.rs`
   Connector upstream request path-composition regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/upstream/response.rs`
