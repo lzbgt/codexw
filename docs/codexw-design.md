@@ -81,7 +81,7 @@ The runtime has thirteen main layers.
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
 
 8. Session and turn orchestration
-   `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status_active.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs`, `response_realtime_activity.rs`, `response_turn_activity.rs`, and `response_local_command.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, status snapshot generation, and the concrete thread-activity success handlers for realtime, turns, reviews, and local commands. Prompt-status callers now import the concrete helpers directly through `prompt_state.rs`.
+   `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status_active.rs`, `session_prompt_status_active/timing.rs`, `session_prompt_status_active/async_tools.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs`, `session_snapshot_runtime/async_tools.rs`, `session_snapshot_runtime/supervision.rs`, `response_realtime_activity.rs`, `response_turn_activity.rs`, and `response_local_command.rs` own model metadata, personality selection, collaboration mode handling, prompt/realtime status rendering, status snapshot generation, and the concrete thread-activity success handlers for realtime, turns, reviews, and local commands. Prompt-status callers now import the concrete helpers directly through `prompt_state.rs`.
 
 9. App runtime loop
    `app.rs`, `app_input_editor.rs`, `app_input_editing.rs`, `app_input_controls.rs`, and `app_input_interrupt.rs` own process wiring, the main event loop, keyboard-event dispatch, editor-key actions, submit/escape/interrupt behavior, and control-key routing for the live interactive session. `app.rs` now owns input-key routing directly while the smaller helper modules own editor, editing, and control behavior.
@@ -98,7 +98,7 @@ The runtime has thirteen main layers.
 13. Human output handling
    `output.rs`, `output/ui.rs`, `output/render.rs`, `render_prompt.rs`, `render_block_common.rs`, `render_block_markdown.rs`, `render_markdown_block_structures.rs`, `render_markdown_code.rs`, `render_markdown_inline.rs`, `render_markdown_links.rs`, `render_markdown_styles.rs`, `render_block_structured.rs`, and `render_ansi.rs` convert app-server events into readable terminal output with markdown-like styling, colored diffs, command blocks, status lines, and a wrapped inline prompt redraw path. `output.rs` is now the namespace root, `output/ui.rs` owns prompt redraw, committed stream output, prompt visibility, wrapped prompt row management, and frame deduplication so periodic ticks only repaint when the prompt or transient status actually changes, while `output/render.rs` owns block-level ANSI assembly and committed line normalization. `render_prompt.rs` still owns prompt fitting and committed prompt rendering directly.
 
-Session feature helpers are split across `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status_active.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, and `session_snapshot_runtime.rs`, with prompt-state callers now routing directly through `prompt_state.rs`.
+Session feature helpers are split across `model_catalog.rs`, `model_personality_view.rs`, `model_personality_actions.rs`, `collaboration_preset.rs`, `collaboration_view.rs`, `collaboration_apply.rs`, `session_prompt_status_active.rs`, `session_prompt_status_active/timing.rs`, `session_prompt_status_active/async_tools.rs`, `session_prompt_status_ready.rs`, `session_realtime_status.rs`, `session_realtime_item.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs`, `session_snapshot_runtime/async_tools.rs`, and `session_snapshot_runtime/supervision.rs`, with prompt-state callers now routing directly through `prompt_state.rs`.
 Runtime policy helpers live in `policy.rs`: approval, sandbox, reasoning-summary, shell-program, and approval-choice logic.
 App loop helpers are split across `app.rs`, `app_input_editor.rs`, `app_input_editing.rs`, `app_input_controls.rs`, and `app_input_interrupt.rs`: `app.rs` owns backend/session startup, the top-level runtime loop, and input-key routing; `app_input_editor.rs` owns editor-key behavior and submit handling; `app_input_editing.rs` routes editing/navigation keys; and `app_input_controls.rs` plus `app_input_interrupt.rs` own control, interrupt, and exit behavior.
 Resume-preview helpers live across `history_render.rs`, `history_state.rs`, and `history_text.rs`, and callers now import those concrete helpers directly for recent conversation extraction, resumed objective/last-reply seeding, resumed transcript rendering, and shared history text formatting.
@@ -1194,7 +1194,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/transcript_plan_render/responses/mcp.rs`
   MCP elicitation response and schema-fallback helpers.
 - `wrapper/src/session_prompt_status_active.rs`
-  Prompt-status rendering for active command, turn, and realtime states plus shared spinner/elapsed helpers.
+  Prompt-status rendering namespace root for active command, turn, and realtime states.
+- `wrapper/src/session_prompt_status_active/timing.rs`
+  Shared active prompt spinner-frame and elapsed-time helpers.
+- `wrapper/src/session_prompt_status_active/async_tools.rs`
+  Active prompt async-tool, backlog, and recovery-option status rendering helpers.
 - `wrapper/src/session_prompt_status_ready.rs`
   Prompt-status rendering for idle ready state, including collaboration/personality summaries.
 - `wrapper/src/session_realtime_status.rs`
@@ -1204,7 +1208,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/session_snapshot_overview.rs`
   Core `:status` overview lines for cwd, thread, sandbox, model, collaboration, and attachment state.
 - `wrapper/src/session_snapshot_runtime.rs`
-  Runtime `:status` lines for realtime state, account, activity timing, rate limits, token usage, and last reply summaries.
+  Runtime `:status` namespace root for realtime state, account, activity timing, rate limits, token usage, and last reply summaries.
+- `wrapper/src/session_snapshot_runtime/async_tools.rs`
+  Runtime `:status` async-tool, worker, backlog, and guardrail line builders.
+- `wrapper/src/session_snapshot_runtime/supervision.rs`
+  Runtime `:status` supervision-notice and recovery-option line builders.
 - `wrapper/src/orchestration_view.rs`
   Orchestration-view namespace root with shared worker/dependency filter types.
 - `wrapper/src/orchestration_view/dependencies.rs`
