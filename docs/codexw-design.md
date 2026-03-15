@@ -721,7 +721,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw-connector-prototype.rs`
   Connector prototype entrypoint, listener setup, and broker-facing proxy request loop.
 - `wrapper/src/bin/codexw_connector_prototype/http.rs`
-  Connector HTTP request/response parsing, upstream header shaping, and JSON response helpers.
+  Connector HTTP namespace root for request parsing and response shaping.
+- `wrapper/src/bin/codexw_connector_prototype/http/request.rs`
+  Connector HTTP request parsing from the raw socket reader.
+- `wrapper/src/bin/codexw_connector_prototype/http/response.rs`
+  Connector HTTP response shaping, upstream header adaptation, and JSON response helpers.
 - `wrapper/src/bin/codexw_connector_prototype/routing.rs`
   Connector routing namespace root for broker alias/proxy translation and local-surface policy.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias.rs`
@@ -742,6 +746,12 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Connector upstream response head/body parsing helpers.
 - `wrapper/src/bin/codexw_connector_prototype/tests.rs`
   Connector prototype regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/http.rs`
+  Connector HTTP regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/http/request.rs`
+  Connector HTTP request parsing and response serialization regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/http/response.rs`
+  Connector HTTP JSON and upstream-header adaptation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing.rs`
   Connector routing regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias.rs`
