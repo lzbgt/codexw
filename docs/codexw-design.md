@@ -747,9 +747,17 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session.rs`
   Connector broker-style session alias namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/lifecycle.rs`
-  Connector session lifecycle alias decoding for session roots, attach/lease mutation, turn, and transcript routes.
+  Connector session lifecycle alias namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/lifecycle/read.rs`
+  Connector session read alias decoding for session roots, individual sessions, and transcript routes.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/lifecycle/mutate.rs`
+  Connector session mutation alias decoding for create, attach, lease, client-event, and turn-control routes.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/workers.rs`
-  Connector shell, service, and capability alias decoding, including percent-decoded worker references and actions.
+  Connector session worker alias namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/workers/shells.rs`
+  Connector shell alias decoding, including percent-decoded shell references and shell action routes.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/workers/services.rs`
+  Connector service and capability alias decoding, including percent-decoded references and service action routes.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/observation.rs`
   Connector session event and orchestration-read alias decoding.
 - `wrapper/src/bin/codexw_connector_prototype/routing/policy.rs`
@@ -817,9 +825,17 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session.rs`
   Connector broker-style session alias regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/lifecycle.rs`
-  Connector session lifecycle alias translation and method-validation regression tests.
+  Connector session lifecycle alias regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/lifecycle/read.rs`
+  Connector session read alias translation and method-validation regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/lifecycle/mutate.rs`
+  Connector session mutation alias translation and method-validation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/workers.rs`
-  Connector shell, service, and capability alias translation plus percent-decoding regression tests.
+  Connector session worker alias regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/workers/shells.rs`
+  Connector shell alias translation plus percent-decoding regression tests.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/workers/services.rs`
+  Connector service and capability alias translation plus percent-decoding regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/observation.rs`
   Connector event and orchestration alias translation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/policy.rs`
