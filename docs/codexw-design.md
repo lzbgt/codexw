@@ -75,7 +75,7 @@ The runtime has thirteen main layers.
    `catalog.rs` owns app and skill catalog parsing from app-server payloads.
 
 6. Shared state and text/buffer helpers
-   `state.rs` and `state_helpers.rs` own `AppState`, process-output buffering, attachment queues, request bookkeeping, request-id generation, state reset/attachment mutations, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering. `state.rs` is the concrete shared runtime surface.
+   `state.rs`, `state/types.rs`, `state/types/core.rs`, `state/types/async_tools.rs`, `state/types/app.rs`, `state/lifecycle.rs`, and `state_helpers.rs` own the shared runtime state surface: `AppState`, process-output buffering, attachment queues, async-tool supervision/observation types, request bookkeeping, request-id generation, state reset/attachment mutations, and shared utility helpers such as response-path string extraction, summarized status text, and streamed item/process delta buffering. `state.rs` remains the namespace root and re-export surface.
 
 7. Runtime policy
    `policy.rs` owns approval policy, sandbox policy, reasoning-summary policy, shell selection, and approval-decision preference logic shared by requests, status rendering, and approval handling.
@@ -107,7 +107,7 @@ Status display helpers are split across `status_value.rs`, `status_config.rs`, `
 Transcript display helpers now live directly across `transcript_completion_render.rs`, `transcript_plan_render.rs`, `transcript_approval_summary.rs`, `transcript_item_summary.rs`, and `transcript_status_summary.rs`, without an extra transcript compatibility layer in the runtime path.
 Runtime helpers live across `runtime_process.rs`, `runtime_event_sources.rs`, `runtime_event_sources/input.rs`, `runtime_event_sources/input/decode.rs`, `runtime_event_sources/input/thread.rs`, `runtime_event_sources/terminal.rs`, and `runtime_keys.rs`, with backend process startup, raw terminal mode, key mapping, event-source threads, and bracketed-paste decoding now imported directly from those concrete modules.
 Catalog helpers live in `catalog.rs`: app and skill list extraction for the current workspace.
-Shared state helpers now live across `state.rs` and `state_helpers.rs`, with `state.rs` owning `AppState`, `ProcessOutputBuffer`, request-id generation, constructor/reset helpers, and attachment transfer behavior directly.
+Shared state helpers now live across `state.rs`, `state/types.rs`, `state/types/core.rs`, `state/types/async_tools.rs`, `state/types/app.rs`, `state/lifecycle.rs`, and `state_helpers.rs`, with `state.rs` remaining the shared namespace root while the concrete type, lifecycle, and helper implementations live in those focused modules.
 Orchestration registry helpers are split across `orchestration_registry.rs`, `orchestration_registry/graph.rs`, `orchestration_registry/graph/edges.rs`, `orchestration_registry/graph/scheduler.rs`, and `orchestration_registry/tracking.rs`, with `orchestration_registry.rs` kept as the shared type/root module, `orchestration_registry/graph.rs` acting as the graph namespace root, `orchestration_registry/graph/edges.rs` owning dependency-edge derivation, `orchestration_registry/graph/scheduler.rs` owning wait/sidecar/runtime count helpers plus main-agent scheduler state, and `orchestration_registry/tracking.rs` owning live collab-task parsing plus cached-agent-thread updates.
 Command catalog helpers are split across `commands_entry_session_catalog.rs`, `commands_entry_session_modes.rs`, `commands_entry_thread.rs`, `commands_entry_runtime.rs`, and `commands_catalog.rs`: grouped command-entry data lives in the `commands_entry_*` modules, and `commands_catalog.rs` assembles the shared table directly while providing the public entrypoint, descriptions, help-line generation, and stable command-name ordering.
 Command completion helpers live in `commands_completion_apply.rs`, `commands_completion_render.rs`, and `commands_match.rs`: completion application stays in the extracted apply helper, rendering and quoting stay in the render helper, and cursor parsing, fuzzy scoring, and prefix logic live in the matcher module.
@@ -1728,7 +1728,13 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/state.rs`
   Shared runtime-state namespace root and re-export surface.
 - `wrapper/src/state/types.rs`
-  `AppState`, `OrchestrationState`, `ProcessOutputBuffer`, session override types, and deref wiring.
+  Shared runtime-state type namespace root.
+- `wrapper/src/state/types/core.rs`
+  Core runtime session/orchestration structs such as `ProcessOutputBuffer`, `SessionOverrides`, `PendingSelection`, `OrchestrationState`, and `ConversationMessage`.
+- `wrapper/src/state/types/async_tools.rs`
+  Async-tool supervision, observation, timeout, backpressure, worker-status, and notice types plus shared thresholds.
+- `wrapper/src/state/types/app.rs`
+  `AppState` storage surface and deref wiring into orchestration state.
 - `wrapper/src/state/lifecycle.rs`
   State lifecycle namespace root.
 - `wrapper/src/state/lifecycle/core.rs`
