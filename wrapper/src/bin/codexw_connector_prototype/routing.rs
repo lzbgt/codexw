@@ -25,3 +25,32 @@ pub(super) fn is_allowed_local_proxy_target(method: &str, local_path: &str, is_s
 pub(super) fn supports_client_lease_injection(method: &str, local_path: &str) -> bool {
     policy::supports_client_lease_injection(method, local_path)
 }
+
+#[cfg(test)]
+pub(super) fn percent_decode_path_segment(value: &str) -> Option<String> {
+    alias::percent_decode_path_segment(value)
+}
+
+#[cfg(test)]
+pub(super) fn local_session_path(session_id: &str, suffix: &str) -> String {
+    alias::local_session_path(session_id, suffix)
+}
+
+#[cfg(test)]
+pub(super) fn decoded_session_ref_path(
+    session_id: &str,
+    category: &str,
+    reference: &str,
+) -> Option<String> {
+    alias::decoded_session_ref_path(session_id, category, reference)
+}
+
+#[cfg(test)]
+pub(super) fn decoded_session_ref_action_path(
+    session_id: &str,
+    category: &str,
+    reference: &str,
+    action: &str,
+) -> Option<String> {
+    alias::decoded_session_ref_action_path(session_id, category, reference, action)
+}

@@ -746,6 +746,8 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Connector raw proxy and proxy_sse path decoding into local passthrough targets.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session.rs`
   Connector broker-style session alias namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/path.rs`
+  Connector shared session-alias path decoding and local-path assembly helpers.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/lifecycle.rs`
   Connector session lifecycle alias namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/routing/alias/session/lifecycle/read.rs`
@@ -824,6 +826,8 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Connector raw proxy and proxy_sse route translation regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session.rs`
   Connector broker-style session alias regression namespace root.
+- `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/path.rs`
+  Connector shared session-alias path decoding and local-path assembly regression tests.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/lifecycle.rs`
   Connector session lifecycle alias regression namespace root.
 - `wrapper/src/bin/codexw_connector_prototype/tests/routing/alias/session/lifecycle/read.rs`
