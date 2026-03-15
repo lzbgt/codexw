@@ -921,7 +921,11 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/local_api/routes/services/mutate.rs`
   Local API service metadata, dependency, contract, and relabel mutation route handlers.
 - `wrapper/src/local_api/snapshot.rs`
-  Local API snapshot namespace root for process-session, supervision, orchestration, worker, capability, and transcript payload assembly.
+  Local API snapshot namespace root.
+- `wrapper/src/local_api/snapshot/types.rs`
+  Local API snapshot type surface for session, supervision, orchestration, worker, capability, and transcript payloads.
+- `wrapper/src/local_api/snapshot/core.rs`
+  Local API shared-snapshot allocation, process-session id generation, and snapshot sync/update helpers.
 - `wrapper/src/local_api/snapshot/async_tools.rs`
   Local API async-tool supervision, backpressure, recovery-option, and worker snapshot builders.
 - `wrapper/src/local_api/snapshot/orchestration.rs`
