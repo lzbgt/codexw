@@ -43,6 +43,15 @@ The ownership boundary for the supervised background-execution lanes is tracked
 separately in
 [codexw-background-execution-boundary.md](codexw-background-execution-boundary.md).
 
+For the source docs that define the current shell-first remote/workspace
+surface and local runtime semantics that this supervision lane builds on, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## What Must Be Supervised
 
 The first supervision lane should watch at least:

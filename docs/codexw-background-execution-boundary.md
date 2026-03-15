@@ -18,6 +18,15 @@ already-supported broker-facing surface is shell-first host examination.
 Wrapper-owned background execution and supervision semantics should not be read
 as proof that a broker artifact index/detail/content API already exists.
 
+For the source docs that define that current shell-first remote/workspace
+surface and the local runtime semantics behind it, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Ownership Model
 
 There are two different background-execution surfaces.

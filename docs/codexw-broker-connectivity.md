@@ -178,6 +178,15 @@ The current implementation is now past pure route sketches:
 For the concise implementation/proof snapshot, see
 [codexw-broker-adapter-status.md](codexw-broker-adapter-status.md).
 
+For the source docs that define the current shell-first remote
+host-examination surface summarized by this connectivity overview, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 For the current recommendation on whether that proof is already sufficient to
 promote the stack to a supported experimental adapter, see
 [codexw-broker-promotion-recommendation.md](codexw-broker-promotion-recommendation.md).

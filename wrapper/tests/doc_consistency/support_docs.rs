@@ -3198,6 +3198,8 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let native_proof = read_repo_file("docs/codexw-native-proof-matrix.md");
     let broker_contract = read_repo_file("docs/codexw-broker-adapter-contract.md");
     let broker_adapter_promotion = read_repo_file("docs/codexw-broker-adapter-promotion.md");
+    let broker_connectivity = read_repo_file("docs/codexw-broker-connectivity.md");
+    let broker_client_arch = read_repo_file("docs/codexw-broker-client-architecture.md");
     let broker_decision = read_repo_file("docs/codexw-broker-connector-decision.md");
     let broker_compat_target = read_repo_file("docs/codexw-broker-compatibility-target.md");
     let broker_mapping = read_repo_file("docs/codexw-broker-connector-mapping.md");
@@ -3228,6 +3230,16 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let broker_support_policy = read_repo_file("docs/codexw-broker-support-policy.md");
     let broker_proof = read_repo_file("docs/codexw-broker-proof-matrix.md");
     let broker_hardening = read_repo_file("docs/codexw-broker-hardening-catalog.md");
+    let native_hardening = read_repo_file("docs/codexw-native-hardening-catalog.md");
+    let self_evolution = read_repo_file("docs/codexw-self-evolution.md");
+    let self_evolution_plan = read_repo_file("docs/codexw-self-evolution-implementation-plan.md");
+    let self_supervision = read_repo_file("docs/codexw-self-supervision.md");
+    let self_supervision_plan =
+        read_repo_file("docs/codexw-self-supervision-implementation-plan.md");
+    let background_execution_boundary =
+        read_repo_file("docs/codexw-background-execution-boundary.md");
+    let plugin_system = read_repo_file("docs/codexw-plugin-system.md");
+    let plugin_system_plan = read_repo_file("docs/codexw-plugin-system-implementation-plan.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
 
     assert_contains(
@@ -3400,6 +3412,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     assert_contains_case_insensitive(
         &checklist,
         "artifact sketch/plan and cross-deployment/project-dependency design docs",
+        "docs/codexw-support-claim-checklist.md",
+    );
+    assert_contains_case_insensitive(
+        &checklist,
+        "broker connectivity/client-architecture docs and native hardening/",
         "docs/codexw-support-claim-checklist.md",
     );
     assert_contains_case_insensitive(
@@ -3600,6 +3617,40 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         (
             "docs/codexw-cross-deployment-handoff-implementation-plan.md",
             &cross_deployment_plan,
+        ),
+    ] {
+        assert_contains_case_insensitive(contents, "shell-first remote", name);
+        assert_contains(contents, "codexw-local-api-sketch.md", name);
+        assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
+        assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
+        assert_contains(contents, "codexw-local-api-route-matrix.md", name);
+        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+    }
+    for (name, contents) in [
+        ("docs/codexw-broker-connectivity.md", &broker_connectivity),
+        (
+            "docs/codexw-broker-client-architecture.md",
+            &broker_client_arch,
+        ),
+        ("docs/codexw-native-hardening-catalog.md", &native_hardening),
+        ("docs/codexw-self-evolution.md", &self_evolution),
+        (
+            "docs/codexw-self-evolution-implementation-plan.md",
+            &self_evolution_plan,
+        ),
+        ("docs/codexw-self-supervision.md", &self_supervision),
+        (
+            "docs/codexw-self-supervision-implementation-plan.md",
+            &self_supervision_plan,
+        ),
+        (
+            "docs/codexw-background-execution-boundary.md",
+            &background_execution_boundary,
+        ),
+        ("docs/codexw-plugin-system.md", &plugin_system),
+        (
+            "docs/codexw-plugin-system-implementation-plan.md",
+            &plugin_system_plan,
         ),
     ] {
         assert_contains_case_insensitive(contents, "shell-first remote", name);

@@ -162,6 +162,10 @@ Confirm all of the following:
 - artifact sketch/plan and cross-deployment/project-dependency design docs
   still point to the same local-API and workspace-policy source docs, rather
   than leaving those design tracks anchored only by downstream summary docs
+- broker connectivity/client-architecture docs and native hardening/
+  self-evolution/self-supervision/plugin/background-execution docs still point
+  to the same local-API and workspace-policy source docs, rather than leaving
+  those architecture/runtime design tracks anchored only by summary text
 - the current supported claim still clearly excludes artifact index/detail/
   content routes unless those routes were explicitly implemented and proven in
   the same batch

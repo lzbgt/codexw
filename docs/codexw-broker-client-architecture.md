@@ -26,6 +26,15 @@ attachment, namely cross-deployment `codexw` collaboration and explicit work
 handoff, see
 [codexw-cross-deployment-collaboration.md](codexw-cross-deployment-collaboration.md).
 
+For the source docs that define the current shell-first remote
+host-examination surface that this architecture requirement builds on, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## External Baseline
 
 The sibling `~/work/agent` workspace already documents the architecture shape

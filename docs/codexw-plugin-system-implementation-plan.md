@@ -11,6 +11,15 @@ It sits below:
 - [codexw-self-evolution.md](codexw-self-evolution.md)
 - [codexw-self-supervision.md](codexw-self-supervision.md)
 
+For the source docs that define the current shell-first remote/workspace
+surface and local runtime semantics that this plugin plan builds on, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Goal
 
 Deliver the smallest useful plugin slice that lets `codexw`:

@@ -17,6 +17,15 @@ This plugin lane is also separate from the broker artifact track. Plugin
 installation and lifecycle are local/runtime capability management, not proof
 that a broker-visible artifact index/detail/content API exists.
 
+For the source docs that define the current shell-first remote/workspace
+surface and local runtime semantics that this plugin lane builds on, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Problem Statement
 
 During normal project work, a running `codexw` instance may identify that it

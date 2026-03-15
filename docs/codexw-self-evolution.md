@@ -16,6 +16,16 @@ manual user intervention.
 This is not a claim that self-replacement is implemented today. It is a design
 note for how it should work.
 
+For the source docs that define the current shell-first remote/workspace
+surface and local runtime semantics that this self-evolution lane builds on,
+see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## Problem Statement
 
 The current reality is:

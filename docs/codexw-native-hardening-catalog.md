@@ -22,6 +22,15 @@ Related docs:
 - [codexw-native-product-status.md](codexw-native-product-status.md)
 - [../TODOS.md](../TODOS.md)
 
+For the source docs that define the current shell-first remote/workspace
+surface that this native hardening catalog is refining, see:
+
+- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
+- [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
+- [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
+- [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
+
 ## How To Read This Catalog
 
 Items here are:
