@@ -16,7 +16,7 @@ Primary source docs:
 - [docs/codexw-native-product-status.md](docs/codexw-native-product-status.md)
 - [docs/codexw-native-proof-matrix.md](docs/codexw-native-proof-matrix.md)
 - [docs/codexw-native-hardening-catalog.md](docs/codexw-native-hardening-catalog.md)
-- [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
+- [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
 - [docs/codexw-local-api-sketch.md](docs/codexw-local-api-sketch.md)
 - [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md)
 - [docs/codexw-local-api-event-sourcing.md](docs/codexw-local-api-event-sourcing.md)
@@ -30,7 +30,7 @@ Primary source docs:
 - [docs/codexw-self-evolution-implementation-plan.md](docs/codexw-self-evolution-implementation-plan.md)
 - [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
 - [docs/codexw-self-supervision-implementation-plan.md](docs/codexw-self-supervision-implementation-plan.md)
-- [docs/codexw-background-execution-boundary.md](docs/codexw-background-execution-boundary.md)
+- [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
 - [docs/codexw-plugin-system.md](docs/codexw-plugin-system.md)
 - [docs/codexw-plugin-system-implementation-plan.md](docs/codexw-plugin-system-implementation-plan.md)
 - [docs/codexw-cross-deployment-handoff-contract-sketch.md](docs/codexw-cross-deployment-handoff-contract-sketch.md)
@@ -71,8 +71,8 @@ Concrete tasks:
 - keep the current shell-first host-examination posture explicit:
   - brokered host examination should use shell/service control, transcript, and
     artifact references
-  - do not reintroduce removed workspace dynamic tools as the preferred remote
-    inspection model
+  - do not reintroduce model-facing wrapper tool schemas as the preferred
+    remote inspection model
 - keep the new cross-deployment collaboration requirement explicit:
   - cross-deployment `codexw` collaboration should be broker-mediated
   - the broker mediation is required because deployments may not share a host
@@ -115,7 +115,7 @@ Primary source:
 - [docs/codexw-broker-artifact-implementation-plan.md](docs/codexw-broker-artifact-implementation-plan.md)
 - [docs/codexw-broker-connectivity.md](docs/codexw-broker-connectivity.md)
 - [docs/codexw-broker-adapter-status.md](docs/codexw-broker-adapter-status.md)
-- [docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md)
+- [docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md)
 
 ### 2. Broker Adapter Support Follow-Through
 
@@ -185,8 +185,7 @@ Concrete tasks:
   - gate old-process exit on explicit acknowledgment from the new process
   - keep rollback/manual resume explicit on failure
 - keep the new self-supervision lane explicit:
-  - dynamic tools and shell workflows should execute without wedging the input
-    loop
+  - async shell workflows should execute without wedging the input loop
   - long-running or stalled tool calls should be detectable as supervision
     events, not just operator anecdotes
   - the agent backend should be able to inspect dedicated async worker thread
@@ -235,7 +234,7 @@ Primary source:
 - [docs/codexw-self-evolution-implementation-plan.md](docs/codexw-self-evolution-implementation-plan.md)
 - [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
 - [docs/codexw-self-supervision-implementation-plan.md](docs/codexw-self-supervision-implementation-plan.md)
-- [docs/codexw-background-execution-boundary.md](docs/codexw-background-execution-boundary.md)
+- [docs/codexw-self-supervision.md](docs/codexw-self-supervision.md)
 - [docs/codexw-plugin-system.md](docs/codexw-plugin-system.md)
 - [docs/codexw-plugin-system-implementation-plan.md](docs/codexw-plugin-system-implementation-plan.md)
 

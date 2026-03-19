@@ -1,5 +1,6 @@
 use crate::background_shells::BackgroundShellManager;
 use crate::background_shells::parse_background_shell_timeout_ms;
+#[cfg(test)]
 use crate::background_shells::parse_capability_issue_filter;
 use crate::background_shells::recipes::parse_recipe_arguments_map;
 
@@ -16,6 +17,7 @@ impl BackgroundShellManager {
         self.service_attachment_summary(&resolved_job_id)
     }
 
+    #[cfg(test)]
     pub(crate) fn inspect_capability_from_tool(
         &self,
         arguments: &serde_json::Value,
@@ -34,6 +36,7 @@ impl BackgroundShellManager {
             .join("\n"))
     }
 
+    #[cfg(test)]
     pub(crate) fn list_capabilities_from_tool(
         &self,
         arguments: &serde_json::Value,

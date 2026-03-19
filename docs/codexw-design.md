@@ -22,7 +22,7 @@ For native-side support semantics and optional hardening work, see
 [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md).
 For the native-side source docs that define the current shell-first
 remote/workspace surface behind those support claims, see
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md),
 [codexw-local-api-sketch.md](codexw-local-api-sketch.md),
 [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
@@ -38,7 +38,7 @@ and
 [codexw-self-supervision-implementation-plan.md](codexw-self-supervision-implementation-plan.md).
 For the explicit ownership split between wrapper-owned background shells and
 app-server-owned exec/background-terminal work, see
-[codexw-background-execution-boundary.md](codexw-background-execution-boundary.md).
+[codexw-self-supervision.md](codexw-self-supervision.md).
 For the plugin architecture that should carry optional capabilities without
 forcing a full core replacement, see
 [codexw-plugin-system.md](codexw-plugin-system.md) and
@@ -113,7 +113,7 @@ Command catalog helpers are split across `commands_entry_session_catalog.rs`, `c
 Command completion helpers live in `commands_completion_apply.rs`, `commands_completion_render.rs`, and `commands_match.rs`: completion application stays in the extracted apply helper, rendering and quoting stay in the render helper, and cursor parsing, fuzzy scoring, and prefix logic live in the matcher module.
 Command-dispatch helpers are split across `dispatch_submit_commands.rs`, `dispatch_submit_turns.rs`, `dispatch_commands.rs`, `dispatch_commands/session.rs`, `dispatch_commands/workspace.rs`, `dispatch_command_thread_common.rs`, `dispatch_command_thread_navigation_session.rs`, `dispatch_command_thread_navigation_identity.rs`, `dispatch_command_thread_review.rs`, `dispatch_command_thread_control.rs`, `dispatch_command_thread_view.rs`, `dispatch_command_thread_draft.rs`, `dispatch_command_session_catalog_lists.rs`, `dispatch_command_session_catalog_models.rs`, `dispatch_command_session_status.rs`, `dispatch_command_session_collab.rs`, `dispatch_command_session_realtime.rs`, `dispatch_command_session_ps.rs`, `dispatch_command_session_ps/parse.rs`, `dispatch_command_session_ps/parse/args.rs`, `dispatch_command_session_ps/parse/selectors.rs`, `dispatch_command_session_ps/clean.rs`, `dispatch_command_session_ps/control.rs`, `dispatch_command_session_ps/control/interact.rs`, `dispatch_command_session_ps/control/services.rs`, `dispatch_command_session_ps/views.rs`, `dispatch_command_session_meta.rs`, `dispatch_command_session_meta/account.rs`, `dispatch_command_session_meta/session.rs`, `dispatch_command_session_meta/sandbox.rs`, and `dispatch_command_utils.rs`, with `dispatch_commands.rs` kept as the top-level slash-command router.
 Input helpers are split across `input/input_types.rs`, `input/input_decode_mentions.rs`, `input/input_decode_mention_links.rs`, `input/input_decode_mention_paths.rs`, `input/input_decode_inline_mentions.rs`, `input/input_decode_inline_paths.rs`, `input/input_decode_inline_skills.rs`, `input/input_decode_tokens.rs`, `input/input_resolve_tools.rs`, `input/input_resolve_catalog.rs`, `input/input_build_items.rs`, and `input/input_build_mentions.rs`, with `input.rs` kept as the namespace root and public structured-input entrypoint.
-Client dynamic tool helpers are split across `client_dynamic_tools.rs`, `client_dynamic_tools/specs.rs`, `client_dynamic_tools/specs/orchestration.rs`, `client_dynamic_tools/specs/background_shells.rs`, `client_dynamic_tools/execution.rs`, `client_dynamic_tools/execution/orchestration.rs`, `client_dynamic_tools/execution/orchestration/status.rs`, `client_dynamic_tools/execution/orchestration/filters.rs`, `client_dynamic_tools/execution/shells.rs`, `client_dynamic_tools/workspace.rs`, `client_dynamic_tools/workspace/io.rs`, and `client_dynamic_tools/workspace/search.rs`: `client_dynamic_tools.rs` is the namespace root, `client_dynamic_tools/specs.rs` is the advertised-tool schema namespace root, `client_dynamic_tools/specs/orchestration.rs` owns orchestration tool schemas, `client_dynamic_tools/specs/background_shells.rs` owns background-shell/service tool schemas, `client_dynamic_tools/execution.rs` is the execution namespace root, `client_dynamic_tools/execution/orchestration.rs` is the orchestration execution namespace root, `client_dynamic_tools/execution/orchestration/status.rs` owns compact orchestration status rendering, `client_dynamic_tools/execution/orchestration/filters.rs` owns worker/dependency filter dispatch plus filter/capability argument parsing, `client_dynamic_tools/execution/shells.rs` owns background-shell tool dispatch and origin extraction, and `client_dynamic_tools/workspace.rs` plus `client_dynamic_tools/workspace/io.rs` and `client_dynamic_tools/workspace/search.rs` now exist only as retained compatibility helpers for already-running older sessions that were given the previous workspace tool bundle; `client_dynamic_tools/execution.rs` now centrally classifies that hidden workspace surface so dispatch, compatibility notices, compatibility failure notices, and transcript/history labeling stay aligned, and the compatibility directory/tree scans now enforce a bounded scan budget so old sessions fail fast back to shell-first behavior instead of crawling a huge repo indefinitely.
+Wrapper-owned orchestration and background-shell capabilities live behind operator-facing session commands, shared state, and local rendering paths rather than app-server-exposed wrapper tool schemas or a separate client tool execution tree.
 Background-shell internals are split across `background_shells.rs`, `background_shells/core.rs`, `background_shells/core/types.rs`, `background_shells/core/types/jobs.rs`, `background_shells/core/types/services.rs`, `background_shells/core/manager.rs`, `background_shells/snapshots.rs`, `background_shells/execution.rs`, `background_shells/execution/manage.rs`, `background_shells/execution/manage/lifecycle.rs`, `background_shells/execution/manage/lifecycle/start.rs`, `background_shells/execution/manage/lifecycle/list.rs`, `background_shells/execution/manage/control.rs`, `background_shells/execution/interact.rs`, `background_shells/execution/interact/tools.rs`, `background_shells/execution/interact/tools/jobs.rs`, `background_shells/execution/interact/tools/services.rs`, `background_shells/execution/interact/operator.rs`, `background_shells/execution/runtime.rs`, `background_shells/execution/runtime/process.rs`, `background_shells/execution/runtime/process/io.rs`, `background_shells/execution/runtime/process/spawn.rs`, `background_shells/execution/runtime/service.rs`, `background_shells/execution/runtime/service/attach.rs`, `background_shells/execution/runtime/service/invoke.rs`, `background_shells/execution/runtime/service/invoke/readiness.rs`, `background_shells/execution/runtime/service/invoke/recipes.rs`, `background_shells/services.rs`, `background_shells/services/updates.rs`, `background_shells/services/updates/helpers.rs`, `background_shells/services/updates/refs.rs`, `background_shells/services/updates/service.rs`, `background_shells/services/updates/service/setters.rs`, `background_shells/services/updates/service/apply.rs`, `background_shells/services/updates/service/apply/operator.rs`, `background_shells/services/updates/service/apply/operator/metadata.rs`, `background_shells/services/updates/service/apply/operator/contract.rs`, `background_shells/services/updates/service/apply/tool.rs`, `background_shells/services/updates/service/apply/tool/metadata.rs`, `background_shells/services/updates/service/apply/tool/contract.rs`, `background_shells/services/updates/dependencies.rs`, `background_shells/services/updates/dependencies/apply.rs`, `background_shells/services/updates/dependencies/cleanup.rs`, `background_shells/services/render.rs`, `background_shells/services/render/index.rs`, `background_shells/services/render/index/capabilities.rs`, `background_shells/services/render/index/capabilities/indexing.rs`, `background_shells/services/render/index/capabilities/refs.rs`, `background_shells/services/render/views.rs`, `background_shells/services/render/views/capabilities.rs`, `background_shells/services/render/views/capabilities/list.rs`, `background_shells/services/render/views/capabilities/detail.rs`, `background_shells/services/render/views/services.rs`, `background_shells/services/render/views/services/ps.rs`, `background_shells/services/render/views/services/tool.rs`, `background_shells/recipes.rs`, `background_shells/recipes/parse.rs`, `background_shells/recipes/parse/recipes.rs`, `background_shells/recipes/parse/actions.rs`, `background_shells/recipes/parse/arguments.rs`, `background_shells/recipes/render.rs`, `background_shells/recipes/transports.rs`, `background_shells/recipes/transports/http.rs`, `background_shells/recipes/transports/socket.rs`, `background_shells/recipes/transports/socket/tcp.rs`, `background_shells/recipes/transports/socket/redis.rs`, `background_shells/tests.rs`, `background_shells/tests/jobs.rs`, `background_shells/tests/jobs/lifecycle.rs`, `background_shells/tests/jobs/refs.rs`, and `background_shells/tests/services.rs`: `background_shells.rs` is the namespace root and re-export surface, `background_shells/core.rs` is the namespace root for shared background-shell state helpers, `background_shells/core/types.rs` is the shared type namespace root, `background_shells/core/types/jobs.rs` owns shared job-state types, manager internals, job snapshots, and lifecycle/status constants, `background_shells/core/types/services.rs` owns shared service-readiness, interaction-recipe/action, and capability-issue enums, `background_shells/core/manager.rs` owns manager count/lookup helpers plus platform process termination helpers, `background_shells/snapshots.rs` owns snapshot construction plus readiness/status helper logic, `background_shells/execution.rs` is the namespace root for the public execution surface, `background_shells/execution/manage.rs` is the namespace root for background-shell lifecycle/control helpers, `background_shells/execution/manage/lifecycle.rs` is the lifecycle namespace root, `background_shells/execution/manage/lifecycle/start.rs` owns job startup, process wiring, and startup summary helpers, `background_shells/execution/manage/lifecycle/list.rs` owns background-shell list rendering and capability-conflict summary helpers, `background_shells/execution/manage/control.rs` owns cleanup, termination, alias/reference resolution, and alias mutation helpers, `background_shells/execution/interact.rs` is the interaction namespace root, `background_shells/execution/interact/tools.rs` is the tool-interaction namespace root, `background_shells/execution/interact/tools/jobs.rs` owns tool-facing poll/send/alias/terminate helpers, `background_shells/execution/interact/tools/services.rs` owns tool-facing attach/wait/invoke service helpers, `background_shells/execution/interact/operator.rs` owns operator-facing poll/send/attach/wait/invoke wrappers, `background_shells/execution/runtime.rs` is the namespace root for runtime internals, `background_shells/execution/runtime/process.rs` is the process-helper namespace root, `background_shells/execution/runtime/process/io.rs` owns job stdin/termination, output-reader, and bulk-termination helpers, `background_shells/execution/runtime/process/spawn.rs` owns cwd/intent/label/capability parsing plus shell-process spawning, `background_shells/execution/runtime/service.rs` is the service-runtime namespace root, `background_shells/execution/runtime/service/attach.rs` owns service attachment summaries and capability-reference resolution, `background_shells/execution/runtime/service/invoke.rs` is the service invoke/wait namespace root, `background_shells/execution/runtime/service/invoke/readiness.rs` owns readiness wait handling, and `background_shells/execution/runtime/service/invoke/recipes.rs` owns recipe invocation and readiness-gated transport dispatch, `background_shells/services.rs` is the namespace root for reusable-service helpers, `background_shells/services/updates.rs` is the namespace root for reusable-service mutation helpers, `background_shells/services/updates/helpers.rs` owns service/dependency update argument parsing and human-readable mutation summaries, `background_shells/services/updates/refs.rs` owns mutable service/dependency reference discovery helpers, `background_shells/services/updates/service.rs` is the live service-mutation namespace root, `background_shells/services/updates/service/setters.rs` owns low-level running service contract/label/capability setters, `background_shells/services/updates/service/apply.rs` is the service-update namespace root, `background_shells/services/updates/service/apply/operator.rs` is the operator update namespace root, `background_shells/services/updates/service/apply/operator/metadata.rs` owns operator-facing service label/capability updates, `background_shells/services/updates/service/apply/operator/contract.rs` owns operator-facing service contract updates, `background_shells/services/updates/service/apply/tool.rs` is the tool update namespace root, `background_shells/services/updates/service/apply/tool/metadata.rs` owns tool-facing service metadata updates and shared field parsing, `background_shells/services/updates/service/apply/tool/contract.rs` owns tool-facing service contract parsing/validation helpers, `background_shells/services/updates/dependencies.rs` is the dependency-update namespace root, `background_shells/services/updates/dependencies/apply.rs` owns dependency-capability retargeting entrypoints, and `background_shells/services/updates/dependencies/cleanup.rs` owns capability-scoped blocker/service termination helpers, `background_shells/services/render.rs` is the namespace root for reusable-service rendering helpers, `background_shells/services/render/index.rs` owns capability/dependency index exports plus issue classification helpers, `background_shells/services/render/index/capabilities.rs` is the capability-index namespace root, `background_shells/services/render/index/capabilities/indexing.rs` owns capability-index aggregation, conflict counting, issue classification, and rendered index assembly, `background_shells/services/render/index/capabilities/refs.rs` owns capability issue-filter parsing plus provider/consumer display helpers, `background_shells/services/render/views.rs` is the reusable-service view namespace root, `background_shells/services/render/views/capabilities.rs` is the reusable-service capability-view namespace root, `background_shells/services/render/views/capabilities/list.rs` owns capability-index/filter rendering, `background_shells/services/render/views/capabilities/detail.rs` owns single-capability provider/consumer detail rendering, `background_shells/services/render/views/services.rs` is the service-shell render namespace root, `background_shells/services/render/views/services/ps.rs` owns `:ps services` list/filter rendering, `background_shells/services/render/views/services/tool.rs` owns `background_shell_list_services` filtering and argument validation, `background_shells/recipes.rs` is the namespace root for typed service recipe helpers, `background_shells/recipes/parse.rs` is the recipe-parse namespace root, `background_shells/recipes/parse/recipes.rs` owns recipe-schema and parameter-schema parsing, `background_shells/recipes/parse/actions.rs` owns action parsing plus HTTP header and expected-status validation, `background_shells/recipes/parse/arguments.rs` owns recipe argument parsing, resolution, and placeholder substitution, `background_shells/recipes/render.rs` owns recipe parameter/action summary rendering, `background_shells/recipes/transports.rs` is the transport namespace root, `background_shells/recipes/transports/http.rs` owns HTTP invocation and response parsing, `background_shells/recipes/transports/socket.rs` is the TCP/Redis transport namespace root, `background_shells/recipes/transports/socket/tcp.rs` owns TCP invocation and response formatting, `background_shells/recipes/transports/socket/redis.rs` owns Redis invocation plus RESP parsing/rendering, `background_shells/tests.rs` keeps shared test fixtures/helpers, `background_shells/tests/jobs.rs` is the generic background-shell job test namespace root, `background_shells/tests/jobs/lifecycle.rs` covers generic job lifecycle/polling/intent behavior, `background_shells/tests/jobs/refs.rs` covers alias and job-reference behavior, and `background_shells/tests/services.rs` covers service/capability/recipe behavior.
 Prompt helpers live across `prompt_state.rs`, `prompt_file_completions_token.rs`, and `prompt_file_completions_search.rs`, with prompt visibility/input gating, prompt redraw, slash completion, and `@file` completion now imported directly from the concrete helper modules.
 Render helpers live across `render_prompt.rs`, `render_markdown_block_structures.rs`, `render_markdown_links.rs`, and `render_markdown_styles.rs`, with `render_prompt.rs` owning wrapped prompt-layout and committed-prompt behavior directly while `render_block_markdown.rs` and `render_markdown_inline.rs` still wrap the markdown subhelpers.
@@ -141,7 +141,7 @@ The main control event enum is `AppEvent` in `runtime_event_sources.rs` and is c
 - async-tool completion notifications
 - backend or stdin closure notifications
 
-Raw server JSON-RPC stdout lines travel on a dedicated line channel, and the runtime loop always checks control events before consuming more stdout. That prevents heavy backend output from starving dynamic-tool completion or timeout handling while still keeping backend line processing serialized through the same top-level runtime loop.
+Raw server JSON-RPC stdout lines travel on a dedicated line channel, and the runtime loop always checks control events before consuming more stdout. That prevents heavy backend output from starving async-tool completion or timeout handling while still keeping backend line processing serialized through the same top-level runtime loop.
 
 ## Core State
 
@@ -182,7 +182,7 @@ The intended runtime roles are:
   - spawned sub-agent threads created by Codex's collaboration tools such as `spawn_agent`
   - used for bounded investigation, decomposition, alternative approaches, or disjoint code work
 - execution workers
-  - wrapper-owned background shell jobs started through client dynamic tools
+  - wrapper-owned background shell jobs
   - used for long-running shell work that would otherwise block the main turn on IO or elapsed time
 - observed backend terminals
   - thread-scoped background terminals surfaced by app-server notifications
@@ -222,20 +222,8 @@ In practical terms:
 
 The current `codexw` implementation now reflects that model partially:
 
-- new threads advertise client dynamic tools for wrapper-owned background shells:
-  - `orchestration_status`
-  - `orchestration_list_workers`
-  - `background_shell_start`
-  - `background_shell_poll`
-  - `background_shell_send`
-  - `background_shell_list_capabilities`
-  - `background_shell_list_services`
-  - `background_shell_attach`
-  - `background_shell_wait_ready`
-  - `background_shell_invoke_recipe`
-  - `background_shell_list`
-  - `background_shell_terminate`
-- `background_shell_start` now accepts explicit orchestration intent:
+- wrapper-owned background shells remain available through operator-facing session commands and shared local state:
+  - `background_shell_start` now accepts explicit orchestration intent:
   - `prerequisite` for critical-path shell work that should count as blocking
   - `observation` for non-blocking sidecar execution such as tests, searches, or crawls
   - `service` for reusable long-lived helpers such as dev servers
@@ -314,22 +302,17 @@ The current `codexw` implementation now reflects that model partially:
     - descriptive-only recipes are still valid and remain attach-only instead of invokable
   - recipe actions now support placeholder substitution using `{{name}}` syntax driven by declared parameter values
     - operator path: `:ps run <jobId|alias|@capability|n> <recipe> {"name":"value"}`
-    - model path: `background_shell_invoke_recipe` with optional `args` object and `waitForReadyMs`
     - defaults are applied automatically, missing required args fail early, and unknown args are rejected instead of being silently ignored
   - executable network recipes (`http`, `tcp`, `redis`) now automatically wait for service readiness when the service declared `readyPattern`
-    - explicit wait is also available through `:ps wait ...` and `background_shell_wait_ready`
-    - `background_shell_invoke_recipe.waitForReadyMs` can lengthen or disable that auto-wait (`0` disables it)
+    - explicit wait is also available through `:ps wait ...`
   - capability conflicts are surfaced proactively in service listings, the dedicated capability index, and orchestration guidance, so the wrapper shows `@capability` ambiguity before later reuse fails at resolution time
   - service-shell listings can now also be filtered directly by health/conflict state (`ready`, `booting`, `untracked`, `conflicts`) instead of forcing the operator or model to scan the full reusable-service registry
   - the capability index also shows current consumers of each capability when running jobs declare `dependsOnCapabilities`, so provider and consumer sides of reusable service roles are visible in one place
-  - the model-facing dynamic tool layer now includes capability inspection too, so orchestration can inspect one reusable service role directly without scraping the whole shell list
-  - the model-facing dynamic tool layer now also includes filtered capability listing, so orchestration can ask for only missing, booting, ambiguous, or healthy service roles instead of scraping the full reusable-service registry
-  - the model-facing dynamic tool layer now also includes live shell metadata mutation, so orchestration can assign or clear stable in-session aliases through `background_shell_set_alias`, replace or clear a service shell's declared `capabilities`, live `label`, or attachment-contract fields such as `protocol`, `endpoint`, `attachHint`, `readyPattern`, and `recipes` through `background_shell_update_service`, and can retarget or clear any running job's declared `dependsOnCapabilities` set through `background_shell_update_dependencies`, instead of forcing a restart when a reusable role, attach contract, or dependency edge needs to change
   - capability resolution is intentionally restricted to running service shells, so completed or terminated helpers do not keep satisfying `@capability` references after they are no longer reusable
 - `:ps` also has in-session attachment naming now:
   - `:ps alias <jobId|alias|@capability|n> <name>` assigns a stable alias to one local shell job through the same job-reference syntax used by the other `:ps` control commands
   - `:ps unalias <name|jobId|alias|@capability|n>` removes that alias either by the alias token itself or by resolving the target job reference directly
-  - aliases are session-local, operator-visible in `:ps`, and reusable anywhere the existing `jobId` reference surface is accepted, including poll, send, and terminate flows from both operator commands and dynamic tools
+  - aliases are session-local, operator-visible in `:ps`, and reusable anywhere the existing `jobId` reference surface is accepted, including poll, send, and terminate flows from operator commands
   - this gives long-lived service shells a first-class continuity handle without pretending they are repo-global or backend-native objects
 - cleanup is now scoped along the same control boundary:
   - `:clean blockers` and `:ps clean blockers` terminate only wrapper-owned prerequisite shells
@@ -368,13 +351,7 @@ The current `codexw` implementation now reflects that model partially:
 - that compact summary now also carries capability-dependency issue counts (`cap_deps_missing`, `cap_deps_booting`, `cap_deps_ambiguous`), so durable service dependency health is visible without opening the detailed capability registry
 - that compact summary now also carries conflicted-service counts, so capability-collision health is visible without opening the detailed service registry
 - `:status` overview/runtime output now also exposes a `next action` line derived from that same state, so the unified orchestration model drives the first concrete operator step as well as raw counts and dependency edges
-- the same orchestration graph is now available to the model-side dynamic tool layer too:
-  - `orchestration_status` mirrors the compact orchestration summary plus the first concrete tool-native next action rather than a descriptive guidance headline
-  - `orchestration_list_workers` mirrors the `:ps` worker graph with optional filters such as `blockers`, `dependencies`, `agents`, `services`, `capabilities`, `terminals`, `guidance`, or `actions`; when `filter=guidance` or `filter=actions`, it returns concrete dynamic-tool suggestions instead of operator session commands, and `filter=blockers|guidance|actions` can additionally take `capability=@...` to focus the result on one reusable role
-  - `orchestration_suggest_actions` is the focused model-side companion to `:ps actions`, returns only the concrete dynamic-tool remediation steps suggested by the current orchestration state, including live retarget actions such as `background_shell_update_service` and `background_shell_update_dependencies` when a missing, ambiguous, mis-targeted, or under-described service capability can be fixed in place, and can optionally narrow that suggestion set to one `@capability`; in missing or ambiguous states those mutation suggestions intentionally use concrete mutable job refs instead of `jobId=@capability`, because the capability selector is not unique enough to mutate safely, and ambiguous-role fixes now recommend either replacing the role with `@other.role` or clearing `capabilities` with `null`. When a unique ready provider declares recipes, the tool-side guidance/action surface now prefers the best known executable recipe instead of a placeholder invoke target, favors health/status-style verbs when available, includes concrete example `args` payloads when the selected recipe has required or defaulted parameters, and falls back to attach-only guidance when the declared recipes are descriptive-only or otherwise non-executable
-  - `orchestration_list_dependencies` mirrors the focused dependency-edge view with optional filters such as `blocking`, `sidecars`, `missing`, `booting`, `ambiguous`, or `satisfied`, plus an optional `capability` selector for one reusable role
-  - `background_shell_list_services` mirrors the focused reusable-service registry with optional filters such as `ready`, `booting`, `untracked`, or `conflicts`, plus an optional `capability` selector for one reusable role
-  - `background_shell_clean` mirrors the local cleanup control surface with `scope=all|blockers|shells|services`; `scope=blockers` can optionally target one reusable dependency role with `capability=@...`, and `scope=services` can optionally target one reusable provider role with `capability=@...`, so model-side orchestration can resolve blocked prerequisite jobs or ambiguous service providers instead of only reporting the conflict
+- the same orchestration graph now feeds the operator-facing `:ps`, `:status`, prompt, and transcript surfaces without a separate model-facing wrapper tool layer
 
 That orchestration state now lives under one internal container rather than several unrelated top-level fields. The wrapper keeps backend-observed terminals, wrapper-owned background shell jobs, cached agent-thread summaries, and live collab-agent tasks inside one `OrchestrationState`, and `:multi-agents`, `:ps`, ready status, and transcript summaries all read from that same model.
 `codexw` also derives an explicit dependency graph from that state: `main -> agent:*` edges for collab waits and sidecar agent work, plus attributed `thread|agent -> shell:*` edges for running wrapper-owned background shell jobs. Background-shell edge semantics now come from explicit job intent rather than heuristics, so `backgroundShell:prerequisite` edges are blocking while `backgroundShell:observation` and `backgroundShell:service` stay sidecar.
@@ -583,7 +560,7 @@ Current user-facing capabilities include:
 - native-style `/init` behavior that skips when `AGENTS.md` already exists and otherwise submits the upstream repository-guidelines prompt as a normal turn
 - backend-backed `:agent` and `:multi-agents` switching via filtered `thread/list` results for spawned subagent threads, with `:resume <n>` as the attach path
 - native-style `/rollout` behavior that reports the current thread rollout path when available from app-server thread state
-- client dynamic tools on new threads via `thread/start.dynamicTools`, now focused on orchestration visibility plus wrapper-owned background shell control (`background_shell_start`, `background_shell_poll`, `background_shell_send`, `background_shell_attach`, `background_shell_wait_ready`, `background_shell_invoke_recipe`, `background_shell_list`, `background_shell_terminate`), including service readiness contracts via `readyPattern`, explicit readiness waits, and service attachment metadata via `protocol` / `endpoint` / `attachHint` / `recipes`; the older read-only workspace inspection tools are still implemented in the repo but are no longer advertised on new threads because host shell/Python inspection proved more reliable than maintaining a second model-facing filesystem surface
+- background-shell orchestration remains available through operator-facing session commands and shared local state
 - richer stored thread history via `persistExtendedHistory: true` on `thread/start`, `thread/resume`, and `thread/fork`
 - backend-backed Windows sandbox setup through `windowsSandbox/setupStart`, with successful completion persisted into Codex config
 - live background-terminal tracking from command item lifecycle and terminal-interaction notifications, plus wrapper-owned local background shell jobs for same-turn async shell work, with scoped cleanup for local shell classes and backend-tracked terminals
@@ -591,12 +568,12 @@ Current user-facing capabilities include:
 - automatic approval handling for supported approval request shapes
 - auto-continue between turns
 
-`codexw` no longer leaves any of the user-facing slash-command side effects in a generic placeholder state. The Windows-only `:sandbox-add-read-dir` path is now handled client-side like upstream: it validates the requested absolute directory and refreshes sandbox read grants locally rather than going through app-server. The main remaining gaps are architectural or UX-level instead of command dispatch parity. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only. Upstream app-server also still does not expose a public client request that can write to or poll model-owned `item/commandExecution` sessions directly, so same-turn async shell work is implemented through wrapper-owned dynamic tools instead of reusing the backend's internal unified-exec handles.
+`codexw` no longer leaves any of the user-facing slash-command side effects in a generic placeholder state. The Windows-only `:sandbox-add-read-dir` path is now handled client-side like upstream: it validates the requested absolute directory and refreshes sandbox read grants locally rather than going through app-server. The main remaining gaps are architectural or UX-level instead of command dispatch parity. `codexw` still does not implement the upstream audio UX; it surfaces realtime state and text transport only. Upstream app-server also still does not expose a public client request that can write to or poll model-owned `item/commandExecution` sessions directly, so same-turn async shell work is implemented through wrapper-owned async shell paths instead of reusing the backend's internal unified-exec handles.
 
 The focused policy for when read-only workspace inspection should stay in the
-dynamic-tool surface, versus when shell/Python should remain the preferred
+model-facing wrapper-tool surface, versus when shell/Python should remain the preferred
 execution path, now lives in
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md).
 
 ## Project Status
 
@@ -650,7 +627,7 @@ The biggest known limits are architectural, not accidental.
 
 - `codexw` is not the native upstream Codex TUI.
 - It depends only on app-server surfaces, so popup-heavy native workflows cannot always be reproduced exactly.
-- It cannot directly control model-owned `item/commandExecution` sessions through app-server today; the background-shell workflow is a wrapper-side workaround built on dynamic tools.
+- It cannot directly control model-owned `item/commandExecution` sessions through app-server today; the background-shell workflow is a wrapper-side wrapper-side workaround.
 - No known user-facing command remains in a generic placeholder state; the remaining limitations are backend-surface or UX-parity issues rather than missing command handlers.
 - Rendering is richer than plain logs, but it is still terminal-scrollback based rather than a full alternate-screen widget tree.
 
@@ -998,7 +975,7 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/main_test_session_selections/threads/requests.rs`
   Thread-request regression namespace root.
 - `wrapper/src/main_test_session_selections/threads/requests/threads.rs`
-  Thread-switch and dynamic-tool advertisement regression tests.
+  Thread-switch request regression tests.
 - `wrapper/src/main_test_session_selections/threads/requests/sandbox.rs`
   Windows sandbox request and setup regression tests.
 - `wrapper/src/main_test_session_status.rs`
@@ -1177,126 +1154,6 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
   Local API session snapshot payload regression tests.
 - `wrapper/src/local_api/tests/session/read/contract.rs`
   Local API session-read contract and not-found regression tests.
-- `wrapper/src/client_dynamic_tools_tests_orchestration.rs`
-  Orchestration dynamic-tool test namespace root.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/core.rs`
-  Orchestration dynamic-tool core test namespace.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/core/specs.rs`
-  Dynamic-tool schema regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/core/specs/bundle.rs`
-  Full dynamic-tool bundle ordering regression tests.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/core/specs/background_shells.rs`
-  Background-shell dynamic-tool schema-group regression tests.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/core/orchestration.rs`
-  Orchestration dynamic-tool status, filter, and dependency-view regression tests.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance.rs`
-  Tool-native orchestration guidance test namespace.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global.rs`
-  Global tool-native orchestration guidance test namespace root.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services.rs`
-  Global tool-native orchestration guidance test namespace root for reusable-service states.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability.rs`
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability/ready.rs`
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability/booting.rs`
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/global/services/availability/untracked.rs`
-  Global tool-native orchestration guidance regression tests for ready and untracked reusable-service states.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused.rs`
-  Capability-focused tool-native orchestration guidance test namespace root.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/guidance/focused/services.rs`
-  Capability-focused tool-native orchestration guidance regression tests for reusable-service capability states.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions.rs`
-  Tool-native orchestration action test namespace.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global.rs`
-  Global tool-native orchestration action test namespace root.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/blockers.rs`
-  Global tool-native orchestration action regression tests for blocking dependency states.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services.rs`
-  Global tool-native orchestration action test namespace root for reusable-service states.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/conflicts.rs`
-  Global tool-native orchestration action regression tests for reusable-service conflict states.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability.rs`
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability/ready.rs`
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability/booting.rs`
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/global/services/availability/untracked.rs`
-  Global tool-native orchestration action regression tests for ready, booting, and untracked reusable-service states.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused.rs`
-  Capability-focused tool-native orchestration action test namespace root.
-- `wrapper/src/client_dynamic_tools_tests_orchestration/actions/focused/services.rs`
-  Capability-focused tool-native orchestration action regression tests for reusable-service capability states.
-- `wrapper/src/client_dynamic_tools.rs`
-  Client dynamic-tool namespace root.
-- `wrapper/src/client_dynamic_tools/specs.rs`
-  Advertised client dynamic-tool schema namespace root.
-- `wrapper/src/client_dynamic_tools/specs/orchestration.rs`
-  Orchestration dynamic-tool schema bundle.
-- `wrapper/src/client_dynamic_tools/specs/background_shells.rs`
-  Background-shell dynamic-tool schema namespace root.
-- `wrapper/src/client_dynamic_tools/specs/background_shells/jobs.rs`
-  Generic background-shell lifecycle/control dynamic-tool schema bundle.
-- `wrapper/src/client_dynamic_tools/specs/background_shells/services.rs`
-  Reusable-service capability, metadata, readiness, and recipe dynamic-tool schema bundle.
-- `wrapper/src/client_dynamic_tools/execution.rs`
-  Client dynamic-tool execution namespace root.
-- `wrapper/src/client_dynamic_tools/execution/orchestration.rs`
-  Orchestration dynamic-tool status, worker, action, and dependency dispatch plus argument parsing.
-- `wrapper/src/client_dynamic_tools/execution/shells.rs`
-  Background-shell dynamic-tool execution namespace root plus request-origin extraction.
-- `wrapper/src/client_dynamic_tools/execution/shells/jobs.rs`
-  Background-shell job-tool dispatch for start, list, poll, send, alias, terminate, and cleanup flows.
-- `wrapper/src/client_dynamic_tools/execution/shells/services.rs`
-  Background-shell service-tool dispatch for capability, service, readiness, attachment, and recipe flows.
-- `wrapper/src/client_dynamic_tools_tests_shells/management.rs`
-  Background-shell dynamic-tool management test namespace.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/lifecycle.rs`
-  Background-shell dynamic-tool lifecycle test namespace.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/lifecycle/start.rs`
-  Background-shell dynamic-tool startup-origin regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/lifecycle/cleanup.rs`
-  Background-shell dynamic-tool cleanup regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/aliases.rs`
-  Background-shell dynamic-tool alias/send regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/aliases/alias.rs`
-  Background-shell dynamic-tool alias assignment, clearing, and validation regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/aliases/send.rs`
-  Background-shell dynamic-tool alias-target send and follow-up poll regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls.rs`
-  Background-shell service-control dynamic-tool test namespace.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates.rs`
-  Background-shell service metadata mutation, dependency-retarget, and validation regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views.rs`
-  Background-shell service-control view regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/capabilities.rs`
-  Background-shell capability-view dynamic-tool regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/capabilities/list.rs`
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/capabilities/list/defaults.rs`
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/capabilities/list/filters.rs`
-  Background-shell capability-index/filter dynamic-tool regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/capabilities/inspect.rs`
-  Background-shell single-capability inspection dynamic-tool regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/services.rs`
-  Background-shell service-list/attachment dynamic-tool regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/services/list.rs`
-  Background-shell service-list and service-state filter dynamic-tool regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/views/services/attach.rs`
-  Background-shell service attachment metadata dynamic-tool regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes.rs`
-  Background-shell recipe dynamic-tool regression test namespace.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/invoke.rs`
-  Background-shell recipe invocation dynamic-tool regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/invoke/http.rs`
-  Background-shell recipe HTTP invocation dynamic-tool regressions.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/invoke/socket.rs`
-  Background-shell socket-recipe invocation dynamic-tool regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/invoke/stdin.rs`
-  Background-shell stdin recipe invocation dynamic-tool regressions.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/invoke/socket/tcp.rs`
-  Background-shell TCP recipe invocation dynamic-tool regressions.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/invoke/socket/redis.rs`
-  Background-shell Redis and parameterized recipe invocation dynamic-tool regressions.
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/readiness.rs`
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/readiness/invoke.rs`
-- `wrapper/src/client_dynamic_tools_tests_shells/recipes/readiness/wait.rs`
-  Background-shell readiness-wait and wait-before-invoke dynamic-tool regressions.
 - `wrapper/src/config_persistence.rs`
   Config persistence namespace root for Codex config writes, theme reads, and `CODEX_HOME` resolution.
 - `wrapper/src/config_persistence/edit.rs`
@@ -1678,20 +1535,6 @@ on a cleaner boundary while still satisfying the app/WebUI client requirement.
 - `wrapper/src/background_shells/tests/services/updates/readiness/transitions.rs`
 - `wrapper/src/background_shells/tests/services/updates/readiness/wait.rs`
   Reusable-service readiness transition and wait regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates.rs`
-  Dynamic-tool reusable-service update test namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates/service.rs`
-  Dynamic-tool reusable-service update regression namespace root.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates/service/metadata.rs`
-  Dynamic-tool reusable-service metadata update regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates/service/contract.rs`
-  Dynamic-tool reusable-service contract update regression tests.
-- `wrapper/src/main_test_session_status_ps_services/contract.rs`
-  `/ps` reusable-service contract regression namespace root.
-- `wrapper/src/main_test_session_status_ps_services/contract/metadata.rs`
-  `/ps` reusable-service contract update regression tests.
-- `wrapper/src/client_dynamic_tools_tests_shells/management/service_controls/updates/dependencies.rs`
-  Dynamic-tool dependency-capability update regression tests.
 - `wrapper/src/main_test_session_status_ps_services/mutations.rs`
   `/ps` reusable-service mutation regression namespace root.
 - `wrapper/src/main_test_session_status_ps_services/mutations/service.rs`

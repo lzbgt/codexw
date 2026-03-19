@@ -121,7 +121,7 @@ fn agent_command_requests_filtered_agent_threads() {
     let requests = read_recorded_requests(&mut child, writer, &path);
     let request = requests.last().expect("request");
     assert_eq!(request["method"], "thread/list");
-    assert_eq!(request["params"]["cwd"], "/tmp/project");
+    assert!(request["params"].get("cwd").is_none());
     assert_eq!(
         request["params"]["sourceKinds"],
         json!(["subAgentThreadSpawn"])

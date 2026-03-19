@@ -9,7 +9,7 @@ design set:
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
 - [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md)
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-broker-connector-adapter-plan.md](codexw-broker-connector-adapter-plan.md)
 - [codexw-broker-client-fixture.md](codexw-broker-client-fixture.md)
 - [codexw-broker-integration-handoff.md](codexw-broker-integration-handoff.md)
@@ -35,7 +35,7 @@ host-examination surface behind this broker summary, see
 [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
 [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md).
 
 ## Current Status
 

@@ -13,6 +13,7 @@ pub(crate) struct ThreadListEntry {
     pub(crate) preview: String,
     pub(crate) status: String,
     pub(crate) updated_at: Option<i64>,
+    pub(crate) cwd: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -35,6 +36,7 @@ pub(crate) fn thread_list_snapshot(result: &Value) -> ThreadListSnapshot {
                     .unwrap_or("unknown")
                     .to_string(),
                 updated_at: thread.get("updatedAt").and_then(Value::as_i64),
+                cwd: get_string(thread, &["cwd"]).map(ToOwned::to_owned),
             })
         })
         .collect::<Vec<_>>();
@@ -114,10 +116,19 @@ impl ThreadListSnapshot {
         lines.push(footer.to_string());
         lines.join("\n")
     }
-}
 
-pub(crate) fn thread_list_is_empty(result: &Value) -> bool {
-    thread_list_snapshot(result).is_empty()
+    pub(crate) fn filtered_by_cwd(&self, cwd_filter: Option<&str>) -> Self {
+        let Some(cwd_filter) = cwd_filter else {
+            return self.clone();
+        };
+        let entries = self
+            .entries
+            .iter()
+            .filter(|entry| entry.cwd.as_deref() == Some(cwd_filter))
+            .cloned()
+            .collect();
+        Self::from_entries(entries)
+    }
 }
 
 pub(crate) fn should_fallback_to_all_workspaces(
@@ -125,7 +136,11 @@ pub(crate) fn should_fallback_to_all_workspaces(
     search_term: Option<&str>,
     cwd_filter: Option<&str>,
 ) -> bool {
-    cwd_filter.is_some() && search_term.is_none() && thread_list_is_empty(result)
+    cwd_filter.is_some()
+        && search_term.is_none()
+        && thread_list_snapshot(result)
+            .filtered_by_cwd(cwd_filter)
+            .is_empty()
 }
 
 #[cfg(test)]
@@ -150,6 +165,7 @@ pub(crate) fn extract_agent_thread_summaries(result: &Value) -> Vec<CachedAgentT
 #[cfg(test)]
 mod tests {
     use super::extract_agent_thread_summaries;
+    use super::thread_list_snapshot;
     use serde_json::json;
 
     #[test]
@@ -160,13 +176,15 @@ mod tests {
                     "id": "agent-2",
                     "preview": "older item",
                     "updatedAt": 10,
-                    "status": {"type": "idle"}
+                    "status": {"type": "idle"},
+                    "cwd": "/tmp/agent"
                 },
                 {
                     "id": "agent-1",
                     "preview": "latest item",
                     "updatedAt": 20,
-                    "status": {"type": "active"}
+                    "status": {"type": "active"},
+                    "cwd": "/tmp/agent"
                 }
             ]
         }));
@@ -177,5 +195,30 @@ mod tests {
         assert_eq!(summaries[0].preview, "latest item");
         assert_eq!(summaries[0].updated_at, Some(20));
         assert_eq!(summaries[1].id, "agent-2");
+    }
+
+    #[test]
+    fn cwd_filtered_snapshot_keeps_only_matching_threads() {
+        let snapshot = thread_list_snapshot(&json!({
+            "data": [
+                {
+                    "id": "thr-match",
+                    "preview": "same cwd",
+                    "updatedAt": 20,
+                    "cwd": "/tmp/project",
+                    "status": {"type": "idle"}
+                },
+                {
+                    "id": "thr-other",
+                    "preview": "other cwd",
+                    "updatedAt": 30,
+                    "cwd": "/tmp/other",
+                    "status": {"type": "idle"}
+                }
+            ]
+        }))
+        .filtered_by_cwd(Some("/tmp/project"));
+
+        assert_eq!(snapshot.thread_ids(), vec!["thr-match"]);
     }
 }

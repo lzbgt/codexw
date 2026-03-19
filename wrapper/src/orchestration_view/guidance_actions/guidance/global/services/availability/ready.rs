@@ -35,6 +35,7 @@ pub(in super::super::super::super::super) fn guidance_lines_for_ready_services(
     ])
 }
 
+#[cfg(test)]
 pub(in super::super::super::super::super) fn guidance_lines_for_ready_services_tool(
     state: &AppState,
 ) -> Option<Vec<String>> {

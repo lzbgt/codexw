@@ -33,8 +33,6 @@ fn support_claim_source_docs_exist_and_are_linked() {
     let self_supervision = read_repo_file("docs/codexw-self-supervision.md");
     let self_supervision_plan =
         read_repo_file("docs/codexw-self-supervision-implementation-plan.md");
-    let background_execution_boundary =
-        read_repo_file("docs/codexw-background-execution-boundary.md");
     let plugin_system = read_repo_file("docs/codexw-plugin-system.md");
     let plugin_system_plan = read_repo_file("docs/codexw-plugin-system-implementation-plan.md");
     let local_api_sketch = read_repo_file("docs/codexw-local-api-sketch.md");
@@ -55,7 +53,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         read_repo_file("docs/codexw-cross-deployment-handoff-implementation-plan.md");
     let broker_artifact_sketch = read_repo_file("docs/codexw-broker-artifact-contract-sketch.md");
     let broker_artifact_plan = read_repo_file("docs/codexw-broker-artifact-implementation-plan.md");
-    let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
+    let workspace_policy = read_repo_file("docs/codexw-native-support-boundaries.md");
     let broker_client_arch = read_repo_file("docs/codexw-broker-client-architecture.md");
     let broker_client_fixture = read_repo_file("docs/codexw-broker-client-fixture.md");
     let broker_handoff = read_repo_file("docs/codexw-broker-integration-handoff.md");
@@ -87,7 +85,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-evolution-implementation-plan.md",
         "docs/codexw-self-supervision.md",
         "docs/codexw-self-supervision-implementation-plan.md",
-        "docs/codexw-background-execution-boundary.md",
+        "docs/codexw-self-supervision.md",
         "docs/codexw-plugin-system.md",
         "docs/codexw-plugin-system-implementation-plan.md",
         "docs/codexw-local-api-sketch.md",
@@ -106,7 +104,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-broker-integration-handoff.md",
         "docs/codexw-broker-artifact-contract-sketch.md",
         "docs/codexw-broker-artifact-implementation-plan.md",
-        "docs/codexw-workspace-tool-policy.md",
+        "docs/codexw-native-support-boundaries.md",
         "docs/codexw-support-claim-checklist.md",
     ] {
         let path = repo_root().join(file);
@@ -207,18 +205,17 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision-implementation-plan.md",
         "README.md",
     );
-    assert_contains(
-        &readme,
-        "docs/codexw-background-execution-boundary.md",
-        "README.md",
-    );
     assert_contains(&readme, "docs/codexw-plugin-system.md", "README.md");
     assert_contains(
         &readme,
         "docs/codexw-plugin-system-implementation-plan.md",
         "README.md",
     );
-    assert_contains(&readme, "no longer advertised by default", "README.md");
+    assert_contains(
+        &readme,
+        "Background-shell orchestration, capability management, and service interaction stay operator-facing",
+        "README.md",
+    );
     assert_contains(
         &readme,
         "docs/codexw-support-claim-checklist.md",
@@ -315,18 +312,17 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-self-supervision-implementation-plan.md",
         "TODOS.md",
     );
-    assert_contains(
-        &todos,
-        "docs/codexw-background-execution-boundary.md",
-        "TODOS.md",
-    );
     assert_contains(&todos, "docs/codexw-plugin-system.md", "TODOS.md");
     assert_contains(
         &todos,
         "docs/codexw-plugin-system-implementation-plan.md",
         "TODOS.md",
     );
-    assert_contains(&todos, "docs/codexw-workspace-tool-policy.md", "TODOS.md");
+    assert_contains(
+        &todos,
+        "docs/codexw-native-support-boundaries.md",
+        "TODOS.md",
+    );
     assert_contains(&todos, "docs/codexw-support-claim-checklist.md", "TODOS.md");
 
     assert_contains(
@@ -1436,66 +1432,6 @@ fn support_claim_source_docs_exist_and_are_linked() {
         "docs/codexw-native-support-policy.md",
     );
     assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "wrapper-owned",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "command/exec",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "source call id",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "prompt",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "jobid",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "@capability",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "target_background_shell_reference",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "wrapper_background_shell_started_no_output_yet",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "supported experimental adapter",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "shell-first host examination",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "artifact index/detail/content api",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
-        &background_execution_boundary,
-        "no_output_observed_yet",
-        "docs/codexw-background-execution-boundary.md",
-    );
-    assert_contains_case_insensitive(
         &self_supervision,
         "wrapper_background_shell_streaming_output",
         "docs/codexw-self-supervision.md",
@@ -1819,7 +1755,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision,
-        "background-shell dynamic tools must not execute in a way that freezes the input loop indefinitely",
+        "background-shell tool paths must not execute in a way that freezes the input loop indefinitely",
         "docs/codexw-self-supervision.md",
     );
     assert_contains_case_insensitive(
@@ -2044,7 +1980,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &self_supervision_plan,
-        "background-shell dynamic tools",
+        "background-shell tool paths",
         "docs/codexw-self-supervision-implementation-plan.md",
     );
     assert_contains_case_insensitive(
@@ -2389,7 +2325,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &broker_client_arch,
-        "workspace dynamic tools",
+        "model-facing wrapper tool schemas",
         "docs/codexw-broker-client-architecture.md",
     );
     assert_contains_case_insensitive(
@@ -2929,13 +2865,13 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains_case_insensitive(
         &workspace_policy,
-        "shell or python",
-        "docs/codexw-workspace-tool-policy.md",
+        "shell-first host-examination surface",
+        "docs/codexw-native-support-boundaries.md",
     );
     assert_contains_case_insensitive(
         &workspace_policy,
-        "no longer advertise",
-        "docs/codexw-workspace-tool-policy.md",
+        "wrapper-owned async shell orchestration",
+        "docs/codexw-native-support-boundaries.md",
     );
 
     assert_contains(
@@ -3040,7 +2976,7 @@ fn support_claim_source_docs_exist_and_are_linked() {
     );
     assert_contains(
         &checklist,
-        "codexw-workspace-tool-policy.md",
+        "codexw-native-support-boundaries.md",
         "docs/codexw-support-claim-checklist.md",
     );
     assert_contains(
@@ -3112,14 +3048,14 @@ fn broker_and_native_docs_link_to_automated_support_claim_guard() {
 }
 
 #[test]
-fn design_doc_keeps_workspace_tool_policy_note_linked() {
+fn design_doc_keeps_native_support_boundary_note_linked() {
     let design = read_repo_file("docs/codexw-design.md");
-    let workspace_policy = read_repo_file("docs/codexw-workspace-tool-policy.md");
+    let native_boundaries = read_repo_file("docs/codexw-native-support-boundaries.md");
     let readme = read_repo_file("README.md");
 
     assert_contains(
         &design,
-        "codexw-workspace-tool-policy.md",
+        "codexw-native-support-boundaries.md",
         "docs/codexw-design.md",
     );
     assert_contains_case_insensitive(
@@ -3133,56 +3069,45 @@ fn design_doc_keeps_workspace_tool_policy_note_linked() {
         "docs/codexw-design.md",
     );
     assert_contains(
-        &workspace_policy,
-        "workspace_read_file",
-        "docs/codexw-workspace-tool-policy.md",
+        &native_boundaries,
+        "wrapper-owned async shell orchestration",
+        "docs/codexw-native-support-boundaries.md",
     );
     assert_contains(
-        &workspace_policy,
-        "workspace_search_text",
-        "docs/codexw-workspace-tool-policy.md",
-    );
-    assert_contains(
-        &workspace_policy,
-        "shell is the general-purpose execution substrate",
-        "docs/codexw-workspace-tool-policy.md",
-    );
-    assert_contains_case_insensitive(
-        &workspace_policy,
-        "supported experimental adapter",
-        "docs/codexw-workspace-tool-policy.md",
-    );
-    assert_contains_case_insensitive(
-        &workspace_policy,
+        &native_boundaries,
         "shell-first host-examination surface",
-        "docs/codexw-workspace-tool-policy.md",
+        "docs/codexw-native-support-boundaries.md",
+    );
+    assert_contains(
+        &native_boundaries,
+        "Supported Product Shape",
+        "docs/codexw-native-support-boundaries.md",
     );
     assert_contains_case_insensitive(
-        &workspace_policy,
+        &native_boundaries,
+        "supported",
+        "docs/codexw-native-support-boundaries.md",
+    );
+    assert_contains_case_insensitive(
+        &native_boundaries,
+        "shell-first host-examination surface",
+        "docs/codexw-native-support-boundaries.md",
+    );
+    assert_contains_case_insensitive(
+        &native_boundaries,
         "artifact index/detail/content api",
-        "docs/codexw-workspace-tool-policy.md",
+        "docs/codexw-native-support-boundaries.md",
     );
     assert_contains(
-        &workspace_policy,
-        "bounded compatibility scan budget",
-        "docs/codexw-workspace-tool-policy.md",
+        &native_boundaries,
+        "codexw-local-api-sketch.md",
+        "docs/codexw-native-support-boundaries.md",
     );
     assert_contains(
-        &workspace_policy,
-        "legacy workspace compatibility failure",
-        "docs/codexw-workspace-tool-policy.md",
+        &readme,
+        "docs/codexw-native-support-boundaries.md",
+        "README.md",
     );
-    assert_contains(
-        &workspace_policy,
-        "transcript and history summaries",
-        "docs/codexw-workspace-tool-policy.md",
-    );
-    assert_contains(
-        &workspace_policy,
-        "legacy workspace compatibility path",
-        "docs/codexw-workspace-tool-policy.md",
-    );
-    assert_contains(&readme, "legacy workspace compatibility path", "README.md");
 }
 
 #[test]
@@ -3236,8 +3161,6 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     let self_supervision = read_repo_file("docs/codexw-self-supervision.md");
     let self_supervision_plan =
         read_repo_file("docs/codexw-self-supervision-implementation-plan.md");
-    let background_execution_boundary =
-        read_repo_file("docs/codexw-background-execution-boundary.md");
     let plugin_system = read_repo_file("docs/codexw-plugin-system.md");
     let plugin_system_plan = read_repo_file("docs/codexw-plugin-system-implementation-plan.md");
     let checklist = read_repo_file("docs/codexw-support-claim-checklist.md");
@@ -3350,7 +3273,11 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         "artifact index/detail/content routes stay",
         "README.md",
     );
-    assert_contains(&readme, "docs/codexw-workspace-tool-policy.md", "README.md");
+    assert_contains(
+        &readme,
+        "docs/codexw-native-support-boundaries.md",
+        "README.md",
+    );
     assert_contains(&readme, "docs/codexw-local-api-sketch.md", "README.md");
     assert_contains(
         &readme,
@@ -3476,7 +3403,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
     );
     assert_contains(
         &design,
-        "codexw-workspace-tool-policy.md",
+        "codexw-native-support-boundaries.md",
         "docs/codexw-design.md",
     );
     assert_contains(
@@ -3517,7 +3444,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         assert_contains(contents, "codexw-local-api-sketch.md", name);
         assert_contains(contents, "codexw-local-api-route-matrix.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
-        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+        assert_contains(contents, "codexw-native-support-boundaries.md", name);
     }
     for (name, contents) in [
         (
@@ -3535,7 +3462,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
         assert_contains(contents, "codexw-local-api-route-matrix.md", name);
-        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+        assert_contains(contents, "codexw-native-support-boundaries.md", name);
     }
     for (name, contents) in [
         ("docs/codexw-broker-connector-decision.md", &broker_decision),
@@ -3562,7 +3489,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
         assert_contains(contents, "codexw-local-api-route-matrix.md", name);
-        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+        assert_contains(contents, "codexw-native-support-boundaries.md", name);
     }
     for (name, contents) in [
         ("docs/codexw-broker-out-of-scope.md", &broker_out_of_scope),
@@ -3583,7 +3510,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
         assert_contains(contents, "codexw-local-api-route-matrix.md", name);
-        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+        assert_contains(contents, "codexw-native-support-boundaries.md", name);
     }
     for (name, contents) in [
         (
@@ -3624,7 +3551,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
         assert_contains(contents, "codexw-local-api-route-matrix.md", name);
-        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+        assert_contains(contents, "codexw-native-support-boundaries.md", name);
     }
     for (name, contents) in [
         ("docs/codexw-broker-connectivity.md", &broker_connectivity),
@@ -3643,10 +3570,6 @@ fn broker_docs_preserve_fixture_diversity_claims() {
             "docs/codexw-self-supervision-implementation-plan.md",
             &self_supervision_plan,
         ),
-        (
-            "docs/codexw-background-execution-boundary.md",
-            &background_execution_boundary,
-        ),
         ("docs/codexw-plugin-system.md", &plugin_system),
         (
             "docs/codexw-plugin-system-implementation-plan.md",
@@ -3658,7 +3581,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);
         assert_contains(contents, "codexw-local-api-route-matrix.md", name);
-        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+        assert_contains(contents, "codexw-native-support-boundaries.md", name);
     }
     for (name, contents) in [
         (
@@ -3678,7 +3601,7 @@ fn broker_docs_preserve_fixture_diversity_claims() {
         ("docs/codexw-native-proof-matrix.md", &native_proof),
     ] {
         assert_contains_case_insensitive(contents, "shell-first remote/workspace", name);
-        assert_contains(contents, "codexw-workspace-tool-policy.md", name);
+        assert_contains(contents, "codexw-native-support-boundaries.md", name);
         assert_contains(contents, "codexw-local-api-sketch.md", name);
         assert_contains(contents, "codexw-local-api-implementation-plan.md", name);
         assert_contains(contents, "codexw-local-api-event-sourcing.md", name);

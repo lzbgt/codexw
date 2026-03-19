@@ -4,6 +4,7 @@ mod async_tools;
 mod timing;
 
 use crate::state::AppState;
+use std::time::Instant;
 
 pub(crate) use timing::format_elapsed;
 pub(crate) use timing::spinner_frame;
@@ -39,6 +40,16 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
             spinner_frame(Some(started_at)),
             detail,
             format_elapsed(Some(started_at))
+        );
+    }
+    if active_status_detail(state).is_none()
+        && let Some(idle) = state.stalled_turn_idle_for()
+    {
+        return format!(
+            "{} turn stalled; no app-server activity {} | {}",
+            spinner_frame(state.activity_started_at),
+            format_elapsed(Some(Instant::now() - idle)),
+            format_elapsed(state.activity_started_at)
         );
     }
     if let Some(detail) = active_status_detail(state) {

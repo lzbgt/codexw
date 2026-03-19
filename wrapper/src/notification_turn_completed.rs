@@ -31,6 +31,8 @@ pub(crate) fn handle_turn_completed(
     state.turn_running = false;
     state.active_turn_id = None;
     state.activity_started_at = None;
+    state.last_server_event_at = None;
+    state.turn_idle_notice_emitted = false;
     state.last_status_line = None;
     if matches!(
         status.as_str(),

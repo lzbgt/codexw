@@ -75,13 +75,11 @@ pub(crate) fn thread_list_params(
     search_term: Option<&str>,
     source_kinds: Option<&[String]>,
 ) -> Value {
+    let _ = cwd_filter;
     let mut params = json!({
         "limit": 10,
         "sortKey": "updated_at",
     });
-    if let Some(cwd_filter) = cwd_filter {
-        params["cwd"] = Value::String(cwd_filter.to_string());
-    }
     if let Some(search_term) = search_term {
         params["searchTerm"] = Value::String(search_term.to_string());
     }

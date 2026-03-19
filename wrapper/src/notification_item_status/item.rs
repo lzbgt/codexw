@@ -27,7 +27,7 @@ pub(crate) fn render_item_started(params: &Value, cli: &Cli, state: &mut AppStat
             state.last_status_line = Some(summarize_file_change_paths(item));
         }
         "agentMessage" | "reasoning" => {}
-        "mcpToolCall" | "dynamicToolCall" | "webSearch" | "plan" => {
+        "mcpToolCall" | "webSearch" | "plan" => {
             state.last_status_line = Some(summarize_text(&format!(
                 "{} {}",
                 humanize_item_type(item_type),

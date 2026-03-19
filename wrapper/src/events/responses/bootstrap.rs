@@ -104,6 +104,7 @@ pub(crate) fn handle_bootstrap_response_success(
                 handle_threads_listed(
                     result,
                     search_term.as_deref(),
+                    cwd_filter.as_deref(),
                     *view,
                     matches!(view, ThreadListView::Threads) && search_term.is_none(),
                     state,

@@ -7,14 +7,13 @@ This document turns self-supervision into an implementation-facing sequence.
 It sits below:
 
 - [codexw-self-supervision.md](codexw-self-supervision.md)
-- [codexw-background-execution-boundary.md](codexw-background-execution-boundary.md)
 - [codexw-self-evolution.md](codexw-self-evolution.md)
 - [codexw-plugin-system.md](codexw-plugin-system.md)
 
 For the source docs that define the current shell-first remote/workspace
 surface and local runtime semantics that this supervision plan builds on, see:
 
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
@@ -36,7 +35,7 @@ artifact index/detail/content surface.
 
 The first implementation slice should include:
 
-- non-blocking execution for potentially wedging dynamic-tool paths
+- non-blocking execution for potentially wedging async-tool paths
 - elapsed-time tracking for active tool calls
 - operator-visible stall warnings
 - supervision classifications for common wedged states
@@ -51,7 +50,7 @@ the operator can still interrupt or exit while they run.
 
 The first obvious target is:
 
-- background-shell dynamic tools
+- background-shell tool paths
 
 ### 2. Supervision timers
 

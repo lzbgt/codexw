@@ -215,7 +215,7 @@ When native-side wording changes, review:
 - [codexw-native-proof-matrix.md](codexw-native-proof-matrix.md)
 - [codexw-native-gap-assessment.md](codexw-native-gap-assessment.md)
 - [codexw-native-hardening-catalog.md](codexw-native-hardening-catalog.md)
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)

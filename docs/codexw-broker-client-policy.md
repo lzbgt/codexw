@@ -19,7 +19,7 @@ host-examination surface, see
 [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
 [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md), and
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md).
 
 ## Purpose
 

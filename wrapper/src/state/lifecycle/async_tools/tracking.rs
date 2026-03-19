@@ -1,9 +1,11 @@
+#[cfg(test)]
 use std::time::Duration;
 
 use crate::rpc::RequestId;
 
 use super::super::super::AbandonedAsyncToolRequest;
 use super::super::super::AppState;
+#[cfg(test)]
 use super::super::super::AsyncToolOwnerKind;
 use super::super::super::AsyncToolSupervisionClass;
 #[cfg(test)]
@@ -48,6 +50,7 @@ impl AppState {
         );
     }
 
+    #[cfg(test)]
     pub(crate) fn record_async_tool_request_with_timeout_and_worker(
         &mut self,
         id: RequestId,

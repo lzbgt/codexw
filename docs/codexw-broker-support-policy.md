@@ -25,7 +25,7 @@ host-examination surface behind this support claim, see
 [codexw-local-api-sketch.md](codexw-local-api-sketch.md),
 [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md), and
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md).
 
 ## Scope
 

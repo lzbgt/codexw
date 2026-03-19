@@ -3,7 +3,6 @@ use crate::catalog_file_search::render_fuzzy_file_search_results;
 use crate::catalog_thread_list::extract_thread_ids;
 use crate::catalog_thread_list::render_thread_list;
 use crate::catalog_thread_list::should_fallback_to_all_workspaces;
-use crate::catalog_thread_list::thread_list_is_empty;
 use crate::catalog_thread_list::thread_list_snapshot;
 use crate::requests::ThreadListView;
 use crate::requests::thread_list_params;
@@ -34,13 +33,13 @@ fn thread_list_is_numbered_and_extractable() {
     assert!(rendered.contains("Use /resume <n>"));
     assert_eq!(extract_thread_ids(&result), vec!["thr_newer", "thr_older"]);
     assert_eq!(snapshot.thread_ids(), vec!["thr_newer", "thr_older"]);
-    assert!(!thread_list_is_empty(&result));
+    assert!(!snapshot.is_empty());
 }
 
 #[test]
 fn empty_workspace_thread_list_falls_back_to_all_workspaces() {
     let empty = json!({ "data": [] });
-    assert!(thread_list_is_empty(&empty));
+    assert!(thread_list_snapshot(&empty).is_empty());
     assert!(should_fallback_to_all_workspaces(
         &empty,
         None,
@@ -57,7 +56,7 @@ fn empty_workspace_thread_list_falls_back_to_all_workspaces() {
 #[test]
 fn all_workspace_thread_list_request_omits_cwd_filter() {
     let workspace_scoped = thread_list_params(Some("/tmp/project"), None, None);
-    assert_eq!(workspace_scoped["cwd"], "/tmp/project");
+    assert!(workspace_scoped.get("cwd").is_none());
 
     let all_workspaces = thread_list_params(None, None, None);
     assert!(all_workspaces.get("cwd").is_none());

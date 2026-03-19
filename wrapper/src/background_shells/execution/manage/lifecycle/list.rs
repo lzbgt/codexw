@@ -1,6 +1,7 @@
 use crate::background_shells::BackgroundShellManager;
 
 impl BackgroundShellManager {
+    #[cfg(test)]
     pub(crate) fn list_from_tool(&self) -> String {
         let snapshots = self.snapshots();
         if snapshots.is_empty() {

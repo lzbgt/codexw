@@ -17,6 +17,7 @@ pub(in super::super) fn guidance_lines_for_capability(
     )?)
 }
 
+#[cfg(test)]
 pub(in super::super) fn guidance_lines_for_tool_capability(
     state: &AppState,
     capability: &str,

@@ -15,6 +15,7 @@ pub(in super::super::super::super) fn guidance_lines_for_availability(
         .or_else(|| untracked::guidance_lines_for_untracked_services(state))
 }
 
+#[cfg(test)]
 pub(in super::super::super::super) fn guidance_lines_for_availability_tool(
     state: &AppState,
 ) -> Option<Vec<String>> {

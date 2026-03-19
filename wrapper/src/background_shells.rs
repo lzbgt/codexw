@@ -40,6 +40,7 @@ pub(crate) use self::execution::parse_background_shell_timeout_ms;
 pub(crate) use self::execution::terminate_jobs;
 pub(crate) use self::execution::validate_service_capability;
 pub(crate) use self::recipes::parse_background_shell_interaction_recipes;
+#[cfg(test)]
 pub(crate) use self::services::parse_capability_issue_filter;
 pub(crate) use self::snapshots::exit_code;
 pub(crate) use self::snapshots::service_readiness_for_state;

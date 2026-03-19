@@ -27,7 +27,7 @@ that points implementers at the right contract docs.
 For the source docs that define the current shell-first remote
 host-examination surface behind that handoff, see:
 
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
@@ -85,8 +85,8 @@ The current broker-visible host-examination model is:
 - interpret resulting host references from transcript, shell, service, and
   event surfaces
 
-This is intentionally **shell-first**. It is not based on the removed workspace
-dynamic tools, and it does not yet include a dedicated artifact browser.
+This is intentionally **shell-first**. It is not based on model-facing wrapper
+tool schemas, and it does not yet include a dedicated artifact browser.
 
 For active wrapper-owned background-shell work, external clients can now also
 rely on broker-visible supervision facts rather than only a generic tool name:
@@ -158,8 +158,8 @@ That means:
   artifact API
 - do not infer artifact list/detail/content routes from unsupported connector
   passthrough behavior
-- do not reintroduce workspace dynamic tools as the answer for broker-visible
-  artifact browsing
+- do not reintroduce model-facing wrapper tool schemas as the answer for
+  broker-visible artifact browsing
 - do not treat artifact list/detail/content routes as implicitly available just
   because the current shell/transcript/service/event surface already supports
   real remote host examination
@@ -227,7 +227,7 @@ When building against the current `codexw` broker adapter, confirm:
   surfaces
 - UI copy does not imply a first-class artifact browser unless artifact routes
   are actually implemented
-- UI copy does not imply resurrected workspace dynamic tools
+- UI copy does not imply model-facing wrapper tool schemas
 
 ## External Baseline References
 

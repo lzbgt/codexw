@@ -19,7 +19,7 @@ Related docs:
 
 For the native-side source docs that define the shell-first remote/workspace
 surface behind those native support claims, see
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md),
 [codexw-local-api-sketch.md](codexw-local-api-sketch.md),
 [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
@@ -102,7 +102,7 @@ not proof of a broker-visible artifact index/detail/content API.
   - [README.md](../README.md)
   - [codexw-design.md](codexw-design.md)
   - orchestration/background shell implementation in `wrapper/src/background_shells/`
-  - dynamic-tool, `:ps`, local-API, connector, and fixture coverage already in
+  - `:ps`, local-API, connector, and fixture coverage already in
     repo
 - Notes:
   - the evidence is implementation-heavy, not only design prose

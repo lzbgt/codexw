@@ -27,6 +27,7 @@ pub(in super::super::super::super::super) fn guidance_lines_for_untracked_servic
     ])
 }
 
+#[cfg(test)]
 pub(in super::super::super::super::super) fn guidance_lines_for_untracked_services_tool(
     state: &AppState,
 ) -> Option<Vec<String>> {

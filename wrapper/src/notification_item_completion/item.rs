@@ -88,7 +88,7 @@ pub(crate) fn render_completed_item(
                 output.block_stdout("Proposed Plan", &rendered)?;
             }
         }
-        "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" => {
+        "mcpToolCall" | "collabAgentToolCall" | "webSearch" => {
             output.finish_stream()?;
             output.block_stdout(
                 &format!("{} complete", humanize_item_type(item_type)),

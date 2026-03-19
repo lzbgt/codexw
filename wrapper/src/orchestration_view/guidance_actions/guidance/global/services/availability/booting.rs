@@ -26,6 +26,7 @@ pub(in super::super::super::super::super) fn guidance_lines_for_booting_services
     ])
 }
 
+#[cfg(test)]
 pub(in super::super::super::super::super) fn guidance_lines_for_booting_services_tool(
     state: &AppState,
 ) -> Option<Vec<String>> {

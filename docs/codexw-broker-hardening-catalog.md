@@ -26,7 +26,7 @@ That means items in this catalog are not promotion blockers by default.
 For the source docs that define the current shell-first remote
 host-examination surface that this hardening catalog is strengthening, see:
 
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)

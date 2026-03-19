@@ -1,8 +1,11 @@
 use crate::background_shells::BackgroundShellManager;
+#[cfg(test)]
 use crate::background_shells::BackgroundShellServiceIssueClass;
+#[cfg(test)]
 use crate::background_shells::validate_service_capability;
 
 impl BackgroundShellManager {
+    #[cfg(test)]
     pub(crate) fn list_services_from_tool(
         &self,
         arguments: &serde_json::Value,
@@ -26,6 +29,7 @@ impl BackgroundShellManager {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn parse_service_issue_filter(
     raw: Option<&str>,
     context: &str,

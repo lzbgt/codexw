@@ -11,6 +11,7 @@ pub(crate) fn orchestration_next_action_summary(state: &AppState) -> Option<Stri
         .cloned()
 }
 
+#[cfg(test)]
 pub(crate) fn orchestration_next_action_summary_for_tool(state: &AppState) -> Option<String> {
     action_lines(state, ActionAudience::Tool).first().cloned()
 }
@@ -45,6 +46,7 @@ pub(crate) fn render_orchestration_guidance_for_capability(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn render_orchestration_guidance_for_tool(state: &AppState) -> String {
     let lines = guidance_lines_for_tool(state);
     if lines.is_empty() {
@@ -58,6 +60,7 @@ pub(crate) fn render_orchestration_guidance_for_tool(state: &AppState) -> String
     }
 }
 
+#[cfg(test)]
 pub(crate) fn render_orchestration_guidance_for_tool_capability(
     state: &AppState,
     capability_ref: &str,
@@ -119,6 +122,7 @@ pub(crate) fn render_orchestration_actions_for_capability(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn render_orchestration_actions_for_tool(state: &AppState) -> String {
     let lines = action_lines(state, ActionAudience::Tool);
     if lines.is_empty() {
@@ -132,6 +136,7 @@ pub(crate) fn render_orchestration_actions_for_tool(state: &AppState) -> String 
     }
 }
 
+#[cfg(test)]
 pub(crate) fn render_orchestration_actions_for_tool_capability(
     state: &AppState,
     capability_ref: &str,

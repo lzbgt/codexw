@@ -22,6 +22,7 @@ pub(in super::super::super::super) fn guidance_lines_for_conflicts(
     ])
 }
 
+#[cfg(test)]
 pub(in super::super::super::super) fn guidance_lines_for_conflicts_tool(
     state: &AppState,
 ) -> Option<Vec<String>> {

@@ -14,7 +14,7 @@ This document records a non-optional runtime requirement:
 
 The practical failure mode is straightforward:
 
-- a dynamic tool call or shell workflow wedges
+- a wrapper-owned async shell workflow or shell exec wedges
 - the current task still matters
 - the operator may not be able to or want to restart manually
 
@@ -39,14 +39,14 @@ plugin recovery hooks build on the existing shell-first host-examination
 surface and local runtime semantics. They do not imply that a broker-visible
 artifact index/detail/content API is already part of the supported adapter.
 
-The ownership boundary for the supervised background-execution lanes is tracked
-separately in
-[codexw-background-execution-boundary.md](codexw-background-execution-boundary.md).
+The ownership boundary for the supervised background-execution lanes stays
+inside this document's shell-first runtime model rather than a separate removed
+wrapper-tool design note.
 
 For the source docs that define the current shell-first remote/workspace
 surface and local runtime semantics that this supervision lane builds on, see:
 
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
@@ -56,7 +56,7 @@ surface and local runtime semantics that this supervision lane builds on, see:
 
 The first supervision lane should watch at least:
 
-- active dynamic tool calls
+- active wrapper-owned async tool paths
 - background shell starts, polls, waits, and recipe invokes
 - turn-level activity that remains active without forward progress
 - plugin lifecycle operations
@@ -81,6 +81,7 @@ Useful first classes:
 
 - `tool_slow`
 - `tool_wedged`
+- `turn_stalled`
 - `shell_start_stalled`
 - `shell_poll_repeated_terminal_retry`
 - `plugin_load_failed`
@@ -90,7 +91,9 @@ These classifications should be visible in operator-facing status rather than
 hidden inside internal timers.
 
 The first emitted native runtime slice should at least expose `tool_slow` and
-`tool_wedged` for long-running async shell-tool work.
+`tool_wedged` for long-running async shell-tool work, plus a generic
+`turn_stalled` path when app-server stops sending follow-up events after a turn
+is still marked active.
 
 That supervision lane should remain orchestrator-owned. The main runtime loop
 should decide when to inspect an active async worker again based on the scale
@@ -182,7 +185,7 @@ The first emitted recovery signal should also be sticky enough to notice:
 
 The first concrete runtime rule should be:
 
-- background-shell dynamic tools must not execute in a way that freezes the input loop indefinitely
+- background-shell tool paths must not execute in a way that freezes the input loop indefinitely
 
 That means a wedged background-shell tool should still leave the operator able
 to:

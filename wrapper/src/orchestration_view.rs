@@ -9,15 +9,20 @@ mod workers;
 #[cfg(test)]
 pub(crate) use guidance_actions::orchestration_guidance_summary;
 pub(crate) use guidance_actions::orchestration_next_action_summary;
+#[cfg(test)]
 pub(crate) use guidance_actions::orchestration_next_action_summary_for_tool;
 pub(crate) use guidance_actions::render_orchestration_actions;
 pub(crate) use guidance_actions::render_orchestration_actions_for_capability;
+#[cfg(test)]
 pub(crate) use guidance_actions::render_orchestration_actions_for_tool;
+#[cfg(test)]
 pub(crate) use guidance_actions::render_orchestration_actions_for_tool_capability;
 pub(crate) use guidance_actions::render_orchestration_blockers_for_capability;
 pub(crate) use guidance_actions::render_orchestration_guidance;
 pub(crate) use guidance_actions::render_orchestration_guidance_for_capability;
+#[cfg(test)]
 pub(crate) use guidance_actions::render_orchestration_guidance_for_tool;
+#[cfg(test)]
 pub(crate) use guidance_actions::render_orchestration_guidance_for_tool_capability;
 pub(crate) use summary::orchestration_background_summary;
 pub(crate) use summary::orchestration_overview_summary;

@@ -17,6 +17,9 @@ pub(crate) fn render_command_completion(
     let mut rendered = format!("$ {command}");
     if !is_successful_command_completion(status, exit_code) {
         rendered.push_str(&format!("\nstatus  {status}\nexit    {exit_code}"));
+        if let Some(hint) = detect_shell_failure_hint(command, output.unwrap_or("")) {
+            rendered.push_str(&format!("\nhint    {hint}"));
+        }
     }
     if let Some(output) = output {
         let trimmed = output.trim_end();
@@ -30,6 +33,13 @@ pub(crate) fn render_command_completion(
 
 fn is_successful_command_completion(status: &str, exit_code: &str) -> bool {
     status == "completed" && exit_code == "0"
+}
+
+fn detect_shell_failure_hint(command: &str, output: &str) -> Option<&'static str> {
+    if command.contains("status=$?") && output.contains("read-only variable: status") {
+        return Some("zsh rejects `status=$?`; use `rc=$?` instead");
+    }
+    None
 }
 
 pub(crate) fn render_local_command_completion(
@@ -49,6 +59,9 @@ pub(crate) fn render_local_command_completion(
 
     if show_exit {
         rendered.push_str(&format!("\nexit    {exit_code}"));
+        if let Some(hint) = detect_shell_failure_hint(command, stderr) {
+            rendered.push_str(&format!("\nhint    {hint}"));
+        }
     }
     if show_stdout {
         rendered.push_str("\n\n");

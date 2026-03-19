@@ -49,6 +49,12 @@ pub(crate) fn summarize_tool_request(params: &Value) -> String {
             return rendered.join(" | ");
         }
     }
+    if let Some(tool) = get_string(params, &["tool"]) {
+        if let Some(arguments) = params.get("arguments") {
+            return format!("{tool} arguments={}", summarize_value(arguments));
+        }
+        return tool.to_string();
+    }
     summarize_value(params)
 }
 

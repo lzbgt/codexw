@@ -3,6 +3,7 @@ use super::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ActionAudience {
     Operator,
+    #[allow(dead_code)]
     Tool,
 }
 

@@ -91,6 +91,7 @@ pub(in super::super::super) fn guidance_lines(state: &AppState) -> Option<Vec<St
     None
 }
 
+#[cfg(test)]
 pub(in super::super::super) fn guidance_lines_for_tool(state: &AppState) -> Option<Vec<String>> {
     let waits = active_wait_task_count(state);
     let prereqs = running_shell_count_by_intent(state, BackgroundShellIntent::Prerequisite);

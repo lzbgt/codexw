@@ -25,7 +25,7 @@ Related docs:
 
 For the native-side source docs that define the shell-first remote/workspace
 surface behind those native support claims, see
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md),
 [codexw-local-api-sketch.md](codexw-local-api-sketch.md),
 [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
@@ -97,12 +97,15 @@ The implemented native-side product already has:
   `warn_only` versus `operator_interrupt_or_exit_resume`
 - explicit recovery options such as `observe_status`, `interrupt_turn`, and
   `exit_and_resume`
+- a generic stalled-turn watchdog, so app-server silence after a still-active
+  turn becomes an explicit `turn stalled` prompt/status warning instead of a
+  silent spinner
 - human-readable supervision surfaces that now enumerate those recovery
   options directly in `:status` and raised stderr notices, while keeping
   `automation_ready=false` explicit
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
-  a stuck dynamic tool no longer keeps the turn open forever
-- dedicated wrapper worker threads for background-shell dynamic tools, so the
+  a stuck async shell worker no longer keeps the turn open forever
+- dedicated wrapper worker threads for background-shell async shell work, so the
   main runtime loop is not the execution site for blocking shell startup/poll
   work
 - abandoned async backlog tracking plus `async_tool_backpressure`, so timed-out

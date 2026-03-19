@@ -29,7 +29,7 @@ handoff, see
 For the source docs that define the current shell-first remote
 host-examination surface that this architecture requirement builds on, see:
 
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
@@ -103,10 +103,9 @@ surfaces that already model durable shell and service state:
 - any host-generated artifact references that already appear in transcript or
   shell output
 
-This design requirement is intentionally **not** a return to the removed
-workspace dynamic tools. Those tools were de-advertised because they were too
-bug-prone relative to their value. The preferred general-purpose host
-examination substrate remains:
+This design requirement intentionally keeps host examination on shell/service
+surfaces instead of model-facing wrapper tool schemas. The preferred
+general-purpose host examination substrate remains:
 
 - host shell commands
 - Python or other host interpreters when appropriate

@@ -1,25 +1,8 @@
-use crate::background_shells::BackgroundShellManager;
-use crate::client_dynamic_tools::execute_dynamic_tool_call;
 use crate::session_realtime_item::render_realtime_item;
 use crate::transcript_approval_summary::summarize_terminal_interaction;
+use crate::transcript_approval_summary::summarize_tool_request;
+use crate::transcript_item_summary::summarize_tool_item;
 use serde_json::json;
-
-#[test]
-fn unknown_dynamic_tool_reports_failure_to_model() {
-    let response = execute_dynamic_tool_call(
-        &json!({
-            "tool": "lookup_ticket",
-            "arguments": {"id": "ABC-123"}
-        }),
-        "/tmp",
-        &BackgroundShellManager::default(),
-    );
-    assert_eq!(response["success"], false);
-    assert_eq!(
-        response["contentItems"][0]["text"],
-        "unsupported client dynamic tool `lookup_ticket`"
-    );
-}
 
 #[test]
 fn empty_terminal_interaction_is_suppressed() {
@@ -59,4 +42,34 @@ fn realtime_item_prefers_text_content() {
     assert!(rendered.contains("role            assistant"));
     assert!(rendered.contains("first line"));
     assert!(rendered.contains("second line"));
+}
+
+#[test]
+fn tool_request_summary_includes_tool_and_arguments() {
+    let summary = summarize_tool_request(&json!({
+        "tool": "lookup_ticket",
+        "arguments": {
+            "id": "ABC-123",
+            "project": "infra"
+        }
+    }));
+
+    assert!(summary.contains("lookup_ticket"));
+    assert!(summary.contains("ABC-123"));
+    assert!(summary.contains("infra"));
+}
+
+#[test]
+fn dynamic_tool_item_summary_uses_generic_result_rendering() {
+    let summary = summarize_tool_item(
+        "mcpToolCall",
+        &json!({
+            "tool": "lookup_ticket",
+            "contentItems": [{"text": "ticket ABC-123 is open"}]
+        }),
+        false,
+    );
+
+    assert!(summary.contains("lookup_ticket"));
+    assert!(summary.contains("ticket ABC-123 is open"));
 }

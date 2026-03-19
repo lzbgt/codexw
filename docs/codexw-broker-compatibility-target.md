@@ -14,7 +14,7 @@ host-examination surface behind this compatibility target, see
 [docs/codexw-local-api-implementation-plan.md](docs/codexw-local-api-implementation-plan.md),
 [docs/codexw-local-api-event-sourcing.md](docs/codexw-local-api-event-sourcing.md),
 [docs/codexw-local-api-route-matrix.md](docs/codexw-local-api-route-matrix.md), and
-[docs/codexw-workspace-tool-policy.md](docs/codexw-workspace-tool-policy.md).
+[docs/codexw-native-support-boundaries.md](docs/codexw-native-support-boundaries.md).
 
 ## Candidate Levels
 

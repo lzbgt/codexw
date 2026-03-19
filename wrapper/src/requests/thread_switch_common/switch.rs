@@ -6,7 +6,6 @@ use serde_json::json;
 use super::shared::apply_common_session_overrides;
 use super::shared::send_thread_switch_request;
 use crate::Cli;
-use crate::client_dynamic_tools::dynamic_tool_specs;
 use crate::policy::approval_policy;
 use crate::policy::thread_sandbox_mode;
 use crate::requests::PendingRequest;
@@ -30,9 +29,6 @@ pub(crate) fn send_thread_start(
         "persistExtendedHistory": true,
     });
     apply_common_session_overrides(&mut params, state);
-    if !cli.no_experimental_api {
-        params["dynamicTools"] = dynamic_tool_specs();
-    }
     send_thread_switch_request(
         writer,
         state,

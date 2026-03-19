@@ -34,6 +34,7 @@ pub(crate) fn process_server_line(
     tx: &mpsc::Sender<AppEvent>,
     start_after_initialize: &mut Option<StartMode>,
 ) -> Result<()> {
+    state.note_server_activity();
     if state.raw_json {
         output.line_stderr(format!("[json] {line}"))?;
     }

@@ -1,6 +1,5 @@
 use serde_json::Value;
 
-use crate::client_dynamic_tools::is_legacy_workspace_tool;
 use crate::state::get_string;
 use crate::state::summarize_text;
 use crate::status_value::summarize_value;
@@ -33,7 +32,6 @@ pub(crate) fn humanize_item_type(item_type: &str) -> String {
         "localShellCall" => "Local shell".to_string(),
         "fileChange" => "File change".to_string(),
         "mcpToolCall" => "MCP tool".to_string(),
-        "dynamicToolCall" => "Dynamic tool".to_string(),
         "collabAgentToolCall" => "Agent collaboration".to_string(),
         "webSearch" => "Web search".to_string(),
         other => other.to_string(),
@@ -56,7 +54,7 @@ pub(crate) fn summarize_tool_item(item_type: &str, item: &Value, verbose: bool) 
             .map(ToOwned::to_owned)
             .unwrap_or_else(|| "command".to_string()),
         "fileChange" => summarize_file_change_paths(item),
-        "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" => {
+        "mcpToolCall" | "collabAgentToolCall" | "webSearch" => {
             summarize_tool_result_block(item).unwrap_or_else(|| summarize_value(item))
         }
         "thinking" | "reasoning" => "reasoning".to_string(),
@@ -85,11 +83,7 @@ fn summarize_tool_result_block(item: &Value) -> Option<String> {
 }
 
 fn render_tool_summary_title(title: &str) -> String {
-    if is_legacy_workspace_tool(title) {
-        format!("{title} (legacy workspace compatibility)")
-    } else {
-        title.to_string()
-    }
+    title.to_string()
 }
 
 fn extract_tool_result_text(item: &Value) -> Option<String> {

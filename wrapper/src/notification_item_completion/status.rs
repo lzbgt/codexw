@@ -19,7 +19,7 @@ pub(crate) fn clear_completed_item_status(
         "commandExecution" => get_string(item, &["command"])
             .map(|command| format!("running {}", summarize_text(command))),
         "fileChange" => Some(summarize_file_change_paths(item)),
-        "mcpToolCall" | "dynamicToolCall" | "collabAgentToolCall" | "webSearch" | "plan" => {
+        "mcpToolCall" | "collabAgentToolCall" | "webSearch" | "plan" => {
             Some(summarize_text(&format!(
                 "{} {}",
                 humanize_item_type(item_type),

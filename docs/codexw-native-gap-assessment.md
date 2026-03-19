@@ -28,7 +28,7 @@ Related docs:
 
 For the native-side source docs that define the shell-first remote/workspace
 surface behind those native support claims, see
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md),
 [codexw-local-api-sketch.md](codexw-local-api-sketch.md),
 [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
@@ -171,8 +171,7 @@ not assumed.
 
 Because app-server does not expose a public client request for directly writing
 to or polling model-owned `item/commandExecution` sessions, `codexw` implements
-same-turn async shell behavior through wrapper-owned dynamic tools and
-background shell jobs.
+same-turn async shell behavior through wrapper-owned background shell jobs.
 
 That gives the user and the model something practical and useful, but it is not
 the same thing as native process/session reuse inside upstream Codex internals.

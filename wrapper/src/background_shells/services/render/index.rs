@@ -4,5 +4,6 @@ mod capabilities;
 mod dependencies;
 
 pub(crate) use self::capabilities::dependency_consumer_display;
+#[cfg(test)]
 pub(crate) use self::capabilities::parse_capability_issue_filter;
 pub(crate) use self::capabilities::provider_display;

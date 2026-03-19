@@ -106,6 +106,26 @@ fn supervision_tick_tracks_raise_escalation_and_clear() {
 }
 
 #[test]
+fn supervision_tick_marks_stalled_turn_notice_after_long_backend_silence() {
+    let mut state = AppState::new(true, false);
+    state.turn_running = true;
+    state.activity_started_at =
+        Some(std::time::Instant::now() - std::time::Duration::from_secs(90));
+    state.last_server_event_at = Some(
+        std::time::Instant::now()
+            - crate::state::AppState::TURN_IDLE_WARNING_THRESHOLD
+            - std::time::Duration::from_secs(5),
+    );
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    handle_supervision_tick(&mut state, &mut output, &mut writer)
+        .expect("raise stalled turn notice");
+
+    assert!(state.turn_idle_notice_emitted);
+}
+
+#[test]
 fn format_supervision_notice_line_reports_owner_target_and_observation_details() {
     let mut state = crate::state::AppState::new(true, false);
     state.thread_id = Some("thread-7".to_string());
@@ -315,4 +335,35 @@ fn recv_next_runtime_event_returns_server_line_when_no_control_event_is_pending(
 
     let event = recv_next_runtime_event(&control_rx, &server_rx).expect("runtime event");
     assert!(matches!(event, RuntimeEvent::ServerLine(line) if line == "{\"jsonrpc\":\"2.0\"}"));
+}
+
+#[test]
+fn recv_next_runtime_event_waits_across_idle_timeouts_for_control_events() {
+    let (control_tx, control_rx) = mpsc::channel();
+    let (_server_tx, server_rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        control_tx.send(AppEvent::Tick).expect("queue delayed tick");
+    });
+
+    let event = recv_next_runtime_event(&control_rx, &server_rx).expect("runtime event");
+    assert!(matches!(event, RuntimeEvent::Control(AppEvent::Tick)));
+}
+
+#[test]
+fn recv_next_runtime_event_waits_across_idle_timeouts_for_server_lines() {
+    let (_control_tx, control_rx) = mpsc::channel();
+    let (server_tx, server_rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        server_tx
+            .send("{\"jsonrpc\":\"2.0\",\"id\":2}".to_string())
+            .expect("queue delayed server line");
+    });
+
+    let event = recv_next_runtime_event(&control_rx, &server_rx).expect("runtime event");
+    assert!(matches!(
+        event,
+        RuntimeEvent::ServerLine(line) if line == "{\"jsonrpc\":\"2.0\",\"id\":2}"
+    ));
 }

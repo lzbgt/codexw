@@ -25,7 +25,7 @@ Related docs:
 
 For the native-side source docs that define the shell-first remote/workspace
 surface behind those native support claims, see
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md),
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md),
 [codexw-local-api-sketch.md](codexw-local-api-sketch.md),
 [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md),
@@ -88,9 +88,12 @@ drift casually:
 - compact prompt-line action/policy semantics for active and backlog-only
   async work, so the operator can see whether the current state is still
   warn-only or already in the interrupt/exit-resume posture
+- a generic stalled-turn watchdog, so supported behavior does not leave an
+  active turn on a blind spinner after app-server stops sending follow-up
+  events
 - a runtime-enforced local failure path for overdue async shell-tool calls, so
   supported behavior does not include waiting forever for a wedged tool worker
-- dedicated wrapper worker threads for background-shell dynamic tools
+- dedicated wrapper worker threads for background-shell async shell work
 - explicit abandoned async backlog visibility through `async_tool_backpressure`
 - explicit dedicated worker inspection visibility through `async_tool_workers`,
   including lifecycle states such as `running` and

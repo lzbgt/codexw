@@ -52,6 +52,7 @@ pub(in super::super) fn guidance_lines_for_blocking_capability(
     })
 }
 
+#[cfg(test)]
 pub(in super::super) fn guidance_lines_for_tool_blocking_capability(
     state: &AppState,
     capability: &str,

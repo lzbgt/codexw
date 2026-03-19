@@ -28,18 +28,25 @@ use actions::action_lines;
 use actions::action_lines_for_capability;
 use guidance::guidance_lines;
 use guidance::guidance_lines_for_capability;
+#[cfg(test)]
 use guidance::guidance_lines_for_tool;
+#[cfg(test)]
 use guidance::guidance_lines_for_tool_capability;
 pub(crate) use render::orchestration_next_action_summary;
+#[cfg(test)]
 pub(crate) use render::orchestration_next_action_summary_for_tool;
 pub(crate) use render::render_orchestration_actions;
 pub(crate) use render::render_orchestration_actions_for_capability;
+#[cfg(test)]
 pub(crate) use render::render_orchestration_actions_for_tool;
+#[cfg(test)]
 pub(crate) use render::render_orchestration_actions_for_tool_capability;
 pub(crate) use render::render_orchestration_blockers_for_capability;
 pub(crate) use render::render_orchestration_guidance;
 pub(crate) use render::render_orchestration_guidance_for_capability;
+#[cfg(test)]
 pub(crate) use render::render_orchestration_guidance_for_tool;
+#[cfg(test)]
 pub(crate) use render::render_orchestration_guidance_for_tool_capability;
 pub(super) use shared::ActionAudience;
 pub(super) use shared::first_blocking_ref_for_capability;

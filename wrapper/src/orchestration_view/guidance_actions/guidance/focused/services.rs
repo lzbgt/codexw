@@ -86,6 +86,7 @@ pub(in super::super) fn guidance_lines_for_service_capability(
     )
 }
 
+#[cfg(test)]
 pub(in super::super) fn guidance_lines_for_tool_service_capability(
     state: &AppState,
     capability: &str,

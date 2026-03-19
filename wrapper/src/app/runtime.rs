@@ -193,19 +193,19 @@ fn recv_next_runtime_event(
     control_rx: &mpsc::Receiver<AppEvent>,
     server_rx: &mpsc::Receiver<String>,
 ) -> Option<RuntimeEvent> {
-    if let Ok(event) = control_rx.try_recv() {
-        return Some(RuntimeEvent::Control(event));
-    }
-    if let Ok(line) = server_rx.try_recv() {
-        return Some(RuntimeEvent::ServerLine(line));
-    }
-    match control_rx.recv_timeout(CONTROL_EVENT_POLL_INTERVAL) {
-        Ok(event) => Some(RuntimeEvent::Control(event)),
-        Err(mpsc::RecvTimeoutError::Timeout) => {
-            server_rx.try_recv().ok().map(RuntimeEvent::ServerLine)
+    loop {
+        if let Ok(event) = control_rx.try_recv() {
+            return Some(RuntimeEvent::Control(event));
         }
-        Err(mpsc::RecvTimeoutError::Disconnected) => {
-            server_rx.try_recv().ok().map(RuntimeEvent::ServerLine)
+        if let Ok(line) = server_rx.try_recv() {
+            return Some(RuntimeEvent::ServerLine(line));
+        }
+        match control_rx.recv_timeout(CONTROL_EVENT_POLL_INTERVAL) {
+            Ok(event) => return Some(RuntimeEvent::Control(event)),
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return server_rx.recv().ok().map(RuntimeEvent::ServerLine);
+            }
         }
     }
 }

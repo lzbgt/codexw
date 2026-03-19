@@ -31,6 +31,7 @@ pub(in super::super::super::super) fn guidance_lines_for_residuals(
     None
 }
 
+#[cfg(test)]
 pub(in super::super::super::super) fn guidance_lines_for_residuals_tool(
     state: &AppState,
 ) -> Option<Vec<String>> {

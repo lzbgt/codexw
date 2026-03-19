@@ -109,12 +109,14 @@ mod tests {
                 preview: "older".to_string(),
                 status: "idle".to_string(),
                 updated_at: Some(1),
+                cwd: None,
             },
             ThreadListEntry {
                 id: "thr-new".to_string(),
                 preview: "newer".to_string(),
                 status: "active".to_string(),
                 updated_at: Some(2),
+                cwd: None,
             },
         ]);
 

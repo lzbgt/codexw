@@ -1,4 +1,5 @@
 use super::super::runtime::validate_alias;
+#[cfg(test)]
 use crate::background_shells::BackgroundShellIntent;
 use crate::background_shells::BackgroundShellManager;
 
@@ -21,6 +22,7 @@ impl BackgroundShellManager {
         ))
     }
 
+    #[cfg(test)]
     pub(crate) fn clean_from_tool(&self, arguments: &serde_json::Value) -> Result<String, String> {
         let object = arguments
             .as_object()
@@ -169,6 +171,7 @@ impl BackgroundShellManager {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn update_alias_from_tool(
         &self,
         arguments: &serde_json::Value,

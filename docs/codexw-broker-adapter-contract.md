@@ -66,7 +66,7 @@ The source docs for that shell-first remote host-examination foundation remain
 [codexw-local-api-sketch.md](codexw-local-api-sketch.md),
 [codexw-local-api-route-matrix.md](codexw-local-api-route-matrix.md),
 [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md), and
-[codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md).
+[codexw-native-support-boundaries.md](codexw-native-support-boundaries.md).
 
 ## Authority Model
 

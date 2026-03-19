@@ -20,7 +20,7 @@ that a broker-visible artifact index/detail/content API exists.
 For the source docs that define the current shell-first remote/workspace
 surface and local runtime semantics that this plugin lane builds on, see:
 
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
@@ -128,7 +128,7 @@ Examples:
 
 - voice reminder over host speakers: likely plugin-first
 - live IM progress reporting: likely plugin-first
-- fixing a wedged dynamic-tool execution model: core self-evolution
+- fixing a wedged async shell execution model: core self-evolution
 - adding a new handoff checkpoint mode: core self-evolution
 
 ## Relationship To Self-Supervision

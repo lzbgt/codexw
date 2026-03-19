@@ -20,7 +20,7 @@ For the source docs that define the current shell-first remote/workspace
 surface and local runtime semantics that this self-evolution lane builds on,
 see:
 
-- [codexw-workspace-tool-policy.md](codexw-workspace-tool-policy.md)
+- [codexw-native-support-boundaries.md](codexw-native-support-boundaries.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)
 - [codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 - [codexw-local-api-event-sourcing.md](codexw-local-api-event-sourcing.md)
@@ -276,7 +276,7 @@ local operator intent around the thread.
 This design is directly relevant to issues like:
 
 - stuck interrupt handling
-- wedged dynamic-tool polling
+- wedged async-shell polling
 - UI/runtime bugs fixed by a newly built binary
 
 The important distinction is:

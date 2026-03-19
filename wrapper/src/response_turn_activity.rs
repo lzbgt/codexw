@@ -15,7 +15,10 @@ pub(crate) fn handle_review_start(
     target_description: &str,
 ) -> Result<()> {
     state.turn_running = true;
-    state.activity_started_at = Some(Instant::now());
+    let now = Instant::now();
+    state.activity_started_at = Some(now);
+    state.last_server_event_at = Some(now);
+    state.turn_idle_notice_emitted = false;
     state.reset_turn_stream_state();
     output.line_stderr(format!(
         "[review] started {}",
@@ -35,7 +38,10 @@ pub(crate) fn handle_turn_start(
         .to_string();
     state.active_turn_id = Some(turn_id);
     state.turn_running = true;
-    state.activity_started_at = Some(Instant::now());
+    let now = Instant::now();
+    state.activity_started_at = Some(now);
+    state.last_server_event_at = Some(now);
+    state.turn_idle_notice_emitted = false;
     state.reset_turn_stream_state();
     if auto_generated {
         output.line_stderr("[auto] starting follow-up turn")?;

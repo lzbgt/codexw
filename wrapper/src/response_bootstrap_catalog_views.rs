@@ -33,12 +33,13 @@ pub(crate) fn handle_mcp_servers_loaded(result: &Value, output: &mut Output) -> 
 pub(crate) fn handle_threads_listed(
     result: &Value,
     search_term: Option<&str>,
+    cwd_filter: Option<&str>,
     view: ThreadListView,
     cache_recent_threads: bool,
     state: &mut AppState,
     output: &mut Output,
 ) -> Result<()> {
-    let snapshot = thread_list_snapshot(result);
+    let snapshot = thread_list_snapshot(result).filtered_by_cwd(cwd_filter);
     state.last_listed_thread_ids = snapshot.thread_ids();
     if matches!(view, ThreadListView::Agents) {
         state.orchestration.cached_agent_threads = snapshot.agent_thread_summaries();

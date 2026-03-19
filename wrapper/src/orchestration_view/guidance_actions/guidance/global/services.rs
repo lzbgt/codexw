@@ -14,6 +14,7 @@ pub(in super::super::super) fn guidance_lines(state: &AppState) -> Vec<String> {
         .unwrap_or_default()
 }
 
+#[cfg(test)]
 pub(in super::super::super) fn guidance_lines_for_tool(state: &AppState) -> Vec<String> {
     conflicts::guidance_lines_for_conflicts_tool(state)
         .or_else(|| availability::guidance_lines_for_availability_tool(state))

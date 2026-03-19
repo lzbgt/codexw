@@ -1,4 +1,5 @@
 use crate::background_shells::BackgroundShellCapabilityDependencySummary;
+#[cfg(test)]
 use crate::background_shells::BackgroundShellCapabilityIssueClass;
 use crate::background_shells::BackgroundShellJobSnapshot;
 
@@ -24,6 +25,7 @@ pub(crate) fn provider_display(snapshot: &BackgroundShellJobSnapshot) -> String 
     }
 }
 
+#[cfg(test)]
 pub(crate) fn parse_capability_issue_filter(
     raw: Option<&str>,
     context: &str,

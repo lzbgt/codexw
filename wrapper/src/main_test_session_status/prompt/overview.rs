@@ -46,6 +46,22 @@ fn prompt_status_mentions_realtime_when_active() {
 }
 
 #[test]
+fn prompt_status_mentions_stalled_turn_when_backend_goes_silent() {
+    let mut state = crate::state::AppState::new(true, false);
+    state.turn_running = true;
+    state.started_turn_count = 1;
+    state.activity_started_at = Some(Instant::now() - Duration::from_secs(297));
+    state.last_server_event_at = Some(
+        Instant::now()
+            - crate::state::AppState::TURN_IDLE_WARNING_THRESHOLD
+            - Duration::from_secs(12),
+    );
+    let rendered = render_prompt_status(&state);
+    assert!(rendered.contains("turn stalled"));
+    assert!(rendered.contains("no app-server activity"));
+}
+
+#[test]
 fn prompt_status_mentions_startup_resume_picker() {
     let mut state = crate::state::AppState::new(true, false);
     state.startup_resume_picker = true;

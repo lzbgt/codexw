@@ -54,6 +54,18 @@ fn failed_command_completion_keeps_status_and_exit_metadata() {
 }
 
 #[test]
+fn failed_command_completion_explains_zsh_status_assignment_failure() {
+    let body = render_command_completion(
+        "/bin/zsh -lc 'make test > build/logs/test.log 2>&1; status=$?; tail -n 120 build/logs/test.log; exit $status'",
+        "failed",
+        "1",
+        Some("zsh:1: read-only variable: status"),
+        false,
+    );
+    assert!(body.contains("hint    zsh rejects `status=$?`; use `rc=$?` instead"));
+}
+
+#[test]
 fn successful_local_command_hides_exit_and_stdout_label_when_unneeded() {
     let body = render_local_command_completion("sed -n '1,5p' file", "0", "hello\n", "", false);
     assert_eq!(body, "$ sed -n '1,5p' file\n\nhello");
@@ -65,6 +77,18 @@ fn failed_local_command_keeps_exit_and_stream_labels_when_needed() {
     assert!(body.contains("\nexit    1"));
     assert!(body.contains("[stdout]\nout"));
     assert!(body.contains("[stderr]\nerr"));
+}
+
+#[test]
+fn failed_local_command_explains_zsh_status_assignment_failure() {
+    let body = render_local_command_completion(
+        "/bin/zsh -lc 'status=$?; exit $status'",
+        "1",
+        "",
+        "zsh:1: read-only variable: status\n",
+        false,
+    );
+    assert!(body.contains("hint    zsh rejects `status=$?`; use `rc=$?` instead"));
 }
 
 #[test]
@@ -176,35 +200,35 @@ fn long_tool_text_result_is_abbreviated() {
         .collect::<Vec<_>>()
         .join("\n");
     let rendered = summarize_tool_item(
-        "dynamicToolCall",
+        "mcpToolCall",
         &serde_json::json!({
-            "tool": "orchestration_status",
+            "tool": "lookup_ticket",
             "contentItems": [
                 {"text": long_text}
             ]
         }),
         false,
     );
-    assert!(rendered.contains("orchestration_status"));
+    assert!(rendered.contains("lookup_ticket"));
     assert!(rendered.contains("\n...\n"));
     assert!(!rendered.contains("line 21"));
     assert!(rendered.contains("line 62"));
 }
 
 #[test]
-fn legacy_workspace_tool_results_are_labeled_as_compatibility_items() {
+fn tool_results_use_plain_titles() {
     let rendered = summarize_tool_item(
-        "dynamicToolCall",
+        "mcpToolCall",
         &serde_json::json!({
-            "tool": "workspace_read_file",
+            "tool": "lookup_ticket",
             "contentItems": [
-                {"text": "File: hello.txt\n   1 | alpha"}
+                {"text": "ticket ABC-123 is open"}
             ]
         }),
         false,
     );
-    assert!(rendered.contains("workspace_read_file (legacy workspace compatibility)"));
-    assert!(rendered.contains("File: hello.txt"));
+    assert!(rendered.contains("lookup_ticket"));
+    assert!(!rendered.contains("legacy workspace compatibility"));
 }
 
 #[test]

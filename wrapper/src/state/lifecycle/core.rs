@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::time::Duration;
+use std::time::Instant;
 
 use crate::rpc::RequestId;
 
@@ -16,6 +18,8 @@ impl OrchestrationState {
 }
 
 impl AppState {
+    pub(crate) const TURN_IDLE_WARNING_THRESHOLD: Duration = Duration::from_secs(45);
+
     pub(crate) fn new(auto_continue: bool, raw_json: bool) -> Self {
         Self {
             thread_id: None,
@@ -31,6 +35,8 @@ impl AppState {
             pending_thread_switch: false,
             turn_running: false,
             activity_started_at: None,
+            last_server_event_at: None,
+            turn_idle_notice_emitted: false,
             started_turn_count: 0,
             completed_turn_count: 0,
             auto_continue,
@@ -84,6 +90,7 @@ impl AppState {
         self.last_turn_diff = None;
         self.last_status_line = None;
         self.active_supervision_notice = None;
+        self.turn_idle_notice_emitted = false;
     }
 
     pub(crate) fn reset_thread_context(&mut self) {
@@ -102,6 +109,8 @@ impl AppState {
         self.realtime_prompt = None;
         self.turn_running = false;
         self.activity_started_at = None;
+        self.last_server_event_at = None;
+        self.turn_idle_notice_emitted = false;
         self.started_turn_count = 0;
         self.completed_turn_count = 0;
         self.startup_resume_picker = false;
@@ -137,6 +146,19 @@ impl AppState {
         let local = std::mem::take(&mut self.pending_local_images);
         let remote = std::mem::take(&mut self.pending_remote_images);
         (local, remote)
+    }
+
+    pub(crate) fn note_server_activity(&mut self) {
+        self.last_server_event_at = Some(Instant::now());
+        self.turn_idle_notice_emitted = false;
+    }
+
+    pub(crate) fn stalled_turn_idle_for(&self) -> Option<Duration> {
+        if !self.turn_running {
+            return None;
+        }
+        let idle = Instant::now().saturating_duration_since(self.last_server_event_at?);
+        (idle >= Self::TURN_IDLE_WARNING_THRESHOLD).then_some(idle)
     }
 }
 

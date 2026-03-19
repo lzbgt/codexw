@@ -4,5 +4,6 @@ mod indexing;
 mod refs;
 
 pub(crate) use self::refs::dependency_consumer_display;
+#[cfg(test)]
 pub(crate) use self::refs::parse_capability_issue_filter;
 pub(crate) use self::refs::provider_display;

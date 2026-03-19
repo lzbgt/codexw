@@ -37,7 +37,7 @@ pub(super) fn handle_async_tool_response(
         .and_then(serde_json::Value::as_bool)
         .unwrap_or(false);
     output.line_stderr(format!(
-        "[tool] dynamic tool {}: {}",
+        "[tool] async tool {}: {}",
         if success { "completed" } else { "failed" },
         tool_response.summary
     ))?;
@@ -56,6 +56,7 @@ pub(super) fn handle_supervision_tick(
     output: &mut Output,
     writer: &mut std::process::ChildStdin,
 ) -> Result<()> {
+    handle_turn_idle_tick(state, output)?;
     let resolved_cwd = std::env::current_dir()
         .map(|path| path.display().to_string())
         .unwrap_or_else(|_| ".".to_string());
@@ -76,7 +77,7 @@ pub(super) fn handle_supervision_tick(
                     "contentItems": [{
                         "type": "inputText",
                         "text": format!(
-                        "dynamic tool `{}` exceeded its {}s runtime limit and was failed locally to avoid hanging the active turn; summary: {}",
+                        "async tool `{}` exceeded its {}s runtime limit and was failed locally to avoid hanging the active turn; summary: {}",
                             expired.tool,
                             expired.hard_timeout.as_secs(),
                             expired.summary
@@ -103,6 +104,21 @@ pub(super) fn handle_supervision_tick(
         }
         None => {}
     }
+    Ok(())
+}
+
+fn handle_turn_idle_tick(state: &mut AppState, output: &mut Output) -> Result<()> {
+    if state.turn_idle_notice_emitted {
+        return Ok(());
+    }
+    let Some(idle) = state.stalled_turn_idle_for() else {
+        return Ok(());
+    };
+    output.line_stderr(format!(
+        "[self-supervision] turn appears stalled: no app-server activity for {} after the last event; use Ctrl-C to interrupt, then Ctrl-C again to exit and resume if it stays wedged",
+        crate::session_prompt_status_active::format_elapsed(Some(std::time::Instant::now() - idle))
+    ))?;
+    state.turn_idle_notice_emitted = true;
     Ok(())
 }
 

@@ -15,6 +15,7 @@ mod terminal;
 
 pub(crate) use terminal::RawModeGuard;
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct AsyncToolResponse {
     pub(crate) id: RequestId,
@@ -27,6 +28,7 @@ pub(crate) struct AsyncToolResponse {
 pub(crate) enum AppEvent {
     InputKey(crate::runtime_keys::InputKey),
     Tick,
+    #[allow(dead_code)]
     AsyncToolResponseReady(AsyncToolResponse),
     StdinClosed,
     ServerClosed,
