@@ -45,9 +45,15 @@ pub(crate) fn render_turn_status(state: &AppState) -> String {
     if active_status_detail(state).is_none()
         && let Some(idle) = state.stalled_turn_idle_for()
     {
+        let status = if state.has_active_server_command_activity() {
+            "turn quiet; waiting on server command"
+        } else {
+            "turn quiet; awaiting app-server"
+        };
         return format!(
-            "{} turn stalled; no app-server activity {} | {}",
+            "{} {} {} | {}",
             spinner_frame(state.activity_started_at),
+            status,
             format_elapsed(Some(Instant::now() - idle)),
             format_elapsed(state.activity_started_at)
         );

@@ -18,15 +18,21 @@ pub(crate) fn send_turn_interrupt(
     state
         .pending
         .insert(request_id.clone(), PendingRequest::InterruptTurn);
-    send_json(
+    let outgoing_id = request_id.clone();
+    if let Err(err) = send_json(
         writer,
         &OutgoingRequest {
-            id: request_id,
+            id: outgoing_id,
             method: "turn/interrupt",
             params: json!({
                 "threadId": thread_id,
                 "turnId": turn_id,
             }),
         },
-    )
+    ) {
+        state.pending.remove(&request_id);
+        return Err(err);
+    }
+    state.note_turn_interrupt_requested();
+    Ok(())
 }

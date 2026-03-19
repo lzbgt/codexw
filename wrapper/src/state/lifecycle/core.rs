@@ -19,6 +19,7 @@ impl OrchestrationState {
 
 impl AppState {
     pub(crate) const TURN_IDLE_WARNING_THRESHOLD: Duration = Duration::from_secs(45);
+    pub(crate) const TURN_INTERRUPT_SELF_HEAL_THRESHOLD: Duration = Duration::from_secs(45);
 
     pub(crate) fn new(auto_continue: bool, raw_json: bool) -> Self {
         Self {
@@ -36,6 +37,7 @@ impl AppState {
             turn_running: false,
             activity_started_at: None,
             last_server_event_at: None,
+            turn_interrupt_requested_at: None,
             turn_idle_notice_emitted: false,
             started_turn_count: 0,
             completed_turn_count: 0,
@@ -90,6 +92,7 @@ impl AppState {
         self.last_turn_diff = None;
         self.last_status_line = None;
         self.active_supervision_notice = None;
+        self.turn_interrupt_requested_at = None;
         self.turn_idle_notice_emitted = false;
     }
 
@@ -110,6 +113,7 @@ impl AppState {
         self.turn_running = false;
         self.activity_started_at = None;
         self.last_server_event_at = None;
+        self.turn_interrupt_requested_at = None;
         self.turn_idle_notice_emitted = false;
         self.started_turn_count = 0;
         self.completed_turn_count = 0;
@@ -153,12 +157,32 @@ impl AppState {
         self.turn_idle_notice_emitted = false;
     }
 
+    pub(crate) fn note_turn_interrupt_requested(&mut self) {
+        self.turn_interrupt_requested_at = Some(Instant::now());
+    }
+
+    pub(crate) fn has_active_server_command_activity(&self) -> bool {
+        !self.active_command_items.is_empty() || !self.orchestration.background_terminals.is_empty()
+    }
+
     pub(crate) fn stalled_turn_idle_for(&self) -> Option<Duration> {
         if !self.turn_running {
             return None;
         }
         let idle = Instant::now().saturating_duration_since(self.last_server_event_at?);
         (idle >= Self::TURN_IDLE_WARNING_THRESHOLD).then_some(idle)
+    }
+
+    pub(crate) fn stalled_turn_self_heal_due(&self, interrupt_pending: bool) -> bool {
+        if !interrupt_pending {
+            return false;
+        }
+        let Some(interrupt_requested_at) = self.turn_interrupt_requested_at else {
+            return false;
+        };
+        self.stalled_turn_idle_for().is_some()
+            && Instant::now().saturating_duration_since(interrupt_requested_at)
+                >= Self::TURN_INTERRUPT_SELF_HEAL_THRESHOLD
     }
 }
 

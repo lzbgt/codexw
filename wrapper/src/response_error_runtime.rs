@@ -54,6 +54,14 @@ pub(crate) fn handle_runtime_error(
                 serde_json::to_string_pretty(error)?
             ))?;
         }
+        PendingRequest::InterruptTurn => {
+            state.turn_interrupt_requested_at = None;
+            output.line_stderr("[interrupt] request failed")?;
+            output.line_stderr(format!(
+                "[server-error] {}",
+                serde_json::to_string_pretty(error)?
+            ))?;
+        }
         _ => return Ok(false),
     }
     Ok(true)

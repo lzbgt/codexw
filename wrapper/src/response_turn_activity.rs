@@ -59,6 +59,11 @@ pub(crate) fn handle_turn_steer(
         .context("turn/steer missing turnId")?
         .to_string();
     state.active_turn_id = Some(turn_id);
+    state.turn_running = true;
+    let now = Instant::now();
+    state.activity_started_at.get_or_insert(now);
+    state.last_server_event_at = Some(now);
+    state.turn_idle_notice_emitted = false;
     output.line_stderr(format!("[steer] {}", summarize_text(display_text)))?;
     Ok(())
 }

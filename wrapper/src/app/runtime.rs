@@ -13,6 +13,7 @@ use anyhow::Context;
 use anyhow::Result;
 
 use crate::Cli;
+use crate::app::resume::reexec_into_resume;
 use crate::app::resume::emit_resume_exit_hint;
 use crate::config_persistence::load_persisted_theme;
 use crate::dispatch_command_utils::join_prompt;
@@ -44,6 +45,7 @@ use crate::state::AppState;
 
 use self::input::handle_input_key;
 use self::supervision::handle_async_tool_response;
+use self::supervision::SupervisionAction;
 use self::supervision::handle_supervision_tick;
 
 const CONTROL_EVENT_POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -118,6 +120,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     send_initialize(&mut writer, &mut state, &cli, !cli.no_experimental_api)?;
 
     let mut start_after_initialize = Some(build_start_mode(&cli, initial_prompt));
+    let mut self_heal_resume_prompt = None;
 
     loop {
         update_prompt(&mut output, &state, &editor)?;
@@ -148,7 +151,16 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                 }
             }
             Some(RuntimeEvent::Control(AppEvent::Tick)) => {
-                handle_supervision_tick(&mut state, &mut output, &mut writer)?;
+                if let Some(action) =
+                    handle_supervision_tick(&mut state, &mut output, &mut writer)?
+                {
+                    match action {
+                        SupervisionAction::SelfHealResume { initial_prompt } => {
+                            self_heal_resume_prompt = initial_prompt;
+                            break;
+                        }
+                    }
+                }
             }
             Some(RuntimeEvent::Control(AppEvent::AsyncToolResponseReady(tool_response))) => {
                 handle_async_tool_response(tool_response, &mut state, &mut output, &mut writer)?;
@@ -179,6 +191,19 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
             &current_local_api_snapshot,
         );
         previous_local_api_snapshot = Some(current_local_api_snapshot);
+    }
+
+    if let Some(recovery_prompt) = self_heal_resume_prompt {
+        let thread_id = state
+            .thread_id
+            .clone()
+            .context("self-heal resume requested without active thread id")?;
+        if let Some(handle) = local_api_handle {
+            handle.shutdown()?;
+        }
+        shutdown_child(writer, child)?;
+        reexec_into_resume(&cli, &resolved_cwd, &thread_id, Some(recovery_prompt.as_str()))?;
+        return Ok(());
     }
 
     emit_resume_exit_hint(&mut output, &state, &resolved_cwd)?;

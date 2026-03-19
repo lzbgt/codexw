@@ -1,4 +1,6 @@
 use crate::output::Output;
+use crate::prompt_state::render_prompt_status;
+use crate::requests::PendingRequest;
 use crate::rpc::RequestId;
 use crate::runtime_event_sources::AppEvent;
 use crate::runtime_event_sources::AsyncToolResponse;
@@ -11,6 +13,7 @@ use super::supervision::format_async_tool_health_check_line;
 use super::supervision::format_supervision_notice_line;
 use super::supervision::handle_async_tool_response;
 use super::supervision::handle_supervision_tick;
+use super::supervision::SupervisionAction;
 
 use serde_json::json;
 use std::process::Command;
@@ -76,7 +79,11 @@ fn supervision_tick_tracks_raise_escalation_and_clear() {
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
 
-    handle_supervision_tick(&mut state, &mut output, &mut writer).expect("raise slow notice");
+    assert!(
+        handle_supervision_tick(&mut state, &mut output, &mut writer)
+            .expect("raise slow notice")
+            .is_none()
+    );
     assert_eq!(
         state
             .active_supervision_notice
@@ -91,7 +98,11 @@ fn supervision_tick_tracks_raise_escalation_and_clear() {
     {
         activity.started_at = std::time::Instant::now() - std::time::Duration::from_secs(75);
     }
-    handle_supervision_tick(&mut state, &mut output, &mut writer).expect("raise wedged notice");
+    assert!(
+        handle_supervision_tick(&mut state, &mut output, &mut writer)
+            .expect("raise wedged notice")
+            .is_none()
+    );
     assert_eq!(
         state
             .active_supervision_notice
@@ -101,7 +112,11 @@ fn supervision_tick_tracks_raise_escalation_and_clear() {
     );
 
     state.finish_async_tool_request(&RequestId::Integer(7));
-    handle_supervision_tick(&mut state, &mut output, &mut writer).expect("clear notice");
+    assert!(
+        handle_supervision_tick(&mut state, &mut output, &mut writer)
+            .expect("clear notice")
+            .is_none()
+    );
     assert!(state.active_supervision_notice.is_none());
 }
 
@@ -119,10 +134,69 @@ fn supervision_tick_marks_stalled_turn_notice_after_long_backend_silence() {
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
 
-    handle_supervision_tick(&mut state, &mut output, &mut writer)
-        .expect("raise stalled turn notice");
+    assert!(
+        handle_supervision_tick(&mut state, &mut output, &mut writer)
+            .expect("raise stalled turn notice")
+            .is_none()
+    );
 
     assert!(state.turn_idle_notice_emitted);
+}
+
+#[test]
+fn stalled_turn_supervision_requests_self_heal_after_silent_interrupt() {
+    let mut state = AppState::new(true, false);
+    state.thread_id = Some("thread-7".to_string());
+    state.active_turn_id = Some("turn-7".to_string());
+    state.turn_running = true;
+    state.activity_started_at =
+        Some(std::time::Instant::now() - std::time::Duration::from_secs(180));
+    state.last_server_event_at = Some(
+        std::time::Instant::now()
+            - crate::state::AppState::TURN_IDLE_WARNING_THRESHOLD
+            - std::time::Duration::from_secs(5),
+    );
+    state.turn_interrupt_requested_at = Some(
+        std::time::Instant::now()
+            - crate::state::AppState::TURN_INTERRUPT_SELF_HEAL_THRESHOLD
+            - std::time::Duration::from_secs(5),
+    );
+    state.turn_idle_notice_emitted = true;
+    state
+        .pending
+        .insert(RequestId::Integer(99), PendingRequest::InterruptTurn);
+    let mut output = Output::default();
+    let mut writer = spawn_sink_stdin();
+
+    let action = handle_supervision_tick(&mut state, &mut output, &mut writer)
+        .expect("self-heal action")
+        .expect("action");
+
+    match action {
+        SupervisionAction::SelfHealResume { initial_prompt } => {
+            assert!(initial_prompt.is_none());
+        }
+    }
+}
+
+#[test]
+fn quiet_turn_notice_distinguishes_cloud_wait_from_command_wait() {
+    let mut state = AppState::new(true, false);
+    state.turn_running = true;
+    state.activity_started_at = Some(std::time::Instant::now() - std::time::Duration::from_secs(90));
+    state.last_server_event_at = Some(
+        std::time::Instant::now()
+            - crate::state::AppState::TURN_IDLE_WARNING_THRESHOLD
+            - std::time::Duration::from_secs(5),
+    );
+    let without_command = render_prompt_status(&state);
+    assert!(without_command.contains("turn quiet; awaiting app-server"));
+
+    state
+        .active_command_items
+        .insert("item-1".to_string(), "make test".to_string());
+    let with_command = render_prompt_status(&state);
+    assert!(with_command.contains("turn quiet; waiting on server command"));
 }
 
 #[test]
@@ -266,8 +340,11 @@ fn supervision_tick_force_fails_timed_out_async_tool_requests() {
     let mut output = Output::default();
     let mut writer = spawn_sink_stdin();
 
-    handle_supervision_tick(&mut state, &mut output, &mut writer)
-        .expect("expire timed out async tool");
+    assert!(
+        handle_supervision_tick(&mut state, &mut output, &mut writer)
+            .expect("expire timed out async tool")
+            .is_none()
+    );
 
     assert!(state.active_async_tool_requests.is_empty());
     assert_eq!(state.abandoned_async_tool_request_count(), 1);

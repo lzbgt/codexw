@@ -46,7 +46,7 @@ fn prompt_status_mentions_realtime_when_active() {
 }
 
 #[test]
-fn prompt_status_mentions_stalled_turn_when_backend_goes_silent() {
+fn prompt_status_mentions_quiet_turn_when_backend_goes_silent() {
     let mut state = crate::state::AppState::new(true, false);
     state.turn_running = true;
     state.started_turn_count = 1;
@@ -57,8 +57,8 @@ fn prompt_status_mentions_stalled_turn_when_backend_goes_silent() {
             - Duration::from_secs(12),
     );
     let rendered = render_prompt_status(&state);
-    assert!(rendered.contains("turn stalled"));
-    assert!(rendered.contains("no app-server activity"));
+    assert!(rendered.contains("turn quiet"));
+    assert!(rendered.contains("awaiting app-server"));
 }
 
 #[test]

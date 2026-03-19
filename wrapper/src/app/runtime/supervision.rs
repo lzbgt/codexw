@@ -9,6 +9,10 @@ use crate::state::AppState;
 use crate::state::AsyncToolHealthCheck;
 use crate::state::SupervisionNoticeTransition;
 
+pub(super) enum SupervisionAction {
+    SelfHealResume { initial_prompt: Option<String> },
+}
+
 pub(super) fn handle_async_tool_response(
     tool_response: AsyncToolResponse,
     state: &mut AppState,
@@ -55,8 +59,10 @@ pub(super) fn handle_supervision_tick(
     state: &mut AppState,
     output: &mut Output,
     writer: &mut std::process::ChildStdin,
-) -> Result<()> {
-    handle_turn_idle_tick(state, output)?;
+) -> Result<Option<SupervisionAction>> {
+    if let Some(action) = handle_turn_idle_tick(state, output, writer)? {
+        return Ok(Some(action));
+    }
     let resolved_cwd = std::env::current_dir()
         .map(|path| path.display().to_string())
         .unwrap_or_else(|_| ".".to_string());
@@ -104,22 +110,43 @@ pub(super) fn handle_supervision_tick(
         }
         None => {}
     }
-    Ok(())
+    Ok(None)
 }
 
-fn handle_turn_idle_tick(state: &mut AppState, output: &mut Output) -> Result<()> {
+fn handle_turn_idle_tick(
+    state: &mut AppState,
+    output: &mut Output,
+    _writer: &mut std::process::ChildStdin,
+) -> Result<Option<SupervisionAction>> {
+    let interrupt_pending = state
+        .pending
+        .values()
+        .any(|pending| matches!(pending, crate::requests::PendingRequest::InterruptTurn));
     if state.turn_idle_notice_emitted {
-        return Ok(());
+        if state.stalled_turn_self_heal_due(interrupt_pending) && state.thread_id.is_some() {
+            output.line_stderr(
+                "[self-supervision] interrupt request stayed unanswered; restarting codexw and resuming the thread automatically",
+            )?;
+            return Ok(Some(SupervisionAction::SelfHealResume {
+                initial_prompt: None,
+            }));
+        }
+        return Ok(None);
     }
     let Some(idle) = state.stalled_turn_idle_for() else {
-        return Ok(());
+        return Ok(None);
+    };
+    let qualifier = if state.has_active_server_command_activity() {
+        "this can be a quiet server-side command or a wedged turn"
+    } else {
+        "this can be a long cloud-model wait or a wedged turn"
     };
     output.line_stderr(format!(
-        "[self-supervision] turn appears stalled: no app-server activity for {} after the last event; use Ctrl-C to interrupt, then Ctrl-C again to exit and resume if it stays wedged",
+        "[self-supervision] turn backend is quiet: no app-server activity for {} after the last event; {qualifier}; use Ctrl-C to interrupt if it looks stuck",
         crate::session_prompt_status_active::format_elapsed(Some(std::time::Instant::now() - idle))
     ))?;
     state.turn_idle_notice_emitted = true;
-    Ok(())
+    Ok(None)
 }
 
 pub(super) fn format_supervision_notice_line(

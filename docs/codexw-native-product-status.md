@@ -97,9 +97,10 @@ The implemented native-side product already has:
   `warn_only` versus `operator_interrupt_or_exit_resume`
 - explicit recovery options such as `observe_status`, `interrupt_turn`, and
   `exit_and_resume`
-- a generic stalled-turn watchdog, so app-server silence after a still-active
-  turn becomes an explicit `turn stalled` prompt/status warning instead of a
-  silent spinner
+- a generic quiet-turn watchdog, so app-server silence after a still-active
+  turn becomes an explicit `turn quiet` prompt/status warning instead of a
+  silent spinner, while keeping the stderr notice honest that this may still be
+  a long cloud-model wait rather than a true wedge
 - human-readable supervision surfaces that now enumerate those recovery
   options directly in `:status` and raised stderr notices, while keeping
   `automation_ready=false` explicit

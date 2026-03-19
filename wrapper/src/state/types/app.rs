@@ -36,6 +36,7 @@ pub(crate) struct AppState {
     pub(crate) turn_running: bool,
     pub(crate) activity_started_at: Option<Instant>,
     pub(crate) last_server_event_at: Option<Instant>,
+    pub(crate) turn_interrupt_requested_at: Option<Instant>,
     pub(crate) turn_idle_notice_emitted: bool,
     pub(crate) started_turn_count: u64,
     pub(crate) completed_turn_count: u64,
