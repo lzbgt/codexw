@@ -33,6 +33,9 @@ index/detail/content API already exists.
   control API
 - support broker-exposed app/WebUI clients that need to inspect host shell
   activity and resulting artifacts without direct terminal access
+- expose machine-readable runtime/deployment discovery facts so a broker or
+  mobile app can identify one running `codexw` instance without scraping
+  session text
 - remain simple enough to implement before any broker transport work
 
 ## Transport Assumption
@@ -103,6 +106,29 @@ useful as a compact conceptual map, but they are no longer the authoritative
 - [docs/codexw-local-api-implementation-plan.md](codexw-local-api-implementation-plan.md)
 
 ### Session Lifecycle
+
+#### `GET /api/v1/runtime`
+
+Returns process-scoped runtime discovery metadata for broker and mobile clients.
+
+Representative fields:
+
+```json
+{
+  "runtime": {
+    "instance_id": "inst_...",
+    "suggested_deployment_id": "lab-macbook",
+    "host_os": "macos",
+    "host_arch": "aarch64",
+    "apple_silicon": true,
+    "preferred_broker_transport": "connector"
+  }
+}
+```
+
+This route is intentionally process-scoped. It does not replace session or
+thread identities. It only exposes enough runtime identity for a broker or app
+to discover what `codexw` instance it is talking to.
 
 #### `POST /api/v1/session/new`
 

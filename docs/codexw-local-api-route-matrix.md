@@ -39,6 +39,7 @@ The initial slice was supposed to expose only the routes needed to prove that
 | Route | Original phase | Existing source of truth | Proposed local API handler | Minimum verification |
 | --- | --- | --- | --- | --- |
 | `GET /healthz` | 1 | none | `local_api/routes/dispatch.rs`, `local_api/server.rs` | basic route smoke test |
+| `GET /api/v1/runtime` | 1 | process/runtime metadata from `local_api/snapshot/*` | `local_api/routes/runtime.rs`, `local_api/routes/dispatch.rs` | Implemented. Exposes broker/iOS-friendly runtime discovery metadata such as instance id, suggested deployment id, host OS/arch, Apple Silicon fact, and preferred broker transport |
 | `POST /api/v1/session/new` | 2 | `state.rs`, `requests/thread_switch_common/*`, `response_thread_runtime.rs` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues a fresh Codex thread start |
 | `POST /api/v1/session/attach` | 2 | `state.rs`, `requests/thread_switch_common/*` | `local_api/routes/session.rs`, `local_api/control.rs` | Implemented. Reuses the current process-scoped local API session and queues resume of an existing thread id |
 | `GET /api/v1/session/{session_id}` | 2 | `state.rs`, `session_snapshot_overview.rs`, `session_snapshot_runtime.rs` | `local_api/routes/session.rs` | Implemented. Returns structured `session` + explicit process-scoped `attachment` metadata while preserving compatibility summary fields |
@@ -106,13 +107,14 @@ This keeps the local API aligned with the current `codexw` separation:
 The most efficient route order is:
 
 1. `GET /healthz`
-2. session routes
-3. turn routes
-4. event stream
-5. orchestration views
-6. shell views and control
-7. services and capabilities
-8. service mutation routes
+2. `GET /api/v1/runtime`
+3. session routes
+4. turn routes
+5. event stream
+6. orchestration views
+7. shell views and control
+8. services and capabilities
+9. service mutation routes
 
 This minimizes churn because later routes depend on:
 

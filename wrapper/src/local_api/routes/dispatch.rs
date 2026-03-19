@@ -16,6 +16,7 @@ use crate::local_api::server::HttpResponse;
 use super::client_events;
 use super::json_error_response;
 use super::json_ok_response;
+use super::runtime;
 use super::session;
 use super::session_payload;
 use super::turn;
@@ -144,6 +145,10 @@ pub(in crate::local_api) fn route_authorized_request(
 
     if request.path == "/api/v1/session" {
         return json_ok_response(session_payload(&current_snapshot));
+    }
+
+    if request.path == "/api/v1/runtime" {
+        return json_ok_response(runtime::runtime_payload(&current_snapshot));
     }
 
     if let Some(path) = request.path.strip_prefix("/api/v1/session/") {

@@ -13,8 +13,9 @@ use anyhow::Context;
 use anyhow::Result;
 
 use crate::Cli;
-use crate::app::resume::reexec_into_resume;
 use crate::app::resume::emit_resume_exit_hint;
+use crate::app::resume::reexec_into_resume;
+use crate::app::resume::take_self_heal_queued_attachments_from_env;
 use crate::config_persistence::load_persisted_theme;
 use crate::dispatch_command_utils::join_prompt;
 use crate::editor::LineEditor;
@@ -44,8 +45,8 @@ use crate::runtime_process::spawn_server;
 use crate::state::AppState;
 
 use self::input::handle_input_key;
-use self::supervision::handle_async_tool_response;
 use self::supervision::SupervisionAction;
+use self::supervision::handle_async_tool_response;
 use self::supervision::handle_supervision_tick;
 
 const CONTROL_EVENT_POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -84,6 +85,9 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     let mut output = Output::default();
     let mut writer = stdin;
     let mut state = AppState::new(cli.auto_continue, cli.raw_json);
+    let (queued_local_images, queued_remote_images) = take_self_heal_queued_attachments_from_env()?;
+    state.pending_local_images.extend(queued_local_images);
+    state.pending_remote_images.extend(queued_remote_images);
     let mut editor = LineEditor::default();
     let local_api_snapshot = new_shared_snapshot(new_process_session_id(), resolved_cwd.clone());
     let local_api_commands = new_command_queue();
@@ -120,6 +124,7 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
     send_initialize(&mut writer, &mut state, &cli, !cli.no_experimental_api)?;
 
     let mut start_after_initialize = Some(build_start_mode(&cli, initial_prompt));
+    let mut self_heal_requested = false;
     let mut self_heal_resume_prompt = None;
 
     loop {
@@ -151,11 +156,11 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
                 }
             }
             Some(RuntimeEvent::Control(AppEvent::Tick)) => {
-                if let Some(action) =
-                    handle_supervision_tick(&mut state, &mut output, &mut writer)?
+                if let Some(action) = handle_supervision_tick(&mut state, &mut output, &mut writer)?
                 {
                     match action {
                         SupervisionAction::SelfHealResume { initial_prompt } => {
+                            self_heal_requested = true;
                             self_heal_resume_prompt = initial_prompt;
                             break;
                         }
@@ -193,16 +198,27 @@ pub(crate) fn run(cli: Cli) -> Result<()> {
         previous_local_api_snapshot = Some(current_local_api_snapshot);
     }
 
-    if let Some(recovery_prompt) = self_heal_resume_prompt {
+    if self_heal_requested {
         let thread_id = state
             .thread_id
             .clone()
             .context("self-heal resume requested without active thread id")?;
+        let staged_prompt = state.take_staged_resume_prompt();
         if let Some(handle) = local_api_handle {
             handle.shutdown()?;
         }
         shutdown_child(writer, child)?;
-        reexec_into_resume(&cli, &resolved_cwd, &thread_id, Some(recovery_prompt.as_str()))?;
+        let resume_prompt = staged_prompt
+            .as_deref()
+            .or(self_heal_resume_prompt.as_deref());
+        reexec_into_resume(
+            &cli,
+            &resolved_cwd,
+            &thread_id,
+            resume_prompt,
+            &state.pending_local_images,
+            &state.pending_remote_images,
+        )?;
         return Ok(());
     }
 

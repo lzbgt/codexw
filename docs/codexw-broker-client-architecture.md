@@ -16,6 +16,12 @@ must support:
 This document is the source-of-truth design note for that requirement. It sits
 above the narrower route, adapter, and proof docs.
 
+For the product-specific next layer on top of this architecture, namely the Go
+broker service and the iOS client, see
+[codexw-go-broker-service.md](codexw-go-broker-service.md),
+[codexw-ios-app.md](codexw-ios-app.md), and
+[codexw-broker-mobile-implementation-plan.md](codexw-broker-mobile-implementation-plan.md).
+
 For the workflow-level read on what remote clients can already inspect today,
 see [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md).
 For the short implementer-facing handoff to the sibling `~/work/agent`

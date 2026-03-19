@@ -68,7 +68,7 @@ pub(super) fn process_local_api_commands(
                 }
             }
             LocalApiCommand::StartTurn { session_id, prompt } => {
-                match submit_turn_input(&prompt, cli, resolved_cwd, state, writer) {
+                match submit_turn_input(&prompt, cli, resolved_cwd, state, output, writer) {
                     Ok(true) => {
                         output.line_stderr(format!(
                             "[local-api] accepted queued turn for session {session_id}"

@@ -44,6 +44,7 @@ impl AppState {
             auto_continue,
             startup_resume_picker: false,
             objective: None,
+            staged_resume_prompt: None,
             last_agent_message: None,
             conversation_history: Vec::new(),
             last_turn_diff: None,
@@ -119,6 +120,7 @@ impl AppState {
         self.completed_turn_count = 0;
         self.startup_resume_picker = false;
         self.objective = None;
+        self.staged_resume_prompt = None;
         self.conversation_history.clear();
         self.last_token_usage = None;
         self.active_collaboration_mode = None;
@@ -128,6 +130,14 @@ impl AppState {
 
     pub(crate) fn replace_conversation_history(&mut self, history: Vec<ConversationMessage>) {
         self.conversation_history = history;
+    }
+
+    pub(crate) fn stage_resume_prompt(&mut self, prompt: String) {
+        self.staged_resume_prompt = Some(prompt);
+    }
+
+    pub(crate) fn take_staged_resume_prompt(&mut self) -> Option<String> {
+        self.staged_resume_prompt.take()
     }
 
     pub(crate) fn push_conversation_message(&mut self, role: &str, text: &str) {

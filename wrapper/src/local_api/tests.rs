@@ -1,6 +1,7 @@
 mod events;
 mod fixture;
 mod orchestration;
+mod runtime;
 mod service_routes;
 mod session;
 mod shell_routes;

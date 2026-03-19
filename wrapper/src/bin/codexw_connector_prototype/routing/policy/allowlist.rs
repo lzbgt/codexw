@@ -20,6 +20,7 @@ fn is_supported_get_local_route(segments: &[&str]) -> bool {
     matches!(
         segments,
         ["healthz"]
+            | ["api", "v1", "runtime"]
             | ["api", "v1", "session"]
             | ["api", "v1", "session", _]
             | ["api", "v1", "session", _, "transcript"]

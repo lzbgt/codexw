@@ -30,6 +30,8 @@ pub(crate) use types::LocalApiObservedBackgroundShellJob;
 pub(crate) use types::LocalApiOrchestrationStatus;
 pub(crate) use types::LocalApiRecoveryOption;
 pub(crate) use types::LocalApiRecoveryPolicy;
+#[cfg(test)]
+pub(crate) use types::LocalApiRuntimeInfo;
 pub(crate) use types::LocalApiSnapshot;
 pub(crate) use types::LocalApiSupervisionNotice;
 pub(crate) use types::LocalApiTranscriptEntry;

@@ -4,6 +4,7 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub(crate) struct LocalApiSnapshot {
+    pub(crate) runtime: LocalApiRuntimeInfo,
     pub(crate) session_id: String,
     pub(crate) cwd: String,
     pub(crate) attachment_client_id: Option<String>,
@@ -25,6 +26,20 @@ pub(crate) struct LocalApiSnapshot {
     pub(crate) workers: LocalApiWorkersSnapshot,
     pub(crate) capabilities: Vec<LocalApiCapabilityEntry>,
     pub(crate) transcript: Vec<LocalApiTranscriptEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct LocalApiRuntimeInfo {
+    pub(crate) instance_id: String,
+    pub(crate) suggested_deployment_id: String,
+    pub(crate) hostname: Option<String>,
+    pub(crate) process_id: u32,
+    pub(crate) process_started_at_ms: u64,
+    pub(crate) host_os: String,
+    pub(crate) host_arch: String,
+    pub(crate) apple_silicon: bool,
+    pub(crate) preferred_broker_transport: String,
+    pub(crate) recommended_remote_clients: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

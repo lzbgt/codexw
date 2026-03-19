@@ -154,6 +154,9 @@ The broker/local-API design is now split across concrete implementation-facing
 documents:
 
 - [codexw-broker-client-architecture.md](codexw-broker-client-architecture.md)
+- [codexw-go-broker-service.md](codexw-go-broker-service.md)
+- [codexw-ios-app.md](codexw-ios-app.md)
+- [codexw-broker-mobile-implementation-plan.md](codexw-broker-mobile-implementation-plan.md)
 - [codexw-broker-host-examination-matrix.md](codexw-broker-host-examination-matrix.md)
 - [codexw-broker-artifact-contract-sketch.md](codexw-broker-artifact-contract-sketch.md)
 - [codexw-local-api-sketch.md](codexw-local-api-sketch.md)

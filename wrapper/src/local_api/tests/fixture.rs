@@ -33,6 +33,7 @@ use super::super::snapshot::LocalApiObservedBackgroundShellJob;
 use super::super::snapshot::LocalApiOrchestrationStatus;
 use super::super::snapshot::LocalApiRecoveryOption;
 use super::super::snapshot::LocalApiRecoveryPolicy;
+use super::super::snapshot::LocalApiRuntimeInfo;
 use super::super::snapshot::LocalApiSnapshot;
 use super::super::snapshot::LocalApiSupervisionNotice;
 use super::super::snapshot::LocalApiTranscriptEntry;
@@ -40,6 +41,22 @@ use super::super::snapshot::LocalApiWorkersSnapshot;
 
 pub(super) fn sample_snapshot() -> Arc<RwLock<LocalApiSnapshot>> {
     Arc::new(RwLock::new(LocalApiSnapshot {
+        runtime: LocalApiRuntimeInfo {
+            instance_id: "inst_test".to_string(),
+            suggested_deployment_id: "codexw-m2-lab".to_string(),
+            hostname: Some("lab-macbook".to_string()),
+            process_id: 4242,
+            process_started_at_ms: 4_102_444_500_000,
+            host_os: "macos".to_string(),
+            host_arch: "aarch64".to_string(),
+            apple_silicon: true,
+            preferred_broker_transport: "connector".to_string(),
+            recommended_remote_clients: vec![
+                "ios".to_string(),
+                "web".to_string(),
+                "terminal".to_string(),
+            ],
+        },
         session_id: "sess_test".to_string(),
         cwd: "/tmp/repo".to_string(),
         attachment_client_id: Some("client_web".to_string()),

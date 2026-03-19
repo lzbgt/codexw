@@ -35,6 +35,11 @@ For the source-of-truth architecture requirement behind that track, see
 `codexw` should support broker-exposed app/WebUI clients and should expose host
 shell examination through the broker-facing surface so those clients can inspect
 the host and resulting artifacts without direct terminal access.
+For the concrete product designs for a Go cloud broker and an iOS client on top
+of that architecture, see
+[docs/codexw-go-broker-service.md](docs/codexw-go-broker-service.md),
+[docs/codexw-ios-app.md](docs/codexw-ios-app.md), and
+[docs/codexw-broker-mobile-implementation-plan.md](docs/codexw-broker-mobile-implementation-plan.md).
 For the next native requirement that falls out of that model, namely
 cross-deployment `codexw` collaboration and explicit work handoff, see
 [docs/codexw-cross-deployment-collaboration.md](docs/codexw-cross-deployment-collaboration.md).

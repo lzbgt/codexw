@@ -43,6 +43,7 @@ pub(crate) struct AppState {
     pub(crate) auto_continue: bool,
     pub(crate) startup_resume_picker: bool,
     pub(crate) objective: Option<String>,
+    pub(crate) staged_resume_prompt: Option<String>,
     pub(crate) last_agent_message: Option<String>,
     pub(crate) conversation_history: Vec<ConversationMessage>,
     pub(crate) last_turn_diff: Option<String>,

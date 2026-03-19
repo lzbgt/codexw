@@ -9,6 +9,9 @@ use crate::commands_completion_render::quote_if_needed;
 use crate::output::Output;
 use crate::state::AppState;
 
+const SELF_HEAL_LOCAL_IMAGES_ENV: &str = "CODEXW_SELF_HEAL_LOCAL_IMAGES_JSON";
+const SELF_HEAL_REMOTE_IMAGES_ENV: &str = "CODEXW_SELF_HEAL_REMOTE_IMAGES_JSON";
+
 pub(crate) fn emit_resume_exit_hint(
     output: &mut Output,
     state: &AppState,
@@ -123,14 +126,24 @@ pub(crate) fn reexec_into_resume(
     resolved_cwd: &str,
     thread_id: &str,
     initial_prompt: Option<&str>,
+    queued_local_images: &[String],
+    queued_remote_images: &[String],
 ) -> Result<()> {
     let current_exe = std::env::current_exe().context("resolve current codexw executable")?;
     let args = build_resume_args(cli, resolved_cwd, thread_id, initial_prompt);
+    let local_images_json = serialize_self_heal_attachments(queued_local_images)
+        .context("serialize queued local images for self-heal resume")?;
+    let remote_images_json = serialize_self_heal_attachments(queued_remote_images)
+        .context("serialize queued remote images for self-heal resume")?;
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
 
-        let err = Command::new(&current_exe).args(&args).exec();
+        let err = Command::new(&current_exe)
+            .args(&args)
+            .env(SELF_HEAL_LOCAL_IMAGES_ENV, &local_images_json)
+            .env(SELF_HEAL_REMOTE_IMAGES_ENV, &remote_images_json)
+            .exec();
         Err(err).with_context(|| {
             format!(
                 "exec self-heal resume via `{}`",
@@ -142,6 +155,8 @@ pub(crate) fn reexec_into_resume(
     {
         Command::new(&current_exe)
             .args(&args)
+            .env(SELF_HEAL_LOCAL_IMAGES_ENV, &local_images_json)
+            .env(SELF_HEAL_REMOTE_IMAGES_ENV, &remote_images_json)
             .spawn()
             .with_context(|| {
                 format!(
@@ -153,9 +168,37 @@ pub(crate) fn reexec_into_resume(
     }
 }
 
+pub(crate) fn take_self_heal_queued_attachments_from_env() -> Result<(Vec<String>, Vec<String>)> {
+    let local_images = decode_self_heal_attachments(std::env::var_os(SELF_HEAL_LOCAL_IMAGES_ENV))
+        .context("decode queued local images from self-heal resume environment")?;
+    let remote_images = decode_self_heal_attachments(std::env::var_os(SELF_HEAL_REMOTE_IMAGES_ENV))
+        .context("decode queued remote images from self-heal resume environment")?;
+    // SAFETY: codexw runs as a terminal client process and only mutates these
+    // dedicated internal variables during early startup before any worker
+    // threads are created for the resumed session.
+    unsafe {
+        std::env::remove_var(SELF_HEAL_LOCAL_IMAGES_ENV);
+        std::env::remove_var(SELF_HEAL_REMOTE_IMAGES_ENV);
+    }
+    Ok((local_images, remote_images))
+}
+
+fn serialize_self_heal_attachments(values: &[String]) -> Result<String> {
+    serde_json::to_string(values).context("encode self-heal attachment list")
+}
+
+fn decode_self_heal_attachments(raw: Option<OsString>) -> Result<Vec<String>> {
+    let Some(raw) = raw else {
+        return Ok(Vec::new());
+    };
+    serde_json::from_str(&raw.to_string_lossy()).context("parse self-heal attachment list")
+}
+
 #[cfg(test)]
 mod tests {
     use super::build_resume_args;
+    use super::decode_self_heal_attachments;
+    use super::serialize_self_heal_attachments;
     use crate::Cli;
 
     #[test]
@@ -193,30 +236,60 @@ mod tests {
             .map(|value| value.to_string_lossy().to_string())
             .collect::<Vec<_>>();
 
-        assert!(args.windows(2).any(|pair| pair == ["--codex-bin", "/usr/local/bin/codex"]));
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--codex-bin", "/usr/local/bin/codex"])
+        );
         assert!(args.windows(2).any(|pair| pair == ["--config", "foo=bar"]));
-        assert!(args.windows(2).any(|pair| pair == ["--enable", "feature_a"]));
-        assert!(args.windows(2).any(|pair| pair == ["--disable", "feature_b"]));
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--enable", "feature_a"])
+        );
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--disable", "feature_b"])
+        );
         assert!(args.windows(2).any(|pair| pair == ["--cwd", "/tmp/repo"]));
         assert!(args.windows(2).any(|pair| pair == ["--model", "gpt-5"]));
-        assert!(args
-            .windows(2)
-            .any(|pair| pair == ["--model-provider", "openai"]));
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--model-provider", "openai"])
+        );
         assert!(args.contains(&"--verbose-events".to_string()));
         assert!(args.contains(&"--raw-json".to_string()));
         assert!(args.contains(&"--no-experimental-api".to_string()));
         assert!(args.contains(&"--yolo".to_string()));
         assert!(args.contains(&"--local-api".to_string()));
-        assert!(args
-            .windows(2)
-            .any(|pair| pair == ["--local-api-bind", "127.0.0.1:4000"]));
-        assert!(args
-            .windows(2)
-            .any(|pair| pair == ["--local-api-token", "secret"]));
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--local-api-bind", "127.0.0.1:4000"])
+        );
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--local-api-token", "secret"])
+        );
         assert!(args.ends_with(&[
             "resume".to_string(),
             "thread_123".to_string(),
             "continue from self-heal".to_string(),
         ]));
+    }
+
+    #[test]
+    fn self_heal_attachment_lists_round_trip_through_json() {
+        let encoded = serialize_self_heal_attachments(&[
+            "/tmp/a b.png".to_string(),
+            "https://example.com/image.png?x=1&y=2".to_string(),
+        ])
+        .expect("encode attachments");
+        let decoded = decode_self_heal_attachments(Some(std::ffi::OsString::from(encoded)))
+            .expect("decode attachments");
+        assert_eq!(
+            decoded,
+            vec![
+                "/tmp/a b.png".to_string(),
+                "https://example.com/image.png?x=1&y=2".to_string()
+            ]
+        );
     }
 }

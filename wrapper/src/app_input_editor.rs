@@ -161,7 +161,7 @@ pub(crate) fn handle_submit(
                 return Ok(result);
             }
 
-            if !submit_turn_input(trimmed, cli, resolved_cwd, state, writer)? {
+            if !submit_turn_input(trimmed, cli, resolved_cwd, state, output, writer)? {
                 output.line_stderr("[session] nothing to submit")?;
                 return Ok(true);
             }

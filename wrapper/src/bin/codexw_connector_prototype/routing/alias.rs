@@ -1,5 +1,7 @@
 #[path = "alias/proxy.rs"]
 mod proxy;
+#[path = "alias/runtime.rs"]
+mod runtime;
 #[path = "alias/session.rs"]
 pub(super) mod session;
 
@@ -11,6 +13,7 @@ pub(super) fn resolve_proxy_target(
     agent_id: &str,
 ) -> Option<ProxyTarget> {
     proxy::resolve_proxy_target(path, agent_id)
+        .or_else(|| runtime::resolve_proxy_target(method, path, agent_id))
         .or_else(|| session::resolve_proxy_target(method, path, agent_id))
 }
 

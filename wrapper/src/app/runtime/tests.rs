@@ -9,11 +9,11 @@ use crate::state::AsyncToolHealthCheck;
 
 use super::RuntimeEvent;
 use super::recv_next_runtime_event;
+use super::supervision::SupervisionAction;
 use super::supervision::format_async_tool_health_check_line;
 use super::supervision::format_supervision_notice_line;
 use super::supervision::handle_async_tool_response;
 use super::supervision::handle_supervision_tick;
-use super::supervision::SupervisionAction;
 
 use serde_json::json;
 use std::process::Command;
@@ -183,7 +183,8 @@ fn stalled_turn_supervision_requests_self_heal_after_silent_interrupt() {
 fn quiet_turn_notice_distinguishes_cloud_wait_from_command_wait() {
     let mut state = AppState::new(true, false);
     state.turn_running = true;
-    state.activity_started_at = Some(std::time::Instant::now() - std::time::Duration::from_secs(90));
+    state.activity_started_at =
+        Some(std::time::Instant::now() - std::time::Duration::from_secs(90));
     state.last_server_event_at = Some(
         std::time::Instant::now()
             - crate::state::AppState::TURN_IDLE_WARNING_THRESHOLD

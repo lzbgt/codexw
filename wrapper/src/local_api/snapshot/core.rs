@@ -12,6 +12,7 @@ use super::async_tools::supervision_notice_snapshot;
 use super::orchestration::orchestration_dependencies_snapshot;
 use super::orchestration::orchestration_status_snapshot;
 use super::types::LocalApiOrchestrationStatus;
+use super::types::LocalApiRuntimeInfo;
 use super::types::LocalApiSnapshot;
 use super::types::LocalApiWorkersSnapshot;
 use super::workers::capabilities_snapshot;
@@ -28,8 +29,68 @@ pub(crate) fn new_process_session_id() -> String {
     format!("sess_{:x}_{:x}", std::process::id(), millis)
 }
 
+fn now_unix_millis() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|value| value.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+fn current_hostname() -> Option<String> {
+    ["HOSTNAME", "COMPUTERNAME"]
+        .into_iter()
+        .find_map(|key| std::env::var(key).ok())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn sanitize_deployment_label(value: &str) -> String {
+    let mut sanitized = value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() {
+                ch.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>();
+    while sanitized.contains("--") {
+        sanitized = sanitized.replace("--", "-");
+    }
+    sanitized.trim_matches('-').to_string()
+}
+
+fn suggested_deployment_id(hostname: Option<&str>) -> String {
+    hostname
+        .map(sanitize_deployment_label)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| format!("codexw-{}-{}", std::env::consts::ARCH, std::process::id()))
+}
+
+fn runtime_info() -> LocalApiRuntimeInfo {
+    let hostname = current_hostname();
+    LocalApiRuntimeInfo {
+        instance_id: format!("inst_{:x}_{:x}", std::process::id(), now_unix_millis()),
+        suggested_deployment_id: suggested_deployment_id(hostname.as_deref()),
+        hostname,
+        process_id: std::process::id(),
+        process_started_at_ms: now_unix_millis(),
+        host_os: std::env::consts::OS.to_string(),
+        host_arch: std::env::consts::ARCH.to_string(),
+        apple_silicon: cfg!(all(target_os = "macos", target_arch = "aarch64")),
+        preferred_broker_transport: "connector".to_string(),
+        recommended_remote_clients: vec![
+            "ios".to_string(),
+            "web".to_string(),
+            "terminal".to_string(),
+        ],
+    }
+}
+
 pub(crate) fn new_shared_snapshot(session_id: String, cwd: String) -> SharedSnapshot {
     Arc::new(RwLock::new(LocalApiSnapshot {
+        runtime: runtime_info(),
         session_id,
         cwd,
         attachment_client_id: None,
@@ -82,6 +143,7 @@ pub(crate) fn sync_shared_snapshot(
     }
 
     LocalApiSnapshot {
+        runtime: runtime_info(),
         session_id: String::new(),
         cwd: String::new(),
         attachment_client_id: None,

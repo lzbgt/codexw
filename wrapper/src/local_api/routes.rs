@@ -2,6 +2,7 @@ mod client_events;
 mod dispatch;
 mod event_stream;
 mod orchestration;
+mod runtime;
 mod services;
 mod session;
 mod shared;

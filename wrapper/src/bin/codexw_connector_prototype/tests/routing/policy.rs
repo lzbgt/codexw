@@ -5,6 +5,7 @@ mod injection;
 
 pub(super) const ALLOWED_HTTP_ROUTES: &[(&str, &str)] = &[
     ("GET", "/healthz"),
+    ("GET", "/api/v1/runtime"),
     ("GET", "/api/v1/session"),
     ("GET", "/api/v1/session/sess_1"),
     ("GET", "/api/v1/session/sess_1/transcript"),
